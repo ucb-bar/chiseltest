@@ -30,9 +30,7 @@ name := "chisel-testers2"
 
 version := "0.1"
 
-scalaVersion := "2.11.12"
-
-crossScalaVersions := Seq("2.11.12", "2.12.4")
+scalaVersion := "2.12.4"
 
 resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
@@ -45,7 +43,7 @@ libraryDependencies ++= Seq(
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Seq(
-  "chisel3" -> "3.1.+",
+  "chisel3" -> "3.2-SNAPSHOT",
   "treadle" -> "1.1-SNAPSHOT"
 )
 
