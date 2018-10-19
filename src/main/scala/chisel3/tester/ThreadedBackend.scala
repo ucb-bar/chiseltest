@@ -7,78 +7,63 @@ import scala.collection.mutable
 
 import chisel3._
 
-/** Common utility functions for backends implementing concurrency by threading.
-  * The backend must invoke concurrency functions as appropriate, eg during step() calls
+/** Base trait for backends implementing concurrency by threading. Also implements timescopes.
   */
 trait ThreadedBackend {
-  var nextActionId: Int = 0  // counter for unique ID assigned to each poke action
-  var timestepActionId: Int = 0  // action ID at beginning of this timestep
+  //
+  // Timescope Data Structures and Utilities
+  //
+
+  // Implemented by the simulator interface backend, similar to pokeBits, but without going back into the thread checker
+  // Used to revert a poke at the end of a timescope.
+  def revertPokeBits(signal: Bits, value: BigInt)
+
+  abstract class BaseTimescope {
+
+  }
+
+  // Root timescope, cannot be modified, with no signals poked.
+  class RootTimescope extends BaseTimescope {
+
+  }
+
+  class Timescope(val parentTimescope: BaseTimescope,
+      val parentActionId: Int, // spawn time in actionId of parent timescope
+      val newThread: Option[TesterThread] = None)
+      extends BaseTimescope {
+    var nextActionId: Int = 0  // actionId to be assigned to the next action
+
+    // Latest poke on a signal in this timescope
+    abstract class PokeRecord
+    case class SignalPokeRecord(actionId: Int, value: BigInt, trace: Throwable) extends PokeRecord
+    case class RevertPokeRecord(actionId: Int, timescope: Timescope) extends PokeRecord
+
+    val pokes = mutable.HashMap[Data, PokeRecord]()
+  }
+
+
 
   // combinationalPaths: map of sink Data to all source Data nodes.
   protected class ThreadingChecker(
       combinationalPaths: Map[Data, Set[Data]], dataNames: Map[Data, String]) {
-    /** Desired threading checking behavior:
-      * At a high level, the sequence should be lexically unambiguous. Threads are started no earlier than the fork, but
-      * there are no other guarantees on execution order.
-      *
-      * Any sequence of peeks and pokes limited to a single thread are allowed.
-      *
-      * Cross-thread operations are allowed under timescope-like semantics:
-      * Peeks to a signal combinationally affect by pokes from other threads are allowed under similar rules:
-      * - the previous poke was done by a parent thread before the current thread spawned
-      *
-      * Pokes to a signal previously poked by another thread are allowed if:
-      * - (the condition for peeks also applies to pokes)
-      * - the poke is a subset (in time) of the previous poke
-      *
-      * One edge case is a end-of-timescope revert and poke from a different thread within the same timestep:
-      *   In this case, the revert must no-op if it is no longer on top of the timescope stack for a signal
-      *   (conflict checking is deferred until the end of the timestep)
-      *   Otherwise, conflict checking is the same as the usual case.
-      *
-      * In each discrete timestep, all actions should execute and batch up errors, so that thread
-      * ordering errors can be generated in addition to any (false-positive) correctness errors:
-      * Start timestep by moving blocked threads to active
-      *   Clear active peeks / pokes belonging to the last cycle of that clock
-      * Run all threads:
-      *   If other joined threads are enabled, add them to the end of the active threads list
-      *   Exceptions propagate immediately
-      *   Test failures are batched to the end of the timestep
-      *   Peeks and pokes are recorded in a table and associated with the clock / timestep and thread
-      * At the end of the timestep:
-      *   Check for peek and poke ordering dependence faults
-      *   Report batched test failures
-      */
 
-    protected class Timescope(val parentThread: TesterThread, val parentTimescope: Option[Timescope]) {
-      // Latest poke on a signal in this timescope
-      val pokes = mutable.HashMap[Data, SignalPokeRecord]()
-    }
+    // List of the top Timescope for every Data object.
+    // When user test code is running, new pokes (for each timescope) are added to newPokes,
+    // and any closing timescopes are moved from continuingPokes to endingPokes.
+    // At the end of each timestep, pokes are checked for conflicts, newPokes are moved to
+    // continuingPokes (replacing their predecessors as needed), and endingPokes are discarded.
+    val newPokes = mutable.HashMap[Data, mutable.ListBuffer[Timescope]]()
+    val continuingPokes = mutable.HashMap[Data, mutable.ListBuffer[Timescope]]()
+    val endingPokes = mutable.HashMap[Data, mutable.ListBuffer[Timescope]]()
 
-    abstract class PokeRecord {
-      def actionId: Int
-      def thread: TesterThread
-    }
-    case class SignalPokeRecord(timescope: Timescope, priority: Int, value: BigInt,
-        actionId: Int, trace: Throwable) extends PokeRecord {
-      override def thread = timescope.parentThread
-    }
-    case class XPokeRecord(thread: TesterThread, actionId: Int) extends PokeRecord {
-      def priority: Int = Int.MaxValue
-    }
-    case class PeekRecord(thread: TesterThread, actionId: Int, trace: Throwable)
-
-    protected val threadTimescopes = mutable.HashMap[TesterThread, mutable.ListBuffer[Timescope]]()
-
-    // Active pokes on a signal, map of wire -> timescope
-    protected val signalPokes = mutable.HashMap[Data, mutable.ListBuffer[Timescope]]()
-
-    // Timescopes that closed on this timestep, map of wire -> closed timescope
-    protected val revertPokes = mutable.HashMap[Data, mutable.ListBuffer[Timescope]]()
-    // Active peeks on a signal, lasts until the specified clock advances
+    case class PeekRecord(timescope: Timescope, actionId: Int, trace: Throwable)
+    // Active peeks on a signal, instantaneous on a timestep
+    // TODO: should this last until the next associated clock edge?
     protected val signalPeeks = mutable.HashMap[Data, mutable.ListBuffer[PeekRecord]]()
 
-    // All poke revert operations
+    // Top timescope for every thread
+    // TODO: should this belong to the thread?
+    protected val threadTimescopes = mutable.HashMap[TesterThread, Timescope]()
 
     /**
      * Logs a poke operation for later checking.
@@ -173,125 +158,16 @@ trait ThreadedBackend {
      * throwing exceptions if there were).
      */
     def timestep(): Unit = {
-      // TODO: batch up all errors to be reported simultaneously?
 
-      // check that poke nestings are all well-ordered
-      // check that for each poke, all previous pokes:
-      // - happen in the order indicated by the timescope's parentTimescope, and
-      //   (note: this catches cases where a timescope in a parent thread goes out of scope before the child's timescope ends)
-      //   TODO: should this be signal dependent? in this case, threads and timescopes must also perfectly nest?
-      // - if from different threads: the previous poke must have occurred before its thread's immediate child spawned
-      signalPokes foreach { case (signal, timescopes) =>
-        timescopes.toSeq.sliding(2) foreach { case Seq(prev, next) =>
-          next.parentTimescope match {
-            case None => throw new ThreadOrderDependentException(s"conflicting pokes to $signal TODO better error")
-            case Some(parent) if parent != prev => throw new ThreadOrderDependentException(s"conflicting pokes to $signal TODO better error")
-            case Some(parent) if parent == prev =>
-              if (next.parentThread != prev.parentThread) {  // check that cross-thread timescope nestings are well-ordered
-                val nextSpawnedActionId = next.parentThread.parents(prev.parentThread)
-                if (prev.pokes(signal).actionId >= nextSpawnedActionId) {
-                  throw new ThreadOrderDependentException(s"conflicting pokes to $signal ")
-                }  // otherwise OK, previous poke was before the thread spawned
-              }
-          }
-        }
-      }
-      // TODO: do some limited checking of reverts, particularly zero-duration timescopes?
-
-      // check poke and peek dependencies
-      // Note: pokes that start and end within the timestep still show up as a signal revert,
-      // and everything else is recorded in the timescopes
-      signalPeeks foreach { case (signal, peeks) =>
-        val sourceSignals = combinationalPaths(signal) + signal
-        sourceSignals foreach { sourceSignal =>
-          // check that for each peek, any poke to a source signal is unambiguous by going through the poke stack:
-          // - if the poke is from a child thread, and the peek is before my immediate child spawned, ignore and continue
-          //   (the peek result was overwritten, but following timescope semantics and are lexically unambiguous)
-          // - if the poke is from a child thread, otherwise: error (ambiguous depending on thread execution order)
-          // - if the poke is from this thread, and before this peek: stop (unambiguous)
-          // - if the poke is from this thread, otherwise: ignore and continue (try to find an unambiguous prior poke)
-          // - if the poke is from a parent thread, and was reverted to: error (revert relative to peek is thread execution order dependent)
-          // - if the poke is from a parent thread, and the poke happened before its immediate child spawned: stop (unambiguous)
-          // - if the poke is from a parent thread, otherwise: error (poke relative to peek is thread execution order dependent)
-          // - if the poke is from a sibling thread: error (dependent on thread execution order, or non-obvious parallelism effects)
-          // TODO: handle cases where the peek is part of a reverted timestep
-          //
-          // alternative strategy:
-          // check up the timescope chain (starting from the peek timescope) for a unambiguous poke:
-          // - a poke from this thread, before the peek
-          // - a poke from a parent thread, where its immediate child spawned after the poke
-          // then check down the poke record chain to ensure there were no conflicts:
-          // - any poke above the effective poke must either be from the same thread, or another thread whose immediate
-          //   child spawned after the poke
-          // - any other poke causes a thread execution order dependency error
-
-          // potential for peeks not being checked if ending on this timestep
-          // TODO: change thread ordering rules so newly spawned threads always execute after current threads finish
-          //   as a solution to pipelining?
-        }
-      }
-
-
-      timestepActionId = nextActionId
-
-
-
-      // check poke | peek dependencies
-      signalPeeks foreach { case (signal, peeks) =>
-        val peekThreads = peeks.map(_.thread).toSet
-        // Pokes must be from every peeked thread, or alternatively stated,
-        // if there was one peek thread, all pokes must be from it;
-        // if there were multiple peek threads, there can be no pokes
-        val canPokeThreads: Set[TesterThread] = if (peekThreads.size == 1) peekThreads else Set()
-
-        val otherPokeThreads = signalPokes.get(signal).filter { priorityToTimescopes =>
-          !(priorityToTimescopes(priorityToTimescopes.keySet.min).map(_.parent).toSet subsetOf canPokeThreads)
-        }.toSet.flatten
-        val otherRevertThreads = revertPokes.get(signal).filter { pokes =>
-          !(pokes.map(_.thread).toSet subsetOf canPokeThreads)
-        }.toSet.flatten
-
-        // Get a list of threads that have affected a combinational source for the signal
-        val combPokeSignals = combinationalPaths.get(signal).toSet.flatten.filter { source =>
-          signalPokes.get(source).filter { priorityToTimescopes =>
-            !(priorityToTimescopes(priorityToTimescopes.keySet.min).map(_.parent).toSet subsetOf canPokeThreads)
-          }.isDefined
-        }
-        val combRevertSignals = combinationalPaths.get(signal).toSet.flatten.filter { source =>
-          revertPokes.get(source).filter { pokes =>
-            !(pokes.map(_.thread).toSet subsetOf canPokeThreads)
-          }.isDefined
-        }
-
-        val signalName = dataNames(signal)
-        // TODO: better error reporting
-        if (!otherPokeThreads.isEmpty) {
-          throw new ThreadOrderDependentException(s"peek on $signalName conflicts with pokes from other threads")
-        }
-        if (!otherRevertThreads.isEmpty) {
-          throw new ThreadOrderDependentException(s"peek on $signalName conflicts with timescope revert from other threads")
-        }
-
-        if (!combPokeSignals.isEmpty) {
-          val signalsStr = combPokeSignals.map(dataNames(_)).mkString(", ")
-          throw new ThreadOrderDependentException(s"peek on $signalName combinationally affected by pokes to $signalsStr from other threads")
-        }
-        if (!combRevertSignals.isEmpty) {
-          val signalsStr = combRevertSignals.map(dataNames(_)).mkString(", ")
-          throw new ThreadOrderDependentException(s"peek on $signalName combinationally affected by timescope reverts to $signalsStr from other threads")
-        }
-      }
-      revertPokes.clear()
-      signalPeeks.clear()
     }
   }
 
 
-  protected class TesterThread(runnable: => Unit,
-      val parents: Map[TesterThread, Int])  // map of parent thread -> actionId of spawn from that thread
+  protected class TesterThread(runnable: => Unit)
       extends AbstractTesterThread {
     val waiting = new Semaphore(0)
     var done: Boolean = false
+
 
     val thread = new Thread(new Runnable {
       def run() {

@@ -35,8 +35,8 @@ class TreadleBackend[T <: MultiIOModule](dut: T, paths: Seq[CombinationalPath], 
     portNames.getOrElse(signal, signal.toString)
   }
 
-  override def pokeBits(signal: Bits, value: BigInt, priority: Int): Unit = {
-    if (threadingChecker.doPoke(currentThread.get, signal, value, priority, new Throwable)) {
+  override def pokeBits(signal: Bits, value: BigInt): Unit = {
+    if (threadingChecker.doPoke(currentThread.get, signal, value, new Throwable)) {
        if (verbose) println(s"${portNames(signal)} <- $value")
       tester.poke(portNames(signal), value)
     }

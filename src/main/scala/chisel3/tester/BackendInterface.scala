@@ -35,7 +35,7 @@ trait BackendInterface {
   /** Writes a value to a writable wire.
     * Throws an exception if write is not writable.
     */
-  def pokeBits(signal: Bits, value: BigInt, priority: Int): Unit
+  def pokeBits(signal: Bits, value: BigInt): Unit
 
   /** Returns the current value on a wire.
     * If stale is true, returns the current combinational value (after previous pokes have taken effect).
