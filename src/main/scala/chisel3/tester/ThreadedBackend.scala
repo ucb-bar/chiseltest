@@ -11,7 +11,19 @@ import chisel3._
   */
 trait ThreadedBackend {
   //
-  // Timescope Data Structures and Utilities
+  // Variable references
+  //
+  val combinationalPaths: Map[Data, Set[Data]]  // set of combinational Data inputs for each output
+  val dataNames: Map[Data, String]  // FIRRTL string name for each Data
+
+  //
+  // Common variables
+  //
+
+  var currentTimestep: Int = 0  // current simulator timestep, in number of base clock cycles
+
+  //
+  // Timescope data structures and utilities
   //
 
   // Implemented by the simulator interface backend, similar to pokeBits, but without going back into the thread checker
@@ -28,18 +40,33 @@ trait ThreadedBackend {
   }
 
   class Timescope(val parentTimescope: BaseTimescope,
+      val openedTimestep: Int,  // timestep this timescope was spawned on
       val parentActionId: Int, // spawn time in actionId of parent timescope
       val newThread: Option[TesterThread] = None)
       extends BaseTimescope {
     var nextActionId: Int = 0  // actionId to be assigned to the next action
+    var closedTimestep: Option[Int] = None  // timestep this timescope was closed on, if it is closed
 
     // Latest poke on a signal in this timescope
     abstract class PokeRecord
-    case class SignalPokeRecord(actionId: Int, value: BigInt, trace: Throwable) extends PokeRecord
-    case class RevertPokeRecord(actionId: Int, timescope: Timescope) extends PokeRecord
+    case class SignalPokeRecord(timestep: Int, actionId: Int, value: BigInt, trace: Throwable) extends PokeRecord
 
-    val pokes = mutable.HashMap[Data, PokeRecord]()
+    val pokes = mutable.HashMap[Data, PokeRecord]()  // Latest poke on each data
   }
+
+  //
+  // Threading checking data structures and utilities
+  //
+
+  // List of the top Timescope for every Data object.
+  // During the testdriver phase, new timescopes may be added that supersede previous ones, but
+  // none are to be removed until during the checking phase.
+  val activePokes = mutable.HashMap[Data, mutable.ListBuffer[Timescope]]()
+
+  case class PeekRecord(timescope: Timescope, timestep: Int, actionId: Int, trace: Throwable)
+  // Active peeks on a signal, instantaneous on the current timestep
+  // TODO: should this last until the next associated clock edge?
+  protected val signalPeeks = mutable.HashMap[Data, mutable.ListBuffer[PeekRecord]]()
 
 
 
@@ -47,23 +74,7 @@ trait ThreadedBackend {
   protected class ThreadingChecker(
       combinationalPaths: Map[Data, Set[Data]], dataNames: Map[Data, String]) {
 
-    // List of the top Timescope for every Data object.
-    // When user test code is running, new pokes (for each timescope) are added to newPokes,
-    // and any closing timescopes are moved from continuingPokes to endingPokes.
-    // At the end of each timestep, pokes are checked for conflicts, newPokes are moved to
-    // continuingPokes (replacing their predecessors as needed), and endingPokes are discarded.
-    val newPokes = mutable.HashMap[Data, mutable.ListBuffer[Timescope]]()
-    val continuingPokes = mutable.HashMap[Data, mutable.ListBuffer[Timescope]]()
-    val endingPokes = mutable.HashMap[Data, mutable.ListBuffer[Timescope]]()
 
-    case class PeekRecord(timescope: Timescope, actionId: Int, trace: Throwable)
-    // Active peeks on a signal, instantaneous on a timestep
-    // TODO: should this last until the next associated clock edge?
-    protected val signalPeeks = mutable.HashMap[Data, mutable.ListBuffer[PeekRecord]]()
-
-    // Top timescope for every thread
-    // TODO: should this belong to the thread?
-    protected val threadTimescopes = mutable.HashMap[TesterThread, Timescope]()
 
     /**
      * Logs a poke operation for later checking.
@@ -163,31 +174,33 @@ trait ThreadedBackend {
   }
 
 
-  protected class TesterThread(runnable: => Unit)
+  protected class TesterThread(runnable: => Unit,
+      parentTimescope: BaseTimescope, parentActionId: Int)
       extends AbstractTesterThread {
     val waiting = new Semaphore(0)
     var done: Boolean = false
 
+    val bottomTimescope = new Timescope(parentTimescope, currentTimestep, parentActionId, Some(this))
+    var topTimescope = bottomTimescope  // Currently open timescope in this thread
 
     val thread = new Thread(new Runnable {
       def run() {
         try {
           waiting.acquire()
-          try {
-            timescope {
-              runnable
-            }
-          } catch {
-            case e: InterruptedException => throw e  // propagate to upper level handler
-            case e @ (_: Exception | _: Error) =>
-              onException(e)
-          }
+
+          runnable
+
+          require(bottomTimescope == topTimescope)  // ensure timescopes unrolled properly
           done = true
           threadFinished(TesterThread.this)
           scheduler()
         } catch {
-          case e: InterruptedException =>  // currently used as a signal to stop the thread
+          case e: InterruptedException =>
+            // currently used as a signal to kill the thread without doing cleanup
+            // (testdriver may be left in an inconsistent state, and the test should not continue)
             // TODO: allow other uses for InterruptedException?
+            case e @ (_: Exception | _: Error) =>
+              onException(e)
         }
       }
     })
