@@ -4,8 +4,8 @@ import chisel3._
 import chisel3.experimental.MultiIOModule
 
 class StaticModule[T <: Data](ioLit: T) extends MultiIOModule {
-  val io = IO(Output(chiselTypeOf(ioLit)))
-  io := ioLit
+  val out = IO(Output(chiselTypeOf(ioLit)))
+  out := ioLit
 }
 
 class PassthroughModule[T <: Data](ioType: T) extends Module {
