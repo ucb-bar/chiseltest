@@ -101,11 +101,12 @@ trait ThreadedBackend {
   /**
    * Creates a new timescope in the current thread.
    */
-  def newTimescope(): Timescope = {
+  def newTimescope(newThread: Option[TesterThread]=None): Timescope = {
     val timescope = currentThread.get.topTimescope
     require(timescope.closedTimestep.isEmpty)
 
-    val newTimescope = new Timescope(timescope, currentTimestep, timescope.nextActionId)
+    val newTimescope = new Timescope(timescope, currentTimestep, timescope.nextActionId, newThread)
+    currentThread.get.topTimescope = newTimescope
     timescope.nextActionId += 1
 
     newTimescope
@@ -115,20 +116,29 @@ trait ThreadedBackend {
    * Closes the specified timescope, returns a map of wires to values of any signals that need to be updated.
    */
   def closeTimescope(timescope: Timescope): Map[Data, Option[BigInt]] = {
-    require(timescope == currentThread.get.topTimescope)
     require(timescope.closedTimestep.isEmpty)
+    require(timescope eq currentThread.get.topTimescope)
 
     // Mark timescope as closed
     timescope.closedTimestep = Some(currentTimestep)
 
+    if (timescope.newThread.isEmpty) {  // not the bottom timescope of the thread
+      // TODO cleaner w/o asInstanceOf
+      currentThread.get.topTimescope = timescope.parentTimescope.asInstanceOf[Timescope]
+    }
+
     // Build a revert map of poked signals
     timescope.pokes.map { case (data, pokeRecord) =>
+      println(s"${dataNames(data)} $pokeRecord")
+
       def getPreviousPoke(startingTimescope: BaseTimescope, signal: Data): Option[PokeRecord] = {
+        println(s"${dataNames(signal)} $startingTimescope")
         startingTimescope match {
           case _: RootTimescope => None
           case startingTimescope: Timescope => startingTimescope.pokes.get(signal) match {
             case Some(pokeRecord) => Some(pokeRecord)
-            case None => getPreviousPoke(startingTimescope.parentTimescope, signal)
+            case None =>
+              getPreviousPoke(startingTimescope.parentTimescope, signal)
           }
         }
       }
@@ -155,6 +165,7 @@ trait ThreadedBackend {
     val waiting = new Semaphore(0)
     var done: Boolean = false
 
+    // TODO: unify w/ newTimescope
     val bottomTimescope = new Timescope(parentTimescope, currentTimestep, parentActionId, Some(this))
     var topTimescope = bottomTimescope  // Currently open timescope in this thread
 
@@ -166,6 +177,8 @@ trait ThreadedBackend {
           runnable
 
           require(bottomTimescope == topTimescope)  // ensure timescopes unrolled properly
+          closeTimescope(bottomTimescope)
+
           done = true
           threadFinished(TesterThread.this)
           scheduler()
