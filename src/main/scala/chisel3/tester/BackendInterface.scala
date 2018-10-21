@@ -17,7 +17,7 @@ class TesterThreadList(protected val elts: Seq[AbstractTesterThread]) {
   def toSeq(): Seq[AbstractTesterThread] = elts
 
   def join() {
-    elts foreach { thread => Context().backend.join(thread) }
+    elts foreach { thread => Context().backend.doJoin(thread) }
   }
 
   def ++(others: TesterThreadList): TesterThreadList = {
@@ -25,11 +25,11 @@ class TesterThreadList(protected val elts: Seq[AbstractTesterThread]) {
   }
 
   def fork(runnable: => Unit): TesterThreadList = {
-    new TesterThreadList(elts :+ Context().backend.fork(runnable))
+    new TesterThreadList(elts :+ Context().backend.doFork(runnable))
   }
 }
 
-/** Common interface definition for tester backends
+/** Common interface definition for tester backends. Internal API.
   */
 trait BackendInterface {
   /** Writes a value to a writable wire.
@@ -49,11 +49,11 @@ trait BackendInterface {
     */
   def step(signal: Clock, cycles: Int): Unit
 
-  def fork(runnable: => Unit, firstThread: Boolean = false): AbstractTesterThread
+  def doFork(runnable: => Unit, firstThread: Boolean = false): AbstractTesterThread
 
-  def join(thread: AbstractTesterThread): Unit
+  def doJoin(thread: AbstractTesterThread): Unit
 
-  def timescope(contents: => Unit): Unit
+  def doTimescope(contents: => Unit): Unit
 }
 
 /** Backend associated with a particular circuit, and can run tests

@@ -174,7 +174,7 @@ trait ThreadedBackend {
         try {
           waiting.acquire()
 
-          timescope {
+          timescope {  // TODO breaks consistent level of abstraction
             runnable
           }
 
@@ -195,7 +195,7 @@ trait ThreadedBackend {
   }
 
   protected var currentThread: Option[TesterThread] = None
-  protected val driverSemaphore = new Semaphore(0)  // blocks runThreads() while it's running
+  protected val driverSemaphore = new Semaphore(0)  // blocks the driver thread while tests are running
 
   // TODO: does this need to be replaced with concurrent data structures?
   protected val activeThreads = mutable.ArrayBuffer[TesterThread]()  // list of threads scheduled for sequential execution
@@ -263,7 +263,7 @@ trait ThreadedBackend {
     }
   }
 
-  def fork(runnable: => Unit, firstThread: Boolean = false): TesterThread = {
+  def doFork(runnable: => Unit, firstThread: Boolean = false): TesterThread = {
     val newThread = if (firstThread) {
       require(currentThread.isEmpty)
       new TesterThread(runnable, currentTimestep, new RootTimescope, 0)
@@ -282,13 +282,14 @@ trait ThreadedBackend {
     newThread
   }
 
-  def join(thread: AbstractTesterThread) = {
+  def doJoin(thread: AbstractTesterThread) = {
     val thisThread = currentThread.get
     val threadTyped = thread.asInstanceOf[TesterThread]  // TODO get rid of this, perhaps by making it typesafe
+    require(thisThread.level < threadTyped.level)
     if (!threadTyped.done) {
       joinedThreads.put(threadTyped, joinedThreads.getOrElseUpdate(threadTyped, Seq()) :+ thisThread)
       scheduler()
       thisThread.waiting.acquire()
-    }
+    }  // otherwise do nothing if target thread is already finished
   }
 }

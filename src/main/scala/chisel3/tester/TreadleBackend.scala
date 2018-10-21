@@ -65,7 +65,7 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
 
   protected val lastClockValue: mutable.HashMap[Clock, Boolean] = mutable.HashMap()
 
-  override def timescope(contents: => Unit): Unit = {
+  override def doTimescope(contents: => Unit): Unit = {
     val createdTimescope = newTimescope()
 
     contents
@@ -102,7 +102,7 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
   }
 
   override def run(testFn: T => Unit): Unit = {
-    val mainThread = fork({
+    val mainThread = doFork({
       tester.poke("reset", 1)
       tester.step(1)
       tester.poke("reset", 0)
