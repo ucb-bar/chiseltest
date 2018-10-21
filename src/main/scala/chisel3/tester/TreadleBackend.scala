@@ -102,13 +102,13 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
   }
 
   override def run(testFn: T => Unit): Unit = {
-    val mainThread = fork {
+    val mainThread = fork({
       tester.poke("reset", 1)
       tester.step(1)
       tester.poke("reset", 0)
 
       testFn(dut)
-    }
+    }, true)
     // TODO: stop abstraction-breaking activeThreads
     require(activeThreads.length == 1)  // only thread should be main
     activeThreads.trimStart(1)  // delete active threads - TODO fix this

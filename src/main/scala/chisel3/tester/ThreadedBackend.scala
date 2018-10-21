@@ -250,12 +250,19 @@ trait ThreadedBackend {
     }
   }
 
-  def fork(runnable: => Unit): TesterThread = {
-    val timescope = currentThread.get.topTimescope
-    require(timescope.closedTimestep.isEmpty)
+  def fork(runnable: => Unit, firstThread: Boolean = false): TesterThread = {
+    val newThread = if (firstThread) {
+      require(currentThread.isEmpty)
+      new TesterThread(runnable, new RootTimescope, 0)
+    } else {
+      val timescope = currentThread.get.topTimescope
+      require(timescope.closedTimestep.isEmpty)
 
-    val newThread = new TesterThread(runnable, timescope, timescope.nextActionId)
-    timescope.nextActionId += 1
+      val newThread = new TesterThread(runnable, timescope, timescope.nextActionId)
+      timescope.nextActionId += 1
+      newThread
+    }
+
 
     allThreads += newThread
     activeThreads += newThread

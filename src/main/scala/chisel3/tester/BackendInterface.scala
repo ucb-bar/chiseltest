@@ -49,7 +49,7 @@ trait BackendInterface {
     */
   def step(signal: Clock, cycles: Int): Unit
 
-  def fork(runnable: => Unit): AbstractTesterThread
+  def fork(runnable: => Unit, firstThread: Boolean = false): AbstractTesterThread
 
   def join(thread: AbstractTesterThread): Unit
 
