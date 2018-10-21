@@ -26,7 +26,7 @@ trait ThreadedBackend {
   // Timescope data structures and utilities
   //
 
-  abstract class BaseTimescope {
+  sealed abstract class BaseTimescope {
     def threadOption: Option[TesterThread]
   }
 
