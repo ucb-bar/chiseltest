@@ -13,23 +13,21 @@ class LiteralTypeException(message: String) extends Exception(message)
 package object tester {
   import chisel3.internal.firrtl.{LitArg, ULit, SLit}
   implicit class testableData[T <: Data](x: T) {
-    protected def pokeWithPriority(value: T, priority: Int): Unit = (x, value) match {
-      case (x: Bool, value: Bool) => Context().backend.pokeBits(x, value.litValue, priority)
+    def poke(value: T): Unit = (x, value) match {
+      case (x: Bool, value: Bool) => Context().backend.pokeBits(x, value.litValue)
       // TODO can't happen because of type parameterization
       case (x: Bool, value: Bits) => throw new LiteralTypeException(s"can only poke signals of type Bool with Bool value")
-      case (x: Bits, value: UInt) => Context().backend.pokeBits(x, value.litValue, priority)
-      case (x: SInt, value: SInt) => Context().backend.pokeBits(x, value.litValue, priority)
+      case (x: Bits, value: UInt) => Context().backend.pokeBits(x, value.litValue)
+      case (x: SInt, value: SInt) => Context().backend.pokeBits(x, value.litValue)
       // TODO can't happen because of type parameterization
       case (x: Bits, value: SInt) => throw new LiteralTypeException(s"can only poke SInt value into signals of type SInt")
       case (x: FixedPoint, value: FixedPoint) => {
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
-        Context().backend.pokeBits(x, value.litValue, priority)
+        Context().backend.pokeBits(x, value.litValue)
       }
       case x => throw new LiteralTypeException(s"don't know how to poke $x")
       // TODO: aggregate types
     }
-
-    def poke(value: T): Unit = pokeWithPriority(value, 0)
 
     protected def peekWithStale(stale: Boolean): T = x match {
       case (x: Bool) => Context().backend.peekBits(x, stale) match {
@@ -47,7 +45,7 @@ package object tester {
     }
 
     def peek(): T = peekWithStale(false)
-    def stalePeek(): T = peekWithStale(true)
+    // def stalePeek(): T = peekWithStale(true)  // TODO: can this be replaced w/ phases?
 
     protected def expectWithStale(value: T, stale: Boolean): Unit = (x, value) match {
       case (x: Bool, value: Bool) => Context().backend.expectBits(x, value.litValue, stale)
@@ -66,7 +64,7 @@ package object tester {
     }
 
     def expect(value: T): Unit = expectWithStale(value, false)
-    def staleExpect(value: T): Unit = expectWithStale(value, true)
+    // def staleExpect(value: T): Unit = expectWithStale(value, true)  // TODO: can this be replaced w/ phases?
   }
 
   implicit class testableClock(x: Clock) {
