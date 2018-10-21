@@ -35,17 +35,24 @@ trait ThreadedBackend {
     override def threadOption = None
   }
 
+  // Timescope that is the root of a thread, contains no signals but can have a parent
+  case class ThreadRootTimescope(parentTimescope: BaseTimescope,
+      openedTimestep: Int,
+      parentActionId: Int,
+      thread: TesterThread) extends BaseTimescope {
+    override def threadOption = Some(thread)
+  }
+
   case class PokeRecord(timestep: Int, actionId: Int, value: BigInt, trace: Throwable)
 
   class Timescope(val parentTimescope: BaseTimescope,
       val openedTimestep: Int,  // timestep this timescope was spawned on
-      val parentActionId: Int, // spawn time in actionId of parent timescope
-      val newThread: Option[TesterThread] = None)
+      val parentActionId: Int)  // spawn time in actionId of parent timescope)
       extends BaseTimescope {
     var nextActionId: Int = 0  // actionId to be assigned to the next action
     var closedTimestep: Option[Int] = None  // timestep this timescope was closed on, if it is closed
 
-    def threadOption = newThread.orElse(parentTimescope.threadOption)
+    override def threadOption = parentTimescope.threadOption
 
     // Latest poke on a signal in this timescope
     val pokes = mutable.HashMap[Data, PokeRecord]()  // Latest poke on each data
@@ -71,9 +78,7 @@ trait ThreadedBackend {
    * Returns whether to execute it, based on priorities compared to other active pokes.
    */
   def doPoke(signal: Data, value: BigInt, trace: Throwable): Unit = {
-    val timescope = currentThread.get.topTimescope
-    require(timescope.closedTimestep.isEmpty)
-
+    val timescope = currentThread.get.getTimescope
     // Update the timescope
     timescope.pokes.put(signal,
         PokeRecord(currentTimestep, timescope.nextActionId, value, trace))
@@ -90,9 +95,7 @@ trait ThreadedBackend {
    * Logs a peek operation for later checking.
    */
   def doPeek(signal: Data, trace: Throwable): Unit = {
-    val timescope = currentThread.get.topTimescope
-    require(timescope.closedTimestep.isEmpty)
-
+    val timescope = currentThread.get.getTimescope
     signalPeeks.getOrElseUpdate(signal, mutable.ListBuffer()).append(
         PeekRecord(timescope, currentTimestep, timescope.nextActionId, trace))
     timescope.nextActionId += 1
@@ -101,14 +104,15 @@ trait ThreadedBackend {
   /**
    * Creates a new timescope in the current thread.
    */
-  def newTimescope(newThread: Option[TesterThread]=None): Timescope = {
-    val timescope = currentThread.get.topTimescope
-    require(timescope.closedTimestep.isEmpty)
-
-    val newTimescope = new Timescope(timescope, currentTimestep, timescope.nextActionId, newThread)
+  def newTimescope(): Timescope = {
+    val newTimescope = currentThread.get.topTimescope match {
+      case timescope: Timescope =>
+        val newTimescope = new Timescope(timescope, currentTimestep, timescope.nextActionId)
+        timescope.nextActionId += 1
+        newTimescope
+      case timescope => new Timescope(timescope, currentTimestep, 0)
+    }
     currentThread.get.topTimescope = newTimescope
-    timescope.nextActionId += 1
-
     newTimescope
   }
 
@@ -116,29 +120,21 @@ trait ThreadedBackend {
    * Closes the specified timescope, returns a map of wires to values of any signals that need to be updated.
    */
   def closeTimescope(timescope: Timescope): Map[Data, Option[BigInt]] = {
-    require(timescope.closedTimestep.isEmpty)
-    require(timescope eq currentThread.get.topTimescope)
+    require(timescope eq currentThread.get.getTimescope)
 
     // Mark timescope as closed
     timescope.closedTimestep = Some(currentTimestep)
-
-    if (timescope.newThread.isEmpty) {  // not the bottom timescope of the thread
-      // TODO cleaner w/o asInstanceOf
-      currentThread.get.topTimescope = timescope.parentTimescope.asInstanceOf[Timescope]
-    }
+    currentThread.get.topTimescope = timescope.parentTimescope
 
     // Build a revert map of poked signals
     timescope.pokes.map { case (data, pokeRecord) =>
-      println(s"${dataNames(data)} $pokeRecord")
-
       def getPreviousPoke(startingTimescope: BaseTimescope, signal: Data): Option[PokeRecord] = {
-        println(s"${dataNames(signal)} $startingTimescope")
         startingTimescope match {
           case _: RootTimescope => None
+          case startingTimescope: ThreadRootTimescope => getPreviousPoke(startingTimescope.parentTimescope, signal)
           case startingTimescope: Timescope => startingTimescope.pokes.get(signal) match {
             case Some(pokeRecord) => Some(pokeRecord)
-            case None =>
-              getPreviousPoke(startingTimescope.parentTimescope, signal)
+            case None => getPreviousPoke(startingTimescope.parentTimescope, signal)
           }
         }
       }
@@ -156,7 +152,7 @@ trait ThreadedBackend {
   }
 
   protected class TesterThread(runnable: => Unit,
-      parentTimescope: BaseTimescope, parentActionId: Int)
+      openedTimestep: Int, parentTimescope: BaseTimescope, parentActionId: Int)
       extends AbstractTesterThread {
     val level: Int = parentTimescope.threadOption match {
       case Some(parentThread) => parentThread.level + 1
@@ -165,30 +161,34 @@ trait ThreadedBackend {
     val waiting = new Semaphore(0)
     var done: Boolean = false
 
-    // TODO: unify w/ newTimescope
-    val bottomTimescope = new Timescope(parentTimescope, currentTimestep, parentActionId, Some(this))
-    var topTimescope = bottomTimescope  // Currently open timescope in this thread
+    // TODO: perhaps accessors eg pushTimescope, popTimescope?
+    protected val bottomTimescope = new ThreadRootTimescope(parentTimescope, openedTimestep, parentActionId, this)
+    var topTimescope: BaseTimescope = bottomTimescope  // Currently open timescope in this thread
+    def getTimescope = {
+      require(topTimescope.asInstanceOf[Timescope].closedTimestep.isEmpty)
+      topTimescope.asInstanceOf[Timescope]
+    }
 
     val thread = new Thread(new Runnable {
       def run() {
         try {
           waiting.acquire()
 
-          runnable
+          timescope {
+            runnable
+          }
 
           require(bottomTimescope == topTimescope)  // ensure timescopes unrolled properly
-          closeTimescope(bottomTimescope)
-
-          done = true
-          threadFinished(TesterThread.this)
-          scheduler()
         } catch {
           case e: InterruptedException =>
             // currently used as a signal to kill the thread without doing cleanup
             // (testdriver may be left in an inconsistent state, and the test should not continue)
             // TODO: allow other uses for InterruptedException?
-            case e @ (_: Exception | _: Error) =>
-              onException(e)
+          case e @ (_: Exception | _: Error) => onException(e)
+        } finally {
+          done = true
+          threadFinished(TesterThread.this)
+          scheduler()
         }
       }
     })
@@ -266,12 +266,11 @@ trait ThreadedBackend {
   def fork(runnable: => Unit, firstThread: Boolean = false): TesterThread = {
     val newThread = if (firstThread) {
       require(currentThread.isEmpty)
-      new TesterThread(runnable, new RootTimescope, 0)
+      new TesterThread(runnable, currentTimestep, new RootTimescope, 0)
     } else {
-      val timescope = currentThread.get.topTimescope
-      require(timescope.closedTimestep.isEmpty)
+      val timescope = currentThread.get.getTimescope
 
-      val newThread = new TesterThread(runnable, timescope, timescope.nextActionId)
+      val newThread = new TesterThread(runnable, currentTimestep, timescope, timescope.nextActionId)
       timescope.nextActionId += 1
       newThread
     }
