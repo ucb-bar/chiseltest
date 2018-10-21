@@ -2,7 +2,7 @@
 
 package chisel3.tester
 
-import java.util.concurrent.{Semaphore, SynchronousQueue, TimeUnit}
+import java.util.concurrent.{ConcurrentLinkedQueue, Semaphore, SynchronousQueue, TimeUnit}
 import scala.collection.mutable
 
 import chisel3._
@@ -217,6 +217,9 @@ trait ThreadedBackend {
     activeThreads ++= threads
     scheduler()
     driverSemaphore.acquire()
+    if (!interruptedException.isEmpty()) {
+      throw interruptedException.poll()
+    }
   }
 
   /**
@@ -230,17 +233,18 @@ trait ThreadedBackend {
    * When there are no more active threads, unblocks the driver thread via driverSemaphore.
    */
   protected def scheduler() {
-    if (!activeThreads.isEmpty) {
+    if (!interruptedException.isEmpty() || activeThreads.isEmpty) {
+      currentThread = None
+      driverSemaphore.release()
+    } else {
       val nextThread = activeThreads.head
       currentThread = Some(nextThread)
       activeThreads.trimStart(1)
       nextThread.waiting.release()
-    } else {
-      currentThread = None
-      driverSemaphore.release()
     }
   }
 
+  protected val interruptedException = new ConcurrentLinkedQueue[Throwable]()
   /**
    * Called when an exception happens inside a thread.
    * Can be used to propagate the exception back up to the main thread.
@@ -249,8 +253,9 @@ trait ThreadedBackend {
    * The thread then terminates, and the thread scheduler is invoked to unblock the next thread.
    * The implementation should only record the exception, which is properly handled later.
    */
-  protected def onException(e: Throwable)
-
+  protected def onException(e: Throwable) {
+    interruptedException.offer(e)
+  }
   /**
    * Called on thread completion to remove this thread from the running list.
    * Does not terminate the thread, does not schedule the next thread.

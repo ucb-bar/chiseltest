@@ -5,7 +5,7 @@ package chisel3.tester
 import chisel3._
 import chisel3.experimental.{DataMirror, MultiIOModule}
 import firrtl.transforms.CombinationalPath
-import java.util.concurrent.{Semaphore, ConcurrentLinkedQueue, TimeUnit}
+import java.util.concurrent.{Semaphore, TimeUnit}
 import scala.collection.mutable
 
 import scala.collection.mutable
@@ -95,12 +95,6 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
     }
   }
 
-  protected val interruptedException = new ConcurrentLinkedQueue[Throwable]()
-
-  protected def onException(e: Throwable) {
-    interruptedException.offer(e)
-  }
-
   override def run(testFn: T => Unit): Unit = {
     val mainThread = doFork({
       tester.poke("reset", 1)
@@ -146,11 +140,6 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
 
       // Actually run things
       runThreads(unblockedThreads)
-
-      // Propagate exceptions
-      if (!interruptedException.isEmpty()) {
-        throw interruptedException.poll()
-      }
 
       timestep()
       Context().env.checkpoint()
