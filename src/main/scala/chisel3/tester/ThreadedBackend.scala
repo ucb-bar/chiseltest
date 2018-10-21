@@ -179,6 +179,8 @@ trait ThreadedBackend {
           }
 
           require(bottomTimescope == topTimescope)  // ensure timescopes unrolled properly
+          done = true
+          threadFinished(TesterThread.this)
         } catch {
           case e: InterruptedException =>
             // currently used as a signal to kill the thread without doing cleanup
@@ -186,8 +188,7 @@ trait ThreadedBackend {
             // TODO: allow other uses for InterruptedException?
           case e @ (_: Exception | _: Error) => onException(e)
         } finally {
-          done = true
-          threadFinished(TesterThread.this)
+          // TODO should there be something similar to done if thread was terminated by an exception
           scheduler()
         }
       }
