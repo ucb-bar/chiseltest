@@ -1,6 +1,7 @@
 package chisel3.tests
 
 import chisel3._
+import chisel3.util._
 import chisel3.experimental.MultiIOModule
 
 class StaticModule[T <: Data](ioLit: T) extends MultiIOModule {
@@ -8,10 +9,18 @@ class StaticModule[T <: Data](ioLit: T) extends MultiIOModule {
   out := ioLit
 }
 
-class PassthroughModule[T <: Data](ioType: T) extends Module {
-  val io = IO(new Bundle {
-    val in = Input(ioType)
-    val out = Output(ioType)
-  })
-  io.out := io.in
+class InputOnlyModule[T <: Data](ioType: T) extends MultiIOModule {
+  val in = IO(Input(ioType))
+}
+
+class PassthroughModule[T <: Data](ioType: T) extends MultiIOModule {
+  val in = IO(Input(ioType))
+  val out = IO(Output(ioType))
+  out := in
+}
+
+class ShifterModule[T <: Data](ioType: T, cycles: Int = 1) extends MultiIOModule {
+  val in = IO(Input(ioType))
+  val out = IO(Output(ioType))
+  out := ShiftRegister(in, cycles)
 }
