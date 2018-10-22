@@ -14,6 +14,14 @@ class BasicTest extends FlatSpec with ChiselScalatestTester {
     }
   }
 
+  it should "fail on expect mismatch" in {
+    assertThrows[exceptions.TestFailedException] {
+      test(new StaticModule(42.U)) { c =>
+        c.out.expect(0.U)
+      }
+    }
+  }
+
   it should "test inputless sequential circuits" in {
     test(new Module {
       val io = IO(new Bundle {
@@ -56,14 +64,6 @@ class BasicTest extends FlatSpec with ChiselScalatestTester {
       c.io.in.poke(42.U)
       c.clock.step()
       c.io.out.expect(42.U)
-    }
-  }
-
-  it should "fail on expect mismatch" in {
-    assertThrows[exceptions.TestFailedException] {
-      test(new StaticModule(42.U)) { c =>
-        c.out.expect(0.U)
-      }
     }
   }
 }
