@@ -30,17 +30,26 @@ trait ThreadedBackend {
     def threadOption: Option[TesterThread]
   }
 
-  // Root timescope, cannot be modified, with no signals poked.
-  class RootTimescope extends BaseTimescope {
-    override def threadOption = None
+  sealed trait HasOverridingPokes extends BaseTimescope {
+    // List of timescopes overriding a signal, including ones closed / reverted on this timestep
     val overridingPokes = mutable.HashMap[Data, mutable.ListBuffer[Timescope]]()
   }
+  sealed trait HasParent extends BaseTimescope {
+    def parentTimescope: BaseTimescope
+  }
+
+  // Root timescope, cannot be modified, with no signals poked.
+  class RootTimescope extends BaseTimescope with HasOverridingPokes {
+    override def threadOption = None
+  }
+
+  var rootTimescope: Option[RootTimescope] = None  // TODO unify with something else? Or replace w/ rootThread?
 
   // Timescope that is the root of a thread, contains no signals but can have a parent
   case class ThreadRootTimescope(parentTimescope: BaseTimescope,
       openedTimestep: Int,
       parentActionId: Int,
-      thread: TesterThread) extends BaseTimescope {
+      thread: TesterThread) extends BaseTimescope with HasParent {
     override def threadOption = Some(thread)
   }
 
@@ -49,7 +58,7 @@ trait ThreadedBackend {
   class Timescope(val parentTimescope: BaseTimescope,
       val openedTimestep: Int,  // timestep this timescope was spawned on
       val parentActionId: Int)  // spawn time in actionId of parent timescope)
-      extends BaseTimescope {
+      extends BaseTimescope with HasOverridingPokes with HasParent {
     var nextActionId: Int = 0  // actionId to be assigned to the next action
     var closedTimestep: Option[Int] = None  // timestep this timescope was closed on, if it is closed
 
@@ -58,8 +67,6 @@ trait ThreadedBackend {
     // All pokes on a signal in this timescope, ordered from first to last
     // TODO: can we get away with just first and most recent?
     val pokes = mutable.HashMap[Data, mutable.ListBuffer[PokeRecord]]()  // Latest poke on each data
-    // List of timescopes overriding a signal, including ones closed / reverted on this timestep
-    val overridingPokes = mutable.HashMap[Data, mutable.ListBuffer[Timescope]]()
   }
 
   //
@@ -92,28 +99,20 @@ trait ThreadedBackend {
       }
 
       def getContainingTimescope(signal: Data,
-          timescope: BaseTimescope, childTimescope: BaseTimescope): BaseTimescope = {
+          timescope: BaseTimescope, childTimescope: BaseTimescope): HasOverridingPokes = {
         (timescope, childTimescope) match {
           case (timescope: RootTimescope, _) => timescope
           case (timescope: Timescope, _: Timescope) if timescope.pokes.contains(signal) => timescope
           case (timescope: Timescope, childTimescope: ThreadRootTimescope)
               if timescopeContainsThreadSignal(signal, timescope, childTimescope) => timescope
           // TODO: dedup above
-          case (timescope: Timescope, _) => getContainingTimescope(signal, timescope.parentTimescope, timescope)
-          case (timescope: ThreadRootTimescope, _) => getContainingTimescope(signal, timescope.parentTimescope, timescope)
+          case (timescope: HasParent, _) => getContainingTimescope(signal, timescope.parentTimescope, timescope)
         }
       }
 
-      // TODO dedup with better type hierarchy
-      getContainingTimescope(signal, timescope.parentTimescope, timescope) match {
-        case containingTimescope: RootTimescope =>
-          containingTimescope.overridingPokes.getOrElseUpdate(signal, mutable.ListBuffer[Timescope]()).append(
-            timescope)
-        case containingTimescope: Timescope =>
-          containingTimescope.overridingPokes.getOrElseUpdate(signal, mutable.ListBuffer[Timescope]()).append(
-            timescope)
-        case _ => require(false)
-      }
+      getContainingTimescope(signal, timescope.parentTimescope, timescope)
+          .overridingPokes.getOrElseUpdate(signal, mutable.ListBuffer[Timescope]()).append(
+          timescope)
     }
 
     // Update the timescope
@@ -179,7 +178,56 @@ trait ThreadedBackend {
    * throwing exceptions if there were).
    */
   def timestep(): Unit = {
-    // TODO ALL THE CHECKING CODE
+    // Check that there is a clean poke ordering, and build a map of pokes Data -> Timescope
+
+    /**
+     * Processes timescopes for a signal:
+     * Removes closed child timescopes from overridingPokes
+     * Checks that there is a linear chain from root to latest
+     * Returns latest poke
+     */
+    def processTimescope(signal: Data, timescope: HasOverridingPokes): HasOverridingPokes = {
+      timescope.overridingPokes.get(signal) match {
+        case None => timescope match {
+            case timescope: Timescope => require(timescope.pokes.contains(signal))
+            case _: RootTimescope =>
+          }
+          timescope
+        case Some(pokes) =>
+          if (pokes.exists(_.closedTimestep.isDefined)) {
+            if (pokes.exists(timescope =>
+                timescope.closedTimestep.isEmpty && timescope.openedTimestep < currentTimestep)) {
+              throw new ThreadOrderDependentException("Mix of ending timescopes and old timescopes")
+            }
+            val (endingPokes, nonEndingPokes) = pokes.partition(_.closedTimestep.isDefined)
+            endingPokes.foreach { processTimescope(signal, _) }  // Recursively check child closing timescopes
+            pokes.clear()
+            pokes ++= nonEndingPokes
+          }
+          if (pokes.length > 1) {  // multiple overlapping pokes, is an error
+            // STE 0 is pokeBits method, 1 is poke abstraction
+            // TODO: better stack trace element detection, chain reporting
+            pokes.foreach{ts => println(s"${ts.openedTimestep}-${ts.closedTimestep} ${ts.pokes.keySet}")}
+            val pokeTraces = pokes.map { _.pokes(signal).last.trace.getStackTrace()(2) }
+            throw new ThreadOrderDependentException(s"Overlapping pokes from $pokeTraces")
+          } else if (pokes.length == 1) {  // just one poke, report the furthest down that chain
+            processTimescope(signal, pokes.head)
+          } else {  // all children are closed, this is the latest one in this chain
+            timescope
+          }
+      }
+    }
+    // TODO clear root timescope of closed pokes
+
+    // TODO: structurally nasty =(
+    val pokeTimescopes = rootTimescope.get.overridingPokes.map { case (signal, timescopes) =>
+      (signal, processTimescope(signal, rootTimescope.get))
+    }
+
+    // Check peeks for cross-thread dependencies, using the above map
+
+    // Clear peeks
+    signalPeeks.clear()
   }
 
   protected val interruptedException = new ConcurrentLinkedQueue[Throwable]()

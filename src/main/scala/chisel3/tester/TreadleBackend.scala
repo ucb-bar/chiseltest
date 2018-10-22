@@ -99,13 +99,14 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
   }
 
   override def run(testFn: T => Unit): Unit = {
+    rootTimescope = Some(new RootTimescope)
     val mainThread = new TesterThread( () => {
         tester.poke("reset", 1)
         tester.step(1)
         tester.poke("reset", 0)
 
         testFn(dut)
-      }, 0, new RootTimescope, 0)
+      }, 0, rootTimescope.get, 0)
     mainThread.thread.start()
 
     val blockedThreads = mutable.HashMap[Clock, mutable.ListBuffer[TesterThread]](
@@ -118,6 +119,7 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
       unblockedThreads ++= blockedThreads.getOrElse(dut.clock, Seq())
       blockedThreads.remove(dut.clock)
       clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
+      currentTimestep += 1
 
       debugLog(s"clock step")
 
@@ -145,6 +147,8 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
       Context().env.checkpoint()
       tester.step(1)
     }
+
+    rootTimescope = None
 
     for (thread <- allThreads.clone()) {
       // Kill the threads using an InterruptedException
