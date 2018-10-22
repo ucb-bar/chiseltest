@@ -74,7 +74,7 @@ package object tester {
   }
 
   def fork(runnable: => Unit): TesterThreadList = {
-    new TesterThreadList(Seq(Context().backend.doFork(runnable)))
+    new TesterThreadList(Seq(Context().backend.doFork(() => runnable)))
   }
 
   // TODO: call-by-name doesn't work with varargs, is there a better way to do this?
@@ -85,6 +85,6 @@ package object tester {
   }
 
   def timescope(contents: => Unit): Unit = {
-    Context().backend.doTimescope(contents)
+    Context().backend.doTimescope(() => contents)
   }
 }

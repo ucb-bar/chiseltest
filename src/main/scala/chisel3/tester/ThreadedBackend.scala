@@ -87,7 +87,7 @@ trait ThreadedBackend {
     // Update the global active pokes list
     val signalActivePokes = activePokes.getOrElseUpdate(signal, mutable.ListBuffer())
     if (!signalActivePokes.contains(timescope)) {
-      signalActivePokes.append(timescope)
+      signalActivePokes += timescope
     }
   }
 
@@ -96,8 +96,8 @@ trait ThreadedBackend {
    */
   def doPeek(signal: Data, trace: Throwable): Unit = {
     val timescope = currentThread.get.getTimescope
-    signalPeeks.getOrElseUpdate(signal, mutable.ListBuffer()).append(
-        PeekRecord(timescope, currentTimestep, timescope.nextActionId, trace))
+    signalPeeks.getOrElseUpdate(signal, mutable.ListBuffer()) +=
+        PeekRecord(timescope, currentTimestep, timescope.nextActionId, trace)
     timescope.nextActionId += 1
   }
 
@@ -151,7 +151,20 @@ trait ThreadedBackend {
     // TODO ALL THE CHECKING CODE
   }
 
-  protected class TesterThread(runnable: => Unit,
+  protected val interruptedException = new ConcurrentLinkedQueue[Throwable]()
+  /**
+   * Called when an exception happens inside a thread.
+   * Can be used to propagate the exception back up to the main thread.
+   * No guarantees are made about the state of the system on an exception.
+   *
+   * The thread then terminates, and the thread scheduler is invoked to unblock the next thread.
+   * The implementation should only record the exception, which is properly handled later.
+   */
+  protected def onException(e: Throwable) {
+    interruptedException.offer(e)
+  }
+
+  protected class TesterThread(runnable: () => Unit,
       openedTimestep: Int, parentTimescope: BaseTimescope, parentActionId: Int)
       extends AbstractTesterThread {
     val level: Int = parentTimescope.threadOption match {
@@ -175,7 +188,7 @@ trait ThreadedBackend {
           waiting.acquire()
 
           timescope {  // TODO breaks consistent level of abstraction
-            runnable
+            runnable()
           }
 
           require(bottomTimescope == topTimescope)  // ensure timescopes unrolled properly
@@ -199,28 +212,55 @@ trait ThreadedBackend {
   protected val driverSemaphore = new Semaphore(0)  // blocks the driver thread while tests are running
 
   // TODO: does this need to be replaced with concurrent data structures?
-  protected val activeThreads = mutable.ArrayBuffer[TesterThread]()  // list of threads scheduled for sequential execution
-  protected val blockedThreads = mutable.HashMap[Clock, Seq[TesterThread]]()  // threads blocking on a clock edge
-  protected val joinedThreads = mutable.HashMap[TesterThread, Seq[TesterThread]]()  // threads blocking on another thread
-  protected val allThreads = mutable.ArrayBuffer[TesterThread]()  // list of all threads
+  val allThreads = mutable.ArrayBuffer[TesterThread]()  // list of all threads, only used for sanity checking
+  val joinedThreads = mutable.HashMap[TesterThread, Seq[TesterThread]]()  // threads blocking on another thread
+
+  // TODO make this a class and Option[SchedulerState] var that contains currentThread and driverSemaphore?
+  object schedulerState {  // temporary scheduler information not persisting between runThreads invocations
+    var currentLevel: Int = -1  // -1 indicates nothing is running
+
+    // map of levels to threads, initialized during runThreads entry and as lower level threads are unblocked, or new threads spawn
+    // note: spawned threads are added to their parents level
+    val activeThreads = mutable.HashMap[Int, mutable.ListBuffer[TesterThread]]()
+
+    // list of threads blocked on a clock edge, added to as threads finish and step
+    val blockedThreads = mutable.HashMap[Clock, mutable.ListBuffer[TesterThread]]()
+  }
 
   /**
    * Runs the specified threads, blocking this thread while those are running.
    * Newly formed threads or unblocked join threads will also run.
+   * Returns a list of threads run (either passed in, newly forked, or joined) that are waiting
+   * on a clock edge.
    *
-   * Prior to this call: caller should remove those threads from the blockedThread list.
-   * TODO: does this interface suck?
-   *
-   * Updates internal thread queue data structures. Exceptions will also be queued through onException() calls.
-   * TODO: can (should?) this provide a more functional interface? eg returning what threads are blocking on?
+   * TODO: uses shared schedule state, as an optimization (so that control doesn't need to return
+   * to the driver thread between runs. But control still needs to return to the calling thread
+   * between timesteps.
+   * TODO: this provides a separation which isolates the threading infrastructure from clock
+   * control, but there are other structures which accomplish the same thing.
    */
-  protected def runThreads(threads: Seq[TesterThread]) {
-    activeThreads ++= threads
+  protected def runThreads(threads: Seq[TesterThread]): Map[Clock, Seq[TesterThread]] = {
+    // Populate scheduler date, sort threads by level
+    require(schedulerState.currentLevel == -1)
+    require(schedulerState.activeThreads.isEmpty)
+    require(schedulerState.blockedThreads.isEmpty)
+
+    val threadsByLevel = threads.groupBy(_.level)
+    schedulerState.activeThreads ++= threadsByLevel.mapValues(mutable.ListBuffer(_: _*)).toSeq
+    schedulerState.currentLevel = threadsByLevel.keySet.max
+
     scheduler()
     driverSemaphore.acquire()
+
     if (!interruptedException.isEmpty()) {
       throw interruptedException.poll()
     }
+
+    require(schedulerState.activeThreads.isEmpty)
+    val rtn = schedulerState.blockedThreads.mapValues(_.toSeq).toMap
+    schedulerState.blockedThreads.clear()
+    schedulerState.currentLevel = -1
+    rtn
   }
 
   /**
@@ -234,29 +274,27 @@ trait ThreadedBackend {
    * When there are no more active threads, unblocks the driver thread via driverSemaphore.
    */
   protected def scheduler() {
-    if (!interruptedException.isEmpty() || activeThreads.isEmpty) {
+    // TODO cleanup checks logic
+    if (schedulerState.activeThreads(schedulerState.currentLevel).isEmpty) {
+      schedulerState.activeThreads.remove(schedulerState.currentLevel)
+    }
+
+    if (!interruptedException.isEmpty() || schedulerState.activeThreads.isEmpty) {
       currentThread = None
       driverSemaphore.release()
     } else {
-      val nextThread = activeThreads.head
+      if (!schedulerState.activeThreads.contains(schedulerState.currentLevel)) {
+        require(schedulerState.currentLevel > schedulerState.activeThreads.keySet.max)
+        schedulerState.currentLevel = schedulerState.activeThreads.keySet.max
+      }
+      val threadList = schedulerState.activeThreads(schedulerState.currentLevel)
+      val nextThread = threadList.head
       currentThread = Some(nextThread)
-      activeThreads.trimStart(1)
+      threadList.trimStart(1)
       nextThread.waiting.release()
     }
   }
 
-  protected val interruptedException = new ConcurrentLinkedQueue[Throwable]()
-  /**
-   * Called when an exception happens inside a thread.
-   * Can be used to propagate the exception back up to the main thread.
-   * No guarantees are made about the state of the system on an exception.
-   *
-   * The thread then terminates, and the thread scheduler is invoked to unblock the next thread.
-   * The implementation should only record the exception, which is properly handled later.
-   */
-  protected def onException(e: Throwable) {
-    interruptedException.offer(e)
-  }
   /**
    * Called on thread completion to remove this thread from the running list.
    * Does not terminate the thread, does not schedule the next thread.
@@ -264,26 +302,22 @@ trait ThreadedBackend {
   protected def threadFinished(thread: TesterThread) {
     allThreads -= thread
     joinedThreads.remove(thread) match {
-      case Some(testerThreads) => activeThreads ++= testerThreads
+      case Some(testerThreads) => testerThreads.foreach(testerThread => {
+        val threadLevel = testerThread.level
+        require(schedulerState.currentLevel > threadLevel)
+        schedulerState.activeThreads.getOrElseUpdate(threadLevel, mutable.ListBuffer[TesterThread]()) += testerThread
+      })
       case None =>
     }
   }
 
-  def doFork(runnable: => Unit, firstThread: Boolean = false): TesterThread = {
-    val newThread = if (firstThread) {
-      require(currentThread.isEmpty)
-      new TesterThread(runnable, currentTimestep, new RootTimescope, 0)
-    } else {
-      val timescope = currentThread.get.getTimescope
-
-      val newThread = new TesterThread(runnable, currentTimestep, timescope, timescope.nextActionId)
-      timescope.nextActionId += 1
-      newThread
-    }
-
+  def doFork(runnable: () => Unit): TesterThread = {
+    val timescope = currentThread.get.getTimescope
+    val newThread = new TesterThread(runnable, currentTimestep, timescope, timescope.nextActionId)
+    timescope.nextActionId += 1
 
     allThreads += newThread
-    activeThreads += newThread
+    schedulerState.activeThreads(schedulerState.currentLevel) += newThread
     newThread.thread.start()
     newThread
   }

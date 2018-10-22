@@ -25,7 +25,7 @@ class TesterThreadList(protected val elts: Seq[AbstractTesterThread]) {
   }
 
   def fork(runnable: => Unit): TesterThreadList = {
-    new TesterThreadList(elts :+ Context().backend.doFork(runnable))
+    new TesterThreadList(elts :+ Context().backend.doFork(() => runnable))
   }
 }
 
@@ -49,11 +49,11 @@ trait BackendInterface {
     */
   def step(signal: Clock, cycles: Int): Unit
 
-  def doFork(runnable: => Unit, firstThread: Boolean = false): AbstractTesterThread
+  def doFork(runnable: () => Unit): AbstractTesterThread
 
   def doJoin(thread: AbstractTesterThread): Unit
 
-  def doTimescope(contents: => Unit): Unit
+  def doTimescope(contents: () => Unit): Unit
 }
 
 /** Backend associated with a particular circuit, and can run tests

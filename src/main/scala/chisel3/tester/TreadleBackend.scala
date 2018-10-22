@@ -65,10 +65,10 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
 
   protected val lastClockValue: mutable.HashMap[Clock, Boolean] = mutable.HashMap()
 
-  override def doTimescope(contents: => Unit): Unit = {
+  override def doTimescope(contents: () => Unit): Unit = {
     val createdTimescope = newTimescope()
 
-    contents
+    contents()
 
     closeTimescope(createdTimescope).foreach { case (data, valueOption) =>
       valueOption match {
@@ -89,42 +89,37 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
       }
 
       val thisThread = currentThread.get
-      blockedThreads.put(signal, blockedThreads.getOrElseUpdate(signal, Seq()) :+ thisThread)
+      schedulerState.blockedThreads.getOrElseUpdate(signal, mutable.ListBuffer[TesterThread]()) += thisThread
       scheduler()
       thisThread.waiting.acquire()
     }
   }
 
   override def run(testFn: T => Unit): Unit = {
-    val mainThread = doFork({
-      tester.poke("reset", 1)
-      tester.step(1)
-      tester.poke("reset", 0)
+    val mainThread = new TesterThread( () => {
+        tester.poke("reset", 1)
+        tester.step(1)
+        tester.poke("reset", 0)
 
-      testFn(dut)
-    }, true)
-    // TODO: stop abstraction-breaking activeThreads
-    require(activeThreads.length == 1)  // only thread should be main
-    activeThreads.trimStart(1)  // delete active threads - TODO fix this
-    blockedThreads.put(dut.clock, Seq(mainThread))  // TODO dehackify, this allows everything below to kick off
+        testFn(dut)
+      }, 0, new RootTimescope, 0)
+    mainThread.thread.start()
+
+    val blockedThreads = mutable.HashMap[Clock, mutable.ListBuffer[TesterThread]](
+        (dut.clock, mutable.ListBuffer(mainThread)))
 
     while (!mainThread.done) {  // iterate timesteps
-      val unblockedThreads = new mutable.ArrayBuffer[TesterThread]()
+      val unblockedThreads = new mutable.ListBuffer[TesterThread]()
 
       // Unblock threads waiting on main clock
       unblockedThreads ++= blockedThreads.getOrElse(dut.clock, Seq())
       blockedThreads.remove(dut.clock)
       clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
 
-       if (verbose) println(s"clock step")
+      if (verbose) println(s"clock step")
 
       // TODO: allow dependent clocks to step based on test stimulus generator
       // Unblock threads waiting on dependent clock
-      require((blockedThreads.keySet - dut.clock) subsetOf lastClockValue.keySet)
-      val untrackClocks = lastClockValue.keySet -- blockedThreads.keySet
-      for (untrackClock <- untrackClocks) {  // purge unused clocks
-        lastClockValue.remove(untrackClock)
-      }
       lastClockValue foreach { case (clock, lastValue) =>
         val currentValue = getClock(clock)
         if (currentValue != lastValue) {
@@ -132,14 +127,16 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
           if (currentValue) {  // rising edge
             unblockedThreads ++= blockedThreads.getOrElse(clock, Seq())
             blockedThreads.remove(clock)
-
             clockCounter.put(clock, getClockCycle(clock) + 1)
           }
         }
       }
 
       // Actually run things
-      runThreads(unblockedThreads)
+      val newBlockedThreads = runThreads(unblockedThreads)
+      newBlockedThreads.foreach{ case (clock, threads) =>
+        blockedThreads.getOrElseUpdate(clock, mutable.ListBuffer[TesterThread]()) ++= threads
+      }
 
       timestep()
       Context().env.checkpoint()
