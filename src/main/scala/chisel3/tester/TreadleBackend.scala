@@ -21,6 +21,9 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
   // Debug utility functions
   //
   val verbose: Boolean = false  // hard-coded debug flag
+  def debugLog(str: => String) {
+    if (verbose) println(str)
+  }
 
   protected def resolveName(signal: Data): String = {  // TODO: unify w/ dataNames?
     dataNames.getOrElse(signal, signal.toString)
@@ -35,7 +38,7 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
   override def pokeBits(signal: Bits, value: BigInt): Unit = {
     doPoke(signal, value, new Throwable)
     tester.poke(dataNames(signal), value)
-    if (verbose) println(s"${resolveName(signal)} <- $value")
+    debugLog(s"${resolveName(signal)} <- $value")
   }
 
   override def peekBits(signal: Bits, stale: Boolean): BigInt = {
@@ -43,14 +46,14 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
 
     doPeek(signal, new Throwable)
     val a = tester.peek(dataNames(signal))
-    if (verbose) println(s"${resolveName(signal)} -> $a")
+    debugLog(s"${resolveName(signal)} -> $a")
     a
   }
 
   override def expectBits(signal: Bits, value: BigInt, stale: Boolean): Unit = {
     require(!stale, "Stale peek not yet implemented")
 
-    if (verbose) println(s"${resolveName(signal)} ?> $value")
+    debugLog(s"${resolveName(signal)} ?> $value")
     Context().env.testerExpect(value, peekBits(signal, stale), resolveName(signal), None)
   }
 
@@ -73,9 +76,9 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
     closeTimescope(createdTimescope).foreach { case (data, valueOption) =>
       valueOption match {
         case Some(value) => tester.poke(dataNames(data), value)
-           if (verbose) println(s"${resolveName(data)} <- (revert) $value")
+           debugLog(s"${resolveName(data)} <- (revert) $value")
         case None => tester.poke(dataNames(data), 0)  // TODO: randomize or 4-state sim
-           if (verbose) println(s"${resolveName(data)} <- (revert) DC")
+           debugLog(s"${resolveName(data)} <- (revert) DC")
       }
     }
   }
@@ -116,7 +119,7 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
       blockedThreads.remove(dut.clock)
       clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
 
-      if (verbose) println(s"clock step")
+      debugLog(s"clock step")
 
       // TODO: allow dependent clocks to step based on test stimulus generator
       // Unblock threads waiting on dependent clock
