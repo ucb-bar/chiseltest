@@ -33,6 +33,7 @@ trait ThreadedBackend {
   sealed trait HasOverridingPokes extends BaseTimescope {
     // List of timescopes overriding a signal, including ones closed / reverted on this timestep
     val overridingPokes = mutable.HashMap[Data, mutable.ListBuffer[Timescope]]()
+    def closedTimestep: Option[Int]
   }
   sealed trait HasParent extends BaseTimescope {
     def parentTimescope: BaseTimescope
@@ -41,6 +42,7 @@ trait ThreadedBackend {
   // Root timescope, cannot be modified, with no signals poked.
   class RootTimescope extends BaseTimescope with HasOverridingPokes {
     override def threadOption = None
+    override def closedTimestep = None
   }
 
   var rootTimescope: Option[RootTimescope] = None  // TODO unify with something else? Or replace w/ rootThread?
@@ -203,6 +205,11 @@ trait ThreadedBackend {
             endingPokes.foreach { processTimescope(signal, _) }  // Recursively check child closing timescopes
             pokes.clear()
             pokes ++= nonEndingPokes
+          }
+          if (timescope.closedTimestep.isDefined) {
+            if (pokes.length > 0) {
+              throw new ThreadOrderDependentException(s"Nonenclosed timescopes")
+            }
           }
           if (pokes.length > 1) {  // multiple overlapping pokes, is an error
             // STE 0 is pokeBits method, 1 is poke abstraction
