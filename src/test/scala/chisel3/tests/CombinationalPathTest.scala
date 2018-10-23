@@ -8,37 +8,12 @@ import chisel3.tester._
 class CombinationalPathTest extends FlatSpec with ChiselScalatestTester {
   behavior of "Testers2"
 
-  it should "detect combinationally-dependent operations across threads" in {
-    assertThrows[ThreadOrderDependentException] {
-      test(new PassthroughModule(Bool())) { c =>
-        c.in.poke(true.B)
-        fork {
-          c.out.expect(true.B)
-        }
-      }
-    }
-  }
-
   it should "detect combinationally-dependent operations when a poke is active" in {
     assertThrows[ThreadOrderDependentException] {
       test(new PassthroughModule(Bool())) { c =>
         fork {
           c.in.poke(true.B)
           c.clock.step(2)
-        } .fork {
-          c.clock.step(1)
-          c.out.expect(true.B)
-        } .join
-      }
-    }
-  }
-
-  it should "detect combinationally-dependent operations on timescope reverts" in {
-    assertThrows[ThreadOrderDependentException] {
-      test(new PassthroughModule(Bool())) { c =>
-        fork {
-          c.in.poke(true.B)
-          c.clock.step(1)
         } .fork {
           c.clock.step(1)
           c.out.expect(true.B)
@@ -58,10 +33,13 @@ class CombinationalPathTest extends FlatSpec with ChiselScalatestTester {
         innerModule.in := io.in
         io.out := innerModule.out
       }) { c =>
-        c.io.in.poke(true.B)
         fork {
+          c.io.in.poke(true.B)
+          c.clock.step(2)
+        } .fork {
+          c.clock.step(1)
           c.io.out.expect(true.B)
-        }
+        } .join
       }
     }
   }
@@ -76,10 +54,13 @@ class CombinationalPathTest extends FlatSpec with ChiselScalatestTester {
         })
         io.out := io.in1 || io.in2
       }) { c =>
-        c.io.in1.poke(true.B)
         fork {
+          c.io.in1.poke(true.B)
+          c.clock.step(2)
+        } .fork {
+          c.clock.step(1)
           c.io.out.expect(true.B)
-        }
+        } .join
       }
     }
   }
