@@ -180,15 +180,8 @@ trait ThreadedBackend {
    * throwing exceptions if there were).
    */
   def timestep(): Unit = {
-    // Check that there is a clean poke ordering, and build a map of pokes Data -> Timescope
-
-    /**
-     * Processes timescopes for a signal:
-     * Removes closed child timescopes from overridingPokes
-     * Checks that there is a linear chain from root to latest
-     * Returns latest poke
-     */
-    def processTimescope(signal: Data, timescope: HasOverridingPokes): Option[HasOverridingPokes] = {
+    // Timescopes are valid if there is a linear chain from root to latest
+    def processTimescope(signal: Data, timescope: HasOverridingPokes): Option[Timescope] = {
       val pokes = timescope.overridingPokes.getOrElse(signal, mutable.ListBuffer())
       if (pokes.exists(_.closedTimestep.isDefined)) {  // remove closed child timescopes
         if (pokes.exists(timescope =>
@@ -215,19 +208,51 @@ trait ThreadedBackend {
         processTimescope(signal, pokes.head)
       } else {  // all children are closed, this is the latest one in this chain
         timescope.overridingPokes.remove(signal)
-        None
+        timescope match {
+          case timescope: Timescope => Some(timescope)
+          case timescope: RootTimescope => None
+        }
       }
     }
+
+    // Check that there is a clean poke ordering, and build a map of pokes Data -> Timescope
     // TODO: structurally nasty =(
-    val pokeTimescopes = rootTimescope.get.overridingPokes.toSeq.map { case (signal, timescopes) =>
+    val pokeTimescopes = rootTimescope.get.overridingPokes.toMap.map { case (signal, timescopes) =>
       (signal, processTimescope(signal, rootTimescope.get))
     }.collect {
-      case (signal, Some(lastTimescope)) => lastTimescope
+      case (signal, Some(lastTimescope)) => (signal, lastTimescope)
+    }
+    // TODO: check that lastTimescope signal is actually the one effective?
+
+    // Pokes are valid for a particular peek if it's either from the same thread, or from a parent thread
+    // and unmodified since the peeking thread spawned.
+    def checkPokePeekTimescope(signal: Data, pokeTimescope: Timescope, peekTimescope: BaseTimescope) {
+      peekTimescope match {
+        case _: RootTimescope => throw new ThreadOrderDependentException(s"$signal poke unreachable from peek")
+        case peekTimescope if (peekTimescope == pokeTimescope) =>  // special case to handle initial call if they're the same
+        case peekTimescope: HasParent if (peekTimescope.parentTimescope == pokeTimescope) => peekTimescope match {
+          case peekTimescope: Timescope => // OK, do nothing
+          case peekTimescope: ThreadRootTimescope =>
+            if (pokeTimescope.pokes(signal).last.actionId > peekTimescope.parentActionId) {
+              throw new ThreadOrderDependentException(s"$signal poke after peek thread spawn")
+            }
+        }
+        case peekTimescope: HasParent => checkPokePeekTimescope(signal, pokeTimescope, peekTimescope.parentTimescope)
+      }
     }
 
-
-
     // Check peeks for cross-thread dependencies, using the above map
+    signalPeeks.toSeq.map { case (signal, peeks) =>
+      val upstreamSignals = combinationalPaths.getOrElse(signal, Set()) + signal
+      val upstreamPokeTimescopes = upstreamSignals.collect { pokeTimescopes.get(_) match {
+        case Some(source) => source
+      } }.toSet
+      upstreamPokeTimescopes.foreach { pokeTimescope =>
+        peeks.foreach { peek =>
+          checkPokePeekTimescope(signal, pokeTimescope, peek.timescope)
+        }
+      }
+    }
 
     // Clear peeks
     signalPeeks.clear()
