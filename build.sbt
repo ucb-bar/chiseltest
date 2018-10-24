@@ -26,9 +26,10 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   }
 }
 
+organization := "edu.berkeley.cs"
 name := "chisel-testers2"
 
-version := "0.1"
+version := "0.1-SNAPSHOT"
 
 scalaVersion := "2.12.4"
 
@@ -40,11 +41,41 @@ resolvers ++= Seq(
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 )
+publishMavenStyle := true
+
+publishArtifact in Test := false
+pomIncludeRepository := { x => false }
+
+pomExtra := (
+<url>http://chisel.eecs.berkeley.edu/</url>
+<licenses>
+  <license>
+    <name>BSD-style</name>
+    <url>http://www.opensource.org/licenses/bsd-license.php</url>
+    <distribution>repo</distribution>
+  </license>
+</licenses>
+<scm>
+  <url>https://github.com/ucb-bar/chisel-testers2.git</url>
+  <connection>scm:git:github.com/ucb-bar/chisel-testers2.git</connection>
+</scm>
+)
+
+publishTo := {
+  val v = version.value
+  val nexus = "https://oss.sonatype.org/"
+  if (v.trim.endsWith("SNAPSHOT")) {
+    Some("snapshots" at nexus + "content/repositories/snapshots")
+  }
+  else {
+    Some("releases" at nexus + "service/local/staging/deploy/maven2")
+  }
+}
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Seq(
   "chisel3" -> "3.2-SNAPSHOT",
-  "treadle" -> "1.1-SNAPSHOT"
+  "treadle" -> "1.0.1"
 )
 
 libraryDependencies ++= defaultVersions.map { case (dep, ver) =>
