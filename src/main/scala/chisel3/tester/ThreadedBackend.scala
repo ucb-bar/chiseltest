@@ -420,12 +420,16 @@ trait ThreadedBackend {
 
   def doFork(runnable: () => Unit): TesterThread = {
     val timescope = currentThread.get.getTimescope
+    val thisThread = currentThread.get  // locally save this thread
     val newThread = new TesterThread(runnable, currentTimestep, timescope, timescope.nextActionId)
     timescope.nextActionId += 1
 
     allThreads += newThread
-    schedulerState.activeThreads(schedulerState.currentLevel) += newThread
+    // schedule the new thread to run immediately, then return to this thread
+    schedulerState.activeThreads(schedulerState.currentLevel).prepend(newThread, thisThread)
     newThread.thread.start()
+    scheduler()
+    thisThread.waiting.acquire()
     newThread
   }
 

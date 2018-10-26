@@ -118,15 +118,15 @@ class ThreadSafetyTest extends FlatSpec with ChiselScalatestTester {
 //      }
 //    }
 //  }
-
-  it should "contain forks within the calling thread" in {
-    test(new InputOnlyModule(Bool())) { c =>
-      c.in.poke(true.B)
-      fork {
-        c.in.expect(true.B)
-      }
-    }
-  }
+//
+//  it should "contain forks within the calling thread" in {
+//    test(new InputOnlyModule(Bool())) { c =>
+//      c.in.poke(true.B)
+//      fork {
+//        c.in.expect(true.B)
+//      }
+//    }
+//  }
 
   it should "disallow peeks and pokes from parallel threads, when poking at the end of a poke" in {
     assertThrows[ThreadOrderDependentException] {
