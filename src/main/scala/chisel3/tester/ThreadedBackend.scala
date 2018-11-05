@@ -37,6 +37,7 @@ trait ThreadedBackend {
   }
   sealed trait HasParent extends BaseTimescope {
     def parentTimescope: BaseTimescope
+    def parentActionId: Int
   }
 
   // Root timescope, cannot be modified, with no signals poked.
@@ -54,13 +55,15 @@ trait ThreadedBackend {
       parentActionId: Int,
       thread: TesterThread) extends BaseTimescope with HasParent {
     override def threadOption = Some(thread)
+    var closedActionId: Option[Int] = ???  // parent actionId this thread was closed on
   }
 
   case class PokeRecord(timestep: Int, actionId: Int, value: BigInt, trace: Throwable)
 
   class Timescope(val parentTimescope: BaseTimescope,
       val openedTimestep: Int,  // timestep this timescope was spawned on
-      val parentActionId: Int)  // spawn time in actionId of parent timescope)
+      val parentActionId: Int)  // spawn time in actionId of parent timescope,
+                                // from parent's perspective all actions happen instantaneously in this timestep
       extends BaseTimescope with HasOverridingPokes with HasParent {
     var nextActionId: Int = 0  // actionId to be assigned to the next action
     var closedTimestep: Option[Int] = None  // timestep this timescope was closed on, if it is closed
@@ -73,6 +76,41 @@ trait ThreadedBackend {
   }
 
   val pokes = mutable.HashMap[Data, Timescope]()
+
+  object TimescopeUtils {
+    // From the current timescope upwards, returns the nearest timescope poking the target signal
+    // and the actionId to the child downwards
+    def getNearestPoke(signal: Data, timescope: BaseTimescope, actionId: Int): (HasOverridingPokes, Int) = timescope match {
+      case timescope: RootTimescope => (timescope, actionId)
+      case timescope: Timescope if timescope.pokes.contains(signal) => (timescope, actionId)
+      case timescope: HasParent => getNearestPoke(signal, timescope.parentTimescope, timescope.parentActionId)
+    }
+    // Get the actionId effect range of pokes on a signal, in a timescope.
+    // The end range is the last actionId the signal was affected (the poke persists until the end of the timescope),
+    //   including child reverts
+    // If the end range is None, it means that a child timescope currently has control over the signal
+    // If the starting range is None, the timescope does not poke the signal
+    def getSignalActionIdRange(signal: Data, timescope: HasOverridingPokes): (Option[Int], Option[Int]) = {
+      timescope match {
+        case timescope: Timescope => timescope.pokes.get(signal) match {
+          case Some(pokeRecords) =>
+            val start = pokeRecords.head.actionId
+            val lastPoke = pokeRecords.last.actionId
+            val lastChildPoke = timescope.overridingPokes.getOrElse(signal, Seq()).foreach { childTimescope =>
+              // If child timescope is open, it still has control
+              // If child timescope is closed, return its actionId
+              ??? // TODO implement me
+            }
+            ???  // TODO combinational logic
+          case None => (None, None)
+        }
+        case timescope: RootTimescope => timescope.overridingPokes.get(signal) match {
+          case Some(_) => (Some(0), None)
+          case None => (None, None)
+        }
+      }
+    }
+  }
 
   //
   // Threading checking data structures and utilities
@@ -196,42 +234,6 @@ trait ThreadedBackend {
    */
   def timestep(): Unit = {
     // Check peeks first, before timescope overridingPokes gets purged
-    /**
-     * Check that a peek at actionId to the target signal in the timescope is legal:
-     * - overriding pokes from other threads only legal if the thread spawned after actionId
-     * - the topmost poke, if from another thread, only legal if it happened before actionId
-     */
-    def checkPeek(signal: Data, srcTimescope: Timescope, timescope: BaseTimescope, actionId: Int): Unit = {
-      val sameThread = srcTimescope.threadOption == timescope.threadOption
-      timescope match {
-        case timescope: RootTimescope =>  // at root (no pokes in the timescope path), only check for conflicts
-          checkOverridingPokes(signal, timescope, sameThread, actionId)
-        case timescope: ThreadRootTimescope =>  // at thread root, check parents
-          checkPeek(signal, srcTimescope, timescope.parentTimescope, timescope.parentActionId)
-        case timescope: Timescope => timescope.pokes.get(signal) match {
-          case Some(pokeRecords) =>
-            if (!sameThread) {
-              // TODO better error messages with traces
-              require(timescope.closedTimestep.isEmpty, "signal changed in parent thread by timescope close")
-              require(pokeRecords.last.actionId < actionId, "signal changed from parent thread after child thread spawn")
-            }
-            checkOverridingPokes(signal, timescope, sameThread, actionId)
-          case None =>
-            checkPeek(signal, srcTimescope, timescope.parentTimescope, timescope.parentActionId)
-        }
-      }
-    }
-
-    def checkOverridingPokes(signal: Data, timescope: HasOverridingPokes, sameThread: Boolean, actionId: Int): Unit = {
-      timescope.overridingPokes.getOrElse(signal, Seq()) foreach { overridingTimescope =>
-
-      }
-
-      if () {
-
-      }
-    }
-
     // These are checked by walking up the tree of timescopes, and ensuring the closest poke
     // has not been overridden.
     // Conflicting pokes will be detected by poke checking.
@@ -241,7 +243,31 @@ trait ThreadedBackend {
       // TODO: optimization of peeks within a thread
       peeks.foreach { peekRecord =>
         upstreamSignals.foreach { signal =>
-
+          // Bulk of the check logic is here
+          val peekTimescope = peekRecord.timescope
+          val (pokeTimescope, peekActionId) = TimescopeUtils.getNearestPoke(signal, peekTimescope, peekRecord.actionId)
+          if (pokeTimescope.threadOption == peekTimescope.threadOption) {
+            // Nearest poke is in the same thread, overrides allowed:
+            // - from the same thread with no limitations
+            // - from different threads, if the immediate child to the thread was spawned after the peek
+            ???  // TODO implement me
+          } else {
+            // Nearest poke is from another thread:
+            if (pokeTimescope.closedTimestep.isDefined) {  // signal cannot be changed by timescope revert
+              throw new ThreadOrderDependentException("Timescope revert")
+            }
+            // All pokes must have happened before the peekActionId of the pokeTimescope
+            // (this addresses overrides in a principled way)
+            TimescopeUtils.getSignalActionIdRange(signal, pokeTimescope) match {
+              case (None, _) =>  // no one poked the signal (went to root timescope), it's fine
+              case (Some(_), Some(lastPokeActionId)) =>  // timescope owns the signal, make sure it hasn't altered the signal since the "peek"
+                if (lastPokeActionId > peekActionId) {
+                  throw new ThreadOrderDependentException("Timescope signal changed, poked after peek")
+                }
+              case (Some(_), None) =>  // timescope's child owns the signal, happens after the peek
+                throw new ThreadOrderDependentException("Timescope signal changed, owned by child")
+            }
+          }
         }
       }
     }
