@@ -55,7 +55,6 @@ trait ThreadedBackend {
       parentActionId: Int,
       thread: TesterThread) extends BaseTimescope with HasParent {
     override def threadOption = Some(thread)
-    var closedActionId: Option[Int] = ???  // parent actionId this thread was closed on
   }
 
   case class PokeRecord(timestep: Int, actionId: Int, value: BigInt, trace: Throwable)
@@ -96,17 +95,63 @@ trait ThreadedBackend {
           case Some(pokeRecords) =>
             val start = pokeRecords.head.actionId
             val lastPoke = pokeRecords.last.actionId
-            val lastChildPoke = timescope.overridingPokes.getOrElse(signal, Seq()).foreach { childTimescope =>
-              // If child timescope is open, it still has control
-              // If child timescope is closed, return its actionId
-              ??? // TODO implement me
+            val childPokeActionIds = timescope.overridingPokes.getOrElse(signal, Seq()).map { overridingTimescope =>
+              getOverridingActionId(signal, timescope, overridingTimescope)
             }
-            ???  // TODO combinational logic
+            val combinedLastPoke = childPokeActionIds.fold(Some(lastPoke)) {
+              case (None, _) => None
+              case (_, None) => None
+              case (Some(a), Some(b)) => Some(math.max(a, b))
+            }
+            (Some(start), combinedLastPoke)
           case None => (None, None)
         }
         case timescope: RootTimescope => timescope.overridingPokes.get(signal) match {
           case Some(_) => (Some(0), None)
           case None => (None, None)
+        }
+      }
+    }
+
+    // Returns the actionId in timescope of the overriding poke, or None if the override is still active
+    def getOverridingActionId(signal: Data, timescope: Timescope, overridingTimescope: Timescope): Option[Int] = {
+      if (overridingTimescope.closedTimestep.isEmpty) {  // if the timescope is open, it still has control
+        None
+      } else {  // if closed, depends on when it closed
+        if (overridingTimescope.threadOption == timescope.threadOption) {
+          // within the same thread, use immediate child's actionId
+          Some(getImmediateChild(signal, timescope, overridingTimescope).parentActionId)
+        } else {
+          // overrides must be within a child thread, and outside the first cycle it is guaranteed to execute before its parent
+          if (getImmediateThread(signal, timescope, overridingTimescope).openedTimestep == currentTimestep) {
+            None  // TODO: technically should be the last actionId of the timestep, but close enough per timestep
+          } else {
+            Some(0)  // TODO: technically should be first actionId of the timestep, but close enough per timestep
+          }
+        }
+      }
+    }
+
+    // Returns the immediate child of timescope on the chain to overridingTimescope
+    // TODO: the immediate child could be saved in overridingPokes along with the target timescope
+    def getImmediateChild(signal: Data, timescope: Timescope, overridingTimescope: HasParent): HasParent = {
+      require(overridingTimescope != timescope)
+      overridingTimescope.parentTimescope match {
+        case parent: RootTimescope => throw new IllegalArgumentException("no path from overridingTimescope to timescope")
+        case parent: HasParent if parent == timescope => overridingTimescope
+        case parent: HasParent => getImmediateChild(signal, timescope, parent)
+      }
+    }
+
+    def getImmediateThread(signal: Data, timescope: Timescope, overridingTimescope: HasParent): ThreadRootTimescope = {
+      require(overridingTimescope.threadOption != timescope.threadOption)
+      overridingTimescope match {
+        case overridingTimescope: ThreadRootTimescope
+            if (overridingTimescope.parentTimescope.threadOption == timescope.threadOption) =>
+          overridingTimescope
+        case overridingTimescope: Timescope => overridingTimescope.parentTimescope match {
+          case parent: HasParent => getImmediateThread(signal, timescope, parent)
+          case _ => throw new IllegalArgumentException("no path from overridingTimescope to thread root")
         }
       }
     }
@@ -250,7 +295,15 @@ trait ThreadedBackend {
             // Nearest poke is in the same thread, overrides allowed:
             // - from the same thread with no limitations
             // - from different threads, if the immediate child to the thread was spawned after the peek
-            ???  // TODO implement me
+            pokeTimescope.overridingPokes.getOrElse(signal, Seq()).map { overridingTimescope =>
+              if (overridingTimescope.threadOption != peekTimescope.threadOption) {
+                // TODO clean up to remove asInstanceOf
+                val overridingImmediateThread = TimescopeUtils.getImmediateThread(signal, pokeTimescope.asInstanceOf[Timescope], overridingTimescope)
+                if (overridingImmediateThread.parentActionId < peekActionId) {
+                  throw new ThreadOrderDependentException("Override thread spawned after peek")
+                }
+              }
+            }
           } else {
             // Nearest poke is from another thread:
             if (pokeTimescope.closedTimestep.isDefined) {  // signal cannot be changed by timescope revert
