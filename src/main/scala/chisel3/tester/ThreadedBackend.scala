@@ -306,8 +306,12 @@ trait ThreadedBackend {
             }
           } else {
             // Nearest poke is from another thread:
-            if (pokeTimescope.closedTimestep.isDefined) {  // signal cannot be changed by timescope revert
-              throw new ThreadOrderDependentException("Timescope revert")
+            pokeTimescope.closedTimestep match {
+              case Some(closedTimestep) if closedTimestep < currentTimestep =>  // signal cannot be changed by timescope revert
+                throw new ThreadOrderDependentException("Timescope revert")
+              case _ =>  // revert is fine on the current timestep:
+                // if the peeking thread was just spawned, is should be encapsulated and run immediately
+                // if the peeking thread was spawned before, it would have run before the parent run
             }
             // All pokes must have happened before the peekActionId of the pokeTimescope
             // (this addresses overrides in a principled way)
