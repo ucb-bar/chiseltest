@@ -287,20 +287,20 @@ trait ThreadedBackend {
       val upstreamSignals = combinationalPaths.getOrElse(signal, Set()) + signal
       // TODO: optimization of peeks within a thread
       peeks.foreach { peekRecord =>
-        upstreamSignals.foreach { signal =>
+        upstreamSignals.foreach { combSignal =>
           // Bulk of the check logic is here
           val peekTimescope = peekRecord.timescope
-          val (pokeTimescope, peekActionId) = TimescopeUtils.getNearestPoke(signal, peekTimescope, peekRecord.actionId)
+          val (pokeTimescope, peekActionId) = TimescopeUtils.getNearestPoke(combSignal, peekTimescope, peekRecord.actionId)
           if (pokeTimescope.threadOption == peekTimescope.threadOption) {
             // Nearest poke is in the same thread, overrides allowed:
             // - from the same thread with no limitations
             // - from different threads, if the immediate child to the thread was spawned after the peek
-            pokeTimescope.overridingPokes.getOrElse(signal, Seq()).map { overridingTimescope =>
+            pokeTimescope.overridingPokes.getOrElse(combSignal, Seq()).map { overridingTimescope =>
               if (overridingTimescope.threadOption != peekTimescope.threadOption) {
                 // TODO clean up to remove asInstanceOf
-                val overridingImmediateThread = TimescopeUtils.getImmediateThread(signal, pokeTimescope.asInstanceOf[Timescope], overridingTimescope)
+                val overridingImmediateThread = TimescopeUtils.getImmediateThread(combSignal, pokeTimescope.asInstanceOf[Timescope], overridingTimescope)
                 if (overridingImmediateThread.parentActionId < peekActionId) {
-                  throw new ThreadOrderDependentException("Override thread spawned after peek")
+                  throw new ThreadOrderDependentException(s"${dataNames(combSignal)} -> ${dataNames(signal)}: Override thread spawned after peek")
                 }
               }
             }
@@ -308,21 +308,21 @@ trait ThreadedBackend {
             // Nearest poke is from another thread:
             pokeTimescope.closedTimestep match {
               case Some(closedTimestep) if closedTimestep < currentTimestep =>  // signal cannot be changed by timescope revert
-                throw new ThreadOrderDependentException("Timescope revert")
+                throw new ThreadOrderDependentException(s"${dataNames(combSignal)} -> ${dataNames(signal)}: Timescope revert")
               case _ =>  // revert is fine on the current timestep:
                 // if the peeking thread was just spawned, is should be encapsulated and run immediately
                 // if the peeking thread was spawned before, it would have run before the parent run
             }
             // All pokes must have happened before the peekActionId of the pokeTimescope
             // (this addresses overrides in a principled way)
-            TimescopeUtils.getSignalActionIdRange(signal, pokeTimescope) match {
+            TimescopeUtils.getSignalActionIdRange(combSignal, pokeTimescope) match {
               case (None, _) =>  // no one poked the signal (went to root timescope), it's fine
               case (Some(_), Some(lastPokeActionId)) =>  // timescope owns the signal, make sure it hasn't altered the signal since the "peek"
                 if (lastPokeActionId > peekActionId) {
-                  throw new ThreadOrderDependentException("Timescope signal changed, poked after peek")
+                  throw new ThreadOrderDependentException(s"${dataNames(combSignal)} -> ${dataNames(signal)}: Timescope signal changed, poked after peek")
                 }
               case (Some(_), None) =>  // timescope's child owns the signal, happens after the peek
-                throw new ThreadOrderDependentException("Timescope signal changed, owned by child")
+                throw new ThreadOrderDependentException(s"${dataNames(combSignal)} -> ${dataNames(signal)}: Timescope signal changed, owned by child")
             }
           }
         }
