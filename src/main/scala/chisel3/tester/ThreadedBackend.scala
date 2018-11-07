@@ -444,11 +444,7 @@ trait ThreadedBackend {
 
   // TODO make this a class and Option[SchedulerState] var that contains currentThread and driverSemaphore?
   object schedulerState {  // temporary scheduler information not persisting between runThreads invocations
-    var currentLevel: Int = -1  // -1 indicates nothing is running
-
-    // map of levels to threads, initialized during runThreads entry and as lower level threads are unblocked, or new threads spawn
-    // note: spawned threads are added to their parents level
-    val activeThreads = mutable.HashMap[Int, mutable.ListBuffer[TesterThread]]()
+    val activeThreads = mutable.ListBuffer[TesterThread]()
 
     // list of threads blocked on a clock edge, added to as threads finish and step
     val blockedThreads = mutable.HashMap[Clock, mutable.ListBuffer[TesterThread]]()
@@ -467,14 +463,11 @@ trait ThreadedBackend {
    * control, but there are other structures which accomplish the same thing.
    */
   protected def runThreads(threads: Seq[TesterThread]): Map[Clock, Seq[TesterThread]] = {
-    // Populate scheduler date, sort threads by level
-    require(schedulerState.currentLevel == -1)
+    // TODO validate and order incoming thread order
     require(schedulerState.activeThreads.isEmpty)
     require(schedulerState.blockedThreads.isEmpty)
 
-    val threadsByLevel = threads.groupBy(_.level)
-    schedulerState.activeThreads ++= threadsByLevel.mapValues(mutable.ListBuffer(_: _*)).toSeq
-    schedulerState.currentLevel = threadsByLevel.keySet.max
+    schedulerState.activeThreads ++= threads
 
     scheduler()
     driverSemaphore.acquire()
@@ -486,7 +479,6 @@ trait ThreadedBackend {
     require(schedulerState.activeThreads.isEmpty)
     val rtn = schedulerState.blockedThreads.mapValues(_.toSeq).toMap
     schedulerState.blockedThreads.clear()
-    schedulerState.currentLevel = -1
     rtn
   }
 
@@ -501,23 +493,12 @@ trait ThreadedBackend {
    * When there are no more active threads, unblocks the driver thread via driverSemaphore.
    */
   protected def scheduler() {
-    // TODO cleanup checks logic
-    if (schedulerState.activeThreads(schedulerState.currentLevel).isEmpty) {
-      schedulerState.activeThreads.remove(schedulerState.currentLevel)
-    }
-
     if (!interruptedException.isEmpty() || schedulerState.activeThreads.isEmpty) {
       currentThread = None
       driverSemaphore.release()
     } else {
-      if (!schedulerState.activeThreads.contains(schedulerState.currentLevel)) {
-        require(schedulerState.currentLevel > schedulerState.activeThreads.keySet.max)
-        schedulerState.currentLevel = schedulerState.activeThreads.keySet.max
-      }
-      val threadList = schedulerState.activeThreads(schedulerState.currentLevel)
-      val nextThread = threadList.head
+      val nextThread = schedulerState.activeThreads.remove(0)
       currentThread = Some(nextThread)
-      threadList.trimStart(1)
       nextThread.waiting.release()
     }
   }
@@ -531,8 +512,7 @@ trait ThreadedBackend {
     joinedThreads.remove(thread) match {
       case Some(testerThreads) => testerThreads.foreach(testerThread => {
         val threadLevel = testerThread.level
-        require(schedulerState.currentLevel > threadLevel)
-        schedulerState.activeThreads.getOrElseUpdate(threadLevel, mutable.ListBuffer[TesterThread]()) += testerThread
+        schedulerState.activeThreads += testerThread
       })
       case None =>
     }
@@ -546,7 +526,7 @@ trait ThreadedBackend {
 
     allThreads += newThread
     // schedule the new thread to run immediately, then return to this thread
-    schedulerState.activeThreads(schedulerState.currentLevel).prepend(newThread, thisThread)
+    schedulerState.activeThreads.prepend(newThread, thisThread)
     newThread.thread.start()
     scheduler()
     thisThread.waiting.acquire()
