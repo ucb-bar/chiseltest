@@ -84,6 +84,36 @@ trait ThreadedBackend {
       case timescope: Timescope if timescope.pokes.contains(signal) => (timescope, actionId)
       case timescope: HasParent => getNearestPoke(signal, timescope.parentTimescope, timescope.parentActionId)
     }
+
+    /**
+     * Returns the linear path from startTimescope (as the first elemnt, inclursive) to destTimescope (as the last element, inclusive)
+     * destActionId is the actionId in destTimescope to the next timescope (or the action of interest)
+     */
+    def getLinearPath(startTimescope: HasOverridingPokes, destTimescope: BaseTimescope, destActionId: Int):
+        Seq[(BaseTimescope, Int)] = {
+      val prefix: Seq[(BaseTimescope, Int)] = destTimescope match {
+        case destTimescope if destTimescope == startTimescope => Seq()
+        case destTimescope: HasParent => getLinearPath(startTimescope, destTimescope.parentTimescope, destTimescope.parentActionId)
+        case _ => throw new IllegalArgumentException("no path from startTimescope to destTimescope")
+      }
+      prefix :+ ((destTimescope, destActionId))
+    }
+
+    /**
+     * Returns the deepest common ancestor timescope from the first element in the linearPath to the last element in
+     * the linearPath and the destination, and the actionIds to the next element for the linearPath, and destination.
+     */
+    def getCommonAncestor(linearPath: Seq[(BaseTimescope, Int)], destTimescope: Timescope, destActionId: Int):
+        (HasOverridingPokes, Int, Int) = {
+      // TODO: clean up all the asInstanceOf
+      val destinationLinearPath = getLinearPath(linearPath.head.asInstanceOf[HasOverridingPokes], destTimescope, destActionId)
+      val commonPrefix = (linearPath zip destinationLinearPath).takeWhile {
+        case ((lpTimescope, lpActionId), (dTimescope, dActionid)) => lpTimescope != dTimescope
+      }
+      val commonAncestor = commonPrefix.last
+      (commonAncestor._1._1.asInstanceOf[HasOverridingPokes], commonAncestor._1._2, commonAncestor._2._2)
+    }
+
     // Get the actionId effect range of pokes on a signal, in a timescope.
     // The end range is the last actionId the signal was affected (the poke persists until the end of the timescope),
     //   including child reverts
