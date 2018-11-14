@@ -41,6 +41,17 @@ package object TestAdapters {
     // TODO assumption this never goes out of scope
     x.ready.poke(false.B)
 
+    def waitForValid(): Unit = {
+      while (x.valid.peek().litToBoolean == false) {
+        clk.step(1)
+      }
+    }
+
+    def dequeueExpect(data: T): Unit = {
+      waitForValid()
+      dequeueNowExpect(data)
+    }
+
     def dequeueNowExpect(data: T): Unit = timescope {
       x.valid.expect(true.B)
       x.bits.expect(data)
