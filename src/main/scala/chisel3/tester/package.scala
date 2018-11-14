@@ -25,6 +25,13 @@ package object tester {
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
         Context().backend.pokeBits(x, value.litValue)
       }
+      case (x: Bundle, value: Bundle) => {
+        // TODO: chisel needs to expose typeEquivalent
+        require(x.elements.keys == value.elements.keys)  // TODO: this discards type data =(
+        (x.elements zip value.elements) foreach { case ((_, x), (_, value)) =>
+          x.poke(value)
+        }
+      }
       case x => throw new LiteralTypeException(s"don't know how to poke $x")
       // TODO: aggregate types
     }
