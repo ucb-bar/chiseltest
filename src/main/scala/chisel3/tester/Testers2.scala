@@ -20,13 +20,13 @@ object Context {
   }
 
   // TODO: better integration points for default tester selection
-  def createDefaultTester[T <: MultiIOModule](dutGen: => T): BackendInstance[T] = {
+  def createDefaultTester[T <: MultiIOModule](dutGen: () => T): BackendInstance[T] = {
     TreadleExecutive.start(dutGen)
   }
 
   // TODO: add TesterOptions (from chisel-testers) and use that to control default tester selection.
   def createDefaultTester[T <: MultiIOModule](
-    dutGen: => T,
+    dutGen: () => T,
     options: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions
   ): BackendInstance[T] = {
     // TODO: pass options to interpreter

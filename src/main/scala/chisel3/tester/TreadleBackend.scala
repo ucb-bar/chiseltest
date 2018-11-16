@@ -156,6 +156,8 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
         thread.thread.interrupt()
       }
     }
+
+    tester.report()  // needed to dump VCDs
   }
 }
 
@@ -192,24 +194,23 @@ object TreadleExecutive {
   }
 
   def start[T <: MultiIOModule](
-    dutGen: => T,
+    dutGen: () => T,
     options: Option[ExecutionOptionsManager
             with HasChiselExecutionOptions
             with HasFirrtlOptions
             with HasTreadleSuite] = None): BackendInstance[T] = {
     val optionsManager = options match  {
       case Some(o: ExecutionOptionsManager) => o
-
-      case None =>
-        new ExecutionOptionsManager("chisel3")
-          with HasChiselExecutionOptions with HasFirrtlOptions with HasTreadleSuite {
-          commonOptions = CommonOptions(targetDirName = "test_run_dir")
-        }
+      case None => new ExecutionOptionsManager("chisel3")
+          with HasChiselExecutionOptions with HasFirrtlOptions with HasTreadleSuite
     }
     // the backend must be firrtl if we are here, therefore we want the firrtl compiler
+    optionsManager.commonOptions = optionsManager.commonOptions.copy(
+        targetDirName = s"test_run_dir/${dutGen.getClass.getName}")
     optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(compilerName = "low")
+    optionsManager.treadleOptions = optionsManager.treadleOptions.copy(writeVCD = true)
 
-    chisel3.Driver.execute(optionsManager, () => dutGen) match {
+    chisel3.Driver.execute(optionsManager, dutGen) match {
       case ChiselExecutionSuccess(Some(circuit), _, Some(firrtlExecutionResult)) =>
         firrtlExecutionResult match {
           case success: FirrtlExecutionSuccess =>

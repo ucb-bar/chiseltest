@@ -78,10 +78,10 @@ trait TestEnvInterface {
   /** Runs a test, instantiating the default backend.
     */
   def test[T <: MultiIOModule](dutGen: => T)(testFn: T => Unit): Unit = {
-    test(Context.createDefaultTester(dutGen))(testFn)
+    test(Context.createDefaultTester(() => dutGen))(testFn)
   }
   def test[T <: MultiIOModule](dutGen: => T, options: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions)(testFn: T => Unit): Unit = {
-    test(Context.createDefaultTester(dutGen, options))(testFn)
+    test(Context.createDefaultTester(() => dutGen, options))(testFn)
   }
 
   /** Logs a tester failure at this point.
