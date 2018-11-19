@@ -33,7 +33,7 @@ trait ThreadedBackend {
 
   sealed trait HasOverridingPokes extends BaseTimescope {
     // List of timescopes overriding a signal, including ones closed / reverted on this timestep
-    val overridingPokes: mutable.HashMap[Data, mutable.ListBuffer[Timescope]] = new mutable.HashMap
+    private[tester] val overridingPokes = new mutable.HashMap[Data, mutable.ListBuffer[Timescope]]
     def closedTimestep: Option[Int]
   }
   sealed trait HasParent extends BaseTimescope {
@@ -72,10 +72,10 @@ trait ThreadedBackend {
 
     // All pokes on a signal in this timescope, ordered from first to last
     // TODO: can we get away with just first and most recent?
-    val pokes: mutable.HashMap[Data, mutable.ListBuffer[PokeRecord]] = new mutable.HashMap  // Latest poke on each data
+    private [tester] val pokes = new mutable.HashMap[Data, mutable.ListBuffer[PokeRecord]]  // Latest poke on each data
   }
 
-  val pokes: mutable.HashMap[Data, Timescope] = new mutable.HashMap
+  private [tester] val pokes = new mutable.HashMap[Data, Timescope]
 
   object TimescopeUtils {
     // From the current timescope upwards, returns the nearest timescope poking the target signal
@@ -94,9 +94,9 @@ trait ThreadedBackend {
     def getLinearPath(startTimescope: HasOverridingPokes, destTimescope: BaseTimescope, destActionId: Int):
         Seq[(BaseTimescope, Int)] = {
       val prefix: Seq[(BaseTimescope, Int)] = destTimescope match {
-        case startDestTimescope if startDestTimescope == startTimescope => Seq()
-        case withParent: HasParent =>
-          getLinearPath(startTimescope, withParent.parentTimescope, withParent.parentActionId)
+        case _ if destTimescope == startTimescope => Seq()
+        case destTimescope: HasParent =>
+          getLinearPath(startTimescope, destTimescope.parentTimescope, destTimescope.parentActionId)
         case _ => throw new IllegalArgumentException("no path from startTimescope to destTimescope")
       }
       prefix :+ ((destTimescope, destActionId))
@@ -144,7 +144,7 @@ trait ThreadedBackend {
 
   // Active peeks on a signal, instantaneous on the current timestep
   // TODO: should this last until the next associated clock edge?
-  protected val signalPeeks: mutable.HashMap[Data, mutable.ListBuffer[PeekRecord]] = new mutable.HashMap
+  private[tester] val signalPeeks = new mutable.HashMap[Data, mutable.ListBuffer[PeekRecord]]
 
   /**
    * Logs a poke operation for later checking.
@@ -260,7 +260,7 @@ trait ThreadedBackend {
     // These are checked by walking up the tree of timescopes, and ensuring the closest poke
     // has not been overridden.
     // Conflicting pokes will be detected by poke checking.
-      signalPeeks.toSeq.foreach { case (signal, peeks) =>
+    signalPeeks.toSeq.foreach { case (signal, peeks) =>
       // Check both the signal and combinational sources
       val upstreamSignals = combinationalPaths.getOrElse(signal, Set()) + signal
       // TODO: optimization of peeks within a thread
@@ -354,6 +354,7 @@ trait ThreadedBackend {
       }
     }
 
+    //noinspection ScalaUnusedSymbol
     // Check that there is a clean poke ordering, and build a map of pokes Data -> Timescope
     // TODO: structurally nasty =(, and currently pokeTimescopes is un-used
     val pokeTimescopes = rootTimescope.get.overridingPokes.toMap.map { case (signal, _) =>
@@ -395,6 +396,7 @@ trait ThreadedBackend {
       topTimescope.asInstanceOf[Timescope]
     }
 
+    //noinspection ConvertExpressionToSAM
     //TODO: code analysis suggests "Convert expression to Single Abstract Method", will that work?
     val thread = new Thread(new Runnable {
       def run() {
@@ -427,16 +429,16 @@ trait ThreadedBackend {
 
   // TODO: does this need to be replaced with concurrent data structures?
   // list of all threads, only for for sanity checking
-  val allThreads: mutable.ArrayBuffer[TesterThread] = new mutable.ArrayBuffer
+  private[tester] val allThreads = new mutable.ArrayBuffer[TesterThread]
   // threads blocking on another thread
-  val joinedThreads: mutable.HashMap[TesterThread, Seq[TesterThread]] = new mutable.HashMap
+  private[tester] val joinedThreads = new mutable.HashMap[TesterThread, Seq[TesterThread]]
 
   // TODO make this a class and Option[SchedulerState] var that contains currentThread and driverSemaphore?
   object schedulerState {  // temporary scheduler information not persisting between runThreads invocations
-    val activeThreads: mutable.ListBuffer[TesterThread] = new mutable.ListBuffer
+    private[tester] val activeThreads = new mutable.ListBuffer[TesterThread]
 
     // list of threads blocked on a clock edge, added to as threads finish and step
-    val blockedThreads: mutable.HashMap[Clock, mutable.ListBuffer[TesterThread]] = new mutable.HashMap
+    private[tester] val blockedThreads = new mutable.HashMap[Clock, mutable.ListBuffer[TesterThread]]
   }
 
   /**
