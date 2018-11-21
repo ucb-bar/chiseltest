@@ -2,10 +2,11 @@
 
 package chisel3.tester
 
-import java.util.concurrent.{ConcurrentLinkedQueue, Semaphore, SynchronousQueue, TimeUnit}
-import scala.collection.mutable
+import java.util.concurrent.{ConcurrentLinkedQueue, Semaphore}
 
 import chisel3._
+
+import scala.collection.mutable
 
 /** Base trait for backends implementing concurrency by threading. Also implements timescopes.
   */
@@ -32,7 +33,7 @@ trait ThreadedBackend {
 
   sealed trait HasOverridingPokes extends BaseTimescope {
     // List of timescopes overriding a signal, including ones closed / reverted on this timestep
-    val overridingPokes = mutable.HashMap[Data, mutable.ListBuffer[Timescope]]()
+    private[tester] val overridingPokes = new mutable.HashMap[Data, mutable.ListBuffer[Timescope]]
     def closedTimestep: Option[Int]
   }
   sealed trait HasParent extends BaseTimescope {
@@ -42,8 +43,8 @@ trait ThreadedBackend {
 
   // Root timescope, cannot be modified, with no signals poked.
   class RootTimescope extends BaseTimescope with HasOverridingPokes {
-    override def threadOption = None
-    override def closedTimestep = None
+    override def threadOption: Option[TesterThread] = None
+    override def closedTimestep: Option[Int] = None
   }
 
   var rootTimescope: Option[RootTimescope] = None  // TODO unify with something else? Or replace w/ rootThread?
@@ -67,14 +68,14 @@ trait ThreadedBackend {
     var nextActionId: Int = 0  // actionId to be assigned to the next action
     var closedTimestep: Option[Int] = None  // timestep this timescope was closed on, if it is closed
 
-    override def threadOption = parentTimescope.threadOption
+    override def threadOption: Option[TesterThread] = parentTimescope.threadOption
 
     // All pokes on a signal in this timescope, ordered from first to last
     // TODO: can we get away with just first and most recent?
-    val pokes = mutable.HashMap[Data, mutable.ListBuffer[PokeRecord]]()  // Latest poke on each data
+    private [tester] val pokes = new mutable.HashMap[Data, mutable.ListBuffer[PokeRecord]]  // Latest poke on each data
   }
 
-  val pokes = mutable.HashMap[Data, Timescope]()
+  private [tester] val pokes = new mutable.HashMap[Data, Timescope]
 
   object TimescopeUtils {
     // From the current timescope upwards, returns the nearest timescope poking the target signal
@@ -86,14 +87,16 @@ trait ThreadedBackend {
     }
 
     /**
-     * Returns the linear path from startTimescope (as the first elemnt, inclursive) to destTimescope (as the last element, inclusive)
+     * Returns the linear path from startTimescope (as the first element, inclusive)
+     * to destTimescope (as the last element, inclusive)
      * destActionId is the actionId in destTimescope to the next timescope (or the action of interest)
      */
     def getLinearPath(startTimescope: HasOverridingPokes, destTimescope: BaseTimescope, destActionId: Int):
         Seq[(BaseTimescope, Int)] = {
       val prefix: Seq[(BaseTimescope, Int)] = destTimescope match {
-        case destTimescope if destTimescope == startTimescope => Seq()
-        case destTimescope: HasParent => getLinearPath(startTimescope, destTimescope.parentTimescope, destTimescope.parentActionId)
+        case _ if destTimescope == startTimescope => Seq()
+        case destTimescope: HasParent =>
+          getLinearPath(startTimescope, destTimescope.parentTimescope, destTimescope.parentActionId)
         case _ => throw new IllegalArgumentException("no path from startTimescope to destTimescope")
       }
       prefix :+ ((destTimescope, destActionId))
@@ -108,7 +111,7 @@ trait ThreadedBackend {
       // TODO: clean up all the asInstanceOf
       val destinationLinearPath = getLinearPath(linearPath.head._1.asInstanceOf[HasOverridingPokes], destTimescope, destActionId)
       val commonPrefix = (linearPath zip destinationLinearPath).takeWhile {
-        case ((lpTimescope, lpActionId), (dTimescope, dActionid)) => lpTimescope == dTimescope
+        case ((lpTimescope, _), (dTimescope, _)) => lpTimescope == dTimescope
       }
       val commonAncestor = commonPrefix.last
       (commonAncestor._1._1.asInstanceOf[HasOverridingPokes], commonAncestor._1._2, commonAncestor._2._2)
@@ -120,13 +123,13 @@ trait ThreadedBackend {
     def getLeafOverridingPokes(timescope: HasOverridingPokes, signal: Data): Seq[Timescope] = {
       def innerOverridingPokes(timescope: Timescope): Seq[Timescope] = {
         timescope.overridingPokes.get(signal) match {
-          case Some(overridingPokes) => overridingPokes.map(innerOverridingPokes(_)).fold(Seq())(_ ++ _)
+          case Some(overridingPokes) => overridingPokes.map(innerOverridingPokes).fold(Seq())(_ ++ _)
           case None => Seq(timescope)
         }
       }
 
       timescope.overridingPokes.get(signal) match {
-        case Some(overridingPokes) => overridingPokes.map(innerOverridingPokes(_)).fold(Seq())(_ ++ _)
+        case Some(overridingPokes) => overridingPokes.map(innerOverridingPokes).fold(Seq())(_ ++ _)
         case None => Seq()
       }
     }
@@ -141,7 +144,7 @@ trait ThreadedBackend {
 
   // Active peeks on a signal, instantaneous on the current timestep
   // TODO: should this last until the next associated clock edge?
-  protected val signalPeeks = mutable.HashMap[Data, mutable.ListBuffer[PeekRecord]]()
+  private[tester] val signalPeeks = new mutable.HashMap[Data, mutable.ListBuffer[PeekRecord]]
 
   /**
    * Logs a poke operation for later checking.
@@ -229,7 +232,7 @@ trait ThreadedBackend {
     // Build a revert map of poked signals
     timescope.pokes.map { case (data, _) =>
       def getPreviousPoke(startingTimescope: BaseTimescope, signal: Data): Option[PokeRecord] = {
-        // TODO make this less side-effecty
+        // TODO make this less side-effect-like
         startingTimescope match {
           case _: RootTimescope =>
             pokes.remove(signal)
@@ -257,7 +260,7 @@ trait ThreadedBackend {
     // These are checked by walking up the tree of timescopes, and ensuring the closest poke
     // has not been overridden.
     // Conflicting pokes will be detected by poke checking.
-    signalPeeks.toSeq.map { case (signal, peeks) =>
+    signalPeeks.toSeq.foreach { case (signal, peeks) =>
       // Check both the signal and combinational sources
       val upstreamSignals = combinationalPaths.getOrElse(signal, Set()) + signal
       // TODO: optimization of peeks within a thread
@@ -282,7 +285,7 @@ trait ThreadedBackend {
             case timescope: Timescope => if (timescope.pokes(combSignal).last.actionId > peekActionId) {
               throw new ThreadOrderDependentException(s"${dataNames(combSignal)} -> ${dataNames(signal)}: Timescope signal changed, poked after peek")
             }
-            case timescope: RootTimescope =>  // catch issues with override checks below
+            case _: RootTimescope =>  // catch issues with override checks below
           }
         }
 
@@ -330,8 +333,8 @@ trait ThreadedBackend {
         pokes ++= nonEndingPokes
       }
       if (timescope.closedTimestep.isDefined) {  // if this timescope is closed, ensure there are no children
-        if (pokes.length > 0) {
-          throw new ThreadOrderDependentException(s"Nonenclosed timescopes")
+        if (pokes.nonEmpty) {
+          throw new ThreadOrderDependentException(s"Non-enclosed timescopes")
         }
       }
       if (pokes.length > 1) {  // multiple overlapping pokes, is an error
@@ -346,14 +349,15 @@ trait ThreadedBackend {
         timescope.overridingPokes.remove(signal)
         timescope match {
           case timescope: Timescope => Some(timescope)
-          case timescope: RootTimescope => None
+          case _: RootTimescope => None
         }
       }
     }
 
+    //noinspection ScalaUnusedSymbol
     // Check that there is a clean poke ordering, and build a map of pokes Data -> Timescope
-    // TODO: structurally nasty =(
-    val pokeTimescopes = rootTimescope.get.overridingPokes.toMap.map { case (signal, timescopes) =>
+    // TODO: structurally nasty =(, and currently pokeTimescopes is un-used
+    val pokeTimescopes = rootTimescope.get.overridingPokes.toMap.map { case (signal, _) =>
       (signal, processTimescope(signal, rootTimescope.get))
     }.collect {
       case (signal, Some(lastTimescope)) => (signal, lastTimescope)
@@ -385,13 +389,15 @@ trait ThreadedBackend {
     var done: Boolean = false
 
     // TODO: perhaps accessors eg pushTimescope, popTimescope?
-    protected val bottomTimescope = new ThreadRootTimescope(parentTimescope, openedTimestep, parentActionId, this)
+    protected val bottomTimescope = ThreadRootTimescope(parentTimescope, openedTimestep, parentActionId, this)
     var topTimescope: BaseTimescope = bottomTimescope  // Currently open timescope in this thread
-    def getTimescope = {
+    def getTimescope: Timescope = {
       require(topTimescope.asInstanceOf[Timescope].closedTimestep.isEmpty)
       topTimescope.asInstanceOf[Timescope]
     }
 
+    //noinspection ConvertExpressionToSAM
+    //TODO: code analysis suggests "Convert expression to Single Abstract Method", will that work?
     val thread = new Thread(new Runnable {
       def run() {
         try {
@@ -405,9 +411,9 @@ trait ThreadedBackend {
           done = true
           threadFinished(TesterThread.this)
         } catch {
-          case e: InterruptedException =>
+          case _: InterruptedException =>
             // currently used as a signal to kill the thread without doing cleanup
-            // (testdriver may be left in an inconsistent state, and the test should not continue)
+            // (test driver may be left in an inconsistent state, and the test should not continue)
             // TODO: allow other uses for InterruptedException?
           case e @ (_: Exception | _: Error) => onException(e)
         } finally {
@@ -422,15 +428,17 @@ trait ThreadedBackend {
   protected val driverSemaphore = new Semaphore(0)  // blocks the driver thread while tests are running
 
   // TODO: does this need to be replaced with concurrent data structures?
-  val allThreads = mutable.ArrayBuffer[TesterThread]()  // list of all threads, only used for sanity checking
-  val joinedThreads = mutable.HashMap[TesterThread, Seq[TesterThread]]()  // threads blocking on another thread
+  // list of all threads, only for for sanity checking
+  private[tester] val allThreads = new mutable.ArrayBuffer[TesterThread]
+  // threads blocking on another thread
+  private[tester] val joinedThreads = new mutable.HashMap[TesterThread, Seq[TesterThread]]
 
   // TODO make this a class and Option[SchedulerState] var that contains currentThread and driverSemaphore?
   object schedulerState {  // temporary scheduler information not persisting between runThreads invocations
-    val activeThreads = mutable.ListBuffer[TesterThread]()
+    private[tester] val activeThreads = new mutable.ListBuffer[TesterThread]
 
     // list of threads blocked on a clock edge, added to as threads finish and step
-    val blockedThreads = mutable.HashMap[Clock, mutable.ListBuffer[TesterThread]]()
+    private[tester] val blockedThreads = new mutable.HashMap[Clock, mutable.ListBuffer[TesterThread]]
   }
 
   /**
@@ -455,7 +463,7 @@ trait ThreadedBackend {
     scheduler()
     driverSemaphore.acquire()
 
-    if (!interruptedException.isEmpty()) {
+    if (!interruptedException.isEmpty) {
       throw interruptedException.poll()
     }
 
@@ -476,7 +484,7 @@ trait ThreadedBackend {
    * When there are no more active threads, unblocks the driver thread via driverSemaphore.
    */
   protected def scheduler() {
-    if (!interruptedException.isEmpty() || schedulerState.activeThreads.isEmpty) {
+    if (!interruptedException.isEmpty || schedulerState.activeThreads.isEmpty) {
       currentThread = None
       driverSemaphore.release()
     } else {
@@ -490,11 +498,12 @@ trait ThreadedBackend {
    * Called on thread completion to remove this thread from the running list.
    * Does not terminate the thread, does not schedule the next thread.
    */
-  protected def threadFinished(thread: TesterThread) {
+  protected def threadFinished(thread: TesterThread): Unit = {
     allThreads -= thread
     joinedThreads.remove(thread) match {
       case Some(testerThreads) => testerThreads.foreach(testerThread => {
-        val threadLevel = testerThread.level
+        //TODO: is line below needed anymore
+        // val threadLevel = testerThread.level
         schedulerState.activeThreads += testerThread
       })
       case None =>
@@ -516,7 +525,7 @@ trait ThreadedBackend {
     newThread
   }
 
-  def doJoin(thread: AbstractTesterThread) = {
+  def doJoin(thread: AbstractTesterThread): Unit = {
     val thisThread = currentThread.get
     val threadTyped = thread.asInstanceOf[TesterThread]  // TODO get rid of this, perhaps by making it typesafe
     require(thisThread.level < threadTyped.level)
