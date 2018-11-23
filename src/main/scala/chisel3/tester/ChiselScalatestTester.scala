@@ -16,31 +16,29 @@ trait ChiselScalatestTester extends Assertions with TestEnvInterface {
   // Stack trace data to help generate more informative (and localizable) failure messages
   protected var topFileName: Option[String] = None  // best guess at the testdriver top filename
 
-  // Stack trace depths:
-  // 0: this function
-  // 1: TestEnvInterface.testerExpect (superclass of this)
-  // 2: BackendInterface.expect
-  // 3: (implicit testable*).expectWithStale
-  // 4: (implicit testable*).expect
-  // 5: user code calling check
   override def testerFail(msg: String): Unit = {
     batchedFailures += new TestFailedException(s"$msg", 4)
   }
 
   override def testerExpect(expected: Any, actual: Any, signal: String, msg: Option[String]): Unit = {
-    // Depth in the stack trace where expect is called in use test code.
-    val callingStackDepth = 6
-
     if (expected != actual) {
       val appendMsg = msg match {
         case Some(msg) => s": $msg"
         case _ => ""
       }
+
+      // Dynamically determine stack depth of the expect call, since a static number is brittle
+      val traceThrowable = new Throwable
+      val expectStackDepth = traceThrowable.getStackTrace.indexWhere(ste =>
+        ste.getClassName == "chisel3.tester.package$testableData" && ste.getMethodName == "expect")
+      require(expectStackDepth != -1,
+          s"Failed to find expect in stack trace:\r\n${traceThrowable.getStackTrace.mkString("\r\n")}")
+
       // TODO: this depends on all user test code being in a new thread (so much of the plumbing
       // is pre-filtered out) - which is true only for the ThreadedBackend.
-      val traceThrowable = new Throwable
+      // TODO: also trace through threads
       val detailedTrace = topFileName.map { fileName =>
-        val lineNumbers = traceThrowable.getStackTrace.drop(callingStackDepth).collect {
+        val lineNumbers = traceThrowable.getStackTrace.drop(expectStackDepth + 2).collect {
           case ste if ste.getFileName == fileName => ste.getLineNumber
         }.mkString(", ")
         if (lineNumbers.isEmpty()) {
@@ -51,7 +49,7 @@ trait ChiselScalatestTester extends Assertions with TestEnvInterface {
       }.getOrElse("")
       batchedFailures += new TestFailedException(
           s"$signal=$actual did not equal expected=$expected$appendMsg$detailedTrace",
-          callingStackDepth)
+          expectStackDepth + 1)
     }
   }
 
@@ -65,7 +63,7 @@ trait ChiselScalatestTester extends Assertions with TestEnvInterface {
   override def test[T <: MultiIOModule](tester: BackendInstance[T])(testFn: T => Unit) {
     // Try and get the user's top-level test filename
     val internalFiles = Set("ChiselScalatestTester.scala", "BackendInterface.scala")
-    val topFileNameGuess = (new Throwable).getStackTrace.apply(1).getFileName()
+    val topFileNameGuess = (new Throwable).getStackTrace.apply(2).getFileName()
     if (internalFiles.contains(topFileNameGuess)) {
       println("Unable to guess top-level testdriver filename from stack trace")
       topFileName = None
