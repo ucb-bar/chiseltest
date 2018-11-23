@@ -28,7 +28,9 @@ trait ChiselScalatestTester extends Assertions with TestEnvInterface {
   }
 
   override def testerExpect(expected: Any, actual: Any, signal: String, msg: Option[String]): Unit = {
-    val callingStackDepth = 5
+    // Depth in the stack trace where expect is called in use test code.
+    val callingStackDepth = 6
+
     if (expected != actual) {
       val appendMsg = msg match {
         case Some(msg) => s": $msg"
@@ -36,11 +38,9 @@ trait ChiselScalatestTester extends Assertions with TestEnvInterface {
       }
       // TODO: this depends on all user test code being in a new thread (so much of the plumbing
       // is pre-filtered out) - which is true only for the ThreadedBackend.
+      val traceThrowable = new Throwable
       val detailedTrace = topFileName.map { fileName =>
-        // Add 4 to the depth:
-        // 3 for the map and applies
-        // 1 for the element that will be reported by ScalaTest
-        val lineNumbers = (new Throwable).getStackTrace.drop(callingStackDepth + 4).collect {
+        val lineNumbers = traceThrowable.getStackTrace.drop(callingStackDepth).collect {
           case ste if ste.getFileName == fileName => ste.getLineNumber
         }.mkString(", ")
         if (lineNumbers.isEmpty()) {
