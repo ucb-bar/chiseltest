@@ -46,6 +46,24 @@ class BundleLiteralSpec extends FlatSpec with ChiselScalatestTester {
     }
   }
 
+  it should "expect Bundle literals" in {
+    test(new PassthroughModule(new DoubleElements)) { c =>
+      c.in.poke(c.in.Lit(0.U, 1.U))
+      c.out.expect(c.in.Lit(0.U, 1.U))
+      c.in.poke(c.in.Lit(2.U, 5.U))
+      c.out.expect(c.in.Lit(2.U, 5.U))
+    }
+  }
+
+  it should "fail on expect mismatch" in {
+    assertThrows[exceptions.TestFailedException] {
+      test(new PassthroughModule(new DoubleElements)) { c =>
+        c.in.poke(c.in.Lit(0.U, 1.U))
+        c.out.expect(c.in.Lit(0.U, 2.U))
+      }
+    }
+  }
+
   ignore should "peek Bundle literals" in {
     // TODO to be written
   }

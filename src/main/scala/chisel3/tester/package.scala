@@ -66,6 +66,13 @@ package object tester {
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
         Context().backend.expectBits(x, value.litValue, stale)
       }
+      case (x: Bundle, value: Bundle) => {
+        // TODO: chisel needs to expose typeEquivalent
+        require(x.elements.keys == value.elements.keys)  // TODO: this discards type data =(
+        (x.elements zip value.elements) foreach { case ((_, x), (_, value)) =>
+          x.expectWithStale(value, stale)
+        }
+      }
       case x => throw new LiteralTypeException(s"don't know how to expect $x")
       // TODO: aggregate types
     }
