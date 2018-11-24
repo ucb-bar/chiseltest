@@ -24,10 +24,10 @@ class QueueTest extends FlatSpec with ChiselScalatestTester {
       sink.expectInvalid()
       source.enqueueNow(42.U)
       parallel(
-          sink.dequeueNowExpect(42.U),
+          sink.expectDequeueNow(42.U),
           source.enqueueNow(43.U)
       )
-      sink.dequeueNowExpect(43.U)
+      sink.expectDequeueNow(43.U)
     }
   }
 
@@ -48,11 +48,11 @@ class QueueTest extends FlatSpec with ChiselScalatestTester {
 
       sink.expectInvalid()
       c.clock.step(1)  // wait for first element to enqueue
-      sink.dequeueNowExpect(42.U)
+      sink.expectDequeueNow(42.U)
       sink.expectPeek(43.U)  // check that queue stalls
       c.clock.step(1)
-      sink.dequeueNowExpect(43.U)
-      sink.dequeueNowExpect(44.U)
+      sink.expectDequeueNow(43.U)
+      sink.expectDequeueNow(44.U)
       sink.expectInvalid()
     }
   }

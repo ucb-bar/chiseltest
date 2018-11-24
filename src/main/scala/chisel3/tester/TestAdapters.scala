@@ -22,11 +22,11 @@ package object TestAdapters {
     }
 
     def enqueue(data: T): Unit = timescope {
+      x.valid.poke(true.B)
       while (x.ready.peek().litToBoolean == false) {
         clk.step(1)
       }
       x.bits.poke(data)
-      x.valid.poke(true.B)
       clk.step(1)
     }
 
@@ -47,12 +47,13 @@ package object TestAdapters {
       }
     }
 
-    def dequeueExpect(data: T): Unit = {
+    def expectDequeue(data: T): Unit = timescope {
+      x.ready.poke(true.B)
       waitForValid()
-      dequeueNowExpect(data)
+      expectDequeueNow(data)
     }
 
-    def dequeueNowExpect(data: T): Unit = timescope {
+    def expectDequeueNow(data: T): Unit = timescope {
       x.valid.expect(true.B)
       x.bits.expect(data)
       x.ready.poke(true.B)

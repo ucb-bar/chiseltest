@@ -24,7 +24,7 @@ class FaultLocatorTest extends FlatSpec with ChiselScalatestTester with Matchers
         c.in.valid.poke(true.B)
         c.in.bits.poke(false.B)  // Have this be a data failure only
         val sink = new ReadyValidSink(c.out, c.clock)
-        sink.dequeueNowExpect(true.B)
+        sink.expectDequeueNow(true.B)
       }
     }
     // Only check the filename to avoid this being too brittle as TestAdapters.scala changes
@@ -39,7 +39,7 @@ class FaultLocatorTest extends FlatSpec with ChiselScalatestTester with Matchers
         c.in.bits.poke(false.B)  // Have this be a data failure only
         val sink = new ReadyValidSink(c.out, c.clock)
         fork {
-          sink.dequeueNowExpect(true.B)
+          sink.expectDequeueNow(true.B)
         } .join
       }
     }
