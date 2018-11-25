@@ -36,6 +36,13 @@ class AsyncClockTest extends FlatSpec with ChiselScalatestTester {
 
       c.inClk.poke(true.B)  // but should update on posedge, even if realtime not udpated
       c.out.expect(42.U)
+      c.inClk.poke(false.B)
+      c.out.expect(42.U)
+
+      c.in.poke(43.U)
+      c.inClk.poke(true.B)
+      c.inClk.poke(false.B)  // hard mode, no circuit prop at all
+      c.out.expect(43.U)
     }
   }
 
@@ -56,6 +63,7 @@ class AsyncClockTest extends FlatSpec with ChiselScalatestTester {
       c.inRst.poke(true.B)
       c.inClk.poke(true.B);  c.inClk.poke(false.B)
       c.out.expect(0.U)
+      c.inRst.poke(false.B)
 
       c.in.poke(42.U)
       c.clock.step()  // easy mode: realtime advances
@@ -64,10 +72,6 @@ class AsyncClockTest extends FlatSpec with ChiselScalatestTester {
       c.inClk.poke(false.B)
       c.clock.step()
       c.out.expect(42.U)
-
-      c.in.poke(43.U)
-      c.inClk.poke(true.B);  c.inClk.poke(false.B)  // hard mode: no realtime advance
-      c.out.expect(43.U)
 
       c.inRst.poke(true.B)
       c.inClk.poke(true.B);  c.inClk.poke(false.B)
