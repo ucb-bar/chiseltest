@@ -50,11 +50,11 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
     a
   }
 
-  override def expectBits(signal: Bits, value: BigInt, stale: Boolean): Unit = {
+  override def expectBits(signal: Bits, value: BigInt, message: Option[String], stale: Boolean): Unit = {
     require(!stale, "Stale peek not yet implemented")
 
     debugLog(s"${resolveName(signal)} ?> $value")
-    Context().env.testerExpect(value, peekBits(signal, stale), resolveName(signal), None)
+    Context().env.testerExpect(value, peekBits(signal, stale), resolveName(signal), message)
   }
 
   protected val clockCounter : mutable.HashMap[Clock, Int] = mutable.HashMap()

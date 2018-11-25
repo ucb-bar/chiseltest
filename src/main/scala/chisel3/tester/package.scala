@@ -54,30 +54,31 @@ package object tester {
     def peek(): T = peekWithStale(false)
     // def stalePeek(): T = peekWithStale(true)  // TODO: can this be replaced w/ phases?
 
-    protected def expectWithStale(value: T, stale: Boolean): Unit = (x, value) match {
-      case (x: Bool, value: Bool) => Context().backend.expectBits(x, value.litValue, stale)
+    protected def expectWithStale(value: T, message: Option[String], stale: Boolean): Unit = (x, value) match {
+      case (x: Bool, value: Bool) => Context().backend.expectBits(x, value.litValue, message, stale)
       // TODO can't happen because of type paramterization
       case (x: Bool, value: Bits) => throw new LiteralTypeException(s"can only expect signals of type Bool with Bool value")
-      case (x: Bits, value: UInt) => Context().backend.expectBits(x, value.litValue, stale)
-      case (x: SInt, value: SInt) => Context().backend.expectBits(x, value.litValue, stale)
+      case (x: Bits, value: UInt) => Context().backend.expectBits(x, value.litValue, message, stale)
+      case (x: SInt, value: SInt) => Context().backend.expectBits(x, value.litValue, message, stale)
       // TODO can't happen because of type paramterization
       case (x: Bits, value: SInt) => throw new LiteralTypeException(s"can only expect SInt value from signals of type SInt")
       case (x: FixedPoint, value: FixedPoint) => {
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
-        Context().backend.expectBits(x, value.litValue, stale)
+        Context().backend.expectBits(x, value.litValue, message, stale)
       }
       case (x: Bundle, value: Bundle) => {
         // TODO: chisel needs to expose typeEquivalent
         require(x.elements.keys == value.elements.keys)  // TODO: this discards type data =(
         (x.elements zip value.elements) foreach { case ((_, x), (_, value)) =>
-          x.expectWithStale(value, stale)
+          x.expectWithStale(value, message, stale)
         }
       }
       case x => throw new LiteralTypeException(s"don't know how to expect $x")
       // TODO: aggregate types
     }
 
-    def expect(value: T): Unit = expectWithStale(value, false)
+    def expect(value: T): Unit = expectWithStale(value, None, false)
+    def expect(value: T, message: String): Unit = expectWithStale(value, Some(message), false)
     // def staleExpect(value: T): Unit = expectWithStale(value, true)  // TODO: can this be replaced w/ phases?
   }
 

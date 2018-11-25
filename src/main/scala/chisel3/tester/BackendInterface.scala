@@ -43,7 +43,7 @@ trait BackendInterface {
     */
   def peekBits(signal: Bits, stale: Boolean): BigInt
 
-  def expectBits(signal: Bits, value: BigInt, stale: Boolean): Unit
+  def expectBits(signal: Bits, value: BigInt, message: Option[String], stale: Boolean): Unit
 
   /** Advances the target clock by one cycle.
     */

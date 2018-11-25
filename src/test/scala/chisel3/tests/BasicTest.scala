@@ -5,7 +5,7 @@ import org.scalatest._
 import chisel3._
 import chisel3.tester._
 
-class BasicTest extends FlatSpec with ChiselScalatestTester {
+class BasicTest extends FlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2"
 
   it should "test static circuits" in {
@@ -20,6 +20,14 @@ class BasicTest extends FlatSpec with ChiselScalatestTester {
         c.out.expect(0.U)
       }
     }
+  }
+
+  it should "fail with user-defined message" in {
+    intercept[exceptions.TestFailedException] {
+      test(new StaticModule(42.U)) { c =>
+        c.out.expect(0.U, "user-defined failure message =(")
+      }
+    }.getMessage should include ("user-defined failure message =(")
   }
 
   it should "test inputless sequential circuits" in {
