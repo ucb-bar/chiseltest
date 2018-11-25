@@ -39,6 +39,41 @@ class AsyncClockTest extends FlatSpec with ChiselScalatestTester {
     }
   }
 
+  it should "work with async clock and reset signals" in {
+    test(new MultiIOModule {
+      val inClk = IO(Input(Bool()))
+      val inRst = IO(Input(Bool()))
+      val in = IO(Input(UInt(8.W)))
+      val out = IO(Output(UInt(8.W)))
+
+      withClockAndReset(inClk.asClock, inRst) {
+        val outReg = RegInit(in, 0.U)
+        out := outReg
+      }
+    }) { c =>
+      c.inClk.poke(false.B)
+
+      c.inRst.poke(true.B)
+      c.inClk.poke(true.B);  c.inClk.poke(false.B)
+      c.out.expect(0.U)
+
+      c.in.poke(42.U)
+      c.clock.step()  // easy mode: realtime advances
+      c.inClk.poke(true.B)
+      c.clock.step()
+      c.inClk.poke(false.B)
+      c.clock.step()
+      c.out.expect(42.U)
+
+      c.in.poke(43.U)
+      c.inClk.poke(true.B);  c.inClk.poke(false.B)  // hard mode: no realtime advance
+      c.out.expect(43.U)
+
+      c.inRst.poke(true.B)
+      c.inClk.poke(true.B);  c.inClk.poke(false.B)
+      c.out.expect(0.U)
+    }
+  }
 
   // Counterintuitive syntax, probably disallowed by the FIRRTL spec
   // But here's a test case until the answer is clarified
