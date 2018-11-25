@@ -47,7 +47,7 @@ class AsyncClockTest extends FlatSpec with ChiselScalatestTester {
       val out = IO(Output(UInt(8.W)))
 
       withClockAndReset(inClk.asClock, inRst) {
-        val outReg = RegInit(in, 0.U)
+        val outReg = RegNext(in, 0.U)
         out := outReg
       }
     }) { c =>
