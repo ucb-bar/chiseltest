@@ -5,11 +5,9 @@ package chisel3.tester
 import chisel3._
 import chisel3.experimental.{DataMirror, MultiIOModule}
 import firrtl.transforms.CombinationalPath
-import java.util.concurrent.{Semaphore, TimeUnit}
-import scala.collection.mutable
+import treadle.{HasTreadleSuite, TreadleTester}
 
 import scala.collection.mutable
-import treadle.{HasTreadleSuite, TreadleTester}
 
 // TODO: is Seq[CombinationalPath] the right API here? It's unclear where name -> Data resolution should go
 class TreadleBackend[T <: MultiIOModule](dut: T,
@@ -162,9 +160,8 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
 }
 
 object TreadleExecutive {
-  import chisel3.internal.firrtl.Circuit
   import chisel3.experimental.BaseModule
-
+  import chisel3.internal.firrtl.Circuit
   import firrtl._
 
   def getTopModule(circuit: Circuit): BaseModule = {
@@ -195,10 +192,7 @@ object TreadleExecutive {
 
   def start[T <: MultiIOModule](
     dutGen: () => T,
-    options: Option[ExecutionOptionsManager
-            with HasChiselExecutionOptions
-            with HasFirrtlOptions
-            with HasTreadleSuite] = None): BackendInstance[T] = {
+    options: Option[Testers2OptionsManager] = None): BackendInstance[T] = {
     val optionsManager = options match  {
       case Some(o: ExecutionOptionsManager) => o
       case None => new ExecutionOptionsManager("chisel3")
