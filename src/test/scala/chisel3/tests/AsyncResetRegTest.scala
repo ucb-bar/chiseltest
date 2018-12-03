@@ -4,32 +4,35 @@ package chisel3.tests
 
 
 import chisel3._
-import chisel3.core.IntParam
+import chisel3.core.{ExtModule, IntParam}
 import chisel3.tester._
-import chisel3.util.{Cat, HasBlackBoxResource}
+import chisel3.util.Cat
 import firrtl.ir.{Param, Type}
 import org.scalatest._
 import treadle.executable.{PositiveEdge, Transition}
 import treadle.{ScalaBlackBox, ScalaBlackBoxFactory}
 
-object AsyncResetReg {
-  val bitWidth: Int = 3
+class SingleBitRegIO extends Bundle {
+  val in: UInt = Input(UInt(1.W))
+  val out: UInt = Output(UInt(1.W))
+  val enable: Bool = Input(Bool())
 }
 
-class AsyncResetReg(resetValue: Int = 0)
-        extends BlackBox(Map("RESET_VALUE" -> IntParam(resetValue))) with HasBlackBoxResource {
-  val io = IO(new Bundle {
-    val d = Input(Bool())
-    val q = Output(Bool())
-    val en = Input(Bool())
-
-    val clk = Input(Clock())
-    val rst = Input(Bool())
-  })
-
-  setResource("/vsrc/AsyncResetReg.v")
+/**
+  * This is a black box example that only works with treadle as it does not
+  * define the necessary verilog for verilator/VCS
+  * @param resetValue reset value for this 1 bit register
+  */
+class AsyncResetReg(resetValue: Int = 0) extends ExtModule(Map("RESET_VALUE" -> IntParam(resetValue))) {
+  val io: SingleBitRegIO = IO(new SingleBitRegIO)
+  val clock: Clock = IO(Input(Clock()))
+  val reset: Bool = IO(Input(Bool()))
 }
 
+/**
+  * This is the scala implementation of the AsyncResetReg black box.
+  * @param instanceName full path name for this instance
+  */
 class AsyncResetRegScalaImpl(instanceName: String) extends ScalaBlackBox {
   override def name: String = "AsyncResetReg"
 
@@ -44,16 +47,16 @@ class AsyncResetRegScalaImpl(instanceName: String) extends ScalaBlackBox {
 
   override def inputChanged(name: String, value: BigInt): Unit = {
     name match {
-      case "d"     => nextValue = value
-      case "en"    => enable = value > BigInt(0)
-      case "rst"   =>
+      case "io_in"     => nextValue = value
+      case "io_enable" => enable = value > BigInt(0)
+      case "reset"     =>
         if(value > BigInt(0)) {
           nextValue = resetValue
           currentValue = nextValue
         }
       case _ =>
+        println(s"WARNING: treadle black box $instanceName called with UNHANDLED $name <= $value")
     }
-    println(s"next $nextValue cur $currentValue, en $enable")
   }
 
   override def clockChange(transition: Transition, clockName: String): Unit = {
@@ -63,19 +66,22 @@ class AsyncResetRegScalaImpl(instanceName: String) extends ScalaBlackBox {
   }
 
   override def outputDependencies(outputName: String): Seq[String] = {
-    Seq("rst", "clk", "d")
+    Seq("reset", "clock", "io_in", "io_enable")
   }
 
   override def setParams(params: Seq[Param]): Unit = {
     params.foreach {
       case firrtl.ir.IntParam("RESET_VALUE", value) =>
         resetValue = value
-      case _ =>
-      // ignore
+      case param =>
+        println(s"WARNING: treadle black box $instanceName called with Verilog Parameter $param")
     }
   }
 }
 
+/**
+  * This generates the black box instance that Treadle will use
+  */
 class AsyncResetBlackBoxFactory extends ScalaBlackBoxFactory {
   override def createInstance(instanceName: String, blackBoxName: String): Option[ScalaBlackBox] = {
     blackBoxName match {
@@ -87,50 +93,54 @@ class AsyncResetBlackBoxFactory extends ScalaBlackBoxFactory {
   }
 }
 
-class SimpleRegIO(val w: Int) extends Bundle{
-  val d = Input(UInt(w.W))
-  val q = Output(UInt(w.W))
-  val en = Input(Bool())
+class MultiBitRegIO(val w: Int) extends Bundle{
+  val in = Input(UInt(w.W))
+  val out = Output(UInt(w.W))
+  val enable = Input(Bool())
 }
 
 class AsyncResetRegVec(val w: Int, val init: BigInt) extends Module {
-  val io: SimpleRegIO = IO(new SimpleRegIO(w))
+  val io: MultiBitRegIO = IO(new MultiBitRegIO(w))
 
   private val async_regs = List.tabulate(w) { idx =>
     val on = if (init.testBit(idx)) 1 else 0
     Module(new AsyncResetReg(on))
   }
 
-  private val q = for ((reg, idx) <- async_regs.zipWithIndex) yield {
-    reg.io.clk := clock
-    reg.io.rst := reset
-    reg.io.d   := io.d(idx)
-    reg.io.en  := io.en
+  private val outs = for ((reg, idx) <- async_regs.zipWithIndex) yield {
+    reg.clock     := clock
+    reg.reset     := reset
+    reg.io.in     := io.in(idx)
+    reg.io.enable := io.enable
     reg.suggestName(s"reg_$idx")
-    reg.io.q
+    reg.io.out
   }
 
-  //endian
-  io.q := q.reverse.map(_.asUInt()).reduce { (a, b) => Cat(a, b) }
+  // reverse fixes wrong endian type
+  io.out := outs.reverse.map(_.asUInt()).reduce { (a, b) => Cat(a, b) }
 
   override def desiredName = s"AsyncResetRegVec_w${w}_i$init"
-
 }
 
-class UsesAsyncResetReg extends Module {
+/**
+  * circuit that illustrates usage of async register
+  * @param registerBitWidth the number of bits in the register
+  */
+class UsesAsyncResetReg(registerBitWidth: Int) extends Module {
+  //noinspection TypeAnnotation
   val io = IO(new Bundle {
-    val in = Input(UInt(AsyncResetReg.bitWidth.W))
-    val out = Output(UInt(AsyncResetReg.bitWidth.W))
+    val in = Input(UInt(registerBitWidth.W))
+    val out = Output(UInt(registerBitWidth.W))
   })
 
-  val reg = Module(new AsyncResetRegVec(AsyncResetReg.bitWidth, init = 3))
+  val reg = Module(new AsyncResetRegVec(registerBitWidth, init = 3))
 
-  reg.io.d := io.in
+  reg.io.in := io.in
   reg.clock := clock
   reg.reset := reset
-  reg.io.en := 1.U
+  reg.io.enable := 1.U
 
-  io.out := reg.io.q
+  io.out := reg.io.out
 }
 
 class AsyncResetRegTest extends FreeSpec with ChiselScalatestTester {
@@ -139,10 +149,11 @@ class AsyncResetRegTest extends FreeSpec with ChiselScalatestTester {
 
     val manager = new Testers2OptionsManager {
       treadleOptions = treadleOptions.copy(
-        blackBoxFactories = Seq(new AsyncResetBlackBoxFactory)
+        blackBoxFactories = Seq(new AsyncResetBlackBoxFactory),
+        setVerbose = false
       )
     }
-    test(new UsesAsyncResetReg, manager) { c =>
+    test(new UsesAsyncResetReg(registerBitWidth = 3), manager) { c =>
 
       // testers default reset will set initial value to 3
       c.io.in.poke(7.U)
