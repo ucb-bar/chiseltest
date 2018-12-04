@@ -132,9 +132,8 @@ class AsyncResetSingleBitRegTest extends FreeSpec with ChiselScalatestTester {
   "reset a register works after register has been altered" in {
     test(new UsesSingleBitAsyncResetReg(1), manager) { dut =>
 
-      // The register starts at zero after default reset and step in tester startup
-      dut.clock.step()
-      dut.io.out.expect(0.U)
+      // The register starts at 1 after default reset in tester startup
+      dut.io.out.expect(1.U)
 
       // register is still zero, after it has been poked to 0
       dut.io.in.poke(1.U)

@@ -160,8 +160,8 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
 }
 
 object TreadleExecutive {
-  import chisel3.experimental.BaseModule
   import chisel3.internal.firrtl.Circuit
+  import chisel3.experimental.BaseModule
   import firrtl._
 
   def getTopModule(circuit: Circuit): BaseModule = {
