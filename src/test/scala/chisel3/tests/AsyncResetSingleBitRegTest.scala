@@ -6,7 +6,6 @@ package chisel3.tests
 import chisel3._
 import chisel3.core.{ExtModule, IntParam}
 import chisel3.tester._
-import chisel3.util.Cat
 import firrtl.ir.{Param, Type}
 import org.scalatest._
 import treadle.executable.{PositiveEdge, Transition}
@@ -51,8 +50,7 @@ class AsyncResetRegScalaImpl(instanceName: String) extends ScalaBlackBox {
       case "io_enable" => enable = value > BigInt(0)
       case "reset"     =>
         if(value > BigInt(0)) {
-          nextValue = resetValue
-          currentValue = nextValue
+          currentValue = resetValue
         }
       case _ =>
         println(s"WARNING: treadle black box $instanceName called with UNHANDLED $name <= $value")
@@ -92,48 +90,18 @@ class AsyncResetBlackBoxFactory extends ScalaBlackBoxFactory {
     }
   }
 }
-
-class MultiBitRegIO(val w: Int) extends Bundle{
-  val in = Input(UInt(w.W))
-  val out = Output(UInt(w.W))
-  val enable = Input(Bool())
-}
-
-class AsyncResetRegVec(val w: Int, val init: BigInt) extends Module {
-  val io: MultiBitRegIO = IO(new MultiBitRegIO(w))
-
-  private val async_regs = List.tabulate(w) { idx =>
-    val on = if (init.testBit(idx)) 1 else 0
-    Module(new AsyncResetReg(on))
-  }
-
-  private val outs = for ((reg, idx) <- async_regs.zipWithIndex) yield {
-    reg.clock     := clock
-    reg.reset     := reset
-    reg.io.in     := io.in(idx)
-    reg.io.enable := io.enable
-    reg.suggestName(s"reg_$idx")
-    reg.io.out
-  }
-
-  // reverse fixes wrong endian type
-  io.out := outs.reverse.map(_.asUInt()).reduce { (a, b) => Cat(a, b) }
-
-  override def desiredName = s"AsyncResetRegVec_w${w}_i$init"
-}
-
 /**
   * circuit that illustrates usage of async register
-  * @param registerBitWidth the number of bits in the register
+  * @param resetValue value on reset
   */
-class UsesAsyncResetReg(registerBitWidth: Int) extends Module {
+class UsesSingleBitAsyncResetReg(resetValue: Int) extends Module {
   //noinspection TypeAnnotation
   val io = IO(new Bundle {
-    val in = Input(UInt(registerBitWidth.W))
-    val out = Output(UInt(registerBitWidth.W))
+    val in = Input(UInt(1.W))
+    val out = Output(UInt(1.W))
   })
 
-  val reg = Module(new AsyncResetRegVec(registerBitWidth, init = 3))
+  val reg = Module(new AsyncResetReg(resetValue))
 
   reg.io.in := io.in
   reg.clock := clock
@@ -143,27 +111,79 @@ class UsesAsyncResetReg(registerBitWidth: Int) extends Module {
   io.out := reg.io.out
 }
 
-class AsyncResetRegTest extends FreeSpec with ChiselScalatestTester {
-
-  "it should work normally with respect to clock" in {
-
-    val manager = new Testers2OptionsManager {
-      treadleOptions = treadleOptions.copy(
-        blackBoxFactories = Seq(new AsyncResetBlackBoxFactory),
-        setVerbose = false
-      )
+class AsyncResetSingleBitRegTest extends FreeSpec with ChiselScalatestTester {
+  private val manager = new Testers2OptionsManager {
+    treadleOptions = treadleOptions.copy(
+      blackBoxFactories = Seq(new AsyncResetBlackBoxFactory),
+      writeVCD = true,
+      setVerbose = false
+    )
+  }
+  "register is zero, after tester startup's default reset" in {
+    test(new UsesSingleBitAsyncResetReg(0), manager) { dut =>
+      dut.io.out.expect(0.U)
     }
-    test(new UsesAsyncResetReg(registerBitWidth = 3), manager) { c =>
+  }
+  "register is one, after tester startup's default reset" in {
+    test(new UsesSingleBitAsyncResetReg(1), manager) { dut =>
+      dut.io.out.expect(1.U)
+    }
+  }
+  "reset a register works after register has been altered" in {
+    test(new UsesSingleBitAsyncResetReg(1), manager) { dut =>
 
-      // testers default reset will set initial value to 3
-      c.io.in.poke(7.U)
-      c.io.out.expect(3.U)
-      c.clock.step()
-      c.io.out.expect(7.U)
+      // The register starts at zero after default reset and step in tester startup
+      dut.clock.step()
+      dut.io.out.expect(0.U)
 
-      // reset immediately is visible with after reset is poked again
-      c.reset.poke(true.B)
-      c.io.out.expect(3.U)
+      // register is still zero, after it has been poked to 0
+      dut.io.in.poke(1.U)
+      dut.io.out.expect(0.U)
+
+      // after clock is stepped, now poked input from above appears as output
+      dut.clock.step()
+      dut.io.out.expect(1.U)
+
+      // register is set back to zero
+      dut.io.in.poke(0.U)
+      dut.io.out.expect(1.U)
+      dut.clock.step()
+      dut.io.out.expect(0.U)
+
+      // reset of register shows up immediately
+      dut.reset.poke(true.B)
+      dut.io.out.expect(1.U)
+
+      // after de-assert of reset, register retains value
+      dut.reset.poke(false.B)
+      dut.io.out.expect(1.U)
+
+      // after step zero from io.in is now seen in register
+      dut.clock.step()
+      dut.io.out.expect(0.U)
+    }
+  }
+  "de-assert reset behaviour" in {
+    test(new UsesSingleBitAsyncResetReg(1), manager) { dut =>
+
+      // register is reset at startup, and set to zero by poking
+      dut.clock.step()
+      dut.io.out.expect(0.U)
+      dut.io.in.poke(0.U)
+      dut.clock.step()
+      dut.io.out.expect(0.U)
+
+      // reset of register shows up immediately
+      dut.reset.poke(true.B)
+      dut.io.out.expect(1.U)
+
+      // after de-assert of reset, register retains value
+      dut.reset.poke(false.B)
+      dut.io.out.expect(1.U)
+
+      dut.clock.step()
+      dut.io.out.expect(0.U)
+
     }
   }
 }
