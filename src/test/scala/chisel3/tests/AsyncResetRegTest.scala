@@ -2,14 +2,14 @@
 
 package chisel3.tests
 
-
 import chisel3._
 import chisel3.core.{ExtModule, IntParam}
 import chisel3.tester._
+import firrtl.ExecutionOptionsManager
 import firrtl.ir.{Param, Type}
 import org.scalatest._
 import treadle.executable.{PositiveEdge, Transition}
-import treadle.{ScalaBlackBox, ScalaBlackBoxFactory}
+import treadle.{HasTreadleSuite, ScalaBlackBox, ScalaBlackBoxFactory}
 
 class SingleBitRegIO extends Bundle {
   val in: UInt = Input(UInt(1.W))
@@ -94,7 +94,7 @@ class AsyncResetBlackBoxFactory extends ScalaBlackBoxFactory {
   * circuit that illustrates usage of async register
   * @param resetValue value on reset
   */
-class UsesSingleBitAsyncResetReg(resetValue: Int) extends Module {
+class AsyncResetRegModule(resetValue: Int) extends Module {
   //noinspection TypeAnnotation
   val io = IO(new Bundle {
     val in = Input(UInt(1.W))
@@ -111,8 +111,8 @@ class UsesSingleBitAsyncResetReg(resetValue: Int) extends Module {
   io.out := reg.io.out
 }
 
-class AsyncResetSingleBitRegTest extends FreeSpec with ChiselScalatestTester {
-  private val manager = new Testers2OptionsManager {
+class AsyncResetRegTest extends FreeSpec with ChiselScalatestTester {
+  private val manager = new ExecutionOptionsManager("asyncResetRegTest") with HasTreadleSuite {
     treadleOptions = treadleOptions.copy(
       blackBoxFactories = Seq(new AsyncResetBlackBoxFactory),
       writeVCD = true,
@@ -120,24 +120,23 @@ class AsyncResetSingleBitRegTest extends FreeSpec with ChiselScalatestTester {
     )
   }
   "register is zero, after tester startup's default reset" in {
-    test(new UsesSingleBitAsyncResetReg(0), manager) { dut =>
+    test(new AsyncResetRegModule(0), manager) { dut =>
       dut.io.out.expect(0.U)
     }
   }
   "register is one, after tester startup's default reset" in {
-    test(new UsesSingleBitAsyncResetReg(1), manager) { dut =>
+    test(new AsyncResetRegModule(1), manager) { dut =>
       dut.io.out.expect(1.U)
     }
   }
   "reset a register works after register has been altered" in {
-    test(new UsesSingleBitAsyncResetReg(1), manager) { dut =>
-
+    test(new AsyncResetRegModule(1), manager) { dut =>
       // The register starts at 1 after default reset in tester startup
       dut.io.out.expect(1.U)
 
       // register is still zero, after it has been poked to 0
       dut.io.in.poke(1.U)
-      dut.io.out.expect(0.U)
+      dut.io.out.expect(1.U)
 
       // after clock is stepped, now poked input from above appears as output
       dut.clock.step()
@@ -163,8 +162,7 @@ class AsyncResetSingleBitRegTest extends FreeSpec with ChiselScalatestTester {
     }
   }
   "de-assert reset behaviour" in {
-    test(new UsesSingleBitAsyncResetReg(1), manager) { dut =>
-
+    test(new AsyncResetRegModule(1), manager) { dut =>
       // register is reset at startup, and set to zero by poking
       dut.clock.step()
       dut.io.out.expect(0.U)
