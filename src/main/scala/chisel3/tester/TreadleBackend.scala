@@ -4,12 +4,12 @@ package chisel3.tester
 
 import chisel3._
 import chisel3.experimental.{DataMirror, MultiIOModule}
+import chisel3.HasChiselExecutionOptions
 import firrtl.transforms.CombinationalPath
-import java.util.concurrent.{Semaphore, TimeUnit}
-import scala.collection.mutable
+import firrtl.{ExecutionOptionsManager, HasFirrtlOptions}
+import treadle.{HasTreadleSuite, TreadleTester}
 
 import scala.collection.mutable
-import treadle.{HasTreadleSuite, TreadleTester}
 
 // TODO: is Seq[CombinationalPath] the right API here? It's unclear where name -> Data resolution should go
 class TreadleBackend[T <: MultiIOModule](dut: T,
@@ -164,7 +164,6 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
 object TreadleExecutive {
   import chisel3.internal.firrtl.Circuit
   import chisel3.experimental.BaseModule
-
   import firrtl._
 
   def getTopModule(circuit: Circuit): BaseModule = {
@@ -194,21 +193,34 @@ object TreadleExecutive {
   }
 
   def start[T <: MultiIOModule](
-    dutGen: () => T,
-    options: Option[ExecutionOptionsManager
-            with HasChiselExecutionOptions
-            with HasFirrtlOptions
-            with HasTreadleSuite] = None): BackendInstance[T] = {
-    val optionsManager = options match  {
-      case Some(o: ExecutionOptionsManager) => o
-      case None => new ExecutionOptionsManager("chisel3")
-          with HasChiselExecutionOptions with HasFirrtlOptions with HasTreadleSuite
+      dutGen: () => T,
+      userOptions: Option[ExecutionOptionsManager] = None): BackendInstance[T] = {
+    // Create the base options manager that has all the components we care about, and initialize defaults
+    val optionsManager = new ExecutionOptionsManager("chisel3")
+        with HasChiselExecutionOptions with HasFirrtlOptions with HasTreadleSuite
+
+    optionsManager.treadleOptions = optionsManager.treadleOptions.copy(writeVCD = true)
+
+    // If the user specified options, override the default fields.
+    // Note: commonOptions and firrtlOptions are part of every ExecutionOptionsManager, so will always be defined
+    // whether the user intended to or not. In those cases testers2 forces an override to the testers2 defaults.
+    userOptions foreach {
+      case userOptions: HasChiselExecutionOptions => optionsManager.chiselOptions = userOptions.chiselOptions
+      case _ =>
     }
-    // the backend must be firrtl if we are here, therefore we want the firrtl compiler
     optionsManager.commonOptions = optionsManager.commonOptions.copy(
         targetDirName = s"test_run_dir/${dutGen.getClass.getName}")
+
+    userOptions foreach {
+      case userOptions: HasFirrtlOptions => optionsManager.firrtlOptions = userOptions.firrtlOptions
+      case _ =>
+    }
     optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(compilerName = "low")
-    optionsManager.treadleOptions = optionsManager.treadleOptions.copy(writeVCD = true)
+
+    userOptions foreach {
+      case userOptions: HasTreadleSuite => optionsManager.treadleOptions = userOptions.treadleOptions
+      case _ =>
+    }
 
     chisel3.Driver.execute(optionsManager, dutGen) match {
       case ChiselExecutionSuccess(Some(circuit), _, Some(firrtlExecutionResult)) =>

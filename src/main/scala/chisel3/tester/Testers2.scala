@@ -3,9 +3,8 @@
 package chisel3.tester
 
 import scala.util.DynamicVariable
-import chisel3._
 import chisel3.experimental.MultiIOModule
-import firrtl.{ExecutionOptionsManager, HasFirrtlOptions}
+import firrtl.ExecutionOptionsManager
 
 object Context {
   class Instance(val backend: BackendInterface, val env: TestEnvInterface) {
@@ -25,12 +24,9 @@ object Context {
   }
 
   // TODO: add TesterOptions (from chisel-testers) and use that to control default tester selection.
-  def createDefaultTester[T <: MultiIOModule](
-    dutGen: () => T,
-    options: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions
-  ): BackendInstance[T] = {
-    // TODO: pass options to interpreter
-    TreadleExecutive.start(dutGen)
+  def createDefaultTester[T <: MultiIOModule](dutGen: () => T, options: ExecutionOptionsManager
+      ): BackendInstance[T] = {
+    TreadleExecutive.start(dutGen, Some(options))
   }
 
   def apply(): Instance = context.value.get
