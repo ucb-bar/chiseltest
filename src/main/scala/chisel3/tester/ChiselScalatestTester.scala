@@ -3,14 +3,26 @@
 package chisel3.tester
 
 import scala.collection.mutable
+import scala.util.DynamicVariable
 
 import org.scalatest._
 import org.scalatest.exceptions.TestFailedException
 
+import firrtl.ExecutionOptionsManager
 import chisel3._
 import chisel3.experimental.MultiIOModule
 
-trait ChiselScalatestTester extends Assertions with TestEnvInterface {
+trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvInterface { this: TestSuite =>
+  // Provide test fixture data as part of 'global' context during test runs
+  protected var scalaTestContext = new DynamicVariable[Option[NoArgTest]](None)
+
+  abstract override def withFixture(test: NoArgTest): Outcome = {
+    require(scalaTestContext.value == None)
+    scalaTestContext.withValue(Some(test)) {
+      super.withFixture(test)
+    }
+  }
+
   protected val batchedFailures = mutable.ArrayBuffer[TestFailedException]()
 
   // Stack trace data to help generate more informative (and localizable) failure messages
@@ -60,10 +72,10 @@ trait ChiselScalatestTester extends Assertions with TestEnvInterface {
     }
   }
 
-  override def test[T <: MultiIOModule](tester: BackendInstance[T])(testFn: T => Unit) {
+  private def runTest[T <: MultiIOModule](tester: BackendInstance[T])(testFn: T => Unit) {
     // Try and get the user's top-level test filename
     val internalFiles = Set("ChiselScalatestTester.scala", "BackendInterface.scala")
-    val topFileNameGuess = (new Throwable).getStackTrace.apply(2).getFileName()
+    val topFileNameGuess = (new Throwable).getStackTrace.apply(3).getFileName()
     if (internalFiles.contains(topFileNameGuess)) {
       println("Unable to guess top-level testdriver filename from stack trace")
       topFileName = None
@@ -72,6 +84,16 @@ trait ChiselScalatestTester extends Assertions with TestEnvInterface {
     }
 
     batchedFailures.clear()
+
     Context.run(tester, this, testFn)
+  }
+
+  // This should be the only user-called function
+  def test[T <: MultiIOModule](dutGen: => T)(testFn: T => Unit) {
+    runTest(Context.createDefaultTester(() => dutGen, None))(testFn)
+  }
+
+  def test[T <: MultiIOModule](dutGen: => T, execOptions: ExecutionOptionsManager)(testFn: T => Unit) {
+    runTest(Context.createDefaultTester(() => dutGen, Some(execOptions)))(testFn)
   }
 }

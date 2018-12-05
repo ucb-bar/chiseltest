@@ -71,20 +71,6 @@ trait BackendInstance[T <: MultiIOModule] extends BackendInterface {
 /** Interface into the testing environment, like ScalaTest
   */
 trait TestEnvInterface {
-  // TODO: should these return boolean? or just assert out?
-  /** Runs a test, given a specific instantiated backend.
-    */
-  def test[T <: MultiIOModule](tester: BackendInstance[T])(testFn: T => Unit): Unit
-  /** Runs a test, instantiating the default backend.
-    */
-  def test[T <: MultiIOModule](dutGen: => T)(testFn: T => Unit): Unit = {
-    test(Context.createDefaultTester(() => dutGen))(testFn)
-  }
-  def test[T <: MultiIOModule](dutGen: => T, options: ExecutionOptionsManager)(testFn: T => Unit): Unit = {
-
-    test(Context.createDefaultTester(() => dutGen, options))(testFn)
-  }
-
   /** Logs a tester failure at this point.
     * Failures queued until the next checkpoint.
     */
@@ -97,7 +83,3 @@ trait TestEnvInterface {
     */
   def checkpoint()
 }
-
-sealed trait ScalaSimulator
-
-object TreadleSimulator extends ScalaSimulator
