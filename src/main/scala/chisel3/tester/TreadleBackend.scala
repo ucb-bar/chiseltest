@@ -194,32 +194,37 @@ object TreadleExecutive {
 
   def start[T <: MultiIOModule](
       dutGen: () => T,
-      userOptions: Option[ExecutionOptionsManager] = None): BackendInstance[T] = {
+      testOptions: TesterOptions,
+      execOptions: Option[ExecutionOptionsManager] = None): BackendInstance[T] = {
     // Create the base options manager that has all the components we care about, and initialize defaults
     val optionsManager = new ExecutionOptionsManager("chisel3")
         with HasChiselExecutionOptions with HasFirrtlOptions with HasTreadleSuite
 
-    optionsManager.treadleOptions = optionsManager.treadleOptions.copy(writeVCD = true)
-
     // If the user specified options, override the default fields.
     // Note: commonOptions and firrtlOptions are part of every ExecutionOptionsManager, so will always be defined
     // whether the user intended to or not. In those cases testers2 forces an override to the testers2 defaults.
-    userOptions foreach {
+    execOptions foreach {
       case userOptions: HasChiselExecutionOptions => optionsManager.chiselOptions = userOptions.chiselOptions
       case _ =>
     }
-    optionsManager.commonOptions = optionsManager.commonOptions.copy(
-        targetDirName = s"test_run_dir/${dutGen.getClass.getName}")
 
-    userOptions foreach {
+    execOptions foreach {
       case userOptions: HasFirrtlOptions => optionsManager.firrtlOptions = userOptions.firrtlOptions
       case _ =>
     }
     optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(compilerName = "low")
 
-    userOptions foreach {
+    execOptions foreach {
       case userOptions: HasTreadleSuite => optionsManager.treadleOptions = userOptions.treadleOptions
       case _ =>
+    }
+
+    // Tester options take priority over exec options
+    val testName = testOptions.name.replaceAll(" ", "_").replaceAll("\\W+", "")  // sanitize filename
+    optionsManager.commonOptions = optionsManager.commonOptions.copy(
+        targetDirName = s"test_run_dir/$testName")
+    if (testOptions.writeVcd) {
+      optionsManager.treadleOptions = optionsManager.treadleOptions.copy(writeVCD = true)
     }
 
     // Force a cleanup: long SBT runs tend to fail with memory issues

@@ -88,12 +88,17 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     Context.run(tester, this, testFn)
   }
 
+  def getTestOptions(): TesterOptions = {
+    val test = scalaTestContext.value.get
+    TesterOptions(test.name, test.configMap.contains("writeVcd"))
+  }
+
   // This should be the only user-called function
   def test[T <: MultiIOModule](dutGen: => T)(testFn: T => Unit) {
-    runTest(Context.createDefaultTester(() => dutGen, None))(testFn)
+    runTest(Context.createDefaultTester(() => dutGen, getTestOptions(), None))(testFn)
   }
 
   def test[T <: MultiIOModule](dutGen: => T, execOptions: ExecutionOptionsManager)(testFn: T => Unit) {
-    runTest(Context.createDefaultTester(() => dutGen, Some(execOptions)))(testFn)
+    runTest(Context.createDefaultTester(() => dutGen, getTestOptions(), Some(execOptions)))(testFn)
   }
 }
