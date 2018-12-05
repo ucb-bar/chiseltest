@@ -340,7 +340,6 @@ trait ThreadedBackend {
       if (pokes.length > 1) {  // multiple overlapping pokes, is an error
         // STE 0 is pokeBits method, 1 is poke abstraction
         // TODO: better stack trace element detection, chain reporting
-        pokes.foreach{ts => println(s"${ts.openedTimestep}-${ts.closedTimestep} ${ts.pokes.keySet}")}
         val pokeTraces = pokes.map { _.pokes(signal).last.trace.getStackTrace()(2) }
         throw new ThreadOrderDependentException(s"Overlapping pokes from $pokeTraces")
       } else if (pokes.length == 1) {  // just one poke, report the furthest down that chain

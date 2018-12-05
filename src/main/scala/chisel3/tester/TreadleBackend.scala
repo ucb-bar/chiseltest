@@ -222,6 +222,9 @@ object TreadleExecutive {
       case _ =>
     }
 
+    // Force a cleanup: long SBT runs tend to fail with memory issues
+    System.gc()
+
     chisel3.Driver.execute(optionsManager, dutGen) match {
       case ChiselExecutionSuccess(Some(circuit), _, Some(firrtlExecutionResult)) =>
         firrtlExecutionResult match {
