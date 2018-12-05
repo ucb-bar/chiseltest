@@ -19,6 +19,12 @@ class PassthroughModule[T <: Data](ioType: T) extends MultiIOModule {
   out := in
 }
 
+class PassthroughQueue[T <: Data](ioType: T) extends MultiIOModule {
+  val in = IO(Flipped(Decoupled(ioType)))
+  val out = IO(Decoupled(ioType))
+  out <> in
+}
+
 class ShifterModule[T <: Data](ioType: T, cycles: Int = 1) extends MultiIOModule {
   val in = IO(Input(ioType))
   val out = IO(Output(ioType))

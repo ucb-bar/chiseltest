@@ -2,28 +2,37 @@
 
 package chisel3
 
-import chisel3.experimental.FixedPoint
+import chisel3.core.ActualDirection  // TODO needs to be a public API
+import chisel3.experimental.{DataMirror, FixedPoint}
 import chisel3.internal.firrtl.FPLit
 
 class NotLiteralException(message: String) extends Exception(message)
 class LiteralTypeException(message: String) extends Exception(message)
+class UnpokeableException(message: String) extends Exception(message)
 
 /** Basic interfaces and implicit conversions for testers2
   */
 package object tester {
   import chisel3.internal.firrtl.{LitArg, ULit, SLit}
   implicit class testableData[T <: Data](x: T) {
+    protected def pokeBits(signal: Bits, value: BigInt): Unit = {
+      if (DataMirror.directionOf(signal) != ActualDirection.Input) {
+        throw new UnpokeableException("Cannot only poke inputs")
+      }
+      Context().backend.pokeBits(signal, value)
+    }
+
     def poke(value: T): Unit = (x, value) match {
-      case (x: Bool, value: Bool) => Context().backend.pokeBits(x, value.litValue)
+      case (x: Bool, value: Bool) => pokeBits(x, value.litValue)
       // TODO can't happen because of type parameterization
       case (x: Bool, value: Bits) => throw new LiteralTypeException(s"can only poke signals of type Bool with Bool value")
-      case (x: Bits, value: UInt) => Context().backend.pokeBits(x, value.litValue)
-      case (x: SInt, value: SInt) => Context().backend.pokeBits(x, value.litValue)
+      case (x: Bits, value: UInt) => pokeBits(x, value.litValue)
+      case (x: SInt, value: SInt) => pokeBits(x, value.litValue)
       // TODO can't happen because of type parameterization
       case (x: Bits, value: SInt) => throw new LiteralTypeException(s"can only poke SInt value into signals of type SInt")
       case (x: FixedPoint, value: FixedPoint) => {
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
-        Context().backend.pokeBits(x, value.litValue)
+        pokeBits(x, value.litValue)
       }
       case (x: Bundle, value: Bundle) => {
         // TODO: chisel needs to expose typeEquivalent

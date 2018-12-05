@@ -14,6 +14,14 @@ class BasicTest extends FlatSpec with ChiselScalatestTester with Matchers {
     }
   }
 
+  it should "fail on poking outputs" in {
+    assertThrows[UnpokeableException] {
+      test(new StaticModule(42.U)) { c =>
+        c.out.poke(0.U)
+      }
+    }
+  }
+
   it should "fail on expect mismatch" in {
     assertThrows[exceptions.TestFailedException] {
       test(new StaticModule(42.U)) { c =>

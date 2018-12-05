@@ -20,7 +20,7 @@ class FaultLocatorTest extends FlatSpec with ChiselScalatestTester with Matchers
 
   it should "locate source lines in libraries" in {
     val exc = intercept[exceptions.TestFailedException] {
-      test(new PassthroughModule(Decoupled(Bool()))) { c =>
+      test(new PassthroughQueue(Bool())) { c =>
         c.in.valid.poke(true.B)
         c.in.bits.poke(false.B)  // Have this be a data failure only
         val sink = new ReadyValidSink(c.out, c.clock)
@@ -34,7 +34,7 @@ class FaultLocatorTest extends FlatSpec with ChiselScalatestTester with Matchers
 
   it should "locate source lines, even in a different thread" in {
     val exc = intercept[exceptions.TestFailedException] {
-      test(new PassthroughModule(Decoupled(Bool()))) { c =>
+      test(new PassthroughQueue(Bool())) { c =>
         c.in.valid.poke(true.B)
         c.in.bits.poke(false.B)  // Have this be a data failure only
         val sink = new ReadyValidSink(c.out, c.clock)
