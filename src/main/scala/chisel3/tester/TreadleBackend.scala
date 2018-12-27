@@ -235,6 +235,9 @@ object TreadleExecutive {
         firrtlExecutionResult match {
           case success: FirrtlExecutionSuccess =>
             val dut = getTopModule(circuit).asInstanceOf[T]
+            optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
+              annotations = success.circuitState.annotations.toSeq.toList
+            )
             val interpretiveTester = new TreadleTester(success.emitted, optionsManager)
 
             val portNames = DataMirror.modulePorts(dut).flatMap { case (name, data) =>
