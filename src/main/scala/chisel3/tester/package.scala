@@ -2,6 +2,8 @@
 
 package chisel3
 
+import scala.collection.mutable
+
 import chisel3.core.ActualDirection  // TODO needs to be a public API
 import chisel3.experimental.{DataMirror, FixedPoint}
 import chisel3.internal.firrtl.FPLit
@@ -91,8 +93,21 @@ package object tester {
     // def staleExpect(value: T): Unit = expectWithStale(value, true)  // TODO: can this be replaced w/ phases?
   }
 
+  val clockLimits = new mutable.WeakHashMap[Clock, (Option[Int], Int)]() // Clock -> (MaxCycles, Steps)
   implicit class testableClock(x: Clock) {
+    private def clockLimit = clockLimits.getOrElse(x, (None, 0))
+
+    def setMaxSteps(maxSteps: Int) = clockLimits.update(x, clockLimit.copy(_1=Some(maxSteps)))
+
     def step(cycles: Int = 1): Unit = {
+      clockLimits.update(x, clockLimit match { case (maxSteps, numSteps) =>
+        val nextNumSteps = numSteps + cycles
+        maxSteps.foreach { mc =>
+          if (nextNumSteps >= mc)
+            Context().env.testerFail(s"Exceeded `maxSteps=$mc` for clock `${x.instanceName}`.")
+        }
+        (maxSteps, nextNumSteps)
+      })
       Context().backend.step(x, cycles)
     }
   }
