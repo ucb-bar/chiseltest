@@ -5,7 +5,9 @@ package chisel3.tester
 import chisel3._
 import chisel3.experimental.{DataMirror, MultiIOModule}
 import chisel3.HasChiselExecutionOptions
-import firrtl.transforms.CombinationalPath
+import firrtl.annotations.CircuitTarget
+import firrtl.transforms.{CombinationalPath}
+import firrtl.transforms.clockfinder.{ClockSources, ClockFinderTransform, GetClockSources}
 import firrtl.{ExecutionOptionsManager, HasFirrtlOptions}
 import treadle.{HasTreadleSuite, TreadleTester}
 
@@ -232,7 +234,10 @@ object TreadleExecutive {
       case userOptions: HasFirrtlOptions => optionsManager.firrtlOptions = userOptions.firrtlOptions
       case _ =>
     }
-    optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(compilerName = "low")
+    optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
+        compilerName = "low",
+        annotations = optionsManager.firrtlOptions.annotations ++ Seq(GetClockSources(Seq(CircuitTarget("ShifterModule").module("ShifterModule")))),
+        customTransforms = optionsManager.firrtlOptions.customTransforms ++ Seq(new ClockFinderTransform()))
 
     execOptions foreach {
       case userOptions: HasTreadleSuite => optionsManager.treadleOptions = userOptions.treadleOptions
