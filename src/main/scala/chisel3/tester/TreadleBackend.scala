@@ -214,6 +214,28 @@ object TreadleExecutive {
     }.toMap
   }
 
+  def clockDomainsToData(dut: BaseModule, clocks: ClockSources, dataNames: Map[Data, String]) = {
+    val nameToData = dataNames.map { case (port, name) => name -> port }  // TODO: check for aliasing
+    clocks.signalToClocks.map { case (signal, clocks) =>
+      val signalData = nameToData.get(signal.ref) match {
+        case Some(signalData) if signal.module == dut.name => Some(signalData)
+        case _ => None
+      }
+
+      val clockDatas = clocks.map { case (clock, _) =>
+        val name = clock.tokens.map(_.value).mkString(".")
+        nameToData.get(name) match {
+          case Some(clockData) if clock.module == dut.name => Some(clockData)
+          case _ => None
+        }
+      }.flatten
+
+      signalData -> clockDatas
+    }.collect {
+      case (Some(signalData), clockDatas) if !clockDatas.isEmpty => signalData -> clockDatas
+    }
+  }
+
   def start[T <: MultiIOModule](
       dutGen: () => T,
       testOptions: TesterOptions,
@@ -272,6 +294,11 @@ object TreadleExecutive {
               case c: CombinationalPath => c
             }
             val pathsAsData = combinationalPathsToData(dut, paths, portNames)
+
+            val clocksAsData = success.circuitState.annotations.collect {
+              case c: ClockSources => println(c); clockDomainsToData(dut, c, portNames)
+            }
+            println(clocksAsData)
 
             new TreadleBackend(dut, portNames, pathsAsData, interpretiveTester)
           case FirrtlExecutionFailure(message) =>
