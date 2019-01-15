@@ -16,6 +16,19 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
     val dataNames: Map[Data, String], val combinationalPaths: Map[Data, Set[Data]],
     tester: TreadleTester)
     extends BackendInstance[T] with ThreadedBackend {
+  // State for deadlock detection timeout
+  val idleCycles = mutable.Map[Clock, Int]()
+  val idleLimits = mutable.Map[Clock, Int](dut.clock -> 1000)
+
+  override def setTimeout(signal: Clock, cycles: Int): Unit = {
+    require(signal == dut.clock, "timeout currently only supports master clock")
+    if (cycles == 0) {
+      idleLimits.remove(signal)
+    } else {
+      idleLimits.put(signal, cycles)
+    }
+    idleCycles.remove(signal)
+  }
 
   //
   // Debug utility functions
@@ -37,6 +50,9 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
 
   override def pokeBits(signal: Bits, value: BigInt): Unit = {
     doPoke(signal, value, new Throwable)
+    if (tester.peek(dataNames(signal)) != value) {
+      idleCycles.clear()
+    }
     tester.poke(dataNames(signal), value)
     debugLog(s"${resolveName(signal)} <- $value")
   }
@@ -75,10 +91,16 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
 
     closeTimescope(createdTimescope).foreach { case (data, valueOption) =>
       valueOption match {
-        case Some(value) => tester.poke(dataNames(data), value)
-           debugLog(s"${resolveName(data)} <- (revert) $value")
-        case None => tester.poke(dataNames(data), 0)  // TODO: randomize or 4-state sim
-           debugLog(s"${resolveName(data)} <- (revert) DC")
+        case Some(value) =>
+          if (tester.peek(dataNames(data)) != value) {
+            idleCycles.clear()
+          }
+          tester.poke(dataNames(data), value)
+          debugLog(s"${resolveName(data)} <- (revert) $value")
+        case None =>
+          idleCycles.clear()
+          tester.poke(dataNames(data), 0)  // TODO: randomize or 4-state sim
+          debugLog(s"${resolveName(data)} <- (revert) DC")
       }
     }
   }
@@ -145,6 +167,14 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
 
       timestep()
       Context().env.checkpoint()
+
+      idleLimits foreach { case (clock, limit) =>
+        idleCycles.put(clock, idleCycles.getOrElse(clock, -1) + 1)
+        if (idleCycles(clock) >= limit) {
+          throw new TimeoutException(s"timeout on $clock at $limit idle cycles")
+        }
+      }
+
       tester.step(1)
     }
 
