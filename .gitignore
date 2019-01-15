@@ -6,5 +6,7 @@
 .project
 .classpath
 .settings
+.idea
+*.iml
 
 /test_run_dir/
