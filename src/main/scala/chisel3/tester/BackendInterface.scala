@@ -7,7 +7,8 @@ import chisel3.experimental.MultiIOModule
 import firrtl.ExecutionOptionsManager
 
 class ThreadOrderDependentException(message: String) extends Exception(message)
-class SignalOverwriteException(message: String) extends Exception(message)
+class TimeoutException(message: String) extends Exception(message)
+
 
 trait AbstractTesterThread {
 
@@ -44,6 +45,15 @@ trait BackendInterface {
   def peekBits(signal: Bits, stale: Boolean): BigInt
 
   def expectBits(signal: Bits, value: BigInt, message: Option[String], stale: Boolean): Unit
+
+  /**
+   * Sets the timeout of the clock: the number of cycles the clock can advance without
+   * some non-nop poke operation.
+   * Setting cycles=0 disables the timeout.
+   * Setting cycles=1 means every cycle must have some non-nop poke operation.
+   * Resets the idle counter associated with the specified clock.
+   */
+  def setTimeout(signal: Clock, cycles: Int): Unit
 
   /** Advances the target clock by one cycle.
     */

@@ -3,7 +3,6 @@ package chisel3.tests
 import org.scalatest._
 
 import chisel3._
-import chisel3.util._
 import chisel3.tester._
 import chisel3.tester.TestAdapters._
 
@@ -11,15 +10,9 @@ class QueueTest extends FlatSpec with ChiselScalatestTester {
   behavior of "Testers2 with Queue"
 
   it should "pass through elements, using enqueueNow" in {
-    test(new Module {
-      val io = IO(new Bundle {
-        val in = Flipped(Decoupled(UInt(8.W)))
-        val out = Decoupled(UInt(8.W))
-      })
-      io.out <> Queue(io.in)
-    }) { c =>
-      val source = new ReadyValidSource(c.io.in, c.clock)
-      val sink = new ReadyValidSink(c.io.out, c.clock)
+    test(new QueueModule(UInt(8.W), 2)) { c =>
+      val source = new ReadyValidSource(c.in, c.clock)
+      val sink = new ReadyValidSink(c.out, c.clock)
 
       sink.expectInvalid()
       source.enqueueNow(42.U)
@@ -32,15 +25,9 @@ class QueueTest extends FlatSpec with ChiselScalatestTester {
   }
 
   it should "pass through elements, using enqueueSeq" in {
-    test(new Module {
-      val io = IO(new Bundle {
-        val in = Flipped(Decoupled(UInt(8.W)))
-        val out = Decoupled(UInt(8.W))
-      })
-      io.out <> Queue(io.in)
-    }) { c =>
-      val source = new ReadyValidSource(c.io.in, c.clock)
-      val sink = new ReadyValidSink(c.io.out, c.clock)
+    test(new QueueModule(UInt(8.W), 2)) { c =>
+      val source = new ReadyValidSource(c.in, c.clock)
+      val sink = new ReadyValidSink(c.out, c.clock)
 
       fork {
         source.enqueueSeq(Seq(42.U, 43.U, 44.U))

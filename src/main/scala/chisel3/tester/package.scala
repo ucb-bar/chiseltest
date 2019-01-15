@@ -92,6 +92,10 @@ package object tester {
   }
 
   implicit class testableClock(x: Clock) {
+    def setTimeout(cycles: Int): Unit = {
+      Context().backend.setTimeout(x, cycles)
+    }
+
     def step(cycles: Int = 1): Unit = {
       Context().backend.step(x, cycles)
     }
