@@ -258,7 +258,7 @@ object TreadleExecutive {
     }
     optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
         compilerName = "low",
-        annotations = optionsManager.firrtlOptions.annotations ++ Seq(GetClockSources(Seq(CircuitTarget("ShifterModule").module("ShifterModule")))),
+        annotations = optionsManager.firrtlOptions.annotations ++ Seq(GetClockSources(Nil, true)),
         customTransforms = optionsManager.firrtlOptions.customTransforms ++ Seq(new ClockFinderTransform()))
 
     execOptions foreach {
