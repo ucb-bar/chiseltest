@@ -222,13 +222,14 @@ object TreadleExecutive {
         case _ => None
       }
 
-      val clockDatas = clocks.map { case (clock, _) =>
+      val clockDatas = clocks.flatMap { case (clock, _) =>
         val name = clock.tokens.map(_.value).mkString(".")
         nameToData.get(name) match {
           case Some(clockData) if clock.module == dut.name => Some(clockData)
-          case _ => None
+          case _ if name == "@literal" => None  // ignore literal dummy clock domain
+          case _ => Some(DontCare)  // dummy placeholder to indicate an unknown clock
         }
-      }.flatten
+      }
 
       signalData -> clockDatas
     }.collect {
@@ -287,6 +288,9 @@ object TreadleExecutive {
             )
             val interpretiveTester = new TreadleTester(success.emitted, optionsManager)
 
+            // Example debug code to dump all annotations
+            // success.circuitState.annotations.foreach { anno => println(anno.toString + "\r\n") }
+
             val portNames = DataMirror.modulePorts(dut).flatMap { case (name, data) =>
               getDataNames(name, data).toList
             }.toMap
@@ -296,7 +300,7 @@ object TreadleExecutive {
             val pathsAsData = combinationalPathsToData(dut, paths, portNames)
 
             val clocksAsData = success.circuitState.annotations.collect {
-              case c: ClockSources => println(c); clockDomainsToData(dut, c, portNames)
+              case c: ClockSources => clockDomainsToData(dut, c, portNames)
             }
             println(clocksAsData)
 
