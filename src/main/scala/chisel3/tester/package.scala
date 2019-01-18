@@ -10,6 +10,8 @@ class NotLiteralException(message: String) extends Exception(message)
 class LiteralTypeException(message: String) extends Exception(message)
 class UnpokeableException(message: String) extends Exception(message)
 
+class ClockResolutionException(message: String) extends Exception(message)
+
 /** Basic interfaces and implicit conversions for testers2
   */
 package object tester {
@@ -89,6 +91,24 @@ package object tester {
     def expect(value: T): Unit = expectWithStale(value, None, false)
     def expect(value: T, message: String): Unit = expectWithStale(value, Some(message), false)
     // def staleExpect(value: T): Unit = expectWithStale(value, true)  // TODO: can this be replaced w/ phases?
+
+    /** @return the single clock that drives the source of this signal.
+      * @throws ClockResolutionException if sources of this signal have more than one, or zero clocks
+      * @throws ClockResolutionException if sinks of this signal have an associated clock
+      */
+    def getSourceClock(): Clock = {
+      Context().backend.getSourceClocks(x).toList match {
+        case clock :: Nil => clock
+        case clocks => throw new ClockResolutionException(s"number of source clocks is not one: $clocks")
+      }
+    }
+
+    def getSinkClock(): Clock = {
+      Context().backend.getSinkClocks(x).toList match {
+        case clock :: Nil => clock
+        case clocks => throw new ClockResolutionException(s"number of sink clocks is not one: $clocks")
+      }
+    }
   }
 
   implicit class testableClock(x: Clock) {

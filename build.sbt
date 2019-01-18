@@ -33,10 +33,10 @@ version := "0.1-SNAPSHOT"
 
 scalaVersion := "2.12.6"
 
-resolvers ++= Seq(
-  Resolver.sonatypeRepo("snapshots"),
-  Resolver.sonatypeRepo("releases")
-)
+//resolvers ++= Seq(
+//  Resolver.sonatypeRepo("snapshots"),
+//  Resolver.sonatypeRepo("releases")
+//)
 
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.5"

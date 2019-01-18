@@ -16,6 +16,7 @@ import scala.collection.mutable
 // TODO: is Seq[CombinationalPath] the right API here? It's unclear where name -> Data resolution should go
 class TreadleBackend[T <: MultiIOModule](dut: T,
     val dataNames: Map[Data, String], val combinationalPaths: Map[Data, Set[Data]],
+    val sourceClocks: Map[Data, Set[Clock]], // val sinkClocks: Map[Data, Set[Clock]],  // sink clock analysis not yet implemented in FIRRTL
     tester: TreadleTester)
     extends BackendInstance[T] with ThreadedBackend {
   // State for deadlock detection timeout
@@ -43,6 +44,15 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
   protected def resolveName(signal: Data): String = {  // TODO: unify w/ dataNames?
     dataNames.getOrElse(signal, signal.toString)
   }
+
+  //
+  // Circuit introspection functionality
+  //
+  override def getSourceClocks(signal: Data) = {
+    sourceClocks.getOrElse(signal, Set[Clock]())
+  }
+
+  override def getSinkClocks(signal: Data) = ???  // sink clock analysis not yet implemented in FIRRTL
 
   //
   // Everything else
@@ -225,15 +235,27 @@ object TreadleExecutive {
       val clockDatas = clocks.flatMap { case (clock, _) =>
         val name = clock.tokens.map(_.value).mkString(".")
         nameToData.get(name) match {
-          case Some(clockData) if clock.module == dut.name => Some(clockData)
+          case Some(clockData) if clock.module == dut.name => clockData match {
+            case clockData: Clock => Some(clockData)
+            case clockData => throw new ClockResolutionException(s"${signal.ref} has clock $name = $clockData not of Clock type")
+          }
           case _ if name == "@literal" => None  // ignore literal dummy clock domain
-          case _ => Some(DontCare)  // dummy placeholder to indicate an unknown clock
+          case _ => Some(new Clock)  // dummy placeholder to indicate an unknown clock
         }
       }
 
       signalData -> clockDatas
     }.collect {
       case (Some(signalData), clockDatas) if !clockDatas.isEmpty => signalData -> clockDatas
+    }
+  }
+
+  def mergeClockDomainMaps(maps: Seq[Map[Data, Set[Clock]]]): Map[Data, Set[Clock]] = {
+    // TODO: implement me
+    maps match {
+      case Nil => Map[Data, Set[Clock]]()
+      case clockMap :: Nil => clockMap
+      case clockMaps => ???  // TODO: implement clock map merging
     }
   }
 
@@ -299,12 +321,11 @@ object TreadleExecutive {
             }
             val pathsAsData = combinationalPathsToData(dut, paths, portNames)
 
-            val clocksAsData = success.circuitState.annotations.collect {
+            val signalSourceClocks = mergeClockDomainMaps(success.circuitState.annotations.collect {
               case c: ClockSources => clockDomainsToData(dut, c, portNames)
-            }
-            println(clocksAsData)
+            })
 
-            new TreadleBackend(dut, portNames, pathsAsData, interpretiveTester)
+            new TreadleBackend(dut, portNames, pathsAsData, signalSourceClocks, interpretiveTester)
           case FirrtlExecutionFailure(message) =>
             throw new Exception(s"FirrtlBackend: failed firrtl compile message: $message")
         }

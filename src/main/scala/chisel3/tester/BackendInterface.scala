@@ -64,6 +64,18 @@ trait BackendInterface {
   def doJoin(thread: AbstractTesterThread): Unit
 
   def doTimescope(contents: () => Unit): Unit
+
+  //
+  // Circuit introspection functionality
+  //
+
+  /** Returns set of clocks associated with sources of the signal
+    */
+  def getSourceClocks(signal: Data): Set[Clock]
+
+  /** Returns set of clocks associated with sinks of the signal
+    */
+  def getSinkClocks(signal: Data): Set[Clock]
 }
 
 /** Backend associated with a particular circuit, and can run tests
