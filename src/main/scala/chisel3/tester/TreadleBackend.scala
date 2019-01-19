@@ -237,7 +237,7 @@ object TreadleExecutive {
         nameToData.get(name) match {
           case Some(clockData) if clock.module == dut.name => clockData match {
             case clockData: Clock => Some(clockData)
-            case clockData => throw new ClockResolutionException(s"${signal.ref} has clock $name = $clockData not of Clock type")
+            case clockData => Some(new Clock)  // dummy placeholder for non-Clock "clock", eg for combinational paths
           }
           case _ if name == "@literal" => None  // ignore literal dummy clock domain
           case _ => Some(new Clock)  // dummy placeholder to indicate an unknown clock
