@@ -17,22 +17,26 @@ package object TestAdapters {
       x.valid.poke(false.B)
     }
 
+    protected def decoupledSourceClock: Clock = {
+      x.ready.getSourceClock  // TODO: validate against bits/valid sink clocks
+    }
+
     def enqueueNow(data: T): Unit = timescope {
       // TODO: check for init
       x.ready.expect(true.B)
       x.bits.poke(data)
       x.valid.poke(true.B)
-      x.ready.getSourceClock.step()  // TODO: validate against bits/valid sink clocks
+      x.decoupledSourceClock.step(1)
     }
 
     def enqueue(data: T): Unit = timescope {
       // TODO: check for init
       x.valid.poke(true.B)
       while (x.ready.peek().litToBoolean == false) {
-        x.ready.getSourceClock.step(1)
+        x.decoupledSourceClock.step(1)
       }
       x.bits.poke(data)
-      x.ready.getSourceClock.step(1)
+      x.decoupledSourceClock.step(1)
     }
 
     def enqueueSeq(data: Seq[T]): Unit = timescope {
@@ -48,9 +52,13 @@ package object TestAdapters {
       x.ready.poke(false.B)
     }
 
+    protected def decoupledSinkClock: Clock = {
+      x.valid.getSourceClock  // TODO: validate against bits/valid sink clocks
+    }
+
     def waitForValid(): Unit = {
       while (x.valid.peek().litToBoolean == false) {
-        x.valid.getSourceClock.step(1)  // TODO: validate against bits/valid sink clocks
+        x.decoupledSinkClock.step(1)
       }
     }
 
@@ -66,7 +74,7 @@ package object TestAdapters {
       x.valid.expect(true.B)
       x.bits.expect(data)
       x.ready.poke(true.B)
-      x.valid.getSourceClock.step(1)  // TODO: validate against bits/valid sink clocks
+      x.decoupledSinkClock.step(1)
     }
 
     def expectPeek(data: T): Unit = {
@@ -80,6 +88,7 @@ package object TestAdapters {
   }
 
   // TODO: clock should be optional
+  @deprecated("call operations directly on ReadyValidIO object supporting implicit clock resolution")
   class ReadyValidSource[T <: Data](x: ReadyValidIO[T], clk: Clock) {
     // TODO assumption this never goes out of scope
     x.valid.poke(false.B)
@@ -107,6 +116,7 @@ package object TestAdapters {
     }
   }
 
+  @deprecated("call operations directly on ReadyValidIO object supporting implicit clock resolution")
   class ReadyValidSink[T <: Data](x: ReadyValidIO[T], clk: Clock) {
     // TODO assumption this never goes out of scope
     x.ready.poke(false.B)
