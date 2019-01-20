@@ -387,6 +387,10 @@ trait ThreadedBackend {
     val waiting = new Semaphore(0)
     var done: Boolean = false
 
+    // Scheduling information
+    var joinedOn: Option[TesterThread] = None
+    var clockedOn: Option[Clock] = None
+
     // TODO: perhaps accessors eg pushTimescope, popTimescope?
     protected val bottomTimescope = ThreadRootTimescope(parentTimescope, openedTimestep, parentActionId, this)
     var topTimescope: BaseTimescope = bottomTimescope  // Currently open timescope in this thread
@@ -426,18 +430,14 @@ trait ThreadedBackend {
   protected var currentThread: Option[TesterThread] = None
   protected val driverSemaphore = new Semaphore(0)  // blocks the driver thread while tests are running
 
-  // TODO: does this need to be replaced with concurrent data structures?
-  // list of all threads, only for for sanity checking
+  // List of threads in order they are run
   private[tester] val allThreads = new mutable.ArrayBuffer[TesterThread]
-  // threads blocking on another thread
-  private[tester] val joinedThreads = new mutable.HashMap[TesterThread, Seq[TesterThread]]
 
   // TODO make this a class and Option[SchedulerState] var that contains currentThread and driverSemaphore?
   object schedulerState {  // temporary scheduler information not persisting between runThreads invocations
-    private[tester] val activeThreads = new mutable.ListBuffer[TesterThread]
-
-    // list of threads blocked on a clock edge, added to as threads finish and step
-    private[tester] val blockedThreads = new mutable.HashMap[Clock, mutable.ListBuffer[TesterThread]]
+    private[tester] var currentThreadIndex: Int = 0
+    // List of clocks that have stepped (run threads blocked on these clocks)
+    private[tester] var clocks = mutable.Set[Clock]()
   }
 
   /**
@@ -452,12 +452,12 @@ trait ThreadedBackend {
    * TODO: this provides a separation which isolates the threading infrastructure from clock
    * control, but there are other structures which accomplish the same thing.
    */
-  protected def runThreads(threads: Seq[TesterThread]): Map[Clock, Seq[TesterThread]] = {
+  protected def runThreads(clocks: Set[Clock]): Unit = {
     // TODO validate and order incoming thread order
-    require(schedulerState.activeThreads.isEmpty)
-    require(schedulerState.blockedThreads.isEmpty)
+    require(schedulerState.currentThreadIndex == 0)
+    require(schedulerState.clocks.isEmpty)
 
-    schedulerState.activeThreads ++= threads
+    schedulerState.clocks ++= clocks
 
     scheduler()
     driverSemaphore.acquire()
@@ -466,10 +466,9 @@ trait ThreadedBackend {
       throw interruptedException.poll()
     }
 
-    require(schedulerState.activeThreads.isEmpty)
-    val rtn = schedulerState.blockedThreads.mapValues(_.toSeq).toMap
-    schedulerState.blockedThreads.clear()
-    rtn
+    require(schedulerState.currentThreadIndex == allThreads.size)
+    schedulerState.currentThreadIndex = 0
+    schedulerState.clocks.clear()
   }
 
   /**
@@ -483,11 +482,31 @@ trait ThreadedBackend {
    * When there are no more active threads, unblocks the driver thread via driverSemaphore.
    */
   protected def scheduler() {
-    if (!interruptedException.isEmpty || schedulerState.activeThreads.isEmpty) {
+    def threadCanRun(thread: TesterThread): Boolean = {
+      val blockedByJoin = thread.joinedOn match {
+        case None => false
+        case Some(joinedThread) if allThreads.contains(joinedThread) => true
+        // TODO: move clearing of joinedOn into threadFinished
+        case Some(joinedThread) if !allThreads.contains(joinedThread) => thread.joinedOn = None; false
+      }
+      val blockedByClock = thread.clockedOn match {
+        case None => false
+        case Some(clock) => !schedulerState.clocks.contains(clock)
+      }
+      !blockedByJoin && !blockedByClock
+    }
+
+    while (schedulerState.currentThreadIndex < allThreads.size &&
+        !threadCanRun(allThreads(schedulerState.currentThreadIndex))) {
+      schedulerState.currentThreadIndex += 1
+    }
+
+    if (!interruptedException.isEmpty || schedulerState.currentThreadIndex >= allThreads.size) {
       currentThread = None
       driverSemaphore.release()
     } else {
-      val nextThread = schedulerState.activeThreads.remove(0)
+      val nextThread = allThreads(schedulerState.currentThreadIndex)
+      nextThread.clockedOn = None
       currentThread = Some(nextThread)
       nextThread.waiting.release()
     }
@@ -499,14 +518,6 @@ trait ThreadedBackend {
    */
   protected def threadFinished(thread: TesterThread): Unit = {
     allThreads -= thread
-    joinedThreads.remove(thread) match {
-      case Some(testerThreads) => testerThreads.foreach(testerThread => {
-        //TODO: is line below needed anymore
-        // val threadLevel = testerThread.level
-        schedulerState.activeThreads += testerThread
-      })
-      case None =>
-    }
   }
 
   def doFork(runnable: () => Unit): TesterThread = {
@@ -515,23 +526,20 @@ trait ThreadedBackend {
     val newThread = new TesterThread(runnable, currentTimestep, timescope, timescope.nextActionId)
     timescope.nextActionId += 1
 
-    allThreads += newThread
     // schedule the new thread to run immediately, then return to this thread
-    schedulerState.activeThreads.prepend(newThread, thisThread)
+    allThreads.insert(schedulerState.currentThreadIndex, newThread)
     newThread.thread.start()
     scheduler()
     thisThread.waiting.acquire()
     newThread
   }
 
-  def doJoin(thread: AbstractTesterThread): Unit = {
+  def doJoin(joinThread: AbstractTesterThread): Unit = {
     val thisThread = currentThread.get
-    val threadTyped = thread.asInstanceOf[TesterThread]  // TODO get rid of this, perhaps by making it typesafe
-    require(thisThread.level < threadTyped.level)
-    if (!threadTyped.done) {
-      joinedThreads.put(threadTyped, joinedThreads.getOrElseUpdate(threadTyped, Seq()) :+ thisThread)
-      scheduler()
-      thisThread.waiting.acquire()
-    }  // otherwise do nothing if target thread is already finished
+    val joinThreadTyped = joinThread.asInstanceOf[TesterThread]  // TODO get rid of this, perhaps by making it typesafe
+    require(thisThread.level < joinThreadTyped.level)
+    thisThread.joinedOn = Some(joinThreadTyped)
+    scheduler()
+    thisThread.waiting.acquire()
   }
 }

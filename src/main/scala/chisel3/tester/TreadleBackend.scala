@@ -114,7 +114,8 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
       }
 
       val thisThread = currentThread.get
-      schedulerState.blockedThreads.getOrElseUpdate(signal, mutable.ListBuffer[TesterThread]()) += thisThread
+      thisThread.clockedOn = Some(signal)
+      schedulerState.currentThreadIndex += 1
       scheduler()
       thisThread.waiting.acquire()
     }
@@ -130,40 +131,29 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
         testFn(dut)
       }, 0, rootTimescope.get, 0)
     mainThread.thread.start()
-
-    val blockedThreads = mutable.HashMap[Clock, mutable.ListBuffer[TesterThread]](
-        (dut.clock, mutable.ListBuffer(mainThread)))
+    require(allThreads.isEmpty)
+    allThreads += mainThread
 
     while (!mainThread.done) {  // iterate timesteps
-      val unblockedThreads = new mutable.ListBuffer[TesterThread]()
-
-      // Unblock threads waiting on main clock
-      unblockedThreads ++= blockedThreads.getOrElse(dut.clock, Seq())
-      blockedThreads.remove(dut.clock)
       clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
       currentTimestep += 1
 
       debugLog(s"clock step")
 
       // TODO: allow dependent clocks to step based on test stimulus generator
+      // TODO: remove multiple invocations of getClock
       // Unblock threads waiting on dependent clock
-      lastClockValue foreach { case (clock, lastValue) =>
-        val currentValue = getClock(clock)
-        if (currentValue != lastValue) {
-          lastClockValue.put(clock, currentValue)
-          if (currentValue) {  // rising edge
-            unblockedThreads ++= blockedThreads.getOrElse(clock, Seq())
-            blockedThreads.remove(clock)
-            clockCounter.put(clock, getClockCycle(clock) + 1)
-          }
-        }
+      val steppedClocks = Seq(dut.clock) ++ lastClockValue.collect {
+        case (clock, lastValue) if getClock(clock) != lastValue && getClock(clock) == true => clock
+      }
+      steppedClocks foreach { clock =>
+        clockCounter.put(dut.clock, getClockCycle(clock) + 1)  // TODO: ignores cycles before a clock was stepped on
+      }
+      lastClockValue foreach { case (clock, _) =>
+        lastClockValue.put(clock, getClock(clock))
       }
 
-      // Actually run things
-      val newBlockedThreads = runThreads(unblockedThreads)
-      newBlockedThreads.foreach{ case (clock, threads) =>
-        blockedThreads.getOrElseUpdate(clock, mutable.ListBuffer[TesterThread]()) ++= threads
-      }
+      runThreads(steppedClocks.toSet)
 
       timestep()
       Context().env.checkpoint()
