@@ -55,4 +55,33 @@ class ThreadJoinTest extends FlatSpec with ChiselScalatestTester {
       c.io.out.expect(16.U)
     }
   }
+
+  it should "maintain thread ordering after joins" in {
+    // TODO: use thread ordering constraints and combinational PassthroughModule
+    // instead of fakin' it w/ Scala-land variables
+    test(new StaticModule(0.U)) { c =>
+      var flag: Int = 0
+      fork {
+        c.clock.step(1)
+        flag += 1
+        fork {
+          c.clock.step(1)
+        }.join()  // with a naive join implementation, this thread gets pushed to the back of the list
+        while (true) {
+          flag += 1
+          c.clock.step(1)
+        }
+      }
+      fork {
+        assert(flag == 0)
+        c.clock.step(1)
+        assert(flag == 1)
+        c.clock.step(1)
+
+        assert(flag == 2)  // this is where it should break
+        c.clock.step(1)
+        assert(flag == 3)
+      }.join
+    }
+  }
 }
