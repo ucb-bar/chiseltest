@@ -68,13 +68,13 @@ package object tester {
     protected def expectWithStale(value: T, message: Option[String], stale: Boolean): Unit = (x, value) match {
       case (x: Bool, value: Bool) => Context().backend.expectBits(x, value.litValue, message, stale)
       // TODO can't happen because of type paramterization
-      case (x: Bool, value: Bits) => throw new LiteralTypeException(s"can only expect signals of type Bool with Bool value")
+      case (x: Bool, value: Bits) => throw new LiteralTypeException(s"cannot expect non-Bool value $value from Bool IO $x")
       case (x: Bits, value: UInt) => Context().backend.expectBits(x, value.litValue, message, stale)
       case (x: SInt, value: SInt) => Context().backend.expectBits(x, value.litValue, message, stale)
       // TODO can't happen because of type paramterization
-      case (x: Bits, value: SInt) => throw new LiteralTypeException(s"can only expect SInt value from signals of type SInt")
+      case (x: Bits, value: SInt) => throw new LiteralTypeException(s"cannot expect non-SInt value $value from SInt IO $x")
       case (x: FixedPoint, value: FixedPoint) => {
-        require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
+        require(x.binaryPoint == value.binaryPoint, s"binary point mismatch between value $value from IO $x")
         Context().backend.expectBits(x, value.litValue, message, stale)
       }
       case (x: Bundle, value: Bundle) => {
@@ -99,14 +99,14 @@ package object tester {
     def getSourceClock(): Clock = {
       Context().backend.getSourceClocks(x).toList match {
         case clock :: Nil => clock
-        case clocks => throw new ClockResolutionException(s"number of source clocks is not one: $clocks")
+        case clocks => throw new ClockResolutionException(s"number of source clocks for $x is not one: $clocks")
       }
     }
 
     def getSinkClock(): Clock = {
       Context().backend.getSinkClocks(x).toList match {
         case clock :: Nil => clock
-        case clocks => throw new ClockResolutionException(s"number of sink clocks is not one: $clocks")
+        case clocks => throw new ClockResolutionException(s"number of sink clocks for $x is not one: $clocks")
       }
     }
   }
