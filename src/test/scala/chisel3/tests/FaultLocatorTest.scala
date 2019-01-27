@@ -3,9 +3,7 @@ package chisel3.tests
 import org.scalatest._
 
 import chisel3._
-import chisel3.util._
 import chisel3.tester._
-import chisel3.tester.TestAdapters._
 
 class FaultLocatorTest extends FlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2"
@@ -15,7 +13,7 @@ class FaultLocatorTest extends FlatSpec with ChiselScalatestTester with Matchers
       test(new StaticModule(42.U)) { c =>
         c.out.expect(0.U)
       }
-    }.failedCodeFileNameAndLineNumberString.get should equal ("FaultLocatorTest.scala:16")
+    }.failedCodeFileNameAndLineNumberString.get should equal ("FaultLocatorTest.scala:14")
   }
 
   it should "locate source lines in libraries" in {
@@ -31,7 +29,7 @@ class FaultLocatorTest extends FlatSpec with ChiselScalatestTester with Matchers
     }
     // Only check the filename to avoid this being too brittle as implementation changes
     exc.failedCodeFileNameAndLineNumberString.get should startWith ("DecoupledDriver.scala:")
-    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*29.*\)""")
+    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*27.*\)""")
   }
 
   it should "locate source lines, even in a different thread" in {
@@ -48,6 +46,6 @@ class FaultLocatorTest extends FlatSpec with ChiselScalatestTester with Matchers
       }
     }
     exc.failedCodeFileNameAndLineNumberString.get should startWith ("DecoupledDriver.scala:")
-    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*46.*\)""")
+    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*44.*\)""")
   }
 }
