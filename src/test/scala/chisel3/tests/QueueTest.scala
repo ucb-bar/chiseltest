@@ -4,7 +4,6 @@ import org.scalatest._
 
 import chisel3._
 import chisel3.tester._
-import chisel3.tester.TestAdapters._
 
 class QueueTest extends FlatSpec with ChiselScalatestTester {
   behavior of "Testers2 with Queue"
