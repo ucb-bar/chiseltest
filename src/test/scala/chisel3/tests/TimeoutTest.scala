@@ -88,14 +88,16 @@ class TimeoutTest extends FlatSpec with ChiselScalatestTester with Matchers {
   it should "detect a deadlocked queue" in {
     assertThrows[TimeoutException] {
       test(new QueueModule(UInt(8.W), 2)) { c =>
-        val source = new ReadyValidSource(c.in, c.clock)
-        val sink = new ReadyValidSink(c.out, c.clock)
+        c.in.initSource()
+        c.in.setSourceClock(c.clock)
+        c.out.initSink()
+        c.out.setSinkClock(c.clock)
 
         c.clock.setTimeout(2)
 
-        source.enqueue(1.U)
-        source.enqueue(1.U)  // fills up queue
-        source.enqueue(1.U)  // this should stall
+        c.in.enqueue(1.U)
+        c.in.enqueue(1.U)  // fills up queue
+        c.in.enqueue(1.U)  // this should stall
       }
     }
   }

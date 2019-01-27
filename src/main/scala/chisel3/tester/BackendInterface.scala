@@ -2,6 +2,8 @@
 
 package chisel3.tester
 
+import scala.collection.mutable
+
 import chisel3._
 import chisel3.experimental.MultiIOModule
 import firrtl.ExecutionOptionsManager
@@ -65,10 +67,8 @@ trait BackendInterface {
 
   def doTimescope(contents: () => Unit): Unit
 
-  //
   // Circuit introspection functionality
   //
-
   /** Returns set of clocks associated with sources of the signal
     */
   def getSourceClocks(signal: Data): Set[Clock]
@@ -76,6 +76,22 @@ trait BackendInterface {
   /** Returns set of clocks associated with sinks of the signal
     */
   def getSinkClocks(signal: Data): Set[Clock]
+
+  // Test Instance State
+  //
+  protected val testMap = mutable.HashMap[Any, Any]()
+
+  /** Sets the value associated with a key in a per-test map.
+    */
+  def setVar(key: Any, value: Any): Unit = {
+    testMap.put(key, value)
+  }
+
+  /** Returns the value associated with the key in a per-test map.
+    */
+  def getVar(key: Any): Option[Any] = {
+    testMap.get(key)
+  }
 }
 
 /** Backend associated with a particular circuit, and can run tests

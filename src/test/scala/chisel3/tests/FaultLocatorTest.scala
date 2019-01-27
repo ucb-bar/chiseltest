@@ -21,29 +21,33 @@ class FaultLocatorTest extends FlatSpec with ChiselScalatestTester with Matchers
   it should "locate source lines in libraries" in {
     val exc = intercept[exceptions.TestFailedException] {
       test(new PassthroughQueue(Bool())) { c =>
+        c.out.initSink()
+        c.out.setSinkClock(c.clock)
+
         c.in.valid.poke(true.B)
         c.in.bits.poke(false.B)  // Have this be a data failure only
-        val sink = new ReadyValidSink(c.out, c.clock)
-        sink.expectDequeueNow(true.B)
+        c.out.expectDequeueNow(true.B)
       }
     }
-    // Only check the filename to avoid this being too brittle as TestAdapters.scala changes
-    exc.failedCodeFileNameAndLineNumberString.get should startWith ("TestAdapters.scala:")
-    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*27.*\)""")
+    // Only check the filename to avoid this being too brittle as implementation changes
+    exc.failedCodeFileNameAndLineNumberString.get should startWith ("DecoupledDriver.scala:")
+    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*29.*\)""")
   }
 
   it should "locate source lines, even in a different thread" in {
     val exc = intercept[exceptions.TestFailedException] {
       test(new PassthroughQueue(Bool())) { c =>
+        c.out.initSink()
+        c.out.setSinkClock(c.clock)
+
         c.in.valid.poke(true.B)
         c.in.bits.poke(false.B)  // Have this be a data failure only
-        val sink = new ReadyValidSink(c.out, c.clock)
         fork {
-          sink.expectDequeueNow(true.B)
+          c.out.expectDequeueNow(true.B)
         } .join
       }
     }
-    exc.failedCodeFileNameAndLineNumberString.get should startWith ("TestAdapters.scala:")
-    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*42.*\)""")
+    exc.failedCodeFileNameAndLineNumberString.get should startWith ("DecoupledDriver.scala:")
+    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*46.*\)""")
   }
 }
