@@ -82,5 +82,6 @@ libraryDependencies ++= defaultVersions.map { case (dep, ver) =>
   "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", ver) }
 
 scalacOptions ++= scalacOptionsVersion(scalaVersion.value)
+scalacOptions ++= Seq("-deprecation", "-feature", "-language:reflectiveCalls")
 
 javacOptions ++= javacOptionsVersion(scalaVersion.value)

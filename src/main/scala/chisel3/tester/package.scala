@@ -2,13 +2,17 @@
 
 package chisel3
 
+import scala.language.implicitConversions
+
 import chisel3.core.ActualDirection  // TODO needs to be a public API
 import chisel3.experimental.{DataMirror, FixedPoint}
-import chisel3.internal.firrtl.FPLit
+import chisel3.util._
 
 class NotLiteralException(message: String) extends Exception(message)
 class LiteralTypeException(message: String) extends Exception(message)
 class UnpokeableException(message: String) extends Exception(message)
+
+class ClockResolutionException(message: String) extends Exception(message)
 
 /** Basic interfaces and implicit conversions for testers2
   */
@@ -115,4 +119,36 @@ package object tester {
   def timescope(contents: => Unit): Unit = {
     Context().backend.doTimescope(() => contents)
   }
+
+  object TestInstance {
+    def setVar(key: Any, value: Any): Unit = {
+      Context().backend.setVar(key, value)
+    }
+
+    def getVar(key: Any): Option[Any] = {
+      Context().backend.getVar(key)
+    }
+  }
+
+  /** Provides clock-resolution-specific abstractions on top of getVar/setVar.
+    * For library builders, not top-level test writers.
+    */
+  object ClockResolutionUtils {
+    def setClock(driverKey: Any, wire: Data, clock: Clock): Unit = {
+      TestInstance.setVar((driverKey, wire), clock)
+    }
+
+    def getClock(driverKey: Any, wire: Data, defaultClock: => Clock): Clock = {
+      TestInstance.getVar((driverKey, wire)) match {
+        case None =>
+          val clock: Clock = defaultClock
+          setClock(driverKey, wire, clock)
+          clock
+        case Some(clock: Clock) => clock
+        case Some(other) => throw new ClockResolutionException(s"$other is not a clock")
+      }
+    }
+  }
+
+  implicit def decoupledToDriver[T <: Data](x: DecoupledIO[T]) = new DecoupledDriver(x)
 }

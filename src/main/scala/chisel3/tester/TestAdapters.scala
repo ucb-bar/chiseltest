@@ -9,7 +9,7 @@ import chisel3.util._
 import chisel3.internal.firrtl.{LitArg, ULit, SLit}
 
 package object TestAdapters {
-  // TODO: clock should be optional
+  @deprecated("Use implicit conversion to DecoupledDriver with setSourceClock or implicit clock resolution", "0.1")
   class ReadyValidSource[T <: Data](x: ReadyValidIO[T], clk: Clock) {
     // TODO assumption this never goes out of scope
     x.valid.poke(false.B)
@@ -37,6 +37,7 @@ package object TestAdapters {
     }
   }
 
+  @deprecated("Use implicit conversion to DecoupledDriver with setSinkClock or implicit clock resolution", "0.1")
   class ReadyValidSink[T <: Data](x: ReadyValidIO[T], clk: Clock) {
     // TODO assumption this never goes out of scope
     x.ready.poke(false.B)
