@@ -366,7 +366,34 @@ trait ThreadedBackend {
 
   def doRegion(region: Region, contents: () => Unit): Unit = {
     require(Region.allRegions.contains(region))
+    val thisThread = currentThread.get
+
+    val prevRegion = thisThread.region
+    val prebRegionPos = Region.allRegions.indexOf(prebRegion)
+    val regionPos = Region.allRegions.indexOf(region)
+    require(prevRegionPos >= 0 && regionPos >= 0)
+    thisThread.region = region
+    if (regionPos > prevRegionPos) {
+      scheduler()
+      thisThread.waiting.acquire()
+    } else if (regionPos < prevRegionPos) {
+      // when moving backwards in time, do not invoke the scheduler, instead rely on the caller
+      // immediately stepping the clock afterwards, and checking that no testdriver actions are
+      // inboked inbetween
+      thisThread.backwardsInTime = true
+    }
+    require(thisThread.region == region)
+
     contents()
+
+    require(thisThread.region == region)
+    thisThread.region = prevRegion
+    if (prevRegionPos < regionPos) {
+      thisThread.backwardsInTime = true
+    } else if (prevRegionPos > regionPos) {
+      scheduler()
+      thisThread.waiting.acquire()
+    }
   }
 
   protected val interruptedException = new ConcurrentLinkedQueue[Throwable]()
@@ -395,6 +422,9 @@ trait ThreadedBackend {
     // Scheduling information
     var joinedOn: Option[TesterThread] = None
     var clockedOn: Option[Clock] = None
+    var region: Region = DefaultRegion  // current region
+    var backwardsInTime: Bool = false  // if this thread previously was in a future region,
+                                       // and cannot interact with the testdriver until a clock advance
 
     // TODO: perhaps accessors eg pushTimescope, popTimescope?
     protected val bottomTimescope = ThreadRootTimescope(parentTimescope, openedTimestep, parentActionId, this)
