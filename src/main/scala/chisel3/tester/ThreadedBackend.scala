@@ -364,6 +364,11 @@ trait ThreadedBackend {
     // TODO: check that lastTimescope signal is actually the one effective?
   }
 
+  def doRegion(region: Region, contents: () => Unit): Unit = {
+    require(Region.allRegions.contains(region))
+    contents()
+  }
+
   protected val interruptedException = new ConcurrentLinkedQueue[Throwable]()
   /**
    * Called when an exception happens inside a thread.
