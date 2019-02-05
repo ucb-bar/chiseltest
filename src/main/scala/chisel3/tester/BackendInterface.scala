@@ -11,10 +11,10 @@ import firrtl.ExecutionOptionsManager
 class ThreadOrderDependentException(message: String) extends Exception(message)
 class TimeoutException(message: String) extends Exception(message)
 
+// when interfacing with the testdriver before stepping the clock after moving to an earlier region
+class TemporalParadox(message: String) extends Exception(message)
 
-trait AbstractTesterThread {
-
-}
+trait AbstractTesterThread
 
 /** Base class for regions, akin to Verilog regions for ordering events between threads within the same timestep.
   * order is the order regions run in, with 0 being the default, and incrementing regions running later.
