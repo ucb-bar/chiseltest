@@ -151,6 +151,10 @@ trait ThreadedBackend {
    * Returns whether to execute it, based on priorities compared to other active pokes.
    */
   def doPoke(signal: Data, value: BigInt, trace: Throwable): Unit = {
+    if (currentThread.get.backwardsInTime) {
+      throw new TemporalParadox("Need to advance time after moving to a earlier region")
+    }
+
     val timescope = currentThread.get.getTimescope
     // On the first poke, add a link from the previous timescope
     if (!timescope.pokes.contains(signal)) {
@@ -194,6 +198,10 @@ trait ThreadedBackend {
    * Logs a peek operation for later checking.
    */
   def doPeek(signal: Data, trace: Throwable): Unit = {
+    if (currentThread.get.backwardsInTime) {
+      throw new TemporalParadox("Need to advance time after moving to a earlier region")
+    }
+
     val timescope = currentThread.get.getTimescope
     val deps = combinationalPaths.getOrElse(signal, Set(signal)).map { signal =>
       (signal, pokes.get(signal))
@@ -223,6 +231,10 @@ trait ThreadedBackend {
    * Closes the specified timescope, returns a map of wires to values of any signals that need to be updated.
    */
   def closeTimescope(timescope: Timescope): Map[Data, Option[BigInt]] = {
+    if (currentThread.get.backwardsInTime) {
+      throw new TemporalParadox("Need to advance time after moving to a earlier region")
+    }
+
     require(timescope eq currentThread.get.getTimescope)
 
     // Mark timescope as closed
@@ -369,7 +381,7 @@ trait ThreadedBackend {
     val thisThread = currentThread.get
 
     val prevRegion = thisThread.region
-    val prebRegionPos = Region.allRegions.indexOf(prebRegion)
+    val prevRegionPos = Region.allRegions.indexOf(prevRegion)
     val regionPos = Region.allRegions.indexOf(region)
     require(prevRegionPos >= 0 && regionPos >= 0)
     thisThread.region = region
@@ -379,7 +391,7 @@ trait ThreadedBackend {
     } else if (regionPos < prevRegionPos) {
       // when moving backwards in time, do not invoke the scheduler, instead rely on the caller
       // immediately stepping the clock afterwards, and checking that no testdriver actions are
-      // inboked inbetween
+      // invoked inbetween
       thisThread.backwardsInTime = true
     }
     require(thisThread.region == region)
@@ -423,7 +435,7 @@ trait ThreadedBackend {
     var joinedOn: Option[TesterThread] = None
     var clockedOn: Option[Clock] = None
     var region: Region = DefaultRegion  // current region
-    var backwardsInTime: Bool = false  // if this thread previously was in a future region,
+    var backwardsInTime: Boolean = false  // if this thread previously was in a future region,
                                        // and cannot interact with the testdriver until a clock advance
 
     // TODO: perhaps accessors eg pushTimescope, popTimescope?
@@ -470,6 +482,7 @@ trait ThreadedBackend {
 
   // TODO make this a class and Option[SchedulerState] var that contains currentThread and driverSemaphore?
   object schedulerState {  // temporary scheduler information not persisting between runThreads invocations
+    private[tester] var currentRegion: Option[Region] = None
     private[tester] var currentThreadIndex: Int = 0
     // List of clocks that have stepped (run threads blocked on these clocks)
     private[tester] var clocks = mutable.Set[Clock]()
@@ -489,19 +502,35 @@ trait ThreadedBackend {
    */
   protected def runThreads(clocks: Set[Clock]): Unit = {
     // TODO validate and order incoming thread order
+    require(schedulerState.currentRegion.isEmpty)
     require(schedulerState.currentThreadIndex == 0)
     require(schedulerState.clocks.isEmpty)
 
+    currentTimestep += 1
     schedulerState.clocks ++= clocks
 
-    scheduler()
-    driverSemaphore.acquire()
-
-    if (!interruptedException.isEmpty) {
-      throw interruptedException.poll()
+    for (thread <- allThreads) {
+      thread.backwardsInTime = false
     }
 
-    require(schedulerState.currentThreadIndex == allThreads.size)
+    for (region <- Region.allRegions) {
+      schedulerState.currentRegion = Some(region)
+      schedulerState.currentThreadIndex = 0
+      
+      scheduler()
+      driverSemaphore.acquire()
+
+      if (!interruptedException.isEmpty) {
+        throw interruptedException.poll()
+      }
+
+      require(schedulerState.currentRegion.get == region)
+      require(schedulerState.currentThreadIndex == allThreads.size)
+
+      timestep()
+    }
+
+    schedulerState.currentRegion = None
     schedulerState.currentThreadIndex = 0
     schedulerState.clocks.clear()
   }
@@ -528,7 +557,8 @@ trait ThreadedBackend {
         case None => false
         case Some(clock) => !schedulerState.clocks.contains(clock)
       }
-      !blockedByJoin && !blockedByClock
+      val blockedByRegion = thread.region != schedulerState.currentRegion.get
+      !blockedByJoin && !blockedByClock && !blockedByRegion
     }
 
     while (schedulerState.currentThreadIndex < allThreads.size &&

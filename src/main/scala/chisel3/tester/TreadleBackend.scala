@@ -136,7 +136,6 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
 
     while (!mainThread.done) {  // iterate timesteps
       clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
-      currentTimestep += 1
 
       debugLog(s"clock step")
 
@@ -154,8 +153,6 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
       }
 
       runThreads(steppedClocks.toSet)
-
-      timestep()
       Context().env.checkpoint()
 
       idleLimits foreach { case (clock, limit) =>
