@@ -20,15 +20,25 @@ trait AbstractTesterThread
   * order is the order regions run in, with 0 being the default, and incrementing regions running later.
   * TODO: have a more extensible ordering than ints.
   */
-sealed class Region(val order: Int)
+sealed class Region {
+  protected def getPos(): Int = {
+    val pos = Region.allRegions.indexOf(this)
+    require(pos >= 0)
+    pos
+  }
+
+  def isBefore(other: Region): Boolean = this.getPos < other.getPos
+  def isAfter(other: Region): Boolean = this.getPos > other.getPos
+  def isEqual(other: Region): Boolean = this.getPos == other.getPos
+}
 
 object Region {
   val allRegions = Seq(DefaultRegion, Monitor)
 }
 
 // Testdriver starts in this. Not to be specified in user code
-object DefaultRegion extends Region(0)
-object Monitor extends Region(1)
+object DefaultRegion extends Region
+object Monitor extends Region
 
 
 class TesterThreadList(protected val elts: Seq[AbstractTesterThread]) {

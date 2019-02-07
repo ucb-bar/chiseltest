@@ -41,4 +41,14 @@ class RegionsTest extends FlatSpec with ChiselScalatestTester {
       }.join()
     }
   }
+
+  it should "not allow simulator interaction between moving to an earlier region and stepping the clock" in {
+    assertThrows[TemporalParadox] {
+      test(new StaticModule(42.U)) { c =>
+        region(Monitor) {
+        }
+        c.out.expect(0.U)
+      }
+    }
+  }
 }
