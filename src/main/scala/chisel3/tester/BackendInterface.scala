@@ -33,11 +33,12 @@ sealed class Region {
 }
 
 object Region {
-  val allRegions = Seq(DefaultRegion, Monitor)
+  val default = TestdriverMain
+  val allRegions = Seq(default, Monitor)
 }
 
 // Testdriver starts in this. Not to be specified in user code
-object DefaultRegion extends Region
+object TestdriverMain extends Region
 object Monitor extends Region
 
 

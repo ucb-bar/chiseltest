@@ -299,7 +299,7 @@ trait ThreadedBackend {
             // Pokes within the same thread as the peek are always fine
           } else if (overridingTimescope.pokes(upstreamSignal).last.time.region isBefore peekRecord.time.region) {
             // Peek-after-poke dependencies in different regions are always allowed
-            // TODO: should this check ALL pokes, or just the last effective one?
+            // TODO: should this check ALL pokes, or just the last effective one? This currently only checks the last effective one
           } else if (branchTimescope.threadOption == peekTimescope.threadOption) {  // branched to another thread, from peek thread
             if (branchPeekActionId > branchPokeActionId) {  // thread must have spawned after the peek
               throw new ThreadOrderDependentException(s"$upstreamSignal -> $peekSignal: Poking thread spawned before peek")
@@ -340,19 +340,20 @@ trait ThreadedBackend {
 
 
     // Timescopes are valid if there is a linear chain from root to latest
+    // Takes a signal and returns the leaf timescope, throwing an error if the chain is nonlinear
     def processTimescope(signal: Data, timescope: HasOverridingPokes): Option[Timescope] = {
       val overridingTimescopes = timescope.overridingPokes.getOrElse(signal, mutable.ListBuffer())
       if (overridingTimescopes.exists(_.closedTime.isDefined)) {  // remove closed child timescopes
         if (overridingTimescopes.exists(timescope =>
-            timescope.closedTime.isEmpty && timescope.openedTime < currentTimestep)) {
+            timescope.closedTime.isEmpty && (timescope.openedTime isBefore currentTime))) {
           throw new ThreadOrderDependentException("Mix of ending timescopes and old timescopes")
         }
-        val (endingPokes, nonEndingPokes) = overridingTimescopes.partition(_.closedTimestep.isDefined)
+        val (endingPokes, nonEndingPokes) = overridingTimescopes.partition(_.closedTime.isDefined)
         endingPokes.foreach { processTimescope(signal, _) }  // Recursively check child closing timescopes
         overridingTimescopes.clear()
         overridingTimescopes ++= nonEndingPokes
       }
-      if (timescope.closedTimestep.isDefined) {  // if this timescope is closed, ensure there are no children
+      if (timescope.closedTime.isDefined) {  // if this timescope is closed, ensure there are no children
         if (overridingTimescopes.nonEmpty) {
           throw new ThreadOrderDependentException(s"Non-enclosed timescopes")
         }
@@ -439,9 +440,9 @@ trait ThreadedBackend {
     // Scheduling information
     var joinedOn: Option[TesterThread] = None
     var clockedOn: Option[Clock] = None
-    var region: Region = DefaultRegion  // current region
+    var region: Region = Region.default  // current region
     var backwardsInTime: Boolean = false  // if this thread previously was in a future region,
-                                       // and cannot interact with the testdriver until a clock advance
+                                          // and cannot interact with the testdriver until a clock advance
 
     // TODO: perhaps accessors eg pushTimescope, popTimescope?
     protected val bottomTimescope = ThreadRootTimescope(parentTimescope, openedTime, parentActionId, this)

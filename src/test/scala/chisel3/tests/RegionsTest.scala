@@ -21,6 +21,7 @@ class RegionsTest extends FlatSpec with ChiselScalatestTester {
           c.clock.step()
           c.in.expect(70.U)
         }
+        c.clock.step()
       }.join()
     }
   }
@@ -33,6 +34,7 @@ class RegionsTest extends FlatSpec with ChiselScalatestTester {
           c.clock.step()
           c.in.expect(70.U)
         }
+        c.clock.step()
       }.fork {
         c.in.poke(42.U)
         c.clock.step()
