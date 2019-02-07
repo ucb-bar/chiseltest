@@ -11,10 +11,36 @@ import firrtl.ExecutionOptionsManager
 class ThreadOrderDependentException(message: String) extends Exception(message)
 class TimeoutException(message: String) extends Exception(message)
 
+// when interfacing with the testdriver before stepping the clock after moving to an earlier region
+class TemporalParadox(message: String) extends Exception(message)
 
-trait AbstractTesterThread {
+trait AbstractTesterThread
 
+/** Base class for regions, akin to Verilog regions for ordering events between threads within the same timestep.
+  * order is the order regions run in, with 0 being the default, and incrementing regions running later.
+  * TODO: have a more extensible ordering than ints.
+  */
+sealed class Region {
+  protected def getPos(): Int = {
+    val pos = Region.allRegions.indexOf(this)
+    require(pos >= 0)
+    pos
+  }
+
+  def isBefore(other: Region): Boolean = this.getPos < other.getPos
+  def isAfter(other: Region): Boolean = this.getPos > other.getPos
+  def isEqual(other: Region): Boolean = this.getPos == other.getPos
 }
+
+object Region {
+  val default = TestdriverMain
+  val allRegions = Seq(default, Monitor)
+}
+
+// Testdriver starts in this. Not to be specified in user code
+object TestdriverMain extends Region
+object Monitor extends Region
+
 
 class TesterThreadList(protected val elts: Seq[AbstractTesterThread]) {
   def toSeq(): Seq[AbstractTesterThread] = elts
@@ -66,6 +92,8 @@ trait BackendInterface {
   def doJoin(thread: AbstractTesterThread): Unit
 
   def doTimescope(contents: () => Unit): Unit
+
+  def doRegion(region: Region, contents: () => Unit): Unit
 
   protected val testMap = mutable.HashMap[Any, Any]()
 

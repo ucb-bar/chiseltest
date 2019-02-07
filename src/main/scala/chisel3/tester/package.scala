@@ -120,6 +120,10 @@ package object tester {
     Context().backend.doTimescope(() => contents)
   }
 
+  def region(region: Region)(contents: => Unit): Unit = {
+    Context().backend.doRegion(region, () => contents)
+  }
+
   object TestInstance {
     def setVar(key: Any, value: Any): Unit = {
       Context().backend.setVar(key, value)

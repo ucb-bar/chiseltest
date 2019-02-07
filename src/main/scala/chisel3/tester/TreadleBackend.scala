@@ -129,14 +129,13 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
         tester.poke("reset", 0)
 
         testFn(dut)
-      }, 0, rootTimescope.get, 0)
+      }, TimeRegion(0, Region.default), rootTimescope.get, 0)
     mainThread.thread.start()
     require(allThreads.isEmpty)
     allThreads += mainThread
 
     while (!mainThread.done) {  // iterate timesteps
       clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
-      currentTimestep += 1
 
       debugLog(s"clock step")
 
@@ -154,8 +153,6 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
       }
 
       runThreads(steppedClocks.toSet)
-
-      timestep()
       Context().env.checkpoint()
 
       idleLimits foreach { case (clock, limit) =>
