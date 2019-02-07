@@ -236,8 +236,8 @@ trait ThreadedBackend {
    * Closes the specified timescope, returns a map of wires to values of any signals that need to be updated.
    */
   def closeTimescope(timescope: Timescope): Map[Data, Option[BigInt]] = {
-    if (currentThread.get.backwardsInTime) {
-      throw new TemporalParadox("Need to advance time after moving to a earlier region")
+    if (!timescope.pokes.isEmpty && currentThread.get.backwardsInTime) {
+      throw new TemporalParadox("Need to advance time after moving to a earlier region and reverting a timescope")
     }
 
     require(timescope eq currentThread.get.getTimescope)
@@ -440,7 +440,8 @@ trait ThreadedBackend {
     // Scheduling information
     var joinedOn: Option[TesterThread] = None
     var clockedOn: Option[Clock] = None
-    var region: Region = Region.default  // current region
+    val initialRegion = openedTime.region
+    var region: Region = openedTime.region  // current region
     var backwardsInTime: Boolean = false  // if this thread previously was in a future region,
                                           // and cannot interact with the testdriver until a clock advance
 
@@ -608,6 +609,10 @@ trait ThreadedBackend {
   def doJoin(joinThread: AbstractTesterThread): Unit = {
     val thisThread = currentThread.get
     val joinThreadTyped = joinThread.asInstanceOf[TesterThread]  // TODO get rid of this, perhaps by making it typesafe
+    // compare against initial region because any scoped regions must unwrap
+    if (joinThreadTyped.initialRegion isAfter thisThread.region) {
+      throw new TemporalParadox("Cannot join on thread that would end in a later region")
+    }
     require(thisThread.level < joinThreadTyped.level)
     thisThread.joinedOn = Some(joinThreadTyped)
     scheduler()
