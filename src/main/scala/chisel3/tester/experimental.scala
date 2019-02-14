@@ -14,21 +14,20 @@ import treadle.{ScalaBlackBox, ScalaBlackBoxFactory}
   * Async treadle greybox is in here to make tests using AsyncResetReg easier
   */
 
-class SingleBitRegIO extends Bundle {
-  val in: UInt = Input(UInt(1.W))
-  val out: UInt = Output(UInt(1.W))
-  val enable: Bool = Input(Bool())
-}
-
 /**
   * This is a black box example that only works with treadle as it does not
   * define the necessary verilog for verilator/VCS
+  *
+  * Should be API compatible with rocket-chip's AsyncResetReg
+  *
   * @param resetValue reset value for this 1 bit register
   */
 class AsyncResetReg(resetValue: Int = 0) extends ExtModule(Map("RESET_VALUE" -> IntParam(resetValue))) {
-  val io: SingleBitRegIO = IO(new SingleBitRegIO)
-  val clock: Clock = IO(Input(Clock()))
-  val reset: Bool = IO(Input(Bool()))
+  val d: UInt = IO(Input(UInt(1.W)))
+  val q: UInt = IO(Output(UInt(1.W)))
+  val en: Bool = IO(Input(Bool()))
+  val clk: Clock = IO(Input(Clock()))
+  val rst: Bool = IO(Input(Bool()))
 }
 
 /**
@@ -49,9 +48,9 @@ class AsyncResetRegScalaImpl(instanceName: String) extends ScalaBlackBox {
 
   override def inputChanged(name: String, value: BigInt): Unit = {
     name match {
-      case "io_in"     => nextValue = value
-      case "io_enable" => enable = value > BigInt(0)
-      case "reset"     =>
+      case "d"     => nextValue = value
+      case "en" => enable = value > BigInt(0)
+      case "rst"     =>
         if(value > BigInt(0)) {
           currentValue = resetValue
         }
@@ -67,7 +66,7 @@ class AsyncResetRegScalaImpl(instanceName: String) extends ScalaBlackBox {
   }
 
   override def outputDependencies(outputName: String): Seq[String] = {
-    Seq("reset", "clock", "io_in", "io_enable")
+    Seq("rst", "clk", "d", "en")
   }
 
   override def setParams(params: Seq[Param]): Unit = {

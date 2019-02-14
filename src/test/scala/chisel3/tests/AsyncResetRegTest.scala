@@ -22,12 +22,35 @@ class AsyncResetRegModule(resetValue: Int) extends Module {
 
   val reg = Module(new AsyncResetReg(resetValue))
 
-  reg.io.in := io.in
-  reg.clock := clock
-  reg.reset := reset
-  reg.io.enable := 1.U
+  reg.d := io.in
+  reg.clk := clock
+  reg.rst := reset
+  reg.en := 1.U
 
-  io.out := reg.io.out
+  io.out := reg.q
+}
+
+class AsyncResetFeedbackModule() extends Module {
+  //noinspection TypeAnnotation
+  val io = IO(new Bundle {
+    val out = Output(Vec(2, UInt(1.W)))
+  })
+
+  val reg0 = Module(new AsyncResetReg(0))
+  val reg1 = Module(new AsyncResetReg(1))
+
+  reg0.d := reg1.q
+  reg1.d := reg0.q
+
+  io.out(0) := reg0.q
+  io.out(1) := reg1.q
+
+  reg0.clk := clock
+  reg1.clk := clock
+  reg0.rst := reset
+  reg1.rst := reset
+  reg0.en := 1.U
+  reg1.en := 1.U
 }
 
 class AsyncResetRegTest extends FreeSpec with ChiselScalatestTester {
@@ -98,6 +121,19 @@ class AsyncResetRegTest extends FreeSpec with ChiselScalatestTester {
       dut.clock.step()
       dut.io.out.expect(0.U)
 
+    }
+  }
+  "feedback into itself" in {
+    test(new AsyncResetFeedbackModule, manager) { dut =>
+      dut.io.out(0).expect(0.U)
+      dut.io.out(0).expect(1.U)
+      dut.clock.step()
+      dut.io.out(0).expect(1.U)
+      dut.io.out(0).expect(0.U)
+      
+      dut.reset.poke(true.B)
+      dut.io.out(0).expect(0.U)
+      dut.io.out(0).expect(1.U)
     }
   }
 }
