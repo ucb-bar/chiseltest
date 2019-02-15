@@ -53,9 +53,7 @@ class TesterThreadList(protected val elts: Seq[AbstractTesterThread]) {
     new TesterThreadList(elts ++ others.elts)
   }
 
-  def fork(runnable: => Unit): TesterThreadList = {
-    new TesterThreadList(elts :+ Context().backend.doFork(() => runnable))
-  }
+  val fork: ForkBuilder = new ForkBuilder(None, None, elts)
 }
 
 /** Common interface definition for tester backends. Internal API.
@@ -87,13 +85,11 @@ trait BackendInterface {
     */
   def step(signal: Clock, cycles: Int): Unit
 
-  def doFork(runnable: () => Unit): AbstractTesterThread
+  def doFork(runnable: () => Unit, name: Option[String], region: Option[Region]): AbstractTesterThread
 
   def doJoin(thread: AbstractTesterThread): Unit
 
   def doTimescope(contents: () => Unit): Unit
-
-  def doRegion(region: Region, contents: () => Unit): Unit
 
   protected val testMap = mutable.HashMap[Any, Any]()
 

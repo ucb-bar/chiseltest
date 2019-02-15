@@ -105,8 +105,21 @@ package object tester {
     }
   }
 
-  def fork(runnable: => Unit): TesterThreadList = {
-    new TesterThreadList(Seq(Context().backend.doFork(() => runnable)))
+  object fork extends ForkBuilder(None, None, Seq())
+
+  case class ForkBuilder(name: Option[String], region: Option[Region], threads: Seq[AbstractTesterThread]) {
+    def apply(runnable: => Unit): TesterThreadList = {
+      new TesterThreadList(threads ++ Seq(Context().backend.doFork(() => runnable, name, region)))
+    }
+
+    def withRegion(newRegion: Region): ForkBuilder = {
+      require(region.isEmpty)
+      this.copy(region=Some(newRegion))
+    }
+    def withName(newName: String): ForkBuilder = {
+      require(name.isEmpty)
+      this.copy(name=Some(newName))
+    }
   }
 
   // TODO: call-by-name doesn't work with varargs, is there a better way to do this?
@@ -118,10 +131,6 @@ package object tester {
 
   def timescope(contents: => Unit): Unit = {
     Context().backend.doTimescope(() => contents)
-  }
-
-  def region(region: Region)(contents: => Unit): Unit = {
-    Context().backend.doRegion(region, () => contents)
   }
 
   object TestInstance {
