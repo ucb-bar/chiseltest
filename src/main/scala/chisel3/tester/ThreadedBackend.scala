@@ -398,7 +398,8 @@ trait ThreadedBackend {
     var done: Boolean = false
 
     // Scheduling information
-    var joinedOn: Option[TesterThread] = None
+    var joinedOn: Set[TesterThread] = Set()
+    var joinPostClock: Option[Clock] = None
     var clockedOn: Option[Clock] = None
 
     // TODO: perhaps accessors eg pushTimescope, popTimescope?
@@ -469,6 +470,15 @@ trait ThreadedBackend {
     require(schedulerState.currentThreadIndex == 0)
     require(schedulerState.clocks.isEmpty)
 
+    // For joinAndStep thread that have joined, propagate the waiting clock
+    for (thread <- allThreads) {
+      if (thread.joinedOn.isEmpty && thread.joinPostClock.isDefined) {
+        require(thread.clockedOn.isEmpty)
+        thread.clockedOn = thread.joinPostClock
+        thread.joinPostClock = None
+      }
+    }
+
     currentTimestep += 1
     schedulerState.clocks ++= clocks
 
@@ -507,17 +517,21 @@ trait ThreadedBackend {
   protected def scheduler() {
     def threadCanRun(thread: TesterThread): Boolean = {
       val blockedByJoin = thread.joinedOn match {
+        case joinedOn if joinedOn.isEmpty => false
+        case joinedOn if allThreads.toSet.intersect(joinedOn) == Set() =>
+          thread.joinedOn = Set(); false
+        case _ => true
+      }
+      val blockedByJoinStep = thread.joinPostClock match {
         case None => false
-        case Some(joinedThread) if allThreads.contains(joinedThread) => true
-        // TODO: move clearing of joinedOn into threadFinished
-        case Some(joinedThread) if !allThreads.contains(joinedThread) => thread.joinedOn = None; false
+        case Some(_) => true
       }
       val blockedByClock = thread.clockedOn match {
         case None => false
         case Some(clock) => !schedulerState.clocks.contains(clock)
       }
       val blockedByRegion = thread.region != schedulerState.currentRegion.get
-      !blockedByJoin && !blockedByClock && !blockedByRegion
+      !blockedByJoin && !blockedByJoinStep && !blockedByClock && !blockedByRegion
     }
 
     while (schedulerState.currentThreadIndex < allThreads.size &&
@@ -563,15 +577,25 @@ trait ThreadedBackend {
     newThread
   }
 
-  def doJoin(joinThread: AbstractTesterThread): Unit = {
+  def doJoin(threads: Seq[AbstractTesterThread], stepAfter: Option[Clock]): Unit = {
     val thisThread = currentThread.get
-    val joinThreadTyped = joinThread.asInstanceOf[TesterThread]  // TODO get rid of this, perhaps by making it typesafe
-    // compare against initial region because any scoped regions must unwrap
-    if (joinThreadTyped.region isAfter thisThread.region) {
-      throw new TemporalParadox("Cannot join on thread that would end in a later region")
+    // TODO can this be made more typesafe?
+    val joinThreadsTyped = threads.map(_.asInstanceOf[TesterThread])
+    for (joinThread <- joinThreadsTyped) {
+      // Ensure joined threads execute before this thread if there is no post-join step
+      if ((joinThread.region isAfter thisThread.region) && stepAfter.isEmpty) {
+        throw new TemporalParadox("Cannot join (without step) on thread that would end in a later region")
+      }
+      if (joinThread.region == thisThread.region
+          && allThreads.indexOf(joinThread) > allThreads.indexOf(thisThread)
+          && stepAfter.isEmpty) {
+        throw new TemporalParadox("Cannot join (without step) on thread that would execute after this thread")
+      }
     }
-    require(thisThread.level < joinThreadTyped.level)
-    thisThread.joinedOn = Some(joinThreadTyped)
+
+    thisThread.joinedOn = joinThreadsTyped.toSet
+    thisThread.joinPostClock = stepAfter
+    thisThread.clockedOn = None
     scheduler()
     thisThread.waiting.acquire()
   }

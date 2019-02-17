@@ -46,7 +46,11 @@ class TesterThreadList(protected val elts: Seq[AbstractTesterThread]) {
   def toSeq(): Seq[AbstractTesterThread] = elts
 
   def join() {
-    elts foreach { thread => Context().backend.doJoin(thread) }
+    Context().backend.doJoin(elts, None)
+  }
+
+  def joinAndStep(clock: Clock) {
+    Context().backend.doJoin(elts, Some(clock))
   }
 
   def ++(others: TesterThreadList): TesterThreadList = {
@@ -87,7 +91,7 @@ trait BackendInterface {
 
   def doFork(runnable: () => Unit, name: Option[String], region: Option[Region]): AbstractTesterThread
 
-  def doJoin(thread: AbstractTesterThread): Unit
+  def doJoin(threads: Seq[AbstractTesterThread], stepAfter: Option[Clock]): Unit
 
   def doTimescope(contents: () => Unit): Unit
 
