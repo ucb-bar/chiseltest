@@ -10,7 +10,7 @@ import scala.collection.mutable
 
 /** Base trait for backends implementing concurrency by threading. Also implements timescopes.
   */
-trait ThreadedBackend {
+trait ThreadedBackend extends BackendInterface {
   //
   // Variable references
   //
@@ -156,10 +156,6 @@ trait ThreadedBackend {
    * Returns whether to execute it, based on priorities compared to other active pokes.
    */
   def doPoke(signal: Data, value: BigInt, trace: Throwable): Unit = {
-    if (currentThread.get.backwardsInTime) {
-      throw new TemporalParadox("Need to advance time after moving to a earlier region")
-    }
-
     val timescope = currentThread.get.getTimescope
     // On the first poke, add a link from the previous timescope
     if (!timescope.pokes.contains(signal)) {
@@ -203,10 +199,6 @@ trait ThreadedBackend {
    * Logs a peek operation for later checking.
    */
   def doPeek(signal: Data, trace: Throwable): Unit = {
-    if (currentThread.get.backwardsInTime) {
-      throw new TemporalParadox("Need to advance time after moving to a earlier region")
-    }
-
     val timescope = currentThread.get.getTimescope
     val deps = combinationalPaths.getOrElse(signal, Set(signal)).map { signal =>
       (signal, pokes.get(signal))
@@ -236,10 +228,6 @@ trait ThreadedBackend {
    * Closes the specified timescope, returns a map of wires to values of any signals that need to be updated.
    */
   def closeTimescope(timescope: Timescope): Map[Data, Option[BigInt]] = {
-    if (!timescope.pokes.isEmpty && currentThread.get.backwardsInTime) {
-      throw new TemporalParadox("Need to advance time after moving to a earlier region and reverting a timescope")
-    }
-
     require(timescope eq currentThread.get.getTimescope)
 
     // Mark timescope as closed
@@ -385,35 +373,6 @@ trait ThreadedBackend {
     // TODO: check that lastTimescope signal is actually the one effective?
   }
 
-  def doRegion(region: Region, contents: () => Unit): Unit = {
-    require(Region.allRegions.contains(region))
-    val thisThread = currentThread.get
-
-    val prevRegion = thisThread.region
-    thisThread.region = region
-    if (region isAfter prevRegion) {
-      scheduler()
-      thisThread.waiting.acquire()
-    } else if (region isBefore prevRegion) {
-      // when moving backwards in time, do not invoke the scheduler, instead rely on the caller
-      // immediately stepping the clock afterwards, and checking that no testdriver actions are
-      // invoked inbetween
-      thisThread.backwardsInTime = true
-    }
-    require(thisThread.region == region)
-
-    contents()
-
-    require(thisThread.region == region)
-    thisThread.region = prevRegion
-    if (prevRegion isBefore region) {
-      thisThread.backwardsInTime = true
-    } else if (prevRegion isAfter region) {
-      scheduler()
-      thisThread.waiting.acquire()
-    }
-  }
-
   protected val interruptedException = new ConcurrentLinkedQueue[Throwable]()
   /**
    * Called when an exception happens inside a thread.
@@ -428,7 +387,8 @@ trait ThreadedBackend {
   }
 
   protected class TesterThread(runnable: () => Unit,
-      openedTime: TimeRegion, parentTimescope: BaseTimescope, parentActionId: Int)
+      openedTime: TimeRegion, parentTimescope: BaseTimescope, parentActionId: Int,
+      val region: Region, val trace: Option[(TesterThread, Throwable)])
       extends AbstractTesterThread {
     val level: Int = parentTimescope.threadOption match {
       case Some(parentThread) => parentThread.level + 1
@@ -438,12 +398,9 @@ trait ThreadedBackend {
     var done: Boolean = false
 
     // Scheduling information
-    var joinedOn: Option[TesterThread] = None
+    var joinedOn: Set[TesterThread] = Set()
+    var joinPostClock: Option[Clock] = None
     var clockedOn: Option[Clock] = None
-    val initialRegion = openedTime.region
-    var region: Region = openedTime.region  // current region
-    var backwardsInTime: Boolean = false  // if this thread previously was in a future region,
-                                          // and cannot interact with the testdriver until a clock advance
 
     // TODO: perhaps accessors eg pushTimescope, popTimescope?
     protected val bottomTimescope = ThreadRootTimescope(parentTimescope, openedTime, parentActionId, this)
@@ -513,12 +470,17 @@ trait ThreadedBackend {
     require(schedulerState.currentThreadIndex == 0)
     require(schedulerState.clocks.isEmpty)
 
+    // For joinAndStep thread that have joined, propagate the waiting clock
+    for (thread <- allThreads) {
+      if (thread.joinedOn.isEmpty && thread.joinPostClock.isDefined) {
+        require(thread.clockedOn.isEmpty)
+        thread.clockedOn = thread.joinPostClock
+        thread.joinPostClock = None
+      }
+    }
+
     currentTimestep += 1
     schedulerState.clocks ++= clocks
-
-    for (thread <- allThreads) {
-      thread.backwardsInTime = false
-    }
 
     for (region <- Region.allRegions) {
       schedulerState.currentRegion = Some(region)
@@ -555,17 +517,21 @@ trait ThreadedBackend {
   protected def scheduler() {
     def threadCanRun(thread: TesterThread): Boolean = {
       val blockedByJoin = thread.joinedOn match {
+        case joinedOn if joinedOn.isEmpty => false
+        case joinedOn if allThreads.toSet.intersect(joinedOn) == Set() =>
+          thread.joinedOn = Set(); false
+        case _ => true
+      }
+      val blockedByJoinStep = thread.joinPostClock match {
         case None => false
-        case Some(joinedThread) if allThreads.contains(joinedThread) => true
-        // TODO: move clearing of joinedOn into threadFinished
-        case Some(joinedThread) if !allThreads.contains(joinedThread) => thread.joinedOn = None; false
+        case Some(_) => true
       }
       val blockedByClock = thread.clockedOn match {
         case None => false
         case Some(clock) => !schedulerState.clocks.contains(clock)
       }
       val blockedByRegion = thread.region != schedulerState.currentRegion.get
-      !blockedByJoin && !blockedByClock && !blockedByRegion
+      !blockedByJoin && !blockedByJoinStep && !blockedByClock && !blockedByRegion
     }
 
     while (schedulerState.currentThreadIndex < allThreads.size &&
@@ -592,10 +558,15 @@ trait ThreadedBackend {
     allThreads -= thread
   }
 
-  def doFork(runnable: () => Unit): TesterThread = {
+  def doFork(runnable: () => Unit, name: Option[String], region: Option[Region]): TesterThread = {
     val timescope = currentThread.get.getTimescope
     val thisThread = currentThread.get  // locally save this thread
-    val newThread = new TesterThread(runnable, currentTime, timescope, timescope.nextActionId)
+    val newRegion = region.getOrElse(thisThread.region)
+    if (newRegion isBefore thisThread.region) {
+      throw new TemporalParadox("Cannot spawn a thread at an earlier region")
+    }
+    val newThread = new TesterThread(runnable, currentTime, timescope, timescope.nextActionId,
+      newRegion, Some(thisThread, new Throwable))
     timescope.nextActionId += 1
 
     // schedule the new thread to run immediately, then return to this thread
@@ -606,16 +577,34 @@ trait ThreadedBackend {
     newThread
   }
 
-  def doJoin(joinThread: AbstractTesterThread): Unit = {
+  def doJoin(threads: Seq[AbstractTesterThread], stepAfter: Option[Clock]): Unit = {
     val thisThread = currentThread.get
-    val joinThreadTyped = joinThread.asInstanceOf[TesterThread]  // TODO get rid of this, perhaps by making it typesafe
-    // compare against initial region because any scoped regions must unwrap
-    if (joinThreadTyped.initialRegion isAfter thisThread.region) {
-      throw new TemporalParadox("Cannot join on thread that would end in a later region")
+    // TODO can this be made more typesafe?
+    val joinThreadsTyped = threads.map(_.asInstanceOf[TesterThread])
+    for (joinThread <- joinThreadsTyped) {
+      // Ensure joined threads execute before this thread if there is no post-join step
+      if ((joinThread.region isAfter thisThread.region) && stepAfter.isEmpty) {
+        throw new TemporalParadox("Cannot join (without step) on thread that would end in a later region")
+      }
+      if (joinThread.region == thisThread.region
+          && allThreads.indexOf(joinThread) > allThreads.indexOf(thisThread)
+          && stepAfter.isEmpty) {
+        throw new TemporalParadox("Cannot join (without step) on thread that would execute after this thread")
+      }
     }
-    require(thisThread.level < joinThreadTyped.level)
-    thisThread.joinedOn = Some(joinThreadTyped)
+
+    thisThread.joinedOn = joinThreadsTyped.toSet
+    thisThread.joinPostClock = stepAfter
+    thisThread.clockedOn = None
     scheduler()
     thisThread.waiting.acquire()
+  }
+
+  override def getParentTraceElements: Seq[StackTraceElement] = {
+    def processThread(thread: TesterThread): Seq[StackTraceElement] = thread.trace match {
+      case Some((parent, trace)) => processThread(parent) ++ trace.getStackTrace
+      case None => Seq()
+    }
+    processThread(currentThread.get)
   }
 }

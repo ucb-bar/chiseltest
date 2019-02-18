@@ -46,16 +46,18 @@ class TesterThreadList(protected val elts: Seq[AbstractTesterThread]) {
   def toSeq(): Seq[AbstractTesterThread] = elts
 
   def join() {
-    elts foreach { thread => Context().backend.doJoin(thread) }
+    Context().backend.doJoin(elts, None)
+  }
+
+  def joinAndStep(clock: Clock) {
+    Context().backend.doJoin(elts, Some(clock))
   }
 
   def ++(others: TesterThreadList): TesterThreadList = {
     new TesterThreadList(elts ++ others.elts)
   }
 
-  def fork(runnable: => Unit): TesterThreadList = {
-    new TesterThreadList(elts :+ Context().backend.doFork(() => runnable))
-  }
+  val fork: ForkBuilder = new ForkBuilder(None, None, elts)
 }
 
 /** Common interface definition for tester backends. Internal API.
@@ -87,13 +89,17 @@ trait BackendInterface {
     */
   def step(signal: Clock, cycles: Int): Unit
 
-  def doFork(runnable: () => Unit): AbstractTesterThread
+  def doFork(runnable: () => Unit, name: Option[String], region: Option[Region]): AbstractTesterThread
 
-  def doJoin(thread: AbstractTesterThread): Unit
+  def doJoin(threads: Seq[AbstractTesterThread], stepAfter: Option[Clock]): Unit
 
   def doTimescope(contents: () => Unit): Unit
 
-  def doRegion(region: Region, contents: () => Unit): Unit
+  /** Returns the stack trace elements of parent threads. If currently in the root thread, returns
+    * empty.
+    * TODO: refactor this, figure out how to do this in a structurally cleaner way
+    */
+  def getParentTraceElements: Seq[StackTraceElement] = Seq()
 
   protected val testMap = mutable.HashMap[Any, Any]()
 

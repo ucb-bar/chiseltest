@@ -34,12 +34,11 @@ class DecoupledDriver[T <: Data](x: DecoupledIO[T]) {
     // TODO: check for init
     x.bits.poke(data)
     x.valid.poke(true.B)
-    region(Monitor) {
+    fork.withRegion(Monitor) {
       while (x.ready.peek().litToBoolean == false) {
         getSourceClock.step(1)
       }
-    }
-    getSourceClock.step(1)
+    }.joinAndStep(getSourceClock)
   }
 
   def enqueueSeq(data: Seq[T]): Unit = timescope {
@@ -72,22 +71,20 @@ class DecoupledDriver[T <: Data](x: DecoupledIO[T]) {
   def expectDequeue(data: T): Unit = timescope {
     // TODO: check for init
     x.ready.poke(true.B)
-    region(Monitor) {
+    fork.withRegion(Monitor) {
       waitForValid()
       x.valid.expect(true.B)
       x.bits.expect(data)
-    }
-    getSinkClock.step(1)
+    }.joinAndStep(getSinkClock)
   }
 
   def expectDequeueNow(data: T): Unit = timescope {
     // TODO: check for init
     x.ready.poke(true.B)
-    region(Monitor) {
+    fork.withRegion(Monitor) {
       x.valid.expect(true.B)
       x.bits.expect(data)
-    }
-    getSinkClock.step(1)
+    }.joinAndStep(getSinkClock)
   }
 
   def expectDequeueSeq(data: Seq[T]): Unit = timescope {
