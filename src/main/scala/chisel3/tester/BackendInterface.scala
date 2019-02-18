@@ -11,25 +11,53 @@ import firrtl.ExecutionOptionsManager
 class ThreadOrderDependentException(message: String) extends Exception(message)
 class TimeoutException(message: String) extends Exception(message)
 
+// when interfacing with the testdriver before stepping the clock after moving to an earlier region
+class TemporalParadox(message: String) extends Exception(message)
 
-trait AbstractTesterThread {
+trait AbstractTesterThread
 
+/** Base class for regions, akin to Verilog regions for ordering events between threads within the same timestep.
+  * order is the order regions run in, with 0 being the default, and incrementing regions running later.
+  * TODO: have a more extensible ordering than ints.
+  */
+sealed class Region {
+  protected def getPos(): Int = {
+    val pos = Region.allRegions.indexOf(this)
+    require(pos >= 0)
+    pos
+  }
+
+  def isBefore(other: Region): Boolean = this.getPos < other.getPos
+  def isAfter(other: Region): Boolean = this.getPos > other.getPos
+  def isEqual(other: Region): Boolean = this.getPos == other.getPos
 }
+
+object Region {
+  val default = TestdriverMain
+  val allRegions = Seq(default, Monitor)
+}
+
+// Testdriver starts in this. Not to be specified in user code
+object TestdriverMain extends Region
+object Monitor extends Region
+
 
 class TesterThreadList(protected val elts: Seq[AbstractTesterThread]) {
   def toSeq(): Seq[AbstractTesterThread] = elts
 
   def join() {
-    elts foreach { thread => Context().backend.doJoin(thread) }
+    Context().backend.doJoin(elts, None)
+  }
+
+  def joinAndStep(clock: Clock) {
+    Context().backend.doJoin(elts, Some(clock))
   }
 
   def ++(others: TesterThreadList): TesterThreadList = {
     new TesterThreadList(elts ++ others.elts)
   }
 
-  def fork(runnable: => Unit): TesterThreadList = {
-    new TesterThreadList(elts :+ Context().backend.doFork(() => runnable))
-  }
+  val fork: ForkBuilder = new ForkBuilder(None, None, elts)
 }
 
 /** Common interface definition for tester backends. Internal API.
@@ -61,9 +89,9 @@ trait BackendInterface {
     */
   def step(signal: Clock, cycles: Int): Unit
 
-  def doFork(runnable: () => Unit): AbstractTesterThread
+  def doFork(runnable: () => Unit, name: Option[String], region: Option[Region]): AbstractTesterThread
 
-  def doJoin(thread: AbstractTesterThread): Unit
+  def doJoin(threads: Seq[AbstractTesterThread], stepAfter: Option[Clock]): Unit
 
   def doTimescope(contents: () => Unit): Unit
 
@@ -79,6 +107,12 @@ trait BackendInterface {
 
   // Test Instance State
   //
+  /** Returns the stack trace elements of parent threads. If currently in the root thread, returns
+    * empty.
+    * TODO: refactor this, figure out how to do this in a structurally cleaner way
+    */
+  def getParentTraceElements: Seq[StackTraceElement] = Seq()
+
   protected val testMap = mutable.HashMap[Any, Any]()
 
   /** Sets the value associated with a key in a per-test map.

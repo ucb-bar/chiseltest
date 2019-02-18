@@ -3,93 +3,12 @@
 package chisel3.tests
 
 import chisel3._
-import chisel3.core.{ExtModule, IntParam}
 import chisel3.tester._
+import chisel3.tester.experimental._
 import firrtl.ExecutionOptionsManager
-import firrtl.ir.{Param, Type}
+import treadle.HasTreadleSuite
 import org.scalatest._
-import treadle.executable.{PositiveEdge, Transition}
-import treadle.{HasTreadleSuite, ScalaBlackBox, ScalaBlackBoxFactory}
 
-class SingleBitRegIO extends Bundle {
-  val in: UInt = Input(UInt(1.W))
-  val out: UInt = Output(UInt(1.W))
-  val enable: Bool = Input(Bool())
-}
-
-/**
-  * This is a black box example that only works with treadle as it does not
-  * define the necessary verilog for verilator/VCS
-  * @param resetValue reset value for this 1 bit register
-  */
-class AsyncResetReg(resetValue: Int = 0) extends ExtModule(Map("RESET_VALUE" -> IntParam(resetValue))) {
-  val io: SingleBitRegIO = IO(new SingleBitRegIO)
-  val clock: Clock = IO(Input(Clock()))
-  val reset: Bool = IO(Input(Bool()))
-}
-
-/**
-  * This is the scala implementation of the AsyncResetReg black box.
-  * @param instanceName full path name for this instance
-  */
-class AsyncResetRegScalaImpl(instanceName: String) extends ScalaBlackBox {
-  override def name: String = "AsyncResetReg"
-
-  var nextValue:    BigInt = BigInt(0)
-  var currentValue: BigInt = BigInt(0)
-  var resetValue:   BigInt = BigInt(0)
-  var enable:       Boolean = false
-
-  def getOutput(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
-    currentValue
-  }
-
-  override def inputChanged(name: String, value: BigInt): Unit = {
-    name match {
-      case "io_in"     => nextValue = value
-      case "io_enable" => enable = value > BigInt(0)
-      case "reset"     =>
-        if(value > BigInt(0)) {
-          currentValue = resetValue
-        }
-      case _ =>
-        println(s"WARNING: treadle black box $instanceName called with UNHANDLED $name <= $value")
-    }
-  }
-
-  override def clockChange(transition: Transition, clockName: String): Unit = {
-    if(transition == PositiveEdge && enable) {
-      currentValue = nextValue
-    }
-  }
-
-  override def outputDependencies(outputName: String): Seq[String] = {
-    Seq("reset", "clock", "io_in", "io_enable")
-  }
-
-  override def setParams(params: Seq[Param]): Unit = {
-    params.foreach {
-      case firrtl.ir.IntParam("RESET_VALUE", value) =>
-        resetValue = value
-      case param =>
-        println(s"WARNING: treadle black box $instanceName called with Verilog Parameter $param")
-    }
-  }
-}
-
-/**
-  * This generates the black box instance that Treadle will use
-  */
-class AsyncResetBlackBoxFactory extends ScalaBlackBoxFactory {
-  override def createInstance(instanceName: String, blackBoxName: String): Option[ScalaBlackBox] = {
-    blackBoxName match {
-      case "AsyncResetReg" =>
-        Some(add(new AsyncResetRegScalaImpl(instanceName)))
-      case _ =>
-        None
-    }
-  }
-}
 /**
   * circuit that illustrates usage of async register
   * @param resetValue value on reset
@@ -103,20 +22,41 @@ class AsyncResetRegModule(resetValue: Int) extends Module {
 
   val reg = Module(new AsyncResetReg(resetValue))
 
-  reg.io.in := io.in
-  reg.clock := clock
-  reg.reset := reset
-  reg.io.enable := 1.U
+  reg.d := io.in
+  reg.clk := clock
+  reg.rst := reset
+  reg.en := 1.U
 
-  io.out := reg.io.out
+  io.out := reg.q
+}
+
+class AsyncResetFeedbackModule() extends Module {
+  //noinspection TypeAnnotation
+  val io = IO(new Bundle {
+    val out = Output(Vec(2, UInt(1.W)))
+  })
+
+  val reg0 = Module(new AsyncResetReg(0))
+  val reg1 = Module(new AsyncResetReg(1))
+
+  reg0.d := reg1.q
+  reg1.d := reg0.q
+
+  io.out(0) := reg0.q
+  io.out(1) := reg1.q
+
+  reg0.clk := clock
+  reg1.clk := clock
+  reg0.rst := reset
+  reg1.rst := reset
+  reg0.en := 1.U
+  reg1.en := 1.U
 }
 
 class AsyncResetRegTest extends FreeSpec with ChiselScalatestTester {
   private val manager = new ExecutionOptionsManager("asyncResetRegTest") with HasTreadleSuite {
     treadleOptions = treadleOptions.copy(
-      blackBoxFactories = Seq(new AsyncResetBlackBoxFactory),
-      writeVCD = true,
-      setVerbose = false
+      blackBoxFactories = Seq(new AsyncResetBlackBoxFactory)
     )
   }
   "register is zero, after tester startup's default reset" in {
@@ -181,6 +121,19 @@ class AsyncResetRegTest extends FreeSpec with ChiselScalatestTester {
       dut.clock.step()
       dut.io.out.expect(0.U)
 
+    }
+  }
+  "feedback into itself" in {
+    test(new AsyncResetFeedbackModule, manager) { dut =>
+      dut.io.out(0).expect(0.U)
+      dut.io.out(0).expect(1.U)
+      dut.clock.step()
+      dut.io.out(0).expect(1.U)
+      dut.io.out(0).expect(0.U)
+      
+      dut.reset.poke(true.B)
+      dut.io.out(0).expect(0.U)
+      dut.io.out(0).expect(1.U)
     }
   }
 }

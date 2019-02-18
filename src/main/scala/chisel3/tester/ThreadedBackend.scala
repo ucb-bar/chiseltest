@@ -10,18 +10,23 @@ import scala.collection.mutable
 
 /** Base trait for backends implementing concurrency by threading. Also implements timescopes.
   */
-trait ThreadedBackend {
+trait ThreadedBackend extends BackendInterface {
   //
   // Variable references
   //
   val combinationalPaths: Map[Data, Set[Data]]  // set of combinational Data inputs for each output
-  val dataNames: Map[Data, String]  // FIRRTL string name for each Data
 
   //
   // Common variables
   //
-
   var currentTimestep: Int = 0  // current simulator timestep, in number of base clock cycles
+
+  case class TimeRegion(timeslot: Int, region: Region) {
+    def isBefore(other: TimeRegion): Boolean = {
+      timeslot < other.timeslot || (timeslot == other.timeslot && region.isBefore(other.region))
+    }
+  }
+  def currentTime: TimeRegion = TimeRegion(currentTimestep, schedulerState.currentRegion.get)
 
   //
   // Timescope data structures and utilities
@@ -34,7 +39,7 @@ trait ThreadedBackend {
   sealed trait HasOverridingPokes extends BaseTimescope {
     // List of timescopes overriding a signal, including ones closed / reverted on this timestep
     private[tester] val overridingPokes = new mutable.HashMap[Data, mutable.ListBuffer[Timescope]]
-    def closedTimestep: Option[Int]
+    def closedTime: Option[TimeRegion]
   }
   sealed trait HasParent extends BaseTimescope {
     def parentTimescope: BaseTimescope
@@ -44,7 +49,7 @@ trait ThreadedBackend {
   // Root timescope, cannot be modified, with no signals poked.
   class RootTimescope extends BaseTimescope with HasOverridingPokes {
     override def threadOption: Option[TesterThread] = None
-    override def closedTimestep: Option[Int] = None
+    override def closedTime: Option[TimeRegion] = None
   }
 
   var rootTimescope: Option[RootTimescope] = None  // TODO unify with something else? Or replace w/ rootThread?
@@ -52,21 +57,21 @@ trait ThreadedBackend {
   // Timescope that is the root of a thread, contains no signals but can have a parent
   // TODO: should this be a trait of thread?
   case class ThreadRootTimescope(parentTimescope: BaseTimescope,
-      openedTimestep: Int,
+      openedTime: TimeRegion,
       parentActionId: Int,
       thread: TesterThread) extends BaseTimescope with HasParent {
     override def threadOption = Some(thread)
   }
 
-  case class PokeRecord(timestep: Int, actionId: Int, value: BigInt, trace: Throwable)
+  case class PokeRecord(time: TimeRegion, actionId: Int, value: BigInt, trace: Throwable)
 
   class Timescope(val parentTimescope: BaseTimescope,
-      val openedTimestep: Int,  // timestep this timescope was spawned on
+      val openedTime: TimeRegion,  // timestep this timescope was spawned on
       val parentActionId: Int)  // spawn time in actionId of parent timescope,
                                 // from parent's perspective all actions happen instantaneously in this timestep
       extends BaseTimescope with HasOverridingPokes with HasParent {
     var nextActionId: Int = 0  // actionId to be assigned to the next action
-    var closedTimestep: Option[Int] = None  // timestep this timescope was closed on, if it is closed
+    var closedTime: Option[TimeRegion] = None  // timestep this timescope was closed on, if it is closed
 
     override def threadOption: Option[TesterThread] = parentTimescope.threadOption
 
@@ -139,7 +144,7 @@ trait ThreadedBackend {
   // Threading checking data structures and utilities
   //
 
-  case class PeekRecord(timescope: Timescope, timestep: Int, actionId: Int,
+  case class PeekRecord(timescope: Timescope, time: TimeRegion, actionId: Int,
       deps: Map[Data, Option[Timescope]], trace: Throwable)
 
   // Active peeks on a signal, instantaneous on the current timestep
@@ -185,7 +190,7 @@ trait ThreadedBackend {
 
     // Update the timescope
     timescope.pokes.getOrElseUpdate(signal, mutable.ListBuffer[PokeRecord]()).append(
-        PokeRecord(currentTimestep, timescope.nextActionId, value, trace))
+        PokeRecord(currentTime, timescope.nextActionId, value, trace))
     timescope.nextActionId += 1
     pokes.put(signal, timescope)
   }
@@ -200,7 +205,7 @@ trait ThreadedBackend {
     }.toMap
 
     signalPeeks.getOrElseUpdate(signal, mutable.ListBuffer()) +=
-        PeekRecord(timescope, currentTimestep, timescope.nextActionId, deps, trace)
+        PeekRecord(timescope, currentTime, timescope.nextActionId, deps, trace)
     timescope.nextActionId += 1
   }
 
@@ -210,10 +215,10 @@ trait ThreadedBackend {
   def newTimescope(): Timescope = {
     val newTimescope = currentThread.get.topTimescope match {
       case timescope: Timescope =>
-        val newTimescope = new Timescope(timescope, currentTimestep, timescope.nextActionId)
+        val newTimescope = new Timescope(timescope, currentTime, timescope.nextActionId)
         timescope.nextActionId += 1
         newTimescope
-      case timescope => new Timescope(timescope, currentTimestep, 0)
+      case timescope => new Timescope(timescope, currentTime, 0)
     }
     currentThread.get.topTimescope = newTimescope
     newTimescope
@@ -226,7 +231,7 @@ trait ThreadedBackend {
     require(timescope eq currentThread.get.getTimescope)
 
     // Mark timescope as closed
-    timescope.closedTimestep = Some(currentTimestep)
+    timescope.closedTime = Some(currentTime)
     currentThread.get.topTimescope = timescope.parentTimescope
 
     // Build a revert map of poked signals
@@ -260,56 +265,59 @@ trait ThreadedBackend {
     // These are checked by walking up the tree of timescopes, and ensuring the closest poke
     // has not been overridden.
     // Conflicting pokes will be detected by poke checking.
-    signalPeeks.toSeq.foreach { case (signal, peeks) =>
+    signalPeeks.toSeq.foreach { case (peekSignal, peeks) =>
       // Check both the signal and combinational sources
-      val upstreamSignals = combinationalPaths.getOrElse(signal, Set()) + signal
+      val upstreamSignals = combinationalPaths.getOrElse(peekSignal, Set()) + peekSignal
       // TODO: optimization of peeks within a thread
-      peeks.foreach { peekRecord => upstreamSignals.foreach { combSignal =>
+      peeks.foreach { peekRecord => upstreamSignals.foreach { upstreamSignal =>
         val peekTimescope = peekRecord.timescope
-        val (pokeTimescope, peekActionId) = TimescopeUtils.getNearestPoke(combSignal, peekTimescope, peekRecord.actionId)
+        val (pokeTimescope, peekActionId) = TimescopeUtils.getNearestPoke(upstreamSignal, peekTimescope, peekRecord.actionId)
 
         //
         // Bulk of the check logic is here
         //
-        if (pokeTimescope.threadOption != peekTimescope.threadOption) {
-          // If the poke is from another (parent) thread, need to check that it has not changed since the immediate
-          // child spawned.
-          pokeTimescope.closedTimestep match {
-            case Some(closedTimestep) if closedTimestep < currentTimestep =>  // signal cannot be changed by timescope revert
-              throw new ThreadOrderDependentException(s"${dataNames(combSignal)} -> ${dataNames(signal)}: Timescope revert")
-            case _ =>  // revert is fine on the current timestep:
-              // if the peeking thread was just spawned, is should be encapsulated and run immediately
-              // if the peeking thread was spawned before, it would have run before the parent run
-          }
-          pokeTimescope match {
-            case timescope: Timescope => if (timescope.pokes(combSignal).last.actionId > peekActionId) {
-              throw new ThreadOrderDependentException(s"${dataNames(combSignal)} -> ${dataNames(signal)}: Timescope signal changed, poked after peek")
-            }
-            case _: RootTimescope =>  // catch issues with override checks below
-          }
-        }
-
         // Check override signals
         val pokeToPeekPath = TimescopeUtils.getLinearPath(pokeTimescope, peekTimescope, peekActionId)
-        val overridingPokes = TimescopeUtils.getLeafOverridingPokes(pokeTimescope, combSignal)
+        val overridingPokes = TimescopeUtils.getLeafOverridingPokes(pokeTimescope, upstreamSignal)
         overridingPokes.foreach { overridingTimescope =>
           // Use a dummy actionId for the poke, because it should never be used (overridingTimescope should not be on the path to the peek)
           // 0 is used because where it matter, it will fail.
           val (branchTimescope, branchPeekActionId, branchPokeActionId) = TimescopeUtils.getCommonAncestor(pokeToPeekPath, overridingTimescope, 0)
           if (overridingTimescope.threadOption == peekTimescope.threadOption) {  // override in peek timescope
             // Pokes within the same thread as the peek are always fine
+          } else if (overridingTimescope.pokes(upstreamSignal).last.time.region isBefore peekRecord.time.region) {
+            // Peek-after-poke dependencies in different regions are always allowed
+            // TODO: should this check ALL pokes, or just the last effective one? This currently only checks the last effective one
           } else if (branchTimescope.threadOption == peekTimescope.threadOption) {  // branched to another thread, from peek thread
             if (branchPeekActionId > branchPokeActionId) {  // thread must have spawned after the peek
-              throw new ThreadOrderDependentException(s"${dataNames(combSignal)} -> ${dataNames(signal)}: Poking thread spawned before peek")
+              throw new ThreadOrderDependentException(s"$upstreamSignal -> $peekSignal: Poking thread spawned before peek")
             }
           } else {  // branch point was in a parent thread
             if (overridingTimescope.threadOption == branchTimescope.threadOption) {  // ... remaining in the same thread as the parent
               if (branchPeekActionId > branchPokeActionId) {  // thread must have spawned after the peek
-                throw new ThreadOrderDependentException(s"${dataNames(combSignal)} -> ${dataNames(signal)}: Poking thread spawned before peek")
+                throw new ThreadOrderDependentException(s"$upstreamSignal -> $peekSignal: Poking thread spawned before peek")
               }
             } else {  // ... into another thread
-              throw new ThreadOrderDependentException(s"${dataNames(combSignal)} -> ${dataNames(signal)}: Divergent poking / peeking threads")
+              throw new ThreadOrderDependentException(s"$upstreamSignal -> $peekSignal: Divergent poking / peeking threads")
             }
+          }
+        }
+
+        // If the poke is from another (parent) thread, also check that it has not changed since the immediate
+        // child spawned.
+        if (pokeTimescope.threadOption != peekTimescope.threadOption) {
+          pokeTimescope.closedTime match {
+            case Some(closedTime) if closedTime isBefore currentTime =>  // signal cannot be changed by timescope revert
+              throw new ThreadOrderDependentException(s"$upstreamSignal -> $peekSignal: Timescope revert")
+            case _ =>  // revert is fine on the current timestep:
+            // if the peeking thread was just spawned, is should be encapsulated and run immediately
+            // if the peeking thread was spawned before, it would have run before the parent run (and closed the timescope)
+          }
+          pokeTimescope match {
+            case timescope: Timescope => if (timescope.pokes(upstreamSignal).last.actionId > peekActionId) {
+              throw new ThreadOrderDependentException(s"$upstreamSignal -> $peekSignal: Timescope signal changed, poked after peek")
+            }
+            case _: RootTimescope =>  // catch issues with override checks below
           }
         }
       } }
@@ -320,30 +328,31 @@ trait ThreadedBackend {
 
 
     // Timescopes are valid if there is a linear chain from root to latest
+    // Takes a signal and returns the leaf timescope, throwing an error if the chain is nonlinear
     def processTimescope(signal: Data, timescope: HasOverridingPokes): Option[Timescope] = {
-      val pokes = timescope.overridingPokes.getOrElse(signal, mutable.ListBuffer())
-      if (pokes.exists(_.closedTimestep.isDefined)) {  // remove closed child timescopes
-        if (pokes.exists(timescope =>
-            timescope.closedTimestep.isEmpty && timescope.openedTimestep < currentTimestep)) {
+      val overridingTimescopes = timescope.overridingPokes.getOrElse(signal, mutable.ListBuffer())
+      if (overridingTimescopes.exists(_.closedTime.isDefined)) {  // remove closed child timescopes
+        if (overridingTimescopes.exists(timescope =>
+            timescope.closedTime.isEmpty && (timescope.openedTime isBefore currentTime))) {
           throw new ThreadOrderDependentException("Mix of ending timescopes and old timescopes")
         }
-        val (endingPokes, nonEndingPokes) = pokes.partition(_.closedTimestep.isDefined)
+        val (endingPokes, nonEndingPokes) = overridingTimescopes.partition(_.closedTime.isDefined)
         endingPokes.foreach { processTimescope(signal, _) }  // Recursively check child closing timescopes
-        pokes.clear()
-        pokes ++= nonEndingPokes
+        overridingTimescopes.clear()
+        overridingTimescopes ++= nonEndingPokes
       }
-      if (timescope.closedTimestep.isDefined) {  // if this timescope is closed, ensure there are no children
-        if (pokes.nonEmpty) {
+      if (timescope.closedTime.isDefined) {  // if this timescope is closed, ensure there are no children
+        if (overridingTimescopes.nonEmpty) {
           throw new ThreadOrderDependentException(s"Non-enclosed timescopes")
         }
       }
-      if (pokes.length > 1) {  // multiple overlapping pokes, is an error
+      if (overridingTimescopes.length > 1) {  // multiple overlapping pokes, is an error
         // STE 0 is pokeBits method, 1 is poke abstraction
         // TODO: better stack trace element detection, chain reporting
-        val pokeTraces = pokes.map { _.pokes(signal).last.trace.getStackTrace()(2) }
+        val pokeTraces = overridingTimescopes.map { _.pokes(signal).last.trace.getStackTrace()(2) }
         throw new ThreadOrderDependentException(s"Overlapping pokes from $pokeTraces")
-      } else if (pokes.length == 1) {  // just one poke, report the furthest down that chain
-        processTimescope(signal, pokes.head)
+      } else if (overridingTimescopes.length == 1) {  // just one poke, report the furthest down that chain
+        processTimescope(signal, overridingTimescopes.head)
       } else {  // all children are closed, this is the latest one in this chain
         timescope.overridingPokes.remove(signal)
         timescope match {
@@ -378,7 +387,8 @@ trait ThreadedBackend {
   }
 
   protected class TesterThread(runnable: () => Unit,
-      openedTimestep: Int, parentTimescope: BaseTimescope, parentActionId: Int)
+      openedTime: TimeRegion, parentTimescope: BaseTimescope, parentActionId: Int,
+      val region: Region, val trace: Option[(TesterThread, Throwable)])
       extends AbstractTesterThread {
     val level: Int = parentTimescope.threadOption match {
       case Some(parentThread) => parentThread.level + 1
@@ -388,14 +398,15 @@ trait ThreadedBackend {
     var done: Boolean = false
 
     // Scheduling information
-    var joinedOn: Option[TesterThread] = None
+    var joinedOn: Set[TesterThread] = Set()
+    var joinPostClock: Option[Clock] = None
     var clockedOn: Option[Clock] = None
 
     // TODO: perhaps accessors eg pushTimescope, popTimescope?
-    protected val bottomTimescope = ThreadRootTimescope(parentTimescope, openedTimestep, parentActionId, this)
+    protected val bottomTimescope = ThreadRootTimescope(parentTimescope, openedTime, parentActionId, this)
     var topTimescope: BaseTimescope = bottomTimescope  // Currently open timescope in this thread
     def getTimescope: Timescope = {
-      require(topTimescope.asInstanceOf[Timescope].closedTimestep.isEmpty)
+      require(topTimescope.asInstanceOf[Timescope].closedTime.isEmpty)
       topTimescope.asInstanceOf[Timescope]
     }
 
@@ -435,6 +446,7 @@ trait ThreadedBackend {
 
   // TODO make this a class and Option[SchedulerState] var that contains currentThread and driverSemaphore?
   object schedulerState {  // temporary scheduler information not persisting between runThreads invocations
+    private[tester] var currentRegion: Option[Region] = None
     private[tester] var currentThreadIndex: Int = 0
     // List of clocks that have stepped (run threads blocked on these clocks)
     private[tester] var clocks = mutable.Set[Clock]()
@@ -454,19 +466,40 @@ trait ThreadedBackend {
    */
   protected def runThreads(clocks: Set[Clock]): Unit = {
     // TODO validate and order incoming thread order
+    require(schedulerState.currentRegion.isEmpty)
     require(schedulerState.currentThreadIndex == 0)
     require(schedulerState.clocks.isEmpty)
 
-    schedulerState.clocks ++= clocks
-
-    scheduler()
-    driverSemaphore.acquire()
-
-    if (!interruptedException.isEmpty) {
-      throw interruptedException.poll()
+    // For joinAndStep thread that have joined, propagate the waiting clock
+    for (thread <- allThreads) {
+      if (thread.joinedOn.isEmpty && thread.joinPostClock.isDefined) {
+        require(thread.clockedOn.isEmpty)
+        thread.clockedOn = thread.joinPostClock
+        thread.joinPostClock = None
+      }
     }
 
-    require(schedulerState.currentThreadIndex == allThreads.size)
+    currentTimestep += 1
+    schedulerState.clocks ++= clocks
+
+    for (region <- Region.allRegions) {
+      schedulerState.currentRegion = Some(region)
+      schedulerState.currentThreadIndex = 0
+      
+      scheduler()
+      driverSemaphore.acquire()
+
+      if (!interruptedException.isEmpty) {
+        throw interruptedException.poll()
+      }
+
+      require(schedulerState.currentRegion.get == region)
+      require(schedulerState.currentThreadIndex == allThreads.size)
+
+      timestep()
+    }
+
+    schedulerState.currentRegion = None
     schedulerState.currentThreadIndex = 0
     schedulerState.clocks.clear()
   }
@@ -484,16 +517,21 @@ trait ThreadedBackend {
   protected def scheduler() {
     def threadCanRun(thread: TesterThread): Boolean = {
       val blockedByJoin = thread.joinedOn match {
+        case joinedOn if joinedOn.isEmpty => false
+        case joinedOn if allThreads.toSet.intersect(joinedOn) == Set() =>
+          thread.joinedOn = Set(); false
+        case _ => true
+      }
+      val blockedByJoinStep = thread.joinPostClock match {
         case None => false
-        case Some(joinedThread) if allThreads.contains(joinedThread) => true
-        // TODO: move clearing of joinedOn into threadFinished
-        case Some(joinedThread) if !allThreads.contains(joinedThread) => thread.joinedOn = None; false
+        case Some(_) => true
       }
       val blockedByClock = thread.clockedOn match {
         case None => false
         case Some(clock) => !schedulerState.clocks.contains(clock)
       }
-      !blockedByJoin && !blockedByClock
+      val blockedByRegion = thread.region != schedulerState.currentRegion.get
+      !blockedByJoin && !blockedByJoinStep && !blockedByClock && !blockedByRegion
     }
 
     while (schedulerState.currentThreadIndex < allThreads.size &&
@@ -520,10 +558,15 @@ trait ThreadedBackend {
     allThreads -= thread
   }
 
-  def doFork(runnable: () => Unit): TesterThread = {
+  def doFork(runnable: () => Unit, name: Option[String], region: Option[Region]): TesterThread = {
     val timescope = currentThread.get.getTimescope
     val thisThread = currentThread.get  // locally save this thread
-    val newThread = new TesterThread(runnable, currentTimestep, timescope, timescope.nextActionId)
+    val newRegion = region.getOrElse(thisThread.region)
+    if (newRegion isBefore thisThread.region) {
+      throw new TemporalParadox("Cannot spawn a thread at an earlier region")
+    }
+    val newThread = new TesterThread(runnable, currentTime, timescope, timescope.nextActionId,
+      newRegion, Some(thisThread, new Throwable))
     timescope.nextActionId += 1
 
     // schedule the new thread to run immediately, then return to this thread
@@ -534,12 +577,34 @@ trait ThreadedBackend {
     newThread
   }
 
-  def doJoin(joinThread: AbstractTesterThread): Unit = {
+  def doJoin(threads: Seq[AbstractTesterThread], stepAfter: Option[Clock]): Unit = {
     val thisThread = currentThread.get
-    val joinThreadTyped = joinThread.asInstanceOf[TesterThread]  // TODO get rid of this, perhaps by making it typesafe
-    require(thisThread.level < joinThreadTyped.level)
-    thisThread.joinedOn = Some(joinThreadTyped)
+    // TODO can this be made more typesafe?
+    val joinThreadsTyped = threads.map(_.asInstanceOf[TesterThread])
+    for (joinThread <- joinThreadsTyped) {
+      // Ensure joined threads execute before this thread if there is no post-join step
+      if ((joinThread.region isAfter thisThread.region) && stepAfter.isEmpty) {
+        throw new TemporalParadox("Cannot join (without step) on thread that would end in a later region")
+      }
+      if (joinThread.region == thisThread.region
+          && allThreads.indexOf(joinThread) > allThreads.indexOf(thisThread)
+          && stepAfter.isEmpty) {
+        throw new TemporalParadox("Cannot join (without step) on thread that would execute after this thread")
+      }
+    }
+
+    thisThread.joinedOn = joinThreadsTyped.toSet
+    thisThread.joinPostClock = stepAfter
+    thisThread.clockedOn = None
     scheduler()
     thisThread.waiting.acquire()
+  }
+
+  override def getParentTraceElements: Seq[StackTraceElement] = {
+    def processThread(thread: TesterThread): Seq[StackTraceElement] = thread.trace match {
+      case Some((parent, trace)) => processThread(parent) ++ trace.getStackTrace
+      case None => Seq()
+    }
+    processThread(currentThread.get)
   }
 }

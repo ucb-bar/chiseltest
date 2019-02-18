@@ -32,6 +32,20 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     batchedFailures += new TestFailedException(s"$msg", 4)
   }
 
+  protected def getExpectDetailedTrace(trace: Seq[StackTraceElement], inFile: String): String = {
+    val fullTrace = Context().backend.getParentTraceElements ++ trace
+
+    // In the threading case, this needs to be overridden to trace through parent threads
+    val lineNumbers = fullTrace.collect {
+      case ste if ste.getFileName == inFile => ste.getLineNumber
+    }.mkString(", ")
+    if (lineNumbers.isEmpty()) {
+      s" (no lines in $inFile)"
+    } else {
+      s" (lines in $inFile: $lineNumbers)"
+    }
+  }
+
   override def testerExpect(expected: Any, actual: Any, signal: String, msg: Option[String]): Unit = {
     if (expected != actual) {
       val appendMsg = msg match {
@@ -39,26 +53,15 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
         case _ => ""
       }
 
-      // Dynamically determine stack depth of the expect call, since a static number is brittle
-      val traceThrowable = new Throwable
-      val expectStackDepth = traceThrowable.getStackTrace.indexWhere(ste =>
+      val trace = new Throwable
+      val expectStackDepth = trace.getStackTrace.indexWhere(ste =>
         ste.getClassName == "chisel3.tester.package$testableData" && ste.getMethodName == "expect")
       require(expectStackDepth != -1,
-          s"Failed to find expect in stack trace:\r\n${traceThrowable.getStackTrace.mkString("\r\n")}")
+        s"Failed to find expect in stack trace:\r\n${trace.getStackTrace.mkString("\r\n")}")
 
-      // TODO: this depends on all user test code being in a new thread (so much of the plumbing
-      // is pre-filtered out) - which is true only for the ThreadedBackend.
-      // TODO: also trace through threads
-      val detailedTrace = topFileName.map { fileName =>
-        val lineNumbers = traceThrowable.getStackTrace.drop(expectStackDepth + 2).collect {
-          case ste if ste.getFileName == fileName => ste.getLineNumber
-        }.mkString(", ")
-        if (lineNumbers.isEmpty()) {
-          ""
-        } else {
-          s" (lines in $fileName: $lineNumbers)"
-        }
-      }.getOrElse("")
+      val trimmedTrace = trace.getStackTrace.drop(expectStackDepth + 2)
+      val detailedTrace = topFileName.map(getExpectDetailedTrace(trimmedTrace.toSeq, _)).getOrElse("")
+
       batchedFailures += new TestFailedException(
           s"$signal=$actual did not equal expected=$expected$appendMsg$detailedTrace",
           expectStackDepth + 1)

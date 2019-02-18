@@ -42,4 +42,19 @@ class QueueTest extends FlatSpec with ChiselScalatestTester {
       c.out.expectInvalid()
     }
   }
+
+  it should "work with a combinational queue" in {
+    test(new PassthroughQueue(UInt(8.W))) { c =>
+      c.in.initSource()
+      c.in.setSourceClock(c.clock)
+      c.out.initSink()
+      c.out.setSinkClock(c.clock)
+
+      fork {
+        c.in.enqueueSeq(Seq(42.U, 43.U, 44.U))
+      }.fork {
+        c.out.expectDequeueSeq(Seq(42.U, 43.U, 44.U))
+      }.join()
+    }
+  }
 }
