@@ -10,7 +10,7 @@ import scala.collection.mutable
 
 /** Base trait for backends implementing concurrency by threading. Also implements timescopes.
   */
-trait ThreadedBackend {
+trait ThreadedBackend extends BackendInterface {
   //
   // Variable references
   //
@@ -388,7 +388,7 @@ trait ThreadedBackend {
 
   protected class TesterThread(runnable: () => Unit,
       openedTime: TimeRegion, parentTimescope: BaseTimescope, parentActionId: Int,
-      val region: Region)
+      val region: Region, val trace: Option[(TesterThread, Throwable)])
       extends AbstractTesterThread {
     val level: Int = parentTimescope.threadOption match {
       case Some(parentThread) => parentThread.level + 1
@@ -566,7 +566,7 @@ trait ThreadedBackend {
       throw new TemporalParadox("Cannot spawn a thread at an earlier region")
     }
     val newThread = new TesterThread(runnable, currentTime, timescope, timescope.nextActionId,
-      newRegion)
+      newRegion, Some(thisThread, new Throwable))
     timescope.nextActionId += 1
 
     // schedule the new thread to run immediately, then return to this thread
@@ -598,5 +598,13 @@ trait ThreadedBackend {
     thisThread.clockedOn = None
     scheduler()
     thisThread.waiting.acquire()
+  }
+
+  override def getParentTraceElements: Seq[StackTraceElement] = {
+    def processThread(thread: TesterThread): Seq[StackTraceElement] = thread.trace match {
+      case Some((parent, trace)) => processThread(parent) ++ trace.getStackTrace
+      case None => Seq()
+    }
+    processThread(currentThread.get)
   }
 }

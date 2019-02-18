@@ -129,7 +129,7 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
         tester.poke("reset", 0)
 
         testFn(dut)
-      }, TimeRegion(0, Region.default), rootTimescope.get, 0, Region.default)
+      }, TimeRegion(0, Region.default), rootTimescope.get, 0, Region.default, None)
     mainThread.thread.start()
     require(allThreads.isEmpty)
     allThreads += mainThread
