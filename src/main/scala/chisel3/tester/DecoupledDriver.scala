@@ -26,8 +26,9 @@ class DecoupledDriver[T <: Data](x: DecoupledIO[T]) {
     // TODO: check for init
     x.bits.poke(data)
     x.valid.poke(true.B)
-    x.ready.expect(true.B)
-    getSourceClock.step(1)
+    fork.withRegion(Monitor) {
+      x.ready.expect(true.B)
+    }.joinAndStep(getSourceClock)
   }
 
   def enqueue(data: T): Unit = timescope {
@@ -62,6 +63,7 @@ class DecoupledDriver[T <: Data](x: DecoupledIO[T]) {
       x.valid.getSourceClock)  // TODO: validate against bits/valid sink clocks
   }
 
+  // NOTE: this doesn't happen in the Monitor phase, unlike public functions
   def waitForValid(): Unit = {
     while (x.valid.peek().litToBoolean == false) {
       getSinkClock.step(1)
@@ -94,12 +96,16 @@ class DecoupledDriver[T <: Data](x: DecoupledIO[T]) {
   }
 
   def expectPeek(data: T): Unit = {
-    x.valid.expect(true.B)
-    x.bits.expect(data)
+    fork.withRegion(Monitor) {
+      x.valid.expect(true.B)
+      x.bits.expect(data)
+    }
   }
 
   def expectInvalid(): Unit = {
-    x.valid.expect(false.B)
+    fork.withRegion(Monitor) {
+      x.valid.expect(false.B)
+    }
   }
 }
 
