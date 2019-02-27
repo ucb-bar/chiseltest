@@ -1,0 +1,66 @@
+// See LICENSE for license details.
+
+package chisel3.tester
+
+import chisel3.experimental.MultiIOModule
+import firrtl.ExecutionOptionsManager
+import org.scalatest._
+import org.scalatest.exceptions.TestFailedException
+
+import scala.collection.mutable
+import scala.util.DynamicVariable
+
+/**
+  * Used to run simple tests that do not require a scalatest environment in order to run
+  * @param testName This will be used to generate a working directory in ./test_run_dir
+  */
+class ChiselTester private (testName: String) extends Assertions with ChiselTesterHelper with TestEnvInterface {
+  // Provide test fixture data as part of 'global' context during test runs
+
+  val topFileName = Some(testName)
+
+  private def runTest[T <: MultiIOModule](tester: BackendInstance[T])(testFn: T => Unit) {
+    batchedFailures.clear()
+
+    Context.run(tester, this, testFn)
+  }
+
+  def getTestOptions: TesterOptions = {
+    TesterOptions(topFileName.get, writeVcd = false)
+  }
+
+  // This should be the only user-called function
+  def test[T <: MultiIOModule](dutGen: => T)(testFn: T => Unit) {
+    runTest(Context.createDefaultTester(() => dutGen, getTestOptions, None))(testFn)
+  }
+
+  def test[T <: MultiIOModule](dutGen: => T, execOptions: ExecutionOptionsManager)(testFn: T => Unit) {
+    runTest(Context.createDefaultTester(() => dutGen, getTestOptions, Some(execOptions)))(testFn)
+  }
+}
+
+/**
+  * This is a simple tester that does not require that it be within the scope of a scalatest
+  * in order to run. This form is suitable for running in the Jupyter notebook.
+  *
+  * @todo When Phases, Stages is implemented add ability to change testing options.
+  */
+object ChiselTester {
+  /**
+    * Run one test
+    * @note every test should use a different name, it, suitably sanitized, is used as the subdirectory in the
+    *       test_run_dir directory
+    * @param testName  The test name and where it's working directory
+    * @param dutGen    The generator of the device under tests
+    * @param testFn    The block of code that implements the test
+    * @tparam T        The type of device, derived from dutGen
+    */
+  def apply[T <: MultiIOModule]
+          (testName: String)
+          (dutGen: => T)
+          (testFn: T => Unit): Unit = {
+
+    val tester = new ChiselTester(testName)
+    tester.test(dutGen)(testFn)
+  }
+}
