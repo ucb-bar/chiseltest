@@ -8,7 +8,7 @@ import org.scalatest._
 
 import scala.util.DynamicVariable
 
-trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvInterface with ChiselTesterHelper { this: TestSuite =>
+trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvInterface { this: TestSuite =>
   // Provide test fixture data as part of 'global' context during test runs
   protected var scalaTestContext = new DynamicVariable[Option[NoArgTest]](None)
 

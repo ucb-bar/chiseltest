@@ -4,6 +4,7 @@ package chisel3.tests
 
 import chisel3._
 import chisel3.tester._
+import chisel3.tester.ChiselTester.test
 import org.scalatest.{FreeSpec, Matchers}
 
 class NoScalatestTesterTest extends FreeSpec with Matchers {
@@ -17,7 +18,7 @@ class NoScalatestTesterTest extends FreeSpec with Matchers {
       out.expect(value)
     }
 
-    ChiselTester("test that doesnt need scalatest")(new ShifterModule(UInt(8.W), 4)) { c =>
+    test(new ShifterModule(UInt(8.W), 4)) { c =>
       fork { shiftTest(c.in, c.out, c.clock, 42.U) }
       c.clock.step()
       fork { shiftTest(c.in, c.out, c.clock, 43.U) }
