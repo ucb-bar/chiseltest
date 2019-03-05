@@ -66,8 +66,13 @@ class AsyncResetRegScalaImpl(instanceName: String) extends ScalaBlackBox {
   }
 
   override def outputDependencies(outputName: String): Seq[String] = {
-    Seq("rst", "clk", "d", "en")
+    Seq.empty
   }
+
+  override def getDependencies: Seq[(String, collection.Set[String])] = Seq(
+    "d" -> Set("q"),
+    "q" -> Set("rst", "clk")
+  )
 
   override def setParams(params: Seq[Param]): Unit = {
     params.foreach {

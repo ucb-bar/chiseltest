@@ -126,14 +126,22 @@ class AsyncResetRegTest extends FreeSpec with ChiselScalatestTester {
   "feedback into itself" in {
     test(new AsyncResetFeedbackModule, manager) { dut =>
       dut.io.out(0).expect(0.U)
-      dut.io.out(0).expect(1.U)
+      dut.io.out(1).expect(1.U)
+
       dut.clock.step()
+
       dut.io.out(0).expect(1.U)
+      dut.io.out(1).expect(0.U)
+
+      dut.clock.step()
+
       dut.io.out(0).expect(0.U)
-      
+      dut.io.out(1).expect(1.U)
+
       dut.reset.poke(true.B)
+
       dut.io.out(0).expect(0.U)
-      dut.io.out(0).expect(1.U)
+      dut.io.out(1).expect(1.U)
     }
   }
 }
