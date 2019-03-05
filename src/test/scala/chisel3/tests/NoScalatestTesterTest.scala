@@ -4,7 +4,7 @@ package chisel3.tests
 
 import chisel3._
 import chisel3.tester._
-import chisel3.tester.ChiselTester.test
+import chisel3.tester.RawTester.test
 import org.scalatest.{FreeSpec, Matchers}
 
 class NoScalatestTesterTest extends FreeSpec with Matchers {

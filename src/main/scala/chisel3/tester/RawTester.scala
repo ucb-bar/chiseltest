@@ -14,7 +14,7 @@ import scala.util.DynamicVariable
   * Used to run simple tests that do not require a scalatest environment in order to run
   * @param testName This will be used to generate a working directory in ./test_run_dir
   */
-private class ChiselTester(testName: String) extends Assertions with TestEnvInterface {
+private class RawTester(testName: String) extends Assertions with TestEnvInterface {
   // Provide test fixture data as part of 'global' context during test runs
   val topFileName = Some(testName)
 
@@ -44,15 +44,8 @@ private class ChiselTester(testName: String) extends Assertions with TestEnvInte
   *
   * @todo When Phases, Stages is implemented add ability to change testing options.
   */
-object ChiselTester {
+object RawTester {
 
-  private var count = 0
-
-  def getCount: Int = synchronized {
-    val current = count
-    count += 1
-    current
-  }
   /**
     * Run one test
     * @note every test should use a different name, it, suitably sanitized, is used as the subdirectory in the
@@ -65,9 +58,9 @@ object ChiselTester {
           (dutGen: => T)
           (testFn: T => Unit): Unit = {
 
-    val testName = s"chisel_test_${System.currentTimeMillis()}_$getCount"
+    val testName = s"chisel_test_${System.currentTimeMillis()}"
 
-    val tester = new ChiselTester(testName)
+    val tester = new RawTester(testName)
     tester.test(dutGen)(testFn)
   }
 }

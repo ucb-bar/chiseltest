@@ -10,6 +10,7 @@ import scala.collection.mutable
 
 class ThreadOrderDependentException(message: String) extends Exception(message)
 class TimeoutException(message: String) extends Exception(message)
+class FailedExpectException(message: String, val failedCodeStackDepth: Int) extends Exception(message)
 
 // when interfacing with the testdriver before stepping the clock after moving to an earlier region
 class TemporalParadox(message: String) extends Exception(message)
@@ -176,7 +177,7 @@ trait TestEnvInterface {
       val trimmedTrace = trace.getStackTrace.drop(expectStackDepth + 2)
       val detailedTrace = topFileName.map(getExpectDetailedTrace(trimmedTrace.toSeq, _)).getOrElse("")
 
-      batchedFailures += new TestFailedException(
+      batchedFailures += new FailedExpectException(
         s"$signal=$actual did not equal expected=$expected$appendMsg$detailedTrace",
         expectStackDepth + 1)
     }
