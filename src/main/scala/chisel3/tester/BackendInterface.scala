@@ -137,11 +137,19 @@ trait TestEnvInterface {
 
   def topFileName: Option[String]
 
+  val useTestFailedException: Boolean = false
+
   /** Logs a tester failure at this point.
     * Failures queued until the next checkpoint.
     */
   def testerFail(msg: String): Unit = {
-    batchedFailures += new Exception(s"$msg")
+    batchedFailures += (
+            if(useTestFailedException) {
+              new TestFailedException(msg, failedCodeStackDepth = 4)
+            }
+            else {
+              new FailedExpectException(msg, 4)
+            })
   }
 
   protected def getExpectDetailedTrace(trace: Seq[StackTraceElement], inFile: String): String = {
@@ -177,9 +185,15 @@ trait TestEnvInterface {
       val trimmedTrace = trace.getStackTrace.drop(expectStackDepth + 2)
       val detailedTrace = topFileName.map(getExpectDetailedTrace(trimmedTrace.toSeq, _)).getOrElse("")
 
-      batchedFailures += new FailedExpectException(
-        s"$signal=$actual did not equal expected=$expected$appendMsg$detailedTrace",
-        expectStackDepth + 1)
+      val message = s"$signal=$actual did not equal expected=$expected$appendMsg$detailedTrace"
+      val stackIndex = expectStackDepth + 1
+      batchedFailures += (
+              if(useTestFailedException) {
+                new TestFailedException(message, failedCodeStackDepth = stackIndex)
+              }
+              else {
+                new FailedExpectException(message, stackIndex)
+              })
     }
   }
 

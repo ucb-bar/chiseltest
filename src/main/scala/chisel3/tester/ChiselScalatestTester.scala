@@ -5,6 +5,7 @@ package chisel3.tester
 import chisel3.experimental.MultiIOModule
 import firrtl.ExecutionOptionsManager
 import org.scalatest._
+import org.scalatest.exceptions.TestFailedException
 
 import scala.util.DynamicVariable
 
@@ -18,6 +19,8 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
       super.withFixture(test)
     }
   }
+
+  override val useTestFailedException = true
 
   // Stack trace data to help generate more informative (and localizable) failure messages
   var topFileName: Option[String] = None  // best guess at the testdriver top filename
