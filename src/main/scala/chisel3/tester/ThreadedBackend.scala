@@ -373,18 +373,9 @@ trait ThreadedBackend extends BackendInterface {
     // TODO: check that lastTimescope signal is actually the one effective?
   }
 
+  // Used to propagate exceptions from this thread back up to the main (testdriver) thread.
+  // Once something is enqueued, this thread should not continue running.
   protected val interruptedException = new ConcurrentLinkedQueue[Throwable]()
-  /**
-   * Called when an exception happens inside a thread.
-   * Can be used to propagate the exception back up to the main thread.
-   * No guarantees are made about the state of the system on an exception.
-   *
-   * The thread then terminates, and the thread scheduler is invoked to unblock the next thread.
-   * The implementation should only record the exception, which is properly handled later.
-   */
-  protected def onException(e: Throwable) {
-    interruptedException.offer(e)
-  }
 
   protected class TesterThread(runnable: () => Unit,
       openedTime: TimeRegion, parentTimescope: BaseTimescope, parentActionId: Int,
@@ -424,15 +415,15 @@ trait ThreadedBackend extends BackendInterface {
           require(bottomTimescope == topTimescope)  // ensure timescopes unrolled properly
           done = true
           threadFinished(TesterThread.this)
+          scheduler()
         } catch {
           case _: InterruptedException =>
-            // currently used as a signal to kill the thread without doing cleanup
+            // Currently used as a signal to kill the thread without doing cleanup
             // (test driver may be left in an inconsistent state, and the test should not continue)
-            // TODO: allow other uses for InterruptedException?
-          case e @ (_: Exception | _: Error) => onException(e)
-        } finally {
-          // TODO should there be something similar to done if thread was terminated by an exception
-          scheduler()
+            // Explicitly don't invoke the scheduler, just end the thread.
+          case e @ (_: Exception | _: Error) =>
+            interruptedException.offer(e)
+            scheduler()
         }
       }
     })
