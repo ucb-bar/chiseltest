@@ -10,11 +10,8 @@ class QueueTest extends FlatSpec with ChiselScalatestTester {
 
   it should "pass through elements, using enqueueNow" in {
     test(new QueueModule(UInt(8.W), 2)) { c =>
-      c.in.initSource()
-      c.in.setSourceClock(c.clock)
-      c.out.initSink()
-      c.out.setSinkClock(c.clock)
-
+      c.in.initSource().setSourceClock(c.clock)
+      c.out.initSink().setSinkClock(c.clock)
 
       c.out.expectInvalid()
       c.in.enqueueNow(42.U)
@@ -28,10 +25,8 @@ class QueueTest extends FlatSpec with ChiselScalatestTester {
 
   it should "pass through elements, using enqueueSeq" in {
     test(new QueueModule(UInt(8.W), 2)) { c =>
-      c.in.initSource()
-      c.in.setSourceClock(c.clock)
-      c.out.initSink()
-      c.out.setSinkClock(c.clock)
+      c.in.initSource().setSourceClock(c.clock)
+      c.out.initSink().setSinkClock(c.clock)
 
       fork {
         c.in.enqueueSeq(Seq(42.U, 43.U, 44.U))

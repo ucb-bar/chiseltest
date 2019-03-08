@@ -9,17 +9,19 @@ import chisel3.util._
 class DecoupledDriver[T <: Data](x: DecoupledIO[T]) {
   // Source (enqueue) functions
   //
-  def initSource(): Unit = {
+  def initSource(): this.type = {
     x.valid.poke(false.B)
+    this
   }
 
-  def setSourceClock(clock: Clock) = {
+  def setSourceClock(clock: Clock): this.type = {
     ClockResolutionUtils.setClock(DecoupledDriver.decoupledSourceKey, x, clock)
+    this
   }
 
   protected def getSourceClock: Clock = {
     ClockResolutionUtils.getClock(DecoupledDriver.decoupledSourceKey, x,
-      throw new ClockResolutionException("ICR not supported"))
+      x.ready.getSourceClock)  // TODO: validate against bits/valid sink clocks
   }
 
   def enqueueNow(data: T): Unit = timescope {
@@ -50,17 +52,19 @@ class DecoupledDriver[T <: Data](x: DecoupledIO[T]) {
 
   // Sink (dequeue) functions
   //
-  def initSink(): Unit = {
+  def initSink(): this.type = {
     x.ready.poke(false.B)
+    this
   }
 
-  def setSinkClock(clock: Clock) = {
+  def setSinkClock(clock: Clock): this.type = {
     ClockResolutionUtils.setClock(DecoupledDriver.decoupledSinkKey, x, clock)
+    this
   }
 
   protected def getSinkClock: Clock = {
     ClockResolutionUtils.getClock(DecoupledDriver.decoupledSinkKey, x,
-      throw new ClockResolutionException("ICR not supported"))
+      x.valid.getSourceClock)  // TODO: validate against bits/valid sink clocks
   }
 
   // NOTE: this doesn't happen in the Monitor phase, unlike public functions

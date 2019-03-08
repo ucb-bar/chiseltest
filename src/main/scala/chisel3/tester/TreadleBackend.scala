@@ -43,6 +43,17 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
   }
 
   //
+  // Circuit introspection functionality
+  //
+  override def getSourceClocks(signal: Data): Set[Clock] = {
+    throw new ClockResolutionException("ICR not available on chisel-testers2 / firrtl master")
+  }
+
+  override def getSinkClocks(signal: Data): Set[Clock] = {
+    throw new ClockResolutionException("ICR not available on chisel-testers2 / firrtl master")
+  }
+
+  //
   // Everything else
   //
 
