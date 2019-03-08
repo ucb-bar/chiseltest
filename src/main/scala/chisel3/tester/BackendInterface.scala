@@ -95,6 +95,19 @@ trait BackendInterface {
 
   def doTimescope(contents: () => Unit): Unit
 
+  // Circuit introspection functionality
+  //
+  /** Returns set of clocks associated with sources of the signal
+    */
+  def getSourceClocks(signal: Data): Set[Clock]
+
+  /** Returns set of clocks associated with sinks of the signal
+    */
+  def getSinkClocks(signal: Data): Set[Clock]
+
+  // Test Instance State
+  //
+
   /** Returns the stack trace elements of parent threads. If currently in the root thread, returns
     * empty.
     * TODO: refactor this, figure out how to do this in a structurally cleaner way
