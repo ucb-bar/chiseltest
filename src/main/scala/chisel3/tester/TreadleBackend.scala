@@ -145,47 +145,49 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
     require(allThreads.isEmpty)
     allThreads += mainThread
 
-    while (!mainThread.done) {  // iterate timesteps
-      clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
+    try {
+      while (!mainThread.done) { // iterate timesteps
+        clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
 
-      debugLog(s"clock step")
+        debugLog(s"clock step")
 
-      // TODO: allow dependent clocks to step based on test stimulus generator
-      // TODO: remove multiple invocations of getClock
-      // Unblock threads waiting on dependent clock
-      val steppedClocks = Seq(dut.clock) ++ lastClockValue.collect {
-        case (clock, lastValue) if getClock(clock) != lastValue && getClock(clock) == true => clock
+        // TODO: allow dependent clocks to step based on test stimulus generator
+        // TODO: remove multiple invocations of getClock
+        // Unblock threads waiting on dependent clock
+        val steppedClocks = Seq(dut.clock) ++ lastClockValue.collect {
+          case (clock, lastValue) if getClock(clock) != lastValue && getClock(clock) == true => clock
+        }
+        steppedClocks foreach { clock =>
+          clockCounter.put(dut.clock, getClockCycle(clock) + 1) // TODO: ignores cycles before a clock was stepped on
+        }
+        lastClockValue foreach { case (clock, _) =>
+          lastClockValue.put(clock, getClock(clock))
+        }
+
+        runThreads(steppedClocks.toSet)
+        Context().env.checkpoint()
+
+        idleLimits foreach { case (clock, limit) =>
+          idleCycles.put(clock, idleCycles.getOrElse(clock, -1) + 1)
+          if (idleCycles(clock) >= limit) {
+            throw new TimeoutException(s"timeout on $clock at $limit idle cycles")
+          }
+        }
+
+        tester.step(1)
       }
-      steppedClocks foreach { clock =>
-        clockCounter.put(dut.clock, getClockCycle(clock) + 1)  // TODO: ignores cycles before a clock was stepped on
-      }
-      lastClockValue foreach { case (clock, _) =>
-        lastClockValue.put(clock, getClock(clock))
-      }
+    } finally {
+      rootTimescope = None
 
-      runThreads(steppedClocks.toSet)
-      Context().env.checkpoint()
-
-      idleLimits foreach { case (clock, limit) =>
-        idleCycles.put(clock, idleCycles.getOrElse(clock, -1) + 1)
-        if (idleCycles(clock) >= limit) {
-          throw new TimeoutException(s"timeout on $clock at $limit idle cycles")
+      for (thread <- allThreads.clone()) {
+        // Kill the threads using an InterruptedException
+        if (thread.thread.isAlive) {
+          thread.thread.interrupt()
         }
       }
 
-      tester.step(1)
+      tester.report()  // needed to dump VCDs
     }
-
-    rootTimescope = None
-
-    for (thread <- allThreads.clone()) {
-      // Kill the threads using an InterruptedException
-      if (thread.thread.isAlive) {
-        thread.thread.interrupt()
-      }
-    }
-
-    tester.report()  // needed to dump VCDs
   }
 }
 
