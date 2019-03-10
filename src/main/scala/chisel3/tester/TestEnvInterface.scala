@@ -67,5 +67,4 @@ trait TestEnvInterface {
       throw failure
     }
   }
-
 }

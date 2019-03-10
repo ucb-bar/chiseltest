@@ -35,13 +35,14 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     }
 
     batchedFailures.clear()
+
     try {
       Context.run(tester, this, testFn)
     } catch {
       // Translate testers2's FailedExpectException into ScalaTest TestFailedException that is more readable
       case exc: FailedExpectException =>
         val newExc = new TestFailedException(exc, exc.failedCodeStackDepth)
-        newExc.setStackTrace(exc.getStackTrace)  // yes, this is nasty, but
+        newExc.setStackTrace(exc.getStackTrace)
         throw newExc
     }
   }
