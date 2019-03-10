@@ -20,8 +20,6 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     }
   }
 
-  override val useTestFailedException = true
-
   // Stack trace data to help generate more informative (and localizable) failure messages
   var topFileName: Option[String] = None  // best guess at the testdriver top filename
 
@@ -37,8 +35,15 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     }
 
     batchedFailures.clear()
-
-    Context.run(tester, this, testFn)
+    try {
+      Context.run(tester, this, testFn)
+    } catch {
+      // Translate testers2's FailedExpectException into ScalaTest TestFailedException that is more readable
+      case exc: FailedExpectException =>
+        val newExc = new TestFailedException(exc, exc.failedCodeStackDepth)
+        newExc.setStackTrace(exc.getStackTrace)  // yes, this is nasty, but
+        throw newExc
+    }
   }
 
   def getTestOptions: TesterOptions = {
