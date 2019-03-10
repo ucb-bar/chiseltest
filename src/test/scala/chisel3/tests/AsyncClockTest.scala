@@ -3,7 +3,7 @@ package chisel3.tests
 import org.scalatest._
 
 import chisel3._
-import chisel3.experimental.{MultiIOModule, withClockAndReset}
+import chisel3.experimental.{MultiIOModule}
 import chisel3.tester._
 
 class AsyncClockTest extends FlatSpec with ChiselScalatestTester {
