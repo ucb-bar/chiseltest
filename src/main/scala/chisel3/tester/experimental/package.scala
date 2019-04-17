@@ -3,7 +3,9 @@
 package chisel3.tester
 
 import chisel3._
-import chisel3.experimental.MultiIOModule
+import chisel3.core.ActualDirection  // TODO needs to be a public API
+import chisel3.experimental.{DataMirror, MultiIOModule}
+import chisel3.tester.internal._
 import firrtl.ExecutionOptionsManager
 
 /** Your warranty is now void.
@@ -37,7 +39,19 @@ package object experimental {
 //    }
 //  }
 
-  implicit class uncheckedPokeableClock(x: Clock) {
+  implicit class uncheckedPokeableClock(signal: Clock) {
+    def high(): Unit = {
+      if (DataMirror.directionOf(signal) != ActualDirection.Input) {
+        throw new UnpokeableException("Cannot only poke inputs")
+      }
+      Context().backend.pokeClock(signal, true)
+    }
 
+    def low(): Unit = {
+      if (DataMirror.directionOf(signal) != ActualDirection.Input) {
+        throw new UnpokeableException("Cannot only poke inputs")
+      }
+      Context().backend.pokeClock(signal, false)
+    }
   }
 }

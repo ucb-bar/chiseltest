@@ -31,6 +31,10 @@ class TesterThreadList(protected val elts: Seq[AbstractTesterThread]) {
 /** Common interface definition for tester backends. Internal API.
   */
 trait BackendInterface {
+  /** Writes a value to a clock.
+    */
+  def pokeClock(signal: Clock, value: Boolean): Unit
+
   /** Writes a value to a writable wire.
     * Throws an exception if write is not writable.
     */
