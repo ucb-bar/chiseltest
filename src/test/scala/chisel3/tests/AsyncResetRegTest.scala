@@ -60,17 +60,20 @@ class AsyncResetRegTest extends FreeSpec with ChiselScalatestTester {
     )
   }
   "register is zero, after tester startup's default reset" in {
-    test(new AsyncResetRegModule(0), manager) { dut =>
+    test(new AsyncResetRegModule(0))
+        .withExecOptions(manager) { dut =>
       dut.io.out.expect(0.U)
     }
   }
   "register is one, after tester startup's default reset" in {
-    test(new AsyncResetRegModule(1), manager) { dut =>
+    test(new AsyncResetRegModule(1))
+        .withExecOptions(manager) { dut =>
       dut.io.out.expect(1.U)
     }
   }
   "reset a register works after register has been altered" in {
-    test(new AsyncResetRegModule(1), manager) { dut =>
+    test(new AsyncResetRegModule(1))
+        .withExecOptions(manager) { dut =>
       // The register starts at 1 after default reset in tester startup
       dut.io.out.expect(1.U)
 
@@ -102,7 +105,8 @@ class AsyncResetRegTest extends FreeSpec with ChiselScalatestTester {
     }
   }
   "de-assert reset behaviour" in {
-    test(new AsyncResetRegModule(1), manager) { dut =>
+    test(new AsyncResetRegModule(1))
+        .withExecOptions(manager) { dut =>
       // register is reset at startup, and set to zero by poking
       dut.clock.step()
       dut.io.out.expect(0.U)
@@ -124,7 +128,8 @@ class AsyncResetRegTest extends FreeSpec with ChiselScalatestTester {
     }
   }
   "feedback into itself" in {
-    test(new AsyncResetFeedbackModule, manager) { dut =>
+    test(new AsyncResetFeedbackModule)
+        .withExecOptions(manager) { dut =>
       dut.io.out(0).expect(0.U)
       dut.io.out(1).expect(1.U)
 

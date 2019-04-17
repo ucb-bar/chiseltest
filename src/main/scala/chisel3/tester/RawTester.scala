@@ -28,13 +28,8 @@ private class RawTester(testName: String) extends Assertions with TestEnvInterfa
     TesterOptions(topFileName.get, writeVcd = false)
   }
 
-  // This should be the only user-called function
   def test[T <: MultiIOModule](dutGen: => T)(testFn: T => Unit) {
     runTest(defaults.createDefaultTester(() => dutGen, getTestOptions, None))(testFn)
-  }
-
-  def test[T <: MultiIOModule](dutGen: => T, execOptions: ExecutionOptionsManager)(testFn: T => Unit) {
-    runTest(defaults.createDefaultTester(() => dutGen, getTestOptions, Some(execOptions)))(testFn)
   }
 }
 
