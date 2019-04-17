@@ -3,6 +3,7 @@
 package chisel3.tester
 
 import chisel3.experimental.MultiIOModule
+import chisel3.tester.internal.{BackendInstance, Context, FailedExpectException, TestEnvInterface, TesterOptions}
 import firrtl.ExecutionOptionsManager
 import org.scalatest._
 import org.scalatest.exceptions.TestFailedException
@@ -54,10 +55,10 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
 
   // This should be the only user-called function
   def test[T <: MultiIOModule](dutGen: => T)(testFn: T => Unit) {
-    runTest(Context.createDefaultTester(() => dutGen, getTestOptions, None))(testFn)
+    runTest(defaults.createDefaultTester(() => dutGen, getTestOptions, None))(testFn)
   }
 
   def test[T <: MultiIOModule](dutGen: => T, execOptions: ExecutionOptionsManager)(testFn: T => Unit) {
-    runTest(Context.createDefaultTester(() => dutGen, getTestOptions, Some(execOptions)))(testFn)
+    runTest(defaults.createDefaultTester(() => dutGen, getTestOptions, Some(execOptions)))(testFn)
   }
 }
