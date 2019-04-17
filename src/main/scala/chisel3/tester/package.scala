@@ -4,8 +4,7 @@ package chisel3
 
 import scala.language.implicitConversions
 import chisel3.tester.internal._
-import chisel3.core.ActualDirection  // TODO needs to be a public API
-import chisel3.experimental.{DataMirror, FixedPoint}
+import chisel3.experimental.{DataMirror, Direction, FixedPoint}
 import chisel3.util._
 
 class NotLiteralException(message: String) extends Exception(message)
@@ -20,7 +19,7 @@ package object tester {
   import chisel3.internal.firrtl.{LitArg, ULit, SLit}
   implicit class testableData[T <: Data](x: T) {
     protected def pokeBits(signal: Bits, value: BigInt): Unit = {
-      if (DataMirror.directionOf(signal) != ActualDirection.Input) {
+      if (DataMirror.directionOf(signal) != Direction.Input) {
         throw new UnpokeableException("Cannot only poke inputs")
       }
       Context().backend.pokeBits(signal, value)
