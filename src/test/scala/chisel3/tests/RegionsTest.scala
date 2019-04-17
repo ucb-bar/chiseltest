@@ -1,7 +1,6 @@
 package chisel3.tests
 
 import org.scalatest._
-
 import chisel3._
 import chisel3.tester._
 

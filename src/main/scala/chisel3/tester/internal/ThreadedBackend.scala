@@ -1,12 +1,26 @@
-// See LICENSE for license details.
-
-package chisel3.tester
+package chisel3.tester.internal
 
 import java.util.concurrent.{ConcurrentLinkedQueue, Semaphore}
-
+import chisel3.tester.Region
 import chisel3._
+import chisel3.tester.{ThreadOrderDependentException, TimeoutException, TemporalParadox}
 
 import scala.collection.mutable
+
+case class ForkBuilder(name: Option[String], region: Option[Region], threads: Seq[AbstractTesterThread]) {
+  def apply(runnable: => Unit): TesterThreadList = {
+    new TesterThreadList(threads ++ Seq(Context().backend.doFork(() => runnable, name, region)))
+  }
+
+  def withRegion(newRegion: Region): ForkBuilder = {
+    require(region.isEmpty)
+    this.copy(region=Some(newRegion))
+  }
+  def withName(newName: String): ForkBuilder = {
+    require(name.isEmpty)
+    this.copy(name=Some(newName))
+  }
+}
 
 /** Base trait for backends implementing concurrency by threading. Also implements timescopes.
   */
@@ -408,9 +422,8 @@ trait ThreadedBackend extends BackendInterface {
         try {
           waiting.acquire()
 
-          timescope {  // TODO breaks consistent level of abstraction
-            runnable()
-          }
+          // TODO: maybe want to dedup w/ tester/package.timescope { ... }
+          Context().backend.doTimescope(() => runnable())
 
           require(bottomTimescope == topTimescope)  // ensure timescopes unrolled properly
           done = true
@@ -476,7 +489,7 @@ trait ThreadedBackend extends BackendInterface {
     for (region <- Region.allRegions) {
       schedulerState.currentRegion = Some(region)
       schedulerState.currentThreadIndex = 0
-      
+
       scheduler()
       driverSemaphore.acquire()
 

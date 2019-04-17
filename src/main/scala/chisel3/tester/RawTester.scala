@@ -2,13 +2,14 @@
 
 package chisel3.tester
 
+import scala.collection.mutable
+import scala.util.DynamicVariable
 import chisel3.experimental.MultiIOModule
+import chisel3.tester.internal.{BackendInstance, Context, TestEnvInterface, TesterOptions}
 import firrtl.ExecutionOptionsManager
 import org.scalatest._
 import org.scalatest.exceptions.TestFailedException
-
-import scala.collection.mutable
-import scala.util.DynamicVariable
+import chisel3.tester.internal._
 
 /**
   * Used to run simple tests that do not require a scalatest environment in order to run
@@ -30,11 +31,11 @@ private class RawTester(testName: String) extends Assertions with TestEnvInterfa
 
   // This should be the only user-called function
   def test[T <: MultiIOModule](dutGen: => T)(testFn: T => Unit) {
-    runTest(Context.createDefaultTester(() => dutGen, getTestOptions, None))(testFn)
+    runTest(defaults.createDefaultTester(() => dutGen, getTestOptions, None))(testFn)
   }
 
   def test[T <: MultiIOModule](dutGen: => T, execOptions: ExecutionOptionsManager)(testFn: T => Unit) {
-    runTest(Context.createDefaultTester(() => dutGen, getTestOptions, Some(execOptions)))(testFn)
+    runTest(defaults.createDefaultTester(() => dutGen, getTestOptions, Some(execOptions)))(testFn)
   }
 }
 

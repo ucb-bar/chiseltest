@@ -2,6 +2,7 @@
 
 package chisel3.tester
 
+import chisel3.tester.internal._
 import chisel3._
 import chisel3.experimental.{DataMirror, MultiIOModule}
 import chisel3.HasChiselExecutionOptions
