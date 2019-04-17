@@ -2,12 +2,6 @@
 
 package chisel3.tester
 
-import chisel3._
-import chisel3.core.ActualDirection  // TODO needs to be a public API
-import chisel3.experimental.{DataMirror, MultiIOModule}
-import chisel3.tester.internal._
-import firrtl.ExecutionOptionsManager
-
 /** Your warranty is now void.
   *
   * experimental contains cutting edge features that are, well, experimental, and carry no

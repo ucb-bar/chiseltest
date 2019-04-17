@@ -3,8 +3,7 @@
 package chisel3.tester.experimental
 
 import chisel3._
-import chisel3.core.ActualDirection  // TODO needs to be a public API
-import chisel3.experimental.{DataMirror, MultiIOModule}
+import chisel3.experimental.{DataMirror, Direction, MultiIOModule}
 import chisel3.tester._
 import chisel3.tester.internal.Context
 
@@ -15,14 +14,14 @@ package object UncheckedClockPoke {
     */
   implicit class UncheckedPokeableClock(signal: Clock) {
     def high(): Unit = {
-      if (DataMirror.directionOf(signal) != ActualDirection.Input) {
+      if (DataMirror.directionOf(signal) != Direction.Input) {
         throw new UnpokeableException("Cannot only poke inputs")
       }
       Context().backend.pokeClock(signal, true)
     }
 
     def low(): Unit = {
-      if (DataMirror.directionOf(signal) != ActualDirection.Input) {
+      if (DataMirror.directionOf(signal) != Direction.Input) {
         throw new UnpokeableException("Cannot only poke inputs")
       }
       Context().backend.pokeClock(signal, false)
