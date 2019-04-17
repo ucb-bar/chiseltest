@@ -29,17 +29,11 @@ package object experimental {
     }
   }
 
-//  implicit class ChiselScalatestTesterOptions(x: ChiselScalatestTester) {
-//    // Experimental API, individual options must be specified with named args
-//    def test[T <: MultiIOModule](dutGen: => T, dummy: Int = 0,
-//        execOptions: Option[ExecutionOptionsManager] = None, testOptions: Option[TesterOptions] = None
-//        )(testFn: T => Unit) {
-//      x.runTest(defaults.createDefaultTester(() => dutGen,
-//        testOptions.getOrElse(x.getTestOptions), execOptions))(testFn)
-//    }
-//  }
-
-  implicit class uncheckedPokeableClock(signal: Clock) {
+  /** This provides a quick and dirty way to poke clocks. Inter-thread dependency is NOT checked,
+    * so it is up to you to understand the thread ordering semantics to use this correctly.
+    * Note that thread ordering IS deterministic, so you will NOT get a nondeterministic test.
+    */
+  implicit class UncheckedPokeableClock(signal: Clock) {
     def high(): Unit = {
       if (DataMirror.directionOf(signal) != ActualDirection.Input) {
         throw new UnpokeableException("Cannot only poke inputs")

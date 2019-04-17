@@ -12,8 +12,7 @@ import scala.util.DynamicVariable
 
 trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvInterface { this: TestSuite =>
   class TestBuilder[T <: MultiIOModule](val dutGen: () => T,
-      val execOptions: Option[ExecutionOptionsManager], val testOptions: Option[TesterOptions]
-    ) {
+      val execOptions: Option[ExecutionOptionsManager], val testOptions: Option[TesterOptions]) {
     protected def getTestOptions: TesterOptions = {
       val test = scalaTestContext.value.get
       TesterOptions(test.name, test.configMap.contains("writeVcd"))
@@ -40,10 +39,10 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
   // Stack trace data to help generate more informative (and localizable) failure messages
   var topFileName: Option[String] = None  // best guess at the testdriver top filename
 
-  private[tester] def runTest[T <: MultiIOModule](tester: BackendInstance[T])(testFn: T => Unit) {
+  private def runTest[T <: MultiIOModule](tester: BackendInstance[T])(testFn: T => Unit) {
     // Try and get the user's top-level test filename
     val internalFiles = Set("ChiselScalatestTester.scala", "BackendInterface.scala", "TestEnvInterface.scala")
-    val topFileNameGuess = (new Throwable).getStackTrace.apply(4).getFileName
+    val topFileNameGuess = (new Throwable).getStackTrace.apply(2).getFileName
     if (internalFiles.contains(topFileNameGuess)) {
       println("Unable to guess top-level testdriver filename from stack trace")
       topFileName = None
