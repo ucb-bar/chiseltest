@@ -4,7 +4,8 @@ package chisel3.tests
 
 import chisel3._
 import chisel3.tester._
-import chisel3.tester.experimental._
+import chisel3.tester.experimental.{AsyncResetReg, AsyncResetBlackBoxFactory}
+import chisel3.tester.experimental.TestOptionBuilder._
 import firrtl.ExecutionOptionsManager
 import treadle.HasTreadleSuite
 import org.scalatest._

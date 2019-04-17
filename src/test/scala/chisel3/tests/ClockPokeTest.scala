@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.experimental.MultiIOModule
 import chisel3.util._
 import chisel3.tester._
-import chisel3.tester.experimental._
+import chisel3.tester.experimental.UncheckedClockPoke._
 
 class ClockPokeTest extends FlatSpec with ChiselScalatestTester {
   behavior of "Testers2 with a clock input"
