@@ -1,3 +1,6 @@
+// See LICENSE for license details.
+
+
 package chisel3.tester.internal
 
 import java.util.concurrent.{ConcurrentLinkedQueue, Semaphore}

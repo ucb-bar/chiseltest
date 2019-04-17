@@ -4,7 +4,7 @@ package chisel3
 
 import scala.language.implicitConversions
 import chisel3.tester.internal._
-import chisel3.core.ActualDirection
+import chisel3.core.ActualDirection  // TODO needs to be a public API
 import chisel3.experimental.{DataMirror, FixedPoint}
 import chisel3.util._
 

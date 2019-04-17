@@ -4,12 +4,11 @@ package chisel3.tester
 
 import scala.collection.mutable
 import scala.util.DynamicVariable
+import chisel3.tester.internal._
 import chisel3.experimental.MultiIOModule
-import chisel3.tester.internal.{BackendInstance, Context, TestEnvInterface, TesterOptions}
 import firrtl.ExecutionOptionsManager
 import org.scalatest._
 import org.scalatest.exceptions.TestFailedException
-import chisel3.tester.internal._
 
 /**
   * Used to run simple tests that do not require a scalatest environment in order to run
