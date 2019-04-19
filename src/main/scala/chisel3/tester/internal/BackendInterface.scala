@@ -35,6 +35,10 @@ trait BackendInterface {
     */
   def pokeClock(signal: Clock, value: Boolean): Unit
 
+  /** Read the value of a clock.
+    */
+  def peekClock(signal: Clock): Boolean
+
   /** Writes a value to a writable wire.
     * Throws an exception if write is not writable.
     */
