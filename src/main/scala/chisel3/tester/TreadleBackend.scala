@@ -67,6 +67,13 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
     debugLog(s"${resolveName(signal)} <- $intValue")
   }
 
+  override def peekClock(signal: Clock): Boolean = {
+    doPeek(signal, new Throwable)
+    val a = tester.peek(dataNames(signal))
+    debugLog(s"${resolveName(signal)} -> $a")
+    a > 0
+  }
+
   override def pokeBits(signal: Bits, value: BigInt): Unit = {
     doPoke(signal, value, new Throwable)
     if (tester.peek(dataNames(signal)) != value) {
