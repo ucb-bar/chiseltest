@@ -60,6 +60,13 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
 
   def getModule: T = dut
 
+  override def pokeClock(signal: Clock, value: Boolean): Unit = {
+    // TODO: check thread ordering
+    val intValue = if (value) 1 else 0
+    tester.poke(dataNames(signal), intValue)
+    debugLog(s"${resolveName(signal)} <- $intValue")
+  }
+
   override def pokeBits(signal: Bits, value: BigInt): Unit = {
     doPoke(signal, value, new Throwable)
     if (tester.peek(dataNames(signal)) != value) {
