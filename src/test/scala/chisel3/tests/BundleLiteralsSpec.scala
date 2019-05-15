@@ -25,11 +25,11 @@ class BundleLiteralsSpec extends FlatSpec with ChiselScalatestTester with Matche
       io.aOut := io.in.a
       io.bOut := io.in.b
     }) { c =>
-      c.io.in.poke(c.io.in.cloneType.Lit(_.a -> 0.U, _.b -> 1.U))
+      c.io.in.poke(chiselTypeOf(c.io.in).Lit(_.a -> 0.U, _.b -> 1.U))
       c.io.aOut.expect(0.U)
       c.io.bOut.expect(1.U)
 
-      c.io.in.poke(c.io.in.cloneType.Lit(_.a -> 2.U, _.b -> 5.U))
+      c.io.in.poke(chiselTypeOf(c.io.in).Lit(_.a -> 2.U, _.b -> 5.U))
       c.io.aOut.expect(2.U)
       c.io.bOut.expect(5.U)
     }
@@ -37,28 +37,28 @@ class BundleLiteralsSpec extends FlatSpec with ChiselScalatestTester with Matche
 
   it should "expect Bundle literals" in {
     test(new PassthroughModule(new DoubleElements)) { c =>
-      c.in.poke(c.in.cloneType.Lit(_.a -> 0.U, _.b -> 1.U))
-      c.out.expect(c.in.cloneType.Lit(_.a -> 0.U, _.b -> 1.U))
-      c.in.poke(c.in.cloneType.Lit(_.a -> 2.U, _.b -> 5.U))
-      c.out.expect(c.in.cloneType.Lit(_.a -> 2.U, _.b -> 5.U))
+      c.in.poke(chiselTypeOf(c.in).Lit(_.a -> 0.U, _.b -> 1.U))
+      c.out.expect(chiselTypeOf(c.in).Lit(_.a -> 0.U, _.b -> 1.U))
+      c.in.poke(chiselTypeOf(c.in).Lit(_.a -> 2.U, _.b -> 5.U))
+      c.out.expect(chiselTypeOf(c.in).Lit(_.a -> 2.U, _.b -> 5.U))
     }
   }
 
   it should "fail on expect mismatch" in {
     assertThrows[exceptions.TestFailedException] {
       test(new PassthroughModule(new DoubleElements)) { c =>
-        c.in.poke(c.in.cloneType.Lit(_.a -> 0.U, _.b -> 1.U))
-        c.out.expect(c.in.cloneType.Lit(_.a -> 0.U, _.b -> 2.U))
+        c.in.poke(chiselTypeOf(c.in).Lit(_.a -> 0.U, _.b -> 1.U))
+        c.out.expect(chiselTypeOf(c.in).Lit(_.a -> 0.U, _.b -> 2.U))
       }
     }
   }
 
   // peek on bundle not supported yet, this test will fail and should
   // be altered when BundleLiteral peeking works
-  it should "not peek Bundle literals at this point in time" in {
+  it should "return a BundleLiteral when peeking" in {
     intercept[LiteralTypeException] {
       test(new PassthroughModule(new DoubleElements)) { c =>
-        c.in.poke(c.in.cloneType.Lit(_.a -> 0.U, _.b -> 1.U))
+        c.in.poke(chiselTypeOf(c.in).Lit(_.a -> 0.U, _.b -> 1.U))
         val output = c.out.peek()
         output.a === 0.U should be(true.B)
         output.a === 1.U should be(true.B)
