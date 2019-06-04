@@ -2,6 +2,11 @@
 
 package chisel3.tester.internal
 
+import java.io.File
+
+import firrtl.AnnotationSeq
+import firrtl.options.TargetDirAnnotation
+
 import scala.collection.mutable
 
 class FailedExpectException(val message: String, val failedCodeStackDepth: Int) extends Exception(message)
@@ -12,6 +17,24 @@ trait TestEnvInterface {
   protected val batchedFailures: mutable.ArrayBuffer[Exception] = new mutable.ArrayBuffer
 
   def topFileName: Option[String]
+
+  /**
+    * Will add a TargetDirAnnotation with defaultDir with "test_run_dir" path prefix to the annotations
+    * if there is not a TargetDirAnnotation already present
+    *
+    * @param defaultDir     a default directory
+    * @param annotationSeq  annotations to add it to, unless one is already there
+    * @return
+    */
+  def addDefaultTargetDir(defaultDir: String, annotationSeq: AnnotationSeq): AnnotationSeq = {
+    if(annotationSeq.exists { case _: TargetDirAnnotation => true ; case _ => false }) {
+      annotationSeq
+    }
+    else {
+      val target = TargetDirAnnotation("test_run_dir" + File.separator + defaultDir)
+      AnnotationSeq(annotationSeq ++ Seq(target))
+    }
+  }
 
   /** Logs a tester failure at this point.
     * Failures queued until the next checkpoint.

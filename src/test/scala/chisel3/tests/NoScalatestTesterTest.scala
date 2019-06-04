@@ -8,7 +8,7 @@ import chisel3.tester.RawTester.test
 import org.scalatest.{FreeSpec, Matchers}
 
 class NoScalatestTesterTest extends FreeSpec with Matchers {
-  "This testers does not rely on scalatest to run" in {
+  "This tester does not rely on scalatest to run" in {
     def shiftTest(in: UInt, out: UInt, clk: Clock, value: UInt) {
       timescope {
         in.poke(value)

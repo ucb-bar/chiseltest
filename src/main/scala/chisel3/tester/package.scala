@@ -164,4 +164,13 @@ package object tester {
   }
 
   implicit def decoupledToDriver[T <: Data](x: DecoupledIO[T]) = new DecoupledDriver(x)
+
+  /**
+    * Simple file name sanitizer
+    * @param name file name to be sanitized
+    * @return
+    */
+  def sanitizeFileName(name: String): String = {
+    name.replaceAll(" ", "_").replaceAll("\\W+", "") // sanitize name
+  }
 }
