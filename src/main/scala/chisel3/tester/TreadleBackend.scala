@@ -18,11 +18,9 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
     tester: TreadleTester)
     extends BackendInstance[T] with ThreadedBackend {
 
-  type CycleTracker = mutable.Map[Clock, Int]
-
   // State for deadlock detection timeout
-  val idleCycles: CycleTracker = mutable.Map.empty
-  val idleLimits: CycleTracker = mutable.Map(dut.clock -> 1000)
+  val idleCycles = mutable.Map[Clock, Int]()
+  val idleLimits = mutable.Map[Clock, Int](dut.clock -> 1000)
 
   override def setTimeout(signal: Clock, cycles: Int): Unit = {
     require(signal == dut.clock, "timeout currently only supports master clock")
@@ -228,12 +226,7 @@ object TreadleExecutive {
   })
 
   // TODO: better name
-  def combinationalPathsToData(
-    dut: BaseModule,
-    paths: Seq[CombinationalPath],
-    dataNames: Map[Data, String]
-  ): Map[Data, Set[Data]] = {
-
+  def combinationalPathsToData(dut: BaseModule, paths: Seq[CombinationalPath], dataNames: Map[Data, String]): Map[Data, Set[Data]] = {
     val nameToData = dataNames.map { case (port, name) => name -> port }  // TODO: check for aliasing
     paths.filter { p =>  // only keep paths involving top-level IOs
       p.sink.module.name == dut.name && p.sources.exists(_.module.name == dut.name)
@@ -255,7 +248,15 @@ object TreadleExecutive {
 
       val chiseledAnnotations = (new ChiselStage).run(
         annotationSeq ++ Seq(generatorAnnotation, NoRunFirrtlCompilerAnnotation)
-//        annotationSeq ++ Seq(generatorAnnotation)
+      )
+
+      val treadledAnnotations = TreadleTesterPhase.transform(chiseledAnnotations)
+
+      val treadleTester = treadledAnnotations.collectFirst { case TreadleTesterAnnotation(t) => t }.getOrElse(
+        throw new Exception(
+          s"TreadleTesterPhase could not build a treadle tester from these annotations" +
+          chiseledAnnotations.mkString("Annotations:\n", "\n  ", "")
+        )
       )
 
       val circuit = generatorAnnotation.elaborate.circuit
@@ -265,12 +266,6 @@ object TreadleExecutive {
       val portNames = DataMirror.modulePorts(dut).flatMap { case (name, data) =>
         getDataNames(name, data).toList
       }.toMap
-
-      val treadledAnnotations = TreadleTesterPhase.transform(chiseledAnnotations)
-
-      val treadleTester = treadledAnnotations.collectFirst { case TreadleTesterAnnotation(t) => t }.getOrElse(
-        throw new Exception(s"TreadleTesterPhase did not build a treadle tester")
-      )
 
       val circuitState = treadledAnnotations.collectFirst { case TreadleCircuitStateAnnotation(s) => s }.get
 

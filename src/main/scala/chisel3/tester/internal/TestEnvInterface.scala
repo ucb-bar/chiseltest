@@ -27,10 +27,9 @@ trait TestEnvInterface {
     * @return
     */
   def addDefaultTargetDir(defaultDir: String, annotationSeq: AnnotationSeq): AnnotationSeq = {
-    if(annotationSeq.exists { case _: TargetDirAnnotation => true ; case _ => false }) {
+    if (annotationSeq.exists { x => x.isInstanceOf[TargetDirAnnotation] }) {
       annotationSeq
-    }
-    else {
+    } else {
       val target = TargetDirAnnotation("test_run_dir" + File.separator + defaultDir)
       AnnotationSeq(annotationSeq ++ Seq(target))
     }

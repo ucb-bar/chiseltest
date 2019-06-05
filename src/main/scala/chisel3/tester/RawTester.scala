@@ -37,7 +37,7 @@ object RawTester {
     * Run one test
     * General use looks like
     * {{{
-    *   test(() => new PlusOne) { c =>
+    *   test(new PlusOne) { c =>
     *     // body of the unit test, c is a a reference
     *     c.io.input.poke(1.U)
     *     c.io.output.expect(2.U)

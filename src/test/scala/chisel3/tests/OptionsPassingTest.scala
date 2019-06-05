@@ -12,8 +12,6 @@ class OptionsPassingTest extends FlatSpec with ChiselScalatestTester with Matche
   behavior of "Testers2"
 
   it should "write vcd output when passing in a WriteVcdAnnotation" in {
-    // TODO: this actually relies on total thread ordering
-
     def shiftTest(in: UInt, out: UInt, clk: Clock, value: UInt) {
       timescope {
         in.poke(value)
@@ -47,6 +45,7 @@ class OptionsPassingTest extends FlatSpec with ChiselScalatestTester with Matche
       val vcdFile = new File(vcdFileName)
       println(s"vcd file name $vcdFileName ${vcdFile.getAbsolutePath}")
       vcdFile.exists() should be (true)
+      vcdFile.delete()
     }
   }
 
