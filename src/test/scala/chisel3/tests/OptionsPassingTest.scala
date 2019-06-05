@@ -3,6 +3,7 @@ package chisel3.tests
 import java.io.{ByteArrayOutputStream, File, PrintStream}
 
 import chisel3._
+import chisel3.experimental.MultiIOModule
 import chisel3.tester._
 import chisel3.tester.experimental.TestOptionBuilder._
 import chisel3.tester.experimental.sanitizeFileName
@@ -35,7 +36,6 @@ class OptionsPassingTest extends FlatSpec with ChiselScalatestTester with Matche
             ".vcd"
 
     val vcdFile = new File(vcdFileName)
-    println(s"vcd file name $vcdFileName ${vcdFile.getAbsolutePath}")
     vcdFile.exists() should be (true)
     vcdFile.delete()
   }
@@ -43,7 +43,7 @@ class OptionsPassingTest extends FlatSpec with ChiselScalatestTester with Matche
   it should "allow turning on verbose mode" in {
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new ShifterModule(UInt(8.W), 4)).withAnnotations(Seq(VerboseAnnotation)) { c =>
+      test(new MultiIOModule {}).withAnnotations(Seq(VerboseAnnotation)) { c =>
         c.clock.step(1)
       }
     }

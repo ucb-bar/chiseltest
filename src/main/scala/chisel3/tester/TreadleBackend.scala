@@ -246,6 +246,12 @@ object TreadleExecutive {
     try {
       val generatorAnnotation = chisel3.stage.ChiselGeneratorAnnotation(dutGen)
 
+      val circuit = generatorAnnotation.elaborate.circuit
+      val dut = getTopModule(circuit).asInstanceOf[T]
+      val portNames = DataMirror.modulePorts(dut).flatMap { case (name, data) =>
+        getDataNames(name, data).toList
+      }.toMap
+
       val chiseledAnnotations = (new ChiselStage).run(
         annotationSeq ++ Seq(generatorAnnotation, NoRunFirrtlCompilerAnnotation)
       )
@@ -259,18 +265,8 @@ object TreadleExecutive {
         )
       )
 
-      val circuit = generatorAnnotation.elaborate.circuit
-
-      val dut = getTopModule(circuit).asInstanceOf[T]
-
-      val portNames = DataMirror.modulePorts(dut).flatMap { case (name, data) =>
-        getDataNames(name, data).toList
-      }.toMap
-
       val circuitState = treadledAnnotations.collectFirst { case TreadleCircuitStateAnnotation(s) => s }.get
-
       val pathAnnotations = (new CheckCombLoops).execute(circuitState).annotations
-
       val paths = pathAnnotations.collect {
         case c: CombinationalPath => c
       }
