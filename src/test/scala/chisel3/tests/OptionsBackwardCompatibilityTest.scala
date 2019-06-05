@@ -6,68 +6,36 @@ import chisel3._
 import chisel3.tester._
 import chisel3.tester.experimental.TestOptionBuilder._
 import chisel3.tester.experimental.{AsyncResetBlackBoxFactory, AsyncResetReg}
+import firrtl.{AnnotationSeq, ExecutionOptionsManager}
 import org.scalatest._
-import treadle.BlackBoxFactoriesAnnotation
+import treadle.{BlackBoxFactoriesAnnotation, HasTreadleSuite}
 
-/**
-  * circuit that illustrates usage of async register
-  * @param resetValue value on reset
+/** This test uses several deprecated functions testing for backward compatibility
+  *
   */
-class AsyncResetRegModule(resetValue: Int) extends Module {
-  //noinspection TypeAnnotation
-  val io = IO(new Bundle {
-    val in = Input(UInt(1.W))
-    val out = Output(UInt(1.W))
-  })
+class OptionsBackwardCompatibilityTest extends FreeSpec with ChiselScalatestTester {
+  private val manager = new ExecutionOptionsManager("asyncResetRegTest") with HasTreadleSuite {
+    treadleOptions = treadleOptions.copy(
+      blackBoxFactories = Seq(new AsyncResetBlackBoxFactory)
+    )
 
-  val reg = Module(new AsyncResetReg(resetValue))
-
-  reg.d := io.in
-  reg.clk := clock
-  reg.rst := reset
-  reg.en := 1.U
-
-  io.out := reg.q
-}
-
-class AsyncResetFeedbackModule() extends Module {
-  //noinspection TypeAnnotation
-  val io = IO(new Bundle {
-    val out = Output(Vec(2, UInt(1.W)))
-  })
-
-  val reg0 = Module(new AsyncResetReg(0))
-  val reg1 = Module(new AsyncResetReg(1))
-
-  reg0.d := reg1.q
-  reg1.d := reg0.q
-
-  io.out(0) := reg0.q
-  io.out(1) := reg1.q
-
-  reg0.clk := clock
-  reg1.clk := clock
-  reg0.rst := reset
-  reg1.rst := reset
-  reg0.en := 1.U
-  reg1.en := 1.U
-}
-
-class AsyncResetRegTest extends FreeSpec with ChiselScalatestTester {
-  private val annotations = Seq(BlackBoxFactoriesAnnotation(Seq(new AsyncResetBlackBoxFactory)))
-
+    def toAnnotations: AnnotationSeq = Seq(BlackBoxFactoriesAnnotation(treadleOptions.blackBoxFactories))
+  }
   "register is zero, after tester startup's default reset" in {
-    test(new AsyncResetRegModule(0)).withAnnotations(annotations) { dut =>
+    test(new AsyncResetRegModule(0))
+        .withExecOptions(manager) { dut =>
       dut.io.out.expect(0.U)
     }
   }
   "register is one, after tester startup's default reset" in {
-    test(new AsyncResetRegModule(1)).withAnnotations(annotations) { dut =>
+    test(new AsyncResetRegModule(1))
+        .withExecOptions(manager) { dut =>
       dut.io.out.expect(1.U)
     }
   }
   "reset a register works after register has been altered" in {
-    test(new AsyncResetRegModule(1)).withAnnotations(annotations) { dut =>
+    test(new AsyncResetRegModule(1))
+        .withExecOptions(manager) { dut =>
       // The register starts at 1 after default reset in tester startup
       dut.io.out.expect(1.U)
 
@@ -99,7 +67,8 @@ class AsyncResetRegTest extends FreeSpec with ChiselScalatestTester {
     }
   }
   "de-assert reset behaviour" in {
-    test(new AsyncResetRegModule(1)).withAnnotations(annotations) { dut =>
+    test(new AsyncResetRegModule(1))
+        .withExecOptions(manager) { dut =>
       // register is reset at startup, and set to zero by poking
       dut.clock.step()
       dut.io.out.expect(0.U)
@@ -121,7 +90,8 @@ class AsyncResetRegTest extends FreeSpec with ChiselScalatestTester {
     }
   }
   "feedback into itself" in {
-    test(new AsyncResetFeedbackModule).withAnnotations(annotations) { dut =>
+    test(new AsyncResetFeedbackModule)
+        .withExecOptions(manager) { dut =>
       dut.io.out(0).expect(0.U)
       dut.io.out(1).expect(1.U)
 

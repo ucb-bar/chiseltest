@@ -2,13 +2,13 @@
 
 package chisel3.tester
 
-import chisel3.tester.internal._
 import chisel3._
 import chisel3.experimental.{DataMirror, MultiIOModule}
-import chisel3.HasChiselExecutionOptions
-import firrtl.transforms.CombinationalPath
-import firrtl.{ExecutionOptionsManager, HasFirrtlOptions}
-import treadle.{HasTreadleSuite, TreadleTester}
+import chisel3.stage.{ChiselStage, NoRunFirrtlCompilerAnnotation}
+import chisel3.tester.internal._
+import firrtl.transforms.{CheckCombLoops, CombinationalPath}
+import treadle.{TreadleCircuitStateAnnotation, TreadleTester, TreadleTesterAnnotation}
+import treadle.stage.TreadleTesterPhase
 
 import scala.collection.mutable
 
@@ -17,6 +17,7 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
     val dataNames: Map[Data, String], val combinationalPaths: Map[Data, Set[Data]],
     tester: TreadleTester)
     extends BackendInstance[T] with ThreadedBackend {
+
   // State for deadlock detection timeout
   val idleCycles = mutable.Map[Clock, Int]()
   val idleLimits = mutable.Map[Clock, Int](dut.clock -> 1000)
@@ -170,7 +171,7 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
         // TODO: remove multiple invocations of getClock
         // Unblock threads waiting on dependent clock
         val steppedClocks = Seq(dut.clock) ++ lastClockValue.collect {
-          case (clock, lastValue) if getClock(clock) != lastValue && getClock(clock) == true => clock
+          case (clock, lastValue) if getClock(clock) != lastValue && getClock(clock) => clock
         }
         steppedClocks foreach { clock =>
           clockCounter.put(dut.clock, getClockCycle(clock) + 1) // TODO: ignores cycles before a clock was stepped on
@@ -207,8 +208,8 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
 }
 
 object TreadleExecutive {
-  import chisel3.internal.firrtl.Circuit
   import chisel3.experimental.BaseModule
+  import chisel3.internal.firrtl.Circuit
   import firrtl._
 
   def getTopModule(circuit: Circuit): BaseModule = {
@@ -225,7 +226,7 @@ object TreadleExecutive {
   })
 
   // TODO: better name
-  def combinationalPathsToData(dut: BaseModule, paths: Seq[CombinationalPath], dataNames: Map[Data, String]) = {
+  def combinationalPathsToData(dut: BaseModule, paths: Seq[CombinationalPath], dataNames: Map[Data, String]): Map[Data, Set[Data]] = {
     val nameToData = dataNames.map { case (port, name) => name -> port }  // TODO: check for aliasing
     paths.filter { p =>  // only keep paths involving top-level IOs
       p.sink.module.name == dut.name && p.sources.exists(_.module.name == dut.name)
@@ -237,68 +238,46 @@ object TreadleExecutive {
     }.toMap
   }
 
-  def start[T <: MultiIOModule](
-      dutGen: () => T,
-      testOptions: TesterOptions,
-      execOptions: Option[ExecutionOptionsManager] = None): BackendInstance[T] = {
-    // Create the base options manager that has all the components we care about, and initialize defaults
-    val optionsManager = new ExecutionOptionsManager("chisel3")
-        with HasChiselExecutionOptions with HasFirrtlOptions with HasTreadleSuite
-
-    // If the user specified options, override the default fields.
-    // Note: commonOptions and firrtlOptions are part of every ExecutionOptionsManager, so will always be defined
-    // whether the user intended to or not. In those cases testers2 forces an override to the testers2 defaults.
-    execOptions foreach {
-      case userOptions: HasChiselExecutionOptions => optionsManager.chiselOptions = userOptions.chiselOptions
-      case _ =>
-    }
-
-    execOptions foreach {
-      case userOptions: HasFirrtlOptions => optionsManager.firrtlOptions = userOptions.firrtlOptions
-      case _ =>
-    }
-    optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(compilerName = "low")
-
-    execOptions foreach {
-      case userOptions: HasTreadleSuite => optionsManager.treadleOptions = userOptions.treadleOptions
-      case _ =>
-    }
-
-    // Tester options take priority over exec options
-    val testName = testOptions.name.replaceAll(" ", "_").replaceAll("\\W+", "")  // sanitize filename
-    optionsManager.commonOptions = optionsManager.commonOptions.copy(
-        targetDirName = s"test_run_dir/$testName")
-    if (testOptions.writeVcd) {
-      optionsManager.treadleOptions = optionsManager.treadleOptions.copy(writeVCD = true)
-    }
+  def start[T <: MultiIOModule](dutGen: () => T, annotationSeq: AnnotationSeq): BackendInstance[T] = {
 
     // Force a cleanup: long SBT runs tend to fail with memory issues
     System.gc()
 
-    chisel3.Driver.execute(optionsManager, dutGen) match {
-      case ChiselExecutionSuccess(Some(circuit), _, Some(firrtlExecutionResult)) =>
-        firrtlExecutionResult match {
-          case success: FirrtlExecutionSuccess =>
-            val dut = getTopModule(circuit).asInstanceOf[T]
-            optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
-              annotations = success.circuitState.annotations.toSeq.toList
-            )
-            val interpretiveTester = new TreadleTester(success.emitted, optionsManager)
+    try {
+      val generatorAnnotation = chisel3.stage.ChiselGeneratorAnnotation(dutGen)
 
-            val portNames = DataMirror.modulePorts(dut).flatMap { case (name, data) =>
-              getDataNames(name, data).toList
-            }.toMap
-            val paths = success.circuitState.annotations.collect {
-              case c: CombinationalPath => c
-            }
-            val pathsAsData = combinationalPathsToData(dut, paths, portNames)
+      val circuit = generatorAnnotation.elaborate.circuit
+      val dut = getTopModule(circuit).asInstanceOf[T]
+      val portNames = DataMirror.modulePorts(dut).flatMap { case (name, data) =>
+        getDataNames(name, data).toList
+      }.toMap
 
-            new TreadleBackend(dut, portNames, pathsAsData, interpretiveTester)
-          case FirrtlExecutionFailure(message) =>
-            throw new Exception(s"FirrtlBackend: failed firrtl compile message: $message")
-        }
-      case _ =>
-        throw new Exception("Problem with compilation")
+      val chiseledAnnotations = (new ChiselStage).run(
+        annotationSeq ++ Seq(generatorAnnotation, NoRunFirrtlCompilerAnnotation)
+      )
+
+      val treadledAnnotations = TreadleTesterPhase.transform(chiseledAnnotations)
+
+      val treadleTester = treadledAnnotations.collectFirst { case TreadleTesterAnnotation(t) => t }.getOrElse(
+        throw new Exception(
+          s"TreadleTesterPhase could not build a treadle tester from these annotations" +
+          chiseledAnnotations.mkString("Annotations:\n", "\n  ", "")
+        )
+      )
+
+      val circuitState = treadledAnnotations.collectFirst { case TreadleCircuitStateAnnotation(s) => s }.get
+      val pathAnnotations = (new CheckCombLoops).execute(circuitState).annotations
+      val paths = pathAnnotations.collect {
+        case c: CombinationalPath => c
+      }
+
+      val pathsAsData = combinationalPathsToData(dut, paths, portNames)
+
+      new TreadleBackend(dut, portNames, pathsAsData, treadleTester)
+    }
+    catch {
+      case t: Throwable =>
+        throw new Exception(s"Problem with compilation: ${t.getMessage}")
     }
   }
 }

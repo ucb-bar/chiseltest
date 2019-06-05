@@ -2,13 +2,12 @@
 
 package chisel3.tester
 
-import scala.collection.mutable
-import scala.util.DynamicVariable
-import chisel3.tester.internal._
 import chisel3.experimental.MultiIOModule
-import firrtl.ExecutionOptionsManager
+import chisel3.tester.internal._
+import chisel3.tester.experimental.sanitizeFileName
+
+import firrtl.AnnotationSeq
 import org.scalatest._
-import org.scalatest.exceptions.TestFailedException
 
 /**
   * Used to run simple tests that do not require a scalatest environment in order to run
@@ -24,38 +23,40 @@ private class RawTester(testName: String) extends Assertions with TestEnvInterfa
     Context.run(tester, this, testFn)
   }
 
-  def getTestOptions: TesterOptions = {
-    TesterOptions(topFileName.get, writeVcd = false)
-  }
-
-  def test[T <: MultiIOModule](dutGen: => T)(testFn: T => Unit) {
-    runTest(defaults.createDefaultTester(() => dutGen, getTestOptions, None))(testFn)
+  def test[T <: MultiIOModule](dutGen: => T, annotationSeq: AnnotationSeq)(testFn: T => Unit) {
+    val newAnnos = addDefaultTargetDir(sanitizeFileName(testName), annotationSeq)
+    runTest(defaults.createDefaultTester(() => dutGen, newAnnos))(testFn)
   }
 }
 
 /**
   * This is a simple tester that does not require that it be within the scope of a scalatest
   * in order to run. This form is suitable for running in the Jupyter notebook.
-  *
-  * @todo When Phases, Stages is implemented add ability to change testing options.
   */
 object RawTester {
 
   /**
     * Run one test
+    * General use looks like
+    * {{{
+    *   test(new PlusOne) { c =>
+    *     // body of the unit test, c is a a reference
+    *     c.io.input.poke(1.U)
+    *     c.io.output.expect(2.U)
+    *   }
+    * }}}
+    *
     * @note every test should use a different name, it, suitably sanitized, is used as the subdirectory in the
     *       test_run_dir directory
     * @param dutGen    The generator of the device under tests
     * @param testFn    The block of code that implements the test
     * @tparam T        The type of device, derived from dutGen
     */
-  def test[T <: MultiIOModule]
-          (dutGen: => T)
-          (testFn: T => Unit): Unit = {
+  def test[T <: MultiIOModule](dutGen: => T, annotationSeq: AnnotationSeq = Seq.empty)(testFn: T => Unit): Unit = {
 
     val testName = s"chisel_test_${System.currentTimeMillis()}"
 
     val tester = new RawTester(testName)
-    tester.test(dutGen)(testFn)
+    tester.test(dutGen, annotationSeq)(testFn)
   }
 }
