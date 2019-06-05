@@ -4,6 +4,8 @@ package chisel3.tester
 
 import chisel3.experimental.MultiIOModule
 import chisel3.tester.internal._
+import chisel3.tester.experimental.sanitizeFileName
+
 import firrtl.AnnotationSeq
 import org.scalatest._
 

@@ -4,49 +4,40 @@ import java.io.{ByteArrayOutputStream, File, PrintStream}
 
 import chisel3._
 import chisel3.tester._
+import chisel3.tester.experimental.TestOptionBuilder._
+import chisel3.tester.experimental.sanitizeFileName
 import org.scalatest._
 import treadle.{VerboseAnnotation, WriteVcdAnnotation}
-import chisel3.tester.experimental.TestOptionBuilder._
 
 class OptionsPassingTest extends FlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2"
 
   it should "write vcd output when passing in a WriteVcdAnnotation" in {
-    def shiftTest(in: UInt, out: UInt, clk: Clock, value: UInt) {
-      timescope {
-        in.poke(value)
-        clk.step(1)
-      }
-      clk.step(3)
-      out.expect(value)
+    test(new Module {
+      val io = IO(new Bundle {
+        val a = Input(UInt(8.W));
+        val b = Output(UInt(8.W))
+      })
+      io.b := io.a
+    }).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+      c.io.a.poke(1.U)
+      c.io.b.expect(1.U)
+      c.clock.step()
+      c.io.a.poke(42.U)
+      c.io.b.expect(42.U)
     }
 
-    test(new ShifterModule(UInt(8.W), 4))
-            .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
-      fork { shiftTest(c.in, c.out, c.clock, 42.U) }
-      c.clock.step(1)
-      fork { shiftTest(c.in, c.out, c.clock, 43.U) }
-      c.clock.step(1)
-      fork { shiftTest(c.in, c.out, c.clock, 44.U) }
-      c.clock.step(1)
-      fork { shiftTest(c.in, c.out, c.clock, 45.U) }
-      c.clock.step(1)
-      fork { shiftTest(c.in, c.out, c.clock, 46.U) }
-      c.clock.step(1)
-      fork { shiftTest(c.in, c.out, c.clock, 47.U) }.join
+    val vcdFileName = "test_run_dir" +
+            File.separator +
+            sanitizeFileName(s"Testers2 should write vcd output when passing in a WriteVcdAnnotation") +
+            File.separator +
+            sanitizeFileName("OptionsPassingTestanon2") +
+            ".vcd"
 
-      val vcdFileName = "test_run_dir" +
-              File.separator +
-              sanitizeFileName(s"Testers2 should write vcd output when passing in a WriteVcdAnnotation") +
-              File.separator +
-              sanitizeFileName("ShifterModule") +
-              ".vcd"
-
-      val vcdFile = new File(vcdFileName)
-      println(s"vcd file name $vcdFileName ${vcdFile.getAbsolutePath}")
-      vcdFile.exists() should be (true)
-      vcdFile.delete()
-    }
+    val vcdFile = new File(vcdFileName)
+    println(s"vcd file name $vcdFileName ${vcdFile.getAbsolutePath}")
+    vcdFile.exists() should be (true)
+    vcdFile.delete()
   }
 
   it should "allow turning on verbose mode" in {

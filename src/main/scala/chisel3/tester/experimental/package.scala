@@ -13,4 +13,16 @@ package chisel3.tester
 package object experimental {
   type TesterOptions = chisel3.tester.internal.TesterOptions
   val TesterOptions = chisel3.tester.internal.TesterOptions  // expose this internal object, whose "API" is unstable
+
+  /**
+    * Simple file name sanitizer
+    * @param name file name to be sanitized
+    * @return
+    *
+    * @note This function is not considered a standard part of testers2 API, it will likely go away
+    */
+  //TODO: make this internal but there should be a way end user can ask for current working directory of a test
+  def sanitizeFileName(name: String): String = {
+    name.replaceAll(" ", "_").replaceAll("\\W+", "") // sanitize name
+  }
 }
