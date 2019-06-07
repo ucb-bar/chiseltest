@@ -1,6 +1,5 @@
 // See LICENSE for license details.
 
-
 package chisel3.tester.internal
 
 import java.util.concurrent.{ConcurrentLinkedQueue, Semaphore}
@@ -25,7 +24,17 @@ case class ForkBuilder(name: Option[String], region: Option[Region], threads: Se
   }
 }
 
-/** Base trait for backends implementing concurrency by threading. Also implements timescopes.
+/** Base trait for backends implementing concurrency by threading.
+  *
+  * Implements these BackendInterface methods:
+  * - doFork
+  * - doJoin
+  *
+  * Provides these methods for use by subclasses:
+  * - doPoke, doPeek, which logs peek and poke actions for cross-thread-interaction checking
+  * - newTimescope, closeTimescope: provides record-keeping for timescopes
+  * - runThreads: runs all threads waiting on a set of clocks
+  * - scheduler: called from within a test thread, suspends the current thread and runs the next one
   */
 trait ThreadedBackend extends BackendInterface {
   //
