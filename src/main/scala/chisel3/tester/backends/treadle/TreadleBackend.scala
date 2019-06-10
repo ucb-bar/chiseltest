@@ -1,36 +1,28 @@
 // See LICENSE for license details.
 
-package chisel3.tester
+package chisel3.tester.backends.treadle
 
 import chisel3._
 import chisel3.experimental.{DataMirror, MultiIOModule}
 import chisel3.stage.{ChiselStage, NoRunFirrtlCompilerAnnotation}
+import chisel3.tester.backends.BackendExecutive
 import chisel3.tester.internal._
+import chisel3.tester.{Region, TimeoutException}
+import firrtl.annotations.ComponentName
 import firrtl.transforms.{CheckCombLoops, CombinationalPath}
-import treadle.{TreadleCircuitStateAnnotation, TreadleTester, TreadleTesterAnnotation}
 import treadle.stage.TreadleTesterPhase
+import treadle.{TreadleCircuitStateAnnotation, TreadleTester, TreadleTesterAnnotation}
 
 import scala.collection.mutable
 
 // TODO: is Seq[CombinationalPath] the right API here? It's unclear where name -> Data resolution should go
-class TreadleBackend[T <: MultiIOModule](dut: T,
-    val dataNames: Map[Data, String], val combinationalPaths: Map[Data, Set[Data]],
-    tester: TreadleTester)
-    extends BackendInstance[T] with ThreadedBackend {
-
-  // State for deadlock detection timeout
-  val idleCycles = mutable.Map[Clock, Int]()
-  val idleLimits = mutable.Map[Clock, Int](dut.clock -> 1000)
-
-  override def setTimeout(signal: Clock, cycles: Int): Unit = {
-    require(signal == dut.clock, "timeout currently only supports master clock")
-    if (cycles == 0) {
-      idleLimits.remove(signal)
-    } else {
-      idleLimits.put(signal, cycles)
-    }
-    idleCycles.remove(signal)
-  }
+class TreadleBackend[T <: MultiIOModule](
+  val dut: T,
+  val dataNames: Map[Data, String],
+  val combinationalPaths: Map[Data, Set[Data]],
+  tester: TreadleTester
+)
+extends BackendInstance[T] with ThreadedBackend[T] {
 
   //
   // Debug utility functions
@@ -207,35 +199,11 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
   }
 }
 
-object TreadleExecutive {
-  import chisel3.experimental.BaseModule
-  import chisel3.internal.firrtl.Circuit
+object TreadleExecutive extends BackendExecutive {
   import firrtl._
 
-  def getTopModule(circuit: Circuit): BaseModule = {
-    (circuit.components find (_.name == circuit.name)).get.id
-  }
-
-  /** Returns a Seq of (data reference, fully qualified element names) for the input.
-    * name is the name of data
-    */
-  def getDataNames(name: String, data: Data): Seq[(Data, String)] = Seq(data -> name) ++ (data match {
-    case _: Element => Seq()
-    case b: Record => b.elements.toSeq flatMap {case (n, e) => getDataNames(s"${name}_$n", e)}
-    case v: Vec[_] => v.zipWithIndex flatMap {case (e, i) => getDataNames(s"${name}_$i", e)}
-  })
-
-  // TODO: better name
-  def combinationalPathsToData(dut: BaseModule, paths: Seq[CombinationalPath], dataNames: Map[Data, String]): Map[Data, Set[Data]] = {
-    val nameToData = dataNames.map { case (port, name) => name -> port }  // TODO: check for aliasing
-    paths.filter { p =>  // only keep paths involving top-level IOs
-      p.sink.module.name == dut.name && p.sources.exists(_.module.name == dut.name)
-    } .map { p =>  // discard module names
-      p.sink.name -> p.sources.filter(_.module.name == dut.name).map(_.name)
-    } .map { case (sink, sources) =>  // convert to Data
-      // TODO graceful error message if there is an unexpected combinational path element?
-      nameToData(sink) -> sources.map(nameToData(_)).toSet
-    }.toMap
+  def componentToName(component: ComponentName): String = {
+    component.name
   }
 
   def start[T <: MultiIOModule](dutGen: () => T, annotationSeq: AnnotationSeq): BackendInstance[T] = {
@@ -271,13 +239,15 @@ object TreadleExecutive {
         case c: CombinationalPath => c
       }
 
-      val pathsAsData = combinationalPathsToData(dut, paths, portNames)
+      val pathsAsData = combinationalPathsToData(dut, paths, portNames, componentToName)
 
       new TreadleBackend(dut, portNames, pathsAsData, treadleTester)
     }
     catch {
       case t: Throwable =>
-        throw new Exception(s"Problem with compilation: ${t.getMessage}")
+        //TODO: Decide if there's some reason to lose stack with new exception
+//        throw new Exception(s"Problem with compilation: ${t.getMessage}")
+        throw t
     }
   }
 }

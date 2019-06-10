@@ -2,10 +2,11 @@
 
 package chisel3
 
-import scala.language.implicitConversions
-import chisel3.tester.internal._
 import chisel3.experimental.{DataMirror, Direction, FixedPoint}
+import chisel3.tester.internal._
 import chisel3.util._
+
+import scala.language.implicitConversions
 
 class NotLiteralException(message: String) extends Exception(message)
 class LiteralTypeException(message: String) extends Exception(message)
@@ -16,7 +17,6 @@ class ClockResolutionException(message: String) extends Exception(message)
 /** Basic interfaces and implicit conversions for testers2
   */
 package object tester {
-  import chisel3.internal.firrtl.{LitArg, ULit, SLit}
   implicit class testableData[T <: Data](x: T) {
     protected def pokeBits(signal: Bits, value: BigInt): Unit = {
       if (DataMirror.directionOf(signal) != Direction.Input) {
@@ -33,17 +33,15 @@ package object tester {
       case (x: SInt, value: SInt) => pokeBits(x, value.litValue)
       // TODO can't happen because of type parameterization
       case (x: Bits, value: SInt) => throw new LiteralTypeException(s"can only poke SInt value into signals of type SInt")
-      case (x: FixedPoint, value: FixedPoint) => {
+      case (x: FixedPoint, value: FixedPoint) =>
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
         pokeBits(x, value.litValue)
-      }
-      case (x: Bundle, value: Bundle) => {
+      case (x: Bundle, value: Bundle) =>
         // TODO: chisel needs to expose typeEquivalent
         require(x.elements.keys == value.elements.keys)  // TODO: this discards type data =(
         (x.elements zip value.elements) foreach { case ((_, x), (_, value)) =>
           x.poke(value)
         }
-      }
       case x => throw new LiteralTypeException(s"don't know how to poke $x")
       // TODO: aggregate types
     }
