@@ -25,7 +25,7 @@ object CopyVerilatorHeaderFiles {
         System.err.format("createFile error: %s%n", x)
     }
 
-    Files.copy(getClass.getResourceAsStream("/sim_api.h"), simApiHFilePath, REPLACE_EXISTING)
-    Files.copy(getClass.getResourceAsStream("/veri_api.h"), verilatorApiHFilePath, REPLACE_EXISTING)
+    Files.copy(getClass.getResourceAsStream("/testers2/sim_api.h"), simApiHFilePath, REPLACE_EXISTING)
+    Files.copy(getClass.getResourceAsStream("/testers2/veri_api.h"), verilatorApiHFilePath, REPLACE_EXISTING)
   }
 }
