@@ -19,35 +19,41 @@ import scala.util.matching.Regex
 class CommandEditor(val editCommands: Seq[String], messagePrefix: String) {
   def apply(command: String): String = {
     var verbose = false
-    def show(s: => String): Unit = if(verbose) println(s)
+    def show(s: => String): Unit = if (verbose) println(s)
     var currentCommandLine = command
 
     editCommands.foreach { //noinspection MatchToPartialFunction
       line =>
-      line match {
-        case CommandEditor.RegexPrefixPattern(separator) =>
-          val editPatternString = s"""s$separator([^$separator]*)$separator([^$separator]*)$separator.*"""
-          val EditPattern = editPatternString.r
-          line match {
-            case EditPattern(pattern, substitution) =>
-
-              val newCommandLine = pattern.r.replaceAllIn(currentCommandLine, substitution)
-              if(newCommandLine != currentCommandLine) {
-                show(s"""$messagePrefix applying "$pattern" => "$substitution" yields "$newCommandLine" """)
-              }
-              else {
-                show(s"""$messagePrefix applying "$pattern" => "$substitution"  did not change string""")
-              }
-              currentCommandLine = newCommandLine
-            case _ =>
-              show(s"""$messagePrefix no match for "$editPatternString" on command "$currentCommandLine" """)
-          }
-        case CommandEditor.Verbose() =>
-          verbose = true
-          show(s"""$messagePrefix applying edits to "$currentCommandLine" """)
-        case _ =>
-          show(s"""ivl/vcs-command-edit ignoring edit command "$line" """)
-      }
+        line match {
+          case CommandEditor.RegexPrefixPattern(separator) =>
+            val editPatternString =
+              s"""s$separator([^$separator]*)$separator([^$separator]*)$separator.*"""
+            val EditPattern = editPatternString.r
+            line match {
+              case EditPattern(pattern, substitution) =>
+                val newCommandLine =
+                  pattern.r.replaceAllIn(currentCommandLine, substitution)
+                if (newCommandLine != currentCommandLine) {
+                  show(
+                    s"""$messagePrefix applying "$pattern" => "$substitution" yields "$newCommandLine" """
+                  )
+                } else {
+                  show(
+                    s"""$messagePrefix applying "$pattern" => "$substitution"  did not change string"""
+                  )
+                }
+                currentCommandLine = newCommandLine
+              case _ =>
+                show(
+                  s"""$messagePrefix no match for "$editPatternString" on command "$currentCommandLine" """
+                )
+            }
+          case CommandEditor.Verbose() =>
+            verbose = true
+            show(s"""$messagePrefix applying edits to "$currentCommandLine" """)
+          case _ =>
+            show(s"""ivl/vcs-command-edit ignoring edit command "$line" """)
+        }
     }
     currentCommandLine
   }
@@ -58,11 +64,12 @@ object CommandEditor {
   val Verbose: Regex = """verbose.*""".r
   val DefaultPrefix = "command-editor"
 
-  def apply(fileOrEditor: String, messagePrefix: String = DefaultPrefix): CommandEditor = {
+  def apply(fileOrEditor: String,
+            messagePrefix: String = DefaultPrefix): CommandEditor = {
     val editCommands = fileOrEditor match {
       case "" =>
         Seq.empty
-        //TODO: must make these work before PR
+      //TODO: must make these work before PR
 //      case TesterOptions.IvlFileCommands(fileName) =>
 //        val file = new java.io.File(fileName)
 //        if (!file.exists()) {

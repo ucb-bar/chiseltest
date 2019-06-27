@@ -60,12 +60,5 @@ trait BackendExecutive {
     mapPairs.toMap
   }
 
-  /** This is required to generate and launch a backend
-    *
-    * @param dutGen         device under test
-    * @param annotationSeq  annotations
-    * @tparam T             type of dut
-    * @return
-    */
   def start[T <: MultiIOModule](dutGen: () => T, annotationSeq: AnnotationSeq): BackendInstance[T]
 }

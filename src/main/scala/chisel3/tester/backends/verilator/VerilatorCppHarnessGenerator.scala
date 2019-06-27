@@ -17,16 +17,26 @@ object VerilatorCppHarnessGenerator {
       if (width == 0) {
         // Do nothing- 0 width wires are removed
       } else if (width <= 8) {
-        codeBuffer.append(s"        sim_data.$vector.push_back(new VerilatorCData(&($pathName)));\n")
+        codeBuffer.append(
+          s"        sim_data.$vector.push_back(new VerilatorCData(&($pathName)));\n"
+        )
       } else if (width <= 16) {
-        codeBuffer.append(s"        sim_data.$vector.push_back(new VerilatorSData(&($pathName)));\n")
+        codeBuffer.append(
+          s"        sim_data.$vector.push_back(new VerilatorSData(&($pathName)));\n"
+        )
       } else if (width <= 32) {
-        codeBuffer.append(s"        sim_data.$vector.push_back(new VerilatorIData(&($pathName)));\n")
+        codeBuffer.append(
+          s"        sim_data.$vector.push_back(new VerilatorIData(&($pathName)));\n"
+        )
       } else if (width <= 64) {
-        codeBuffer.append(s"        sim_data.$vector.push_back(new VerilatorQData(&($pathName)));\n")
+        codeBuffer.append(
+          s"        sim_data.$vector.push_back(new VerilatorQData(&($pathName)));\n"
+        )
       } else {
-        val numWords = (width-1)/32 + 1
-        codeBuffer.append(s"        sim_data.$vector.push_back(new VerilatorWData($pathName, $numWords));\n")
+        val numWords = (width - 1) / 32 + 1
+        codeBuffer.append(
+          s"        sim_data.$vector.push_back(new VerilatorWData($pathName, $numWords));\n"
+        )
       }
     }
 
@@ -58,16 +68,19 @@ class $dutApiClassName: public sim_api_t<VerilatorDataWrapper*> {
         sim_data.signals.clear();
 
 """)
-    inputs.toList foreach { case (node, name) =>
-      // replaceFirst used here in case port name contains the dutName
-      pushBack("inputs", name replaceFirst (dutName, "dut"), node.getWidth)
+    inputs.toList foreach {
+      case (node, name) =>
+        // replaceFirst used here in case port name contains the dutName
+        pushBack("inputs", name replaceFirst (dutName, "dut"), node.getWidth)
     }
-    outputs.toList foreach { case (node, name) =>
-      // replaceFirst used here in case port name contains the dutName
-      pushBack("outputs", name replaceFirst (dutName, "dut"), node.getWidth)
+    outputs.toList foreach {
+      case (node, name) =>
+        // replaceFirst used here in case port name contains the dutName
+        pushBack("outputs", name replaceFirst (dutName, "dut"), node.getWidth)
     }
     pushBack("signals", "dut->reset", 1)
-    codeBuffer.append(s"""        sim_data.signal_map["${dut.reset.pathName}"] = 0;
+    codeBuffer.append(
+      s"""        sim_data.signal_map["${dut.reset.pathName}"] = 0;
     }
 #if VM_TRACE
      void init_dump(VerilatedVcdC* _tfp) { tfp = _tfp; }
@@ -168,9 +181,8 @@ int main(int argc, char **argv, char **env) {
     delete top;
     exit(0);
 }
-""")
+"""
+    )
     codeBuffer.toString()
   }
 }
-
-

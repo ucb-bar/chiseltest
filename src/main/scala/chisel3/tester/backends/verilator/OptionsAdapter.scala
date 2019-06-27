@@ -13,7 +13,9 @@ class OptionsAdapter extends Phase {
   }
 }
 
-trait VerilatorOption extends NoTargetAnnotation with Unserializable { this: Annotation => }
+trait VerilatorOption extends NoTargetAnnotation with Unserializable {
+  this: Annotation =>
+}
 trait VerilatorOptionObject extends VerilatorOption with HasShellOptions
 
 /** Used to suppress verilator simulation vcd output.
@@ -40,7 +42,8 @@ case object VerilatorFlags extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[String](
       longOption = "t-verilator-flags",
-      toAnnotationSeq = (flags: String) => Seq(VerilatorFlags(flags.split(" +"))),
+      toAnnotationSeq = (flags: String) =>
+        Seq(VerilatorFlags(flags.split(" +"))),
       helpText = "additional flags to pass to the verilator program"
     )
   )
@@ -58,7 +61,8 @@ case object VerilatorCFlags extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[String](
       longOption = "t-verilator-flags",
-      toAnnotationSeq = (flags: String) => Seq(VerilatorCFlags(flags.split(" +"))),
+      toAnnotationSeq = (flags: String) =>
+        Seq(VerilatorCFlags(flags.split(" +"))),
       helpText = "additional flags to pass to the c++ compiler"
     )
   )
