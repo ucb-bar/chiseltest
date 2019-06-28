@@ -32,9 +32,12 @@ class OptionsPassingTest extends FlatSpec with ChiselScalatestTester with Matche
             File.separator +
             sanitizeFileName(s"Testers2 should write vcd output when passing in a WriteVcdAnnotation"))
 
-    testDir.listFiles.exists { f =>
+    val vcdFileOpt = testDir.listFiles.find { f =>
       f.getPath.endsWith(".vcd")
-    } should be (true)
+    }
+
+    vcdFileOpt.isDefined should be (true)
+    vcdFileOpt.get.delete()
   }
 
   it should "allow turning on verbose mode" in {
