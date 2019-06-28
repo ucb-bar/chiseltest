@@ -211,43 +211,35 @@ object TreadleExecutive extends BackendExecutive {
     // Force a cleanup: long SBT runs tend to fail with memory issues
     System.gc()
 
-    try {
-      val generatorAnnotation = chisel3.stage.ChiselGeneratorAnnotation(dutGen)
+    val generatorAnnotation = chisel3.stage.ChiselGeneratorAnnotation(dutGen)
 
-      val circuit = generatorAnnotation.elaborate.circuit
-      val dut = getTopModule(circuit).asInstanceOf[T]
-      val portNames = DataMirror.modulePorts(dut).flatMap { case (name, data) =>
-        getDataNames(name, data).toList
-      }.toMap
+    val circuit = generatorAnnotation.elaborate.circuit
+    val dut = getTopModule(circuit).asInstanceOf[T]
+    val portNames = DataMirror.modulePorts(dut).flatMap { case (name, data) =>
+      getDataNames(name, data).toList
+    }.toMap
 
-      val chiseledAnnotations = (new ChiselStage).run(
-        annotationSeq ++ Seq(generatorAnnotation, NoRunFirrtlCompilerAnnotation)
+    val chiseledAnnotations = (new ChiselStage).run(
+      annotationSeq ++ Seq(generatorAnnotation, NoRunFirrtlCompilerAnnotation)
+    )
+
+    val treadledAnnotations = TreadleTesterPhase.transform(chiseledAnnotations)
+
+    val treadleTester = treadledAnnotations.collectFirst { case TreadleTesterAnnotation(t) => t }.getOrElse(
+      throw new Exception(
+        s"TreadleTesterPhase could not build a treadle tester from these annotations" +
+        chiseledAnnotations.mkString("Annotations:\n", "\n  ", "")
       )
+    )
 
-      val treadledAnnotations = TreadleTesterPhase.transform(chiseledAnnotations)
-
-      val treadleTester = treadledAnnotations.collectFirst { case TreadleTesterAnnotation(t) => t }.getOrElse(
-        throw new Exception(
-          s"TreadleTesterPhase could not build a treadle tester from these annotations" +
-          chiseledAnnotations.mkString("Annotations:\n", "\n  ", "")
-        )
-      )
-
-      val circuitState = treadledAnnotations.collectFirst { case TreadleCircuitStateAnnotation(s) => s }.get
-      val pathAnnotations = (new CheckCombLoops).execute(circuitState).annotations
-      val paths = pathAnnotations.collect {
-        case c: CombinationalPath => c
-      }
-
-      val pathsAsData = combinationalPathsToData(dut, paths, portNames, componentToName)
-
-      new TreadleBackend(dut, portNames, pathsAsData, treadleTester)
+    val circuitState = treadledAnnotations.collectFirst { case TreadleCircuitStateAnnotation(s) => s }.get
+    val pathAnnotations = (new CheckCombLoops).execute(circuitState).annotations
+    val paths = pathAnnotations.collect {
+      case c: CombinationalPath => c
     }
-    catch {
-      case t: Throwable =>
-        //TODO: Decide if there's some reason to lose stack with new exception
-//        throw new Exception(s"Problem with compilation: ${t.getMessage}")
-        throw t
-    }
+
+    val pathsAsData = combinationalPathsToData(dut, paths, portNames, componentToName)
+
+    new TreadleBackend(dut, portNames, pathsAsData, treadleTester)
   }
 }
