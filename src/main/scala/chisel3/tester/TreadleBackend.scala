@@ -229,9 +229,9 @@ object TreadleExecutive {
   def combinationalPathsToData(dut: BaseModule, paths: Seq[CombinationalPath], dataNames: Map[Data, String]): Map[Data, Set[Data]] = {
     val nameToData = dataNames.map { case (port, name) => name -> port }  // TODO: check for aliasing
     paths.filter { p =>  // only keep paths involving top-level IOs
-      p.sink.module.name == dut.name && p.sources.exists(_.module.name == dut.name)
+      p.sink.module == dut.name && p.sources.exists(_.module == dut.name)
     } .map { p =>  // discard module names
-      p.sink.name -> p.sources.filter(_.module.name == dut.name).map(_.name)
+      p.sink.ref -> p.sources.filter(_.module == dut.name).map(_.ref)
     } .map { case (sink, sources) =>  // convert to Data
       // TODO graceful error message if there is an unexpected combinational path element?
       nameToData(sink) -> sources.map(nameToData(_)).toSet
