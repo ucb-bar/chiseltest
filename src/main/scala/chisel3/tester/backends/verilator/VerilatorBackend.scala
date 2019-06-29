@@ -12,7 +12,7 @@ import chisel3.tester.backends.{BackendExecutive, verilogToVerilator}
 import chisel3.tester.internal._
 import chisel3.tester.{Region, TimeoutException}
 import chisel3.{SInt, _}
-import firrtl.annotations.ComponentName
+import firrtl.annotations.ReferenceTarget
 import firrtl.stage.CompilerAnnotation
 import firrtl.transforms.CombinationalPath
 
@@ -255,12 +255,18 @@ class VerilatorBackend[T <: MultiIOModule](
 object VerilatorExecutive extends BackendExecutive {
   import firrtl._
 
-  def componentToName(component: ComponentName): String = {
+  /** Verilator wants to have module name prefix except for
+    * default reset and clock
+    *
+    * @param component signal name to be mapped into backend string form
+    * @return
+    */
+  def componentToName(component: ReferenceTarget): String = {
     component.name match {
       case "reset" => "reset"
       case "clock" => "clock"
       case _ =>
-        component.serialize.drop(component.module.circuit.serialize.length + 1)
+        s"${component.module}.${component.name}"
     }
   }
 

@@ -8,7 +8,7 @@ import chisel3.stage.{ChiselStage, NoRunFirrtlCompilerAnnotation}
 import chisel3.tester.backends.BackendExecutive
 import chisel3.tester.internal._
 import chisel3.tester.{Region, TimeoutException}
-import firrtl.annotations.ComponentName
+import firrtl.annotations.ReferenceTarget
 import firrtl.transforms.{CheckCombLoops, CombinationalPath}
 import treadle.stage.TreadleTesterPhase
 import treadle.{TreadleCircuitStateAnnotation, TreadleTester, TreadleTesterAnnotation}
@@ -202,34 +202,8 @@ extends BackendInstance[T] with ThreadedBackend[T] {
 object TreadleExecutive extends BackendExecutive {
   import firrtl._
 
-  def componentToName(component: ComponentName): String = {
+  def componentToName(component: ReferenceTarget): String = {
     component.name
-  }
-
-  def getTopModule(circuit: Circuit): BaseModule = {
-    (circuit.components find (_.name == circuit.name)).get.id
-  }
-
-  /** Returns a Seq of (data reference, fully qualified element names) for the input.
-    * name is the name of data
-    */
-  def getDataNames(name: String, data: Data): Seq[(Data, String)] = Seq(data -> name) ++ (data match {
-    case _: Element => Seq()
-    case b: Record => b.elements.toSeq flatMap {case (n, e) => getDataNames(s"${name}_$n", e)}
-    case v: Vec[_] => v.zipWithIndex flatMap {case (e, i) => getDataNames(s"${name}_$i", e)}
-  })
-
-  // TODO: better name
-  def combinationalPathsToData(dut: BaseModule, paths: Seq[CombinationalPath], dataNames: Map[Data, String]): Map[Data, Set[Data]] = {
-    val nameToData = dataNames.map { case (port, name) => name -> port }  // TODO: check for aliasing
-    paths.filter { p =>  // only keep paths involving top-level IOs
-      p.sink.module == dut.name && p.sources.exists(_.module == dut.name)
-    } .map { p =>  // discard module names
-      p.sink.ref -> p.sources.filter(_.module == dut.name).map(_.ref)
-    } .map { case (sink, sources) =>  // convert to Data
-      // TODO graceful error message if there is an unexpected combinational path element?
-      nameToData(sink) -> sources.map(nameToData(_)).toSet
-    }.toMap
   }
 
   def start[T <: MultiIOModule](dutGen: () => T, annotationSeq: AnnotationSeq): BackendInstance[T] = {

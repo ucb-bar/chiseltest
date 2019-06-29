@@ -2,12 +2,12 @@
 
 package chisel3.tester.backends
 
-import chisel3.{Data, Element, Record, Vec}
 import chisel3.experimental.{BaseModule, MultiIOModule}
 import chisel3.internal.firrtl.Circuit
 import chisel3.tester.internal.BackendInstance
+import chisel3.{Data, Element, Record, Vec}
 import firrtl.AnnotationSeq
-import firrtl.annotations.ComponentName
+import firrtl.annotations.ReferenceTarget
 import firrtl.transforms.CombinationalPath
 
 trait BackendExecutive {
@@ -29,7 +29,7 @@ trait BackendExecutive {
     * @param dut       use this to figure out which paths involve top level iO
     * @param paths     combinational paths found by firrtl pass CheckCombLoops
     * @param dataNames a map between a port's Data and it's string name
-    * @param componentToName used to map [[ComponentName]]s  found in paths into correct local string form
+    * @param componentToName used to map [[ReferenceTarget]]s  found in paths into correct local string form
     * @return
     */
   //TODO: better name
@@ -39,15 +39,15 @@ trait BackendExecutive {
     dut: BaseModule,
     paths: Seq[CombinationalPath],
     dataNames: Map[Data, String],
-    componentToName: ComponentName => String
+    componentToName: ReferenceTarget => String
   ): Map[Data, Set[Data]] = {
 
     val nameToData = dataNames.map(_.swap)
     val filteredPaths = paths.filter { p =>  // only keep paths involving top-level IOs
-      p.sink.module.name == dut.name && p.sources.exists(_.module.name == dut.name)
+      p.sink.module == dut.name && p.sources.exists(_.module == dut.name)
     }
     val filterPathsByName = filteredPaths.map { p =>  // map ComponentNames in paths into string forms
-      val mappedSources = p.sources.filter(_.module.name == dut.name).map { component =>
+      val mappedSources = p.sources.filter(_.module == dut.name).map { component =>
           componentToName(component)
       }
       componentToName(p.sink) -> mappedSources
