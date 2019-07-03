@@ -16,7 +16,7 @@ class OptionsPassingTest extends FlatSpec with ChiselScalatestTester with Matche
   it should "write vcd output when passing in a WriteVcdAnnotation" in {
     test(new Module {
       val io = IO(new Bundle {
-        val a = Input(UInt(8.W));
+        val a = Input(UInt(8.W))
         val b = Output(UInt(8.W))
       })
       io.b := io.a
@@ -28,16 +28,16 @@ class OptionsPassingTest extends FlatSpec with ChiselScalatestTester with Matche
       c.io.b.expect(42.U)
     }
 
-    val vcdFileName = "test_run_dir" +
+    val testDir = new File("test_run_dir" +
             File.separator +
-            sanitizeFileName(s"Testers2 should write vcd output when passing in a WriteVcdAnnotation") +
-            File.separator +
-            sanitizeFileName("OptionsPassingTestanon2") +
-            ".vcd"
+            sanitizeFileName(s"Testers2 should write vcd output when passing in a WriteVcdAnnotation"))
 
-    val vcdFile = new File(vcdFileName)
-    vcdFile.exists() should be (true)
-    vcdFile.delete()
+    val vcdFileOpt = testDir.listFiles.find { f =>
+      f.getPath.endsWith(".vcd")
+    }
+
+    vcdFileOpt.isDefined should be (true)
+    vcdFileOpt.get.delete()
   }
 
   it should "allow turning on verbose mode" in {
