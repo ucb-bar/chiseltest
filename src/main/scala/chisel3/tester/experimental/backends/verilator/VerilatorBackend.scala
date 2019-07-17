@@ -73,9 +73,13 @@ class VerilatorBackend[T <: MultiIOModule](
 
   override def pokeClock(signal: Clock, value: Boolean): Unit = {
     // TODO: check thread ordering
-    val intValue = if (value) 1 else 0
-    simApiInterface.poke(dataNames(signal), intValue)
-    debugLog(s"${resolveName(signal)} <- $intValue")
+
+    throw new UnsupportedOperationException(
+      s"pokingClock(${dataNames(signal)}) not supported with verilator backend"
+    )
+//    val intValue = if (value) 1 else 0
+//    simApiInterface.poke(dataNames(signal), intValue)
+//    debugLog(s"${resolveName(signal)} <- $intValue")
   }
 
   override def peekClock(signal: Clock): Boolean = {
@@ -336,11 +340,11 @@ object VerilatorExecutive extends BackendExecutive {
         moreVerilatorCFlags = moreVerilatorCFlags,
         editCommands = commandEditsFile
       ).! == 0,
-      s"verilator command failed on circuit ${circuit.name} in work dir ${targetDir}"
+      s"verilator command failed on circuit ${circuit.name} in work dir $targetDir"
     )
     assert(
       chisel3.Driver.cppToExe(circuit.name, targetDirFile).! == 0,
-      s"Compilation of verilator generated code faile for circuit ${circuit.name} in work dir ${targetDir}"
+      s"Compilation of verilator generated code faile for circuit ${circuit.name} in work dir $targetDir"
     )
 
     val command = compiledAnnotations

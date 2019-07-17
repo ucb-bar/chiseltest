@@ -34,7 +34,8 @@ class ClockPokeTest extends FlatSpec with ChiselScalatestTester {
 
       // Output should advance on rising edge, even without main clock edge
       c.inClock.high()
-      println(s"Got clock ${c.out.peek()}")
+      c.out.expect(1.U)
+
       c.clock.step()
       c.out.expect(1.U)
     }
@@ -61,7 +62,6 @@ class ClockPokeTest extends FlatSpec with ChiselScalatestTester {
 
       // Output should advance on rising edge, even without main clock edge
       c.inClock.poke(true.B)
-      println(s"Got clock ${c.out.peek()}")
       c.out.expect(1.U)
     }
   }
@@ -75,7 +75,7 @@ class ClockPokeTest extends FlatSpec with ChiselScalatestTester {
         out := Counter(true.B, 8)._1
       }
     }).withAnnotations(
-      Seq(TreadleBackendAnnotation, WriteVcdAnnotation, ClockInfoAnnotation(Seq(ClockInfo(period = 2))))
+      Seq(VerilatorBackendAnnotation, WriteVcdAnnotation, ClockInfoAnnotation(Seq(ClockInfo(period = 2))))
     ) { c =>
       c.inClock.low()
       c.out.expect(0.U)
@@ -88,22 +88,19 @@ class ClockPokeTest extends FlatSpec with ChiselScalatestTester {
 
       // Output should advance on rising edge, even without main clock edge
       c.inClock.high()
-      println(s"Got clock ${c.out.peek()}")
+      c.out.expect(1.U)
       c.clock.step()
-      println(s"Got clock ${c.out.peek()}")
-    //
-    //
-    //      c.out.expect(1.U)
-    //
-    //      // Repeated high should do nothing
-    //      c.inClock.high()
-    //      c.out.expect(1.U)
-    //
-    //      // and again
-    //      c.inClock.low()
-    //      c.out.expect(1.U)
-    //      c.inClock.high()
-    //      c.out.expect(2.U)
+      c.out.expect(1.U)
+
+      // Repeated high should do nothing
+      c.inClock.high()
+      c.out.expect(1.U)
+
+      // and again
+      c.inClock.low()
+      c.out.expect(1.U)
+      c.inClock.high()
+      c.out.expect(2.U)
     }
   }
 }
