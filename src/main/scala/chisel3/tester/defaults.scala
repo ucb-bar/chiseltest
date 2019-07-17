@@ -3,6 +3,7 @@
 package chisel3.tester
 
 import chisel3.experimental.MultiIOModule
+import chisel3.tester.backends.treadle.TreadleExecutive
 import chisel3.tester.internal._
 import firrtl.AnnotationSeq
 
