@@ -3,9 +3,13 @@
 package chisel3.tester.internal
 
 import chisel3.experimental.MultiIOModule
+import chisel3.tester.backends.BackendExecutive
+import chisel3.tester.backends.treadle.TreadleExecutive
+import chisel3.tester.experimental.backends.verilator.VerilatorExecutive
 import firrtl.AnnotationSeq
+import firrtl.annotations.{Annotation, NoTargetAnnotation}
+import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
 import firrtl.stage.phases.DriverCompatibility.TopNameAnnotation
-import treadle.WriteVcdAnnotation
 
 import scala.util.DynamicVariable
 
@@ -23,6 +27,47 @@ case class TesterOptions(
       if(writeVcd) { Some(WriteVcdAnnotation) } else None
     ).flatten
   }
+}
+
+trait TestOption extends Unserializable { this: Annotation => }
+trait TestOptionObject extends NoTargetAnnotation with HasShellOptions with TestOption
+
+case object WriteVcdAnnotation extends TestOptionObject {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "t-write-vcd",
+      toAnnotationSeq = _ => Seq(WriteVcdAnnotation),
+      helpText = "writes vcd execution log"
+    )
+  )
+}
+
+trait BackendAnnotation extends TestOptionObject {
+  self: Object =>
+  def executive: BackendExecutive
+}
+
+case object TreadleBackendAnnotation extends BackendAnnotation {
+  val executive: BackendExecutive = TreadleExecutive
+
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "t-use-treadle",
+      toAnnotationSeq = _ => Seq(TreadleBackendAnnotation),
+      helpText = "direct tester to use Treadle backend"
+    )
+  )
+}
+case object VerilatorBackendAnnotation extends BackendAnnotation {
+  val executive: BackendExecutive = VerilatorExecutive
+
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "t-use-verilator",
+      toAnnotationSeq = _ => Seq(VerilatorBackendAnnotation),
+      helpText = "direct tester to use verilator backend"
+    )
+  )
 }
 
 object Context {
