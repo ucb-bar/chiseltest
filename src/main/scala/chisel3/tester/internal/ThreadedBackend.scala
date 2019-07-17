@@ -3,9 +3,10 @@
 package chisel3.tester.internal
 
 import java.util.concurrent.{ConcurrentLinkedQueue, Semaphore}
-import chisel3.tester.Region
+
 import chisel3._
-import chisel3.tester.{ThreadOrderDependentException, TimeoutException, TemporalParadox}
+import chisel3.experimental.MultiIOModule
+import chisel3.tester.{Region, TemporalParadox, ThreadOrderDependentException}
 
 import scala.collection.mutable
 
@@ -36,7 +37,23 @@ case class ForkBuilder(name: Option[String], region: Option[Region], threads: Se
   * - runThreads: runs all threads waiting on a set of clocks
   * - scheduler: called from within a test thread, suspends the current thread and runs the next one
   */
-trait ThreadedBackend extends BackendInterface {
+trait ThreadedBackend[T <: MultiIOModule] extends BackendInterface {
+  def dut: T
+
+  // State for deadlock detection timeout
+  val idleCycles = mutable.Map[Clock, Int]()
+  val idleLimits = mutable.Map[Clock, Int](dut.clock -> 1000)
+
+  override def setTimeout(signal: Clock, cycles: Int): Unit = {
+    require(signal == dut.clock, "timeout currently only supports master clock")
+    if (cycles == 0) {
+      idleLimits.remove(signal)
+    } else {
+      idleLimits.put(signal, cycles)
+    }
+    idleCycles.remove(signal)
+  }
+
   //
   // Variable references
   //

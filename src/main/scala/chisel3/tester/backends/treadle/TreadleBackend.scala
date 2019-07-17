@@ -1,36 +1,23 @@
 // See LICENSE for license details.
 
-package chisel3.tester
+package chisel3.tester.backends.treadle
 
 import chisel3._
-import chisel3.experimental.{DataMirror, MultiIOModule}
-import chisel3.stage.{ChiselStage, NoRunFirrtlCompilerAnnotation}
+import chisel3.experimental.MultiIOModule
 import chisel3.tester.internal._
-import firrtl.transforms.{CheckCombLoops, CombinationalPath}
-import treadle.{TreadleCircuitStateAnnotation, TreadleTester, TreadleTesterAnnotation}
-import treadle.stage.TreadleTesterPhase
+import chisel3.tester.{Region, TimeoutException}
+import treadle.TreadleTester
 
 import scala.collection.mutable
 
 // TODO: is Seq[CombinationalPath] the right API here? It's unclear where name -> Data resolution should go
-class TreadleBackend[T <: MultiIOModule](dut: T,
-    val dataNames: Map[Data, String], val combinationalPaths: Map[Data, Set[Data]],
-    tester: TreadleTester)
-    extends BackendInstance[T] with ThreadedBackend {
-
-  // State for deadlock detection timeout
-  val idleCycles = mutable.Map[Clock, Int]()
-  val idleLimits = mutable.Map[Clock, Int](dut.clock -> 1000)
-
-  override def setTimeout(signal: Clock, cycles: Int): Unit = {
-    require(signal == dut.clock, "timeout currently only supports master clock")
-    if (cycles == 0) {
-      idleLimits.remove(signal)
-    } else {
-      idleLimits.put(signal, cycles)
-    }
-    idleCycles.remove(signal)
-  }
+class TreadleBackend[T <: MultiIOModule](
+  val dut: T,
+  val dataNames: Map[Data, String],
+  val combinationalPaths: Map[Data, Set[Data]],
+  tester: TreadleTester
+)
+extends BackendInstance[T] with ThreadedBackend[T] {
 
   //
   // Debug utility functions
@@ -203,81 +190,6 @@ class TreadleBackend[T <: MultiIOModule](dut: T,
       }
 
       tester.report()  // needed to dump VCDs
-    }
-  }
-}
-
-object TreadleExecutive {
-  import chisel3.experimental.BaseModule
-  import chisel3.internal.firrtl.Circuit
-  import firrtl._
-
-  def getTopModule(circuit: Circuit): BaseModule = {
-    (circuit.components find (_.name == circuit.name)).get.id
-  }
-
-  /** Returns a Seq of (data reference, fully qualified element names) for the input.
-    * name is the name of data
-    */
-  def getDataNames(name: String, data: Data): Seq[(Data, String)] = Seq(data -> name) ++ (data match {
-    case _: Element => Seq()
-    case b: Record => b.elements.toSeq flatMap {case (n, e) => getDataNames(s"${name}_$n", e)}
-    case v: Vec[_] => v.zipWithIndex flatMap {case (e, i) => getDataNames(s"${name}_$i", e)}
-  })
-
-  // TODO: better name
-  def combinationalPathsToData(dut: BaseModule, paths: Seq[CombinationalPath], dataNames: Map[Data, String]): Map[Data, Set[Data]] = {
-    val nameToData = dataNames.map { case (port, name) => name -> port }  // TODO: check for aliasing
-    paths.filter { p =>  // only keep paths involving top-level IOs
-      p.sink.module == dut.name && p.sources.exists(_.module == dut.name)
-    } .map { p =>  // discard module names
-      p.sink.ref -> p.sources.filter(_.module == dut.name).map(_.ref)
-    } .map { case (sink, sources) =>  // convert to Data
-      // TODO graceful error message if there is an unexpected combinational path element?
-      nameToData(sink) -> sources.map(nameToData(_)).toSet
-    }.toMap
-  }
-
-  def start[T <: MultiIOModule](dutGen: () => T, annotationSeq: AnnotationSeq): BackendInstance[T] = {
-
-    // Force a cleanup: long SBT runs tend to fail with memory issues
-    System.gc()
-
-    try {
-      val generatorAnnotation = chisel3.stage.ChiselGeneratorAnnotation(dutGen)
-
-      val circuit = generatorAnnotation.elaborate.circuit
-      val dut = getTopModule(circuit).asInstanceOf[T]
-      val portNames = DataMirror.modulePorts(dut).flatMap { case (name, data) =>
-        getDataNames(name, data).toList
-      }.toMap
-
-      val chiseledAnnotations = (new ChiselStage).run(
-        annotationSeq ++ Seq(generatorAnnotation, NoRunFirrtlCompilerAnnotation)
-      )
-
-      val treadledAnnotations = TreadleTesterPhase.transform(chiseledAnnotations)
-
-      val treadleTester = treadledAnnotations.collectFirst { case TreadleTesterAnnotation(t) => t }.getOrElse(
-        throw new Exception(
-          s"TreadleTesterPhase could not build a treadle tester from these annotations" +
-          chiseledAnnotations.mkString("Annotations:\n", "\n  ", "")
-        )
-      )
-
-      val circuitState = treadledAnnotations.collectFirst { case TreadleCircuitStateAnnotation(s) => s }.get
-      val pathAnnotations = (new CheckCombLoops).execute(circuitState).annotations
-      val paths = pathAnnotations.collect {
-        case c: CombinationalPath => c
-      }
-
-      val pathsAsData = combinationalPathsToData(dut, paths, portNames)
-
-      new TreadleBackend(dut, portNames, pathsAsData, treadleTester)
-    }
-    catch {
-      case t: Throwable =>
-        throw new Exception(s"Problem with compilation: ${t.getMessage}")
     }
   }
 }
