@@ -4,8 +4,8 @@ package chisel3.tester.experimental.backends.verilator
 
 import chisel3.experimental.{FixedPoint, MultiIOModule}
 import chisel3.internal.firrtl.KnownWidth
-import chisel3.tester.internal.Utils.unsignedBigIntToSigned
-import chisel3.tester.internal._
+import chisel3.tester.experimental.backends.verilator.Utils.unsignedBigIntToSigned
+import chisel3.tester.internal.{BackendInstance, Context, ThreadedBackend}
 import chisel3.tester.{Region, TimeoutException}
 import chisel3.{SInt, _}
 

@@ -18,10 +18,12 @@ object TreadleExecutive extends BackendExecutive {
     component.name
   }
 
-  def start[T <: MultiIOModule](dutGen: () => T, annotationSeq: AnnotationSeq): BackendInstance[T] = {
+  def start[T <: MultiIOModule](dutGen: () => T, testersAnnotationSeq: AnnotationSeq): BackendInstance[T] = {
 
     // Force a cleanup: long SBT runs tend to fail with memory issues
     System.gc()
+
+    val annotationSeq = (new OptionsAdapter).transform(testersAnnotationSeq)
 
     val generatorAnnotation = chisel3.stage.ChiselGeneratorAnnotation(dutGen)
 

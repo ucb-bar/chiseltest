@@ -33,11 +33,13 @@ object VerilatorExecutive extends BackendExecutive {
 
   def start[T <: MultiIOModule](
     dutGen: () => T,
-    annotationSeq: AnnotationSeq
+    testersAnnotationSeq: AnnotationSeq
   ): BackendInstance[T] = {
 
     // Force a cleanup: long SBT runs tend to fail with memory issues
     System.gc()
+
+    val annotationSeq = (new OptionsAdapter).transform(testersAnnotationSeq)
 
     val targetDir = annotationSeq.collectFirst {
       case TargetDirAnnotation(t) => t
@@ -79,7 +81,7 @@ object VerilatorExecutive extends BackendExecutive {
       .collectFirst { case VerilatorCFlags(f) => f }
       .getOrElse(Seq.empty)
     val suppressVerilatorVCD = compiledAnnotations.exists {
-      case SuppressVerilatorVCD => true; case _ => false
+      case SuppressVerilatorVcd => true; case _ => false
     }
     val commandEditsFile = compiledAnnotations
       .collectFirst { case CommandEditsFile(f) => f }

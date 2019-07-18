@@ -3,7 +3,6 @@
 package chisel3.tester
 
 import chisel3.experimental.MultiIOModule
-import chisel3.tester.backends.treadle.TreadleExecutive
 import chisel3.tester.internal._
 import firrtl.AnnotationSeq
 
@@ -20,8 +19,8 @@ package object defaults {
   def createDefaultTester[T <: MultiIOModule](dutGen: () => T, annotationSeq: AnnotationSeq): BackendInstance[T] = {
     val backend = annotationSeq.collectFirst {
       case x: BackendAnnotation => x
-      //    }.getOrElse(TreadleBackendAnnotation)
-    }.getOrElse(VerilatorBackendAnnotation)
+    }.getOrElse(TreadleBackendAnnotation)
+
     backend.executive.start(dutGen, annotationSeq)
   }
 }

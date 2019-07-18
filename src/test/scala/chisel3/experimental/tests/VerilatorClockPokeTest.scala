@@ -11,7 +11,7 @@ import org.scalatest._
 import treadle.executable.ClockInfo
 import treadle.{ClockInfoAnnotation, WriteVcdAnnotation}
 
-class ClockPokeTest extends FlatSpec with ChiselScalatestTester {
+class VerilatorClockPokeTest extends FlatSpec with ChiselScalatestTester {
   behavior of "Testers2 with a clock input"
 
   it should "verilator-clock-poke" in {

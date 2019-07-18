@@ -7,7 +7,7 @@ import chisel3.tester.experimental.TestOptionBuilder._
 import chisel3.tester.internal.VerilatorBackendAnnotation
 import org.scalatest._
 
-class BasicTest extends FlatSpec with ChiselScalatestTester with Matchers {
+class VerilatorBasicTests extends FlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2"
 
   val annos = Seq(VerilatorBackendAnnotation)
