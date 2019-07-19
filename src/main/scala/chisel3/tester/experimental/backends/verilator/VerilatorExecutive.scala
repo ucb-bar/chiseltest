@@ -8,7 +8,7 @@ import chisel3.assert
 import chisel3.experimental.{DataMirror, MultiIOModule}
 import chisel3.stage.ChiselStage
 import chisel3.tester.backends.BackendExecutive
-import chisel3.tester.internal.BackendInstance
+import chisel3.tester.internal.{BackendInstance, WriteVcdAnnotation}
 import firrtl.annotations.ReferenceTarget
 import firrtl.stage.CompilerAnnotation
 import firrtl.transforms.CombinationalPath
@@ -33,13 +33,11 @@ object VerilatorExecutive extends BackendExecutive {
 
   def start[T <: MultiIOModule](
     dutGen: () => T,
-    testersAnnotationSeq: AnnotationSeq
+    annotationSeq: AnnotationSeq
   ): BackendInstance[T] = {
 
     // Force a cleanup: long SBT runs tend to fail with memory issues
     System.gc()
-
-    val annotationSeq = (new OptionsAdapter).transform(testersAnnotationSeq)
 
     val targetDir = annotationSeq.collectFirst {
       case TargetDirAnnotation(t) => t
@@ -80,16 +78,12 @@ object VerilatorExecutive extends BackendExecutive {
     val moreVerilatorCFlags = compiledAnnotations
       .collectFirst { case VerilatorCFlags(f) => f }
       .getOrElse(Seq.empty)
-    val suppressVerilatorVCD = compiledAnnotations.exists {
-      case SuppressVerilatorVcd => true; case _ => false
-    }
+    val writeVcdFlag = if(compiledAnnotations.contains(WriteVcdAnnotation)) { Seq("--trace") } else { Seq() }
     val commandEditsFile = compiledAnnotations
       .collectFirst { case CommandEditsFile(f) => f }
       .getOrElse("")
 
-    val verilatorFlags = moreVerilatorFlags ++ (if (suppressVerilatorVCD)
-                                                  Seq()
-                                                else Seq("--trace"))
+    val verilatorFlags = moreVerilatorFlags ++ writeVcdFlag
     assert(
       verilogToVerilator(
         circuit.name,

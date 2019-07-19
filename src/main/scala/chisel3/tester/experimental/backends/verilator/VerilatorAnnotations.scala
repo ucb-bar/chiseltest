@@ -2,28 +2,8 @@
 
 package chisel3.tester.experimental.backends.verilator
 
-import firrtl.AnnotationSeq
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
-import firrtl.options.{HasShellOptions, Phase, ShellOption, Unserializable}
-
-/** This provides a mechanism to map between generic testers2 level annotations and
-  * any differences the backend may have in expressing their intent.
-  *
-  */
-class OptionsAdapter extends Phase {
-  /** Currently the lack of a WriteVcd annotation adds a SuppressVerilatorVCD
-    *
-    * @param annos an annotation list
-    * @return
-    */
-  override def transform(annos: AnnotationSeq): AnnotationSeq = {
-    if(annos.contains(chisel3.tester.internal.WriteVcdAnnotation)) {
-      annos
-    } else {
-      annos :+ SuppressVerilatorVcd
-    }
-  }
-}
+import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
 
 trait VerilatorOption extends NoTargetAnnotation with Unserializable {
   this: Annotation =>
@@ -35,7 +15,7 @@ trait VerilatorOptionObject extends VerilatorOption with HasShellOptions
 case object SuppressVerilatorVcd extends VerilatorOptionObject {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
-      longOption = "tr-random-seed",
+      longOption = "t-random-seed",
       toAnnotationSeq = _ => Seq(SuppressVerilatorVcd),
       helpText = "sets the seed for Treadle's random number generator"
     )
