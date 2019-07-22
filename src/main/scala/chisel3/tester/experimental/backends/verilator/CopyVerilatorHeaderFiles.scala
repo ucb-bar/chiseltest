@@ -26,12 +26,12 @@ object CopyVerilatorHeaderFiles {
     }
 
     Files.copy(
-      getClass.getResourceAsStream("/testers2/experimental.backends.verilator/sim_api.h"),
+      getClass.getResourceAsStream("/testers2/experimental/backends/verilator/sim_api.h"),
       simApiHFilePath,
       REPLACE_EXISTING
     )
     Files.copy(
-      getClass.getResourceAsStream("/testers2/experimental.backends.verilator/veri_api.h"),
+      getClass.getResourceAsStream("/testers2/experimental/backends/verilator/veri_api.h"),
       verilatorApiHFilePath,
       REPLACE_EXISTING
     )
