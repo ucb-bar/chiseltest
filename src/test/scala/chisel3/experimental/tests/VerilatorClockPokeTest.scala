@@ -38,6 +38,16 @@ class VerilatorClockPokeTest extends FlatSpec with ChiselScalatestTester {
 
       c.clock.step()
       c.out.expect(1.U)
+
+      // Repeated high should do nothing
+      c.inClock.high()
+      c.out.expect(1.U)
+
+      // and again
+      c.inClock.low()
+      c.out.expect(1.U)
+      c.inClock.high()
+      c.out.expect(2.U)
     }
   }
 

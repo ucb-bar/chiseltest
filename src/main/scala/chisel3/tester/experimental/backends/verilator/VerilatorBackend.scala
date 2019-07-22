@@ -34,7 +34,7 @@ class VerilatorBackend[T <: MultiIOModule](
   //
   // Debug utility functions
   //
-  val verbose: Boolean = true // hard-coded debug flag
+  val verbose: Boolean = false // hard-coded debug flag
   def debugLog(str: => String) {
     if (verbose) println(str)
   }
@@ -67,12 +67,9 @@ class VerilatorBackend[T <: MultiIOModule](
   override def pokeClock(signal: Clock, value: Boolean): Unit = {
     // TODO: check thread ordering
 
-    throw new UnsupportedOperationException(
-      s"pokingClock(${dataNames(signal)}) not supported with verilator backend"
-    )
-//    val intValue = if (value) 1 else 0
-//    simApiInterface.poke(dataNames(signal), intValue)
-//    debugLog(s"${resolveName(signal)} <- $intValue")
+    val intValue = if (value) 1 else 0
+    simApiInterface.poke(dataNames(signal), intValue)
+    debugLog(s"${resolveName(signal)} <- $intValue")
   }
 
   override def peekClock(signal: Clock): Boolean = {

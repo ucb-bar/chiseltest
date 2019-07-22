@@ -132,7 +132,10 @@ class $dutApiClassName: public sim_api_t<VerilatorDataWrapper*> {
         main_time++;
     }
     virtual inline void update() {
-        dut->_eval_settle(dut->__VlSymsp);
+        // This seems to force a full eval of circuit, so registers with alternate clocks are update correctly
+        dut->eval();
+        // This was the original call, did not refresh registers when some  other clock transitioned
+        // dut->_eval_settle(dut->__VlSymsp);
     }
 };
 
