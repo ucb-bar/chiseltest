@@ -32,12 +32,15 @@ case class TesterOptions(
 trait TestOption extends Unserializable { this: Annotation => }
 trait TestOptionObject extends NoTargetAnnotation with HasShellOptions with TestOption
 
+// This  Annotation may well be moved to firrtl to provide a single instance of this
+// concept (right now it exists separately in testers2 and treadle.
+//
 case object WriteVcdAnnotation extends TestOptionObject {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
       longOption = "t-write-vcd",
       toAnnotationSeq = _ => Seq(WriteVcdAnnotation),
-      helpText = "writes vcd execution log"
+      helpText = "writes vcd execution log, this option may be moved into firrtl in the future"
     )
   )
 }
