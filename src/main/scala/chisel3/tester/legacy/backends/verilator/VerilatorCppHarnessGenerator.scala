@@ -1,6 +1,4 @@
-// See LICENSE for license details.
-
-package chisel3.tester.experimental.backends.verilator
+package chisel3.tester.legacy.backends.verilator
 
 import chisel3.experimental.MultiIOModule
 

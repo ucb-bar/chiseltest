@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package chisel3.tester.backends.verilator
+package chisel3.tester.legacy.backends.verilator
 
 import scala.util.matching.Regex
 

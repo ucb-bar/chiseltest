@@ -5,7 +5,7 @@ package chisel3.tester.internal
 import chisel3.experimental.MultiIOModule
 import chisel3.tester.backends.BackendExecutive
 import chisel3.tester.backends.treadle.TreadleExecutive
-import chisel3.tester.experimental.backends.verilator.VerilatorExecutive
+import chisel3.tester.legacy.backends.verilator.VerilatorExecutive
 import firrtl.AnnotationSeq
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.{HasShellOptions, ShellOption, Unserializable}

@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package chisel3.tester.experimental.backends.verilator
+package chisel3.tester.legacy.backends.verilator
 
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.{HasShellOptions, ShellOption, Unserializable}

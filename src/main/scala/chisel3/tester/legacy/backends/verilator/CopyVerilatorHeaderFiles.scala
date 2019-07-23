@@ -1,6 +1,4 @@
-// See LICENSE for license details.
-
-package chisel3.tester.experimental.backends.verilator
+package chisel3.tester.legacy.backends.verilator
 
 import java.io.{File, IOException}
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
@@ -26,12 +24,12 @@ object CopyVerilatorHeaderFiles {
     }
 
     Files.copy(
-      getClass.getResourceAsStream("/testers2/experimental/backends/verilator/sim_api.h"),
+      getClass.getResourceAsStream("/chisel3/tester/legacy/backends/verilator/sim_api.h"),
       simApiHFilePath,
       REPLACE_EXISTING
     )
     Files.copy(
-      getClass.getResourceAsStream("/testers2/experimental/backends/verilator/veri_api.h"),
+      getClass.getResourceAsStream("/chisel3/tester/legacy/backends/verilator/veri_api.h"),
       verilatorApiHFilePath,
       REPLACE_EXISTING
     )

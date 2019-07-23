@@ -1,5 +1,5 @@
 // See LICENSE for license details.
-package chisel3.tester.experimental.backends.verilator
+package chisel3.tester.legacy.backends.verilator
 
 import java.io.File
 import java.nio.channels.FileChannel

@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package chisel3.tester.experimental.backends.verilator
+package chisel3.tester.legacy.backends.verilator
 
 import java.io.File
 
@@ -8,7 +8,6 @@ import chisel3._
 import chisel3.experimental._
 import chisel3.internal.InstanceId
 import chisel3.internal.firrtl.Circuit
-import chisel3.tester.backends.verilator.CommandEditor
 import treadle.utils.BitMasks
 
 import scala.collection.mutable.ArrayBuffer
