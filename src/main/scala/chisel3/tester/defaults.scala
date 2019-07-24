@@ -3,14 +3,24 @@
 package chisel3.tester
 
 import chisel3.experimental.MultiIOModule
-import chisel3.tester.backends.treadle.TreadleExecutive
 import chisel3.tester.internal._
 import firrtl.AnnotationSeq
 
 package object defaults {
-  // TODO: better integration points for default tester selection
-  // TODO: add TesterOptions (from chisel-testers) and use that to control default tester selection.
+  // TODO: I think we need a way to specify global defaults, e.g. to say 'run all tests under verilator'
+
+  /** Creates a DefaultTester from the desired backend
+    *
+    * @param dutGen          device under test
+    * @param annotationSeq   initial annotations
+    * @tparam T              dut type
+    * @return                a backend for the dut type
+    */
   def createDefaultTester[T <: MultiIOModule](dutGen: () => T, annotationSeq: AnnotationSeq): BackendInstance[T] = {
-    TreadleExecutive.start(dutGen, annotationSeq)
+    val backend = annotationSeq.collectFirst {
+      case x: BackendAnnotation => x
+    }.getOrElse(TreadleBackendAnnotation)
+
+    backend.executive.start(dutGen, annotationSeq)
   }
 }
