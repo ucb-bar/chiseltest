@@ -3,7 +3,7 @@
 package chisel3.tester.backends.treadle
 
 import chisel3.experimental.{DataMirror, MultiIOModule}
-import chisel3.stage.{ChiselStage, NoRunFirrtlCompilerAnnotation}
+import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation}
 import chisel3.tester.backends.BackendExecutive
 import chisel3.tester.internal._
 import firrtl.annotations.ReferenceTarget
@@ -27,7 +27,7 @@ object TreadleExecutive extends BackendExecutive {
 
     val generatorAnnotation = chisel3.stage.ChiselGeneratorAnnotation(dutGen)
 
-    val circuit = generatorAnnotation.elaborate.circuit
+    val circuit = generatorAnnotation.elaborate.collect { case x: ChiselCircuitAnnotation => x }.head.circuit
     val dut = getTopModule(circuit).asInstanceOf[T]
     val portNames = DataMirror.modulePorts(dut).flatMap { case (name, data) =>
       getDataNames(name, data).toList
