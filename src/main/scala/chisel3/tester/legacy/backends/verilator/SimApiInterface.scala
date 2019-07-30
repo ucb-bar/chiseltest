@@ -109,7 +109,7 @@ private[tester] class SimApiInterface(dut: MultiIOModule, cmd: Seq[String])
   }
 
   private def dumpLogs() {
-    _logs.foreach(x => logger.info(x))
+    _logs.foreach(x => println(x))
     _logs.clear
   }
 
