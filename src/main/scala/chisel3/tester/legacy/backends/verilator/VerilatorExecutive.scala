@@ -7,7 +7,6 @@ import chisel3.experimental.{DataMirror, MultiIOModule}
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
 import chisel3.tester.backends.BackendExecutive
 import chisel3.tester.internal.{BackendInstance, WriteVcdAnnotation}
-import firrtl.AnnotationSeq
 import firrtl.annotations.ReferenceTarget
 import firrtl.stage.CompilerAnnotation
 import firrtl.transforms.CombinationalPath
