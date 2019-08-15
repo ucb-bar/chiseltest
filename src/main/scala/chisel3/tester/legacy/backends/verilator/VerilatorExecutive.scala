@@ -4,7 +4,7 @@ import java.io.{File, FileWriter}
 
 import chisel3.assert
 import chisel3.experimental.{DataMirror, MultiIOModule}
-import chisel3.stage.ChiselStage
+import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
 import chisel3.tester.backends.BackendExecutive
 import chisel3.tester.internal.{BackendInstance, WriteVcdAnnotation}
 import firrtl.annotations.ReferenceTarget
@@ -43,7 +43,7 @@ object VerilatorExecutive extends BackendExecutive {
     val targetDirFile = new File(targetDir)
 
     val generatorAnnotation = chisel3.stage.ChiselGeneratorAnnotation(dutGen)
-    val circuit = generatorAnnotation.elaborate.circuit
+    val circuit = generatorAnnotation.elaborate.collect { case x: ChiselCircuitAnnotation => x }.head.circuit
     val dut = getTopModule(circuit).asInstanceOf[T]
 
     // Create the header files that verilator needs
