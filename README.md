@@ -84,7 +84,8 @@ In this file:
 ## Usage References
 See the test cases for examples:
 - [BasicTest](src/test/scala/chisel3/tests/BasicTest.scala) shows basic `peek`, `poke`, and `step` functionality
-- [QueueTest](src/test/scala/chisel3/tests/QueueTest.scala) shows example uses of the DecoupledIO library, providing functions like `enqueueNow`, `expectDequeueNow`, their sequence variants, `expectPeek`, and `expectInvalid`  
+- [QueueTest](src/test/scala/chisel3/tests/QueueTest.scala) shows example uses of the DecoupledDriver library, providing functions like `enqueueNow`, `expectDequeueNow`, their sequence variants, `expectPeek`, and `expectInvalid`.
+  Also, check out the [DecoupledDriver](src/main/scala/chisel3/tester/DecoupledDriver.scala) implementation, and note that it is not a special case, but code that any user can write. 
 - [BundleLiteralsSpec](src/test/scala/chisel3/tests/BundleLiteralsSpec.scala) shows examples of using bundle literals to poke and expect bundle wires.
 - [ShiftRegisterTest](src/test/scala/chisel3/tests/ShiftRegisterTest.scala) shows an example of using fork/join to define a test helper function, where multiple invocations of it are pipelined using `fork`.
 
