@@ -94,6 +94,8 @@ class AsyncResetTest extends FreeSpec with ChiselScalatestTester {
   "reset value maintained while reset asserted, goes to input value when de-asserted" in {
     test(new AsyncResetRegModule(11)).withAnnotations(annotations) { dut =>
       dut.reset.poke(true.B)
+      dut.io.out.expect(11.U)
+
       dut.io.in.poke(7.U)
 
       dut.io.out.expect(11.U)
@@ -101,9 +103,9 @@ class AsyncResetTest extends FreeSpec with ChiselScalatestTester {
       dut.io.out.expect(11.U)
 
       dut.reset.poke(false.B)
-      dut.io.in.poke(7.U)
+      dut.io.in.expect(7.U)
       dut.clock.step()
-      dut.io.in.poke(7.U)
+      dut.io.in.expect(7.U)
     }
   }
 
@@ -139,6 +141,14 @@ class AsyncResetTest extends FreeSpec with ChiselScalatestTester {
       dut.clock.step()
       dut.io.out(0).expect(0.U)
       dut.io.out(1).expect(1.U)
+
+      dut.reset.poke(true.B)
+      dut.clock.step()
+      dut.reset.poke(false.B)
+
+      dut.io.out(0).expect(0.U)
+      dut.io.out(1).expect(1.U)
+
     }
   }
 }
