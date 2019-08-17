@@ -1,5 +1,5 @@
 # chisel-testers2
-This is **experimental software** that is currently under development, and interfaces may be subject to change (see [stability](#stability) for details).
+This is **alpha software** that is currently under development, and interfaces may be subject to change (see [stability](#stability) for details).
 However, it is very much in a usable state, so if you're fine living on the bleeding edge, give it a try. 
 
 
@@ -87,8 +87,22 @@ See the test cases for examples:
 - [QueueTest](src/test/scala/chisel3/tests/QueueTest.scala) shows example uses of the DecoupledDriver library, providing functions like `enqueueNow`, `expectDequeueNow`, their sequence variants, `expectPeek`, and `expectInvalid`.
   Also, check out the [DecoupledDriver](src/main/scala/chisel3/tester/DecoupledDriver.scala) implementation, and note that it is not a special case, but code that any user can write. 
 - [BundleLiteralsSpec](src/test/scala/chisel3/tests/BundleLiteralsSpec.scala) shows examples of using bundle literals to poke and expect bundle wires.
+  - Note: Bundle literals are still an experimental chisel3 feature and need to be explicitly imported:
+    ```scala
+    import chisel3.experimental.BundleLiterals._
+    ```
 - [ShiftRegisterTest](src/test/scala/chisel3/tests/ShiftRegisterTest.scala) shows an example of using fork/join to define a test helper function, where multiple invocations of it are pipelined using `fork`.
-
+- [VerilatorBasicTests](src/test/scala/chisel3/experimental/tests/VerilatorBasicTests.scala) shows an example using Verilator as the simulator.
+  - Note: the simulator is selected by passing an annotation into the `test` function, which requires experimental imports:
+    ```scala
+    import chisel3.tester.experimental.TestOptionBuilder._
+    import chisel3.tester.internal.VerilatorBackendAnnotation
+    ```
+    ```scala
+    test(new MyModule).withAnnotations(Seq(VerilatorBackendAnnotation)) { c =>
+      // test body here
+    }
+    ``` 
 
 ## New Constructs
 - `fork` to spawn threads, and `join` to block (wait) on a thread.
