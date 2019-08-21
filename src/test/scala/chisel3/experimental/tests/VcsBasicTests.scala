@@ -13,12 +13,16 @@ class VcsBasicTests extends FlatSpec with ChiselScalatestTester with Matchers {
   val annos = Seq(VcsBackendAnnotation)
 
   it should "test static circuits" in {
+    assume(firrtl.FileUtils.isVCSAvailable)
+
     test(new StaticModule(42.U)).withAnnotations(annos) { c =>
       c.out.expect(42.U)
     }
   }
 
   it should "fail on poking outputs" in {
+    assume(firrtl.FileUtils.isVCSAvailable)
+
     assertThrows[UnpokeableException] {
       test(new StaticModule(42.U)).withAnnotations(annos) { c =>
         c.out.poke(0.U)
@@ -27,6 +31,8 @@ class VcsBasicTests extends FlatSpec with ChiselScalatestTester with Matchers {
   }
 
   it should "fail on expect mismatch" in {
+    assume(firrtl.FileUtils.isVCSAvailable)
+
     assertThrows[exceptions.TestFailedException] {
       test(new StaticModule(42.U)).withAnnotations(annos) { c =>
         c.out.expect(0.U)
@@ -35,6 +41,8 @@ class VcsBasicTests extends FlatSpec with ChiselScalatestTester with Matchers {
   }
 
   it should "fail with user-defined message" in {
+    assume(firrtl.FileUtils.isVCSAvailable)
+
     intercept[exceptions.TestFailedException] {
       test(new StaticModule(42.U)).withAnnotations(annos) { c =>
         c.out.expect(0.U, "user-defined failure message =(")
@@ -43,6 +51,8 @@ class VcsBasicTests extends FlatSpec with ChiselScalatestTester with Matchers {
   }
 
   it should "test inputless sequential circuits" in {
+    assume(firrtl.FileUtils.isVCSAvailable)
+
     test(new Module {
       val io = IO(new Bundle {
         val out = Output(UInt(8.W))
@@ -62,6 +72,8 @@ class VcsBasicTests extends FlatSpec with ChiselScalatestTester with Matchers {
   }
 
   it should "test combinational circuits" in {
+    assume(firrtl.FileUtils.isVCSAvailable)
+
     test(new PassthroughModule(UInt(8.W))).withAnnotations(annos) { c =>
       c.in.poke(0.U)
       c.out.expect(0.U)
@@ -71,6 +83,8 @@ class VcsBasicTests extends FlatSpec with ChiselScalatestTester with Matchers {
   }
 
   it should "test sequential circuits" in {
+    assume(firrtl.FileUtils.isVCSAvailable)
+
     test(new Module {
       val io = IO(new Bundle {
         val in = Input(UInt(8.W))
@@ -88,6 +102,8 @@ class VcsBasicTests extends FlatSpec with ChiselScalatestTester with Matchers {
   }
 
   it should "test reset" in {
+    assume(firrtl.FileUtils.isVCSAvailable)
+
     test(new Module {
       val io = IO(new Bundle {
         val in = Input(UInt(8.W))
