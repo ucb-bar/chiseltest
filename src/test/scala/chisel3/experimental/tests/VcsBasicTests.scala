@@ -2,15 +2,15 @@ package chisel3.experimental.tests
 
 import chisel3._
 import chisel3.tester._
-import chisel3.tests.{PassthroughModule, StaticModule}
 import chisel3.tester.experimental.TestOptionBuilder._
-import chisel3.tester.internal.VerilatorBackendAnnotation
+import chisel3.tester.internal.VcsBackendAnnotation
+import chisel3.tests.{PassthroughModule, StaticModule}
 import org.scalatest._
 
-class VerilatorBasicTests extends FlatSpec with ChiselScalatestTester with Matchers {
-  behavior of "Testers2_Verilator"
+class VcsBasicTests extends FlatSpec with ChiselScalatestTester with Matchers {
+  behavior of "Testers2_Vcs"
 
-  val annos = Seq(VerilatorBackendAnnotation)
+  val annos = Seq(VcsBackendAnnotation)
 
   it should "test static circuits" in {
     test(new StaticModule(42.U)).withAnnotations(annos) { c =>
