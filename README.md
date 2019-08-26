@@ -131,3 +131,12 @@ These APIs may be considered stable and are unlikely to change significantly:
 
 These are subject to change:
 - Multiclock behavior, which is currently not well defined, including `poke` on clocks and `step` when there are multiple clocks.
+
+
+## Roadmap
+These features are on our roadmap, but are not implemented yet.
+No timeframe is currently available, but feel free to let us know if some feature is critical to your use case in the relevant issue thread, and we may adjust our development priorities accordingly.
+- [#14](https://github.com/ucb-bar/chisel-testers2/issues/14) support for multi-clock designs, and in particular, supporting clock poke to clock step inter-thread dependencies.
+- [#28](https://github.com/ucb-bar/chisel-testers2/issues/28) faster Verilator / VCS testing using mechanisms that avoid interprocess communication, like JNI
+- [#58](https://github.com/ucb-bar/chisel-testers2/issues/58) faster threading (note, unclear if there are good solutions here, especially ones that are fully API compatible - Scala generally lacks good coroutine support)
+- [#60](https://github.com/ucb-bar/chisel-testers2/issues/60), [#34](https://github.com/ucb-bar/chisel-testers2/issues/34), [#2](https://github.com/ucb-bar/chisel-testers2/issues/2) support for testing non-Chisel modules, such as post-syn Verilog, or generally a separation of DUT interface and implementation
