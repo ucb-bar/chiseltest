@@ -390,9 +390,8 @@ trait ThreadedBackend[T <: MultiIOModule] extends BackendInterface {
         }
       }
       if (overridingTimescopes.length > 1) {  // multiple overlapping pokes, is an error
-        // STE 0 is pokeBits method, 1 is poke abstraction
         // TODO: better stack trace element detection, chain reporting
-        val pokeTraces = overridingTimescopes.map { _.pokes(signal).last.trace.getStackTrace()(2) }
+        val pokeTraces = overridingTimescopes.map { _.pokes(signal).last.trace.getStackTrace()(3) }
         throw new ThreadOrderDependentException(s"Overlapping pokes from $pokeTraces")
       } else if (overridingTimescopes.length == 1) {  // just one poke, report the furthest down that chain
         processTimescope(signal, overridingTimescopes.head)
