@@ -2,7 +2,7 @@
 
 package chisel3.tester.legacy.backends.verilator
 
-import chisel3.experimental.{FixedPoint, MultiIOModule}
+import chisel3.experimental.FixedPoint
 import chisel3.internal.firrtl.KnownWidth
 import chisel3.tester.internal.{BackendInstance, Context, ThreadedBackend}
 import chisel3.tester.legacy.backends.verilator.Utils.unsignedBigIntToSigned

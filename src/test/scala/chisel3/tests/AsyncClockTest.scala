@@ -1,7 +1,6 @@
 package chisel3.tests
 
 import chisel3._
-import chisel3.experimental.MultiIOModule
 import chisel3.tester._
 import org.scalatest._
 

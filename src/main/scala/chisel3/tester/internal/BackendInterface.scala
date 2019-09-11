@@ -4,7 +4,6 @@ package chisel3.tester.internal
 
 import chisel3.tester.Region
 import chisel3._
-import chisel3.experimental.MultiIOModule
 
 import scala.collection.mutable
 

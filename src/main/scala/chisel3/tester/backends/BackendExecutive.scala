@@ -2,10 +2,10 @@
 
 package chisel3.tester.backends
 
-import chisel3.experimental.{BaseModule, MultiIOModule}
+import chisel3.experimental.BaseModule
 import chisel3.internal.firrtl.Circuit
 import chisel3.tester.internal.BackendInstance
-import chisel3.{Data, Element, Record, Vec}
+import chisel3.{Data, Element, MultiIOModule, Record, Vec}
 import firrtl.AnnotationSeq
 import firrtl.annotations.ReferenceTarget
 import firrtl.transforms.CombinationalPath

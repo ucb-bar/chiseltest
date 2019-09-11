@@ -5,7 +5,6 @@ package chisel3.tester.internal
 import java.util.concurrent.{ConcurrentLinkedQueue, Semaphore}
 
 import chisel3._
-import chisel3.experimental.MultiIOModule
 import chisel3.tester.{Region, TemporalParadox, ThreadOrderDependentException}
 
 import scala.collection.mutable

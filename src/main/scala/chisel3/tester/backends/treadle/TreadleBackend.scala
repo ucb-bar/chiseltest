@@ -3,7 +3,6 @@
 package chisel3.tester.backends.treadle
 
 import chisel3._
-import chisel3.experimental.MultiIOModule
 import chisel3.tester.internal._
 import chisel3.tester.{Region, TimeoutException}
 import treadle.TreadleTester
