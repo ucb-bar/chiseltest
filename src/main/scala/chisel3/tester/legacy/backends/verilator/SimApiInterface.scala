@@ -5,7 +5,6 @@ import java.io.File
 import java.nio.channels.FileChannel
 
 import chisel3._
-import chisel3.experimental.MultiIOModule
 import logger.LazyLogging
 
 import scala.collection.immutable.ListMap

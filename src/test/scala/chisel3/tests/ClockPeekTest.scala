@@ -3,8 +3,6 @@ package chisel3.tests
 import org.scalatest._
 
 import chisel3._
-import chisel3.experimental.MultiIOModule
-import chisel3.util._
 import chisel3.tester._
 import chisel3.tester.experimental.UncheckedClockPoke._
 import chisel3.tester.experimental.UncheckedClockPeek._

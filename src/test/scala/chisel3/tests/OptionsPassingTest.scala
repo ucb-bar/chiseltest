@@ -3,7 +3,6 @@ package chisel3.tests
 import java.io.{ByteArrayOutputStream, File, PrintStream}
 
 import chisel3._
-import chisel3.experimental.MultiIOModule
 import chisel3.tester._
 import chisel3.tester.experimental.TestOptionBuilder._
 import chisel3.tester.experimental.sanitizeFileName

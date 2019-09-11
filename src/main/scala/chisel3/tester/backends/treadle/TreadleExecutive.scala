@@ -2,7 +2,8 @@
 
 package chisel3.tester.backends.treadle
 
-import chisel3.experimental.{DataMirror, MultiIOModule}
+import chisel3.experimental.DataMirror
+import chisel3.MultiIOModule
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation}
 import chisel3.tester.backends.BackendExecutive
 import chisel3.tester.internal._

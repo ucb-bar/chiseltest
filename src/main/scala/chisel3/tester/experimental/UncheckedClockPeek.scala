@@ -3,8 +3,6 @@
 package chisel3.tester.experimental
 
 import chisel3._
-import chisel3.experimental.{DataMirror, Direction, MultiIOModule}
-import chisel3.tester._
 import chisel3.tester.internal.Context
 
 package object UncheckedClockPeek {
