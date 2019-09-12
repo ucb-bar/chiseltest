@@ -1,8 +1,6 @@
 package chisel3.tests
 
 import chisel3._
-import chisel3.experimental.MultiIOModule
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.tester._
 import chisel3.tester.experimental.TestOptionBuilder._
 
@@ -73,7 +71,7 @@ class ValidQueueTest extends FlatSpec with ChiselScalatestTester {
         c.out.expectDequeue(43.U) // check that queue stalls
         c.out.expectDequeue(44.U)
         c.out.expectInvalid()
-      }.join
+      }.join()
     }
   }
 
