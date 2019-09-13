@@ -15,12 +15,12 @@ class ValidDriver[T <: Data](x: ValidIO[T]) {
   }
 
   def setSourceClock(clock: Clock): this.type = {
-    ClockResolutionUtils.setClock(ValidDriver.decoupledSourceKey, x, clock)
+    ClockResolutionUtils.setClock(ValidDriver.validSourceKey, x, clock)
     this
   }
 
   protected def getSourceClock: Clock = {
-    ClockResolutionUtils.getClock(ValidDriver.decoupledSourceKey, x,
+    ClockResolutionUtils.getClock(ValidDriver.validSourceKey, x,
       x.valid.getSourceClock)  // TODO: validate against bits/valid sink clocks
   }
 
@@ -28,25 +28,12 @@ class ValidDriver[T <: Data](x: ValidIO[T]) {
     // TODO: check for init
     x.bits.poke(data)
     x.valid.poke(true.B)
-    fork.withRegion(Monitor) {
-      x.valid.expect(true.B)
-    }.joinAndStep(getSourceClock)
-  }
-
-  def enqueue(data: T): Unit = timescope {
-    // TODO: check for init
-    x.bits.poke(data)
-    x.valid.poke(true.B)
-    fork.withRegion(Monitor) {
-      while (x.valid.peek().litToBoolean == false) {
-        getSourceClock.step(1)
-      }
-    }.joinAndStep(getSourceClock)
+    getSourceClock.step(1)
   }
 
   def enqueueSeq(data: Seq[T]): Unit = timescope {
     for (elt <- data) {
-      enqueue(elt)
+      enqueueNow(elt)
     }
   }
 
@@ -57,12 +44,12 @@ class ValidDriver[T <: Data](x: ValidIO[T]) {
   }
 
   def setSinkClock(clock: Clock): this.type = {
-    ClockResolutionUtils.setClock(ValidDriver.decoupledSinkKey, x, clock)
+    ClockResolutionUtils.setClock(ValidDriver.validSinkKey, x, clock)
     this
   }
 
   protected def getSinkClock: Clock = {
-    ClockResolutionUtils.getClock(ValidDriver.decoupledSinkKey, x,
+    ClockResolutionUtils.getClock(ValidDriver.validSinkKey, x,
       x.valid.getSourceClock)  // TODO: validate against bits/valid sink clocks
   }
 
@@ -111,7 +98,7 @@ class ValidDriver[T <: Data](x: ValidIO[T]) {
 }
 
 object ValidDriver {
-  protected val decoupledSourceKey = new Object()
-  protected val decoupledSinkKey = new Object()
+  protected val validSourceKey = new Object()
+  protected val validSinkKey = new Object()
 }
 
