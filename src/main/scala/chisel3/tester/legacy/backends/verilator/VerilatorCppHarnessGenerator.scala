@@ -1,6 +1,6 @@
 package chisel3.tester.legacy.backends.verilator
 
-import chisel3.experimental.MultiIOModule
+import chisel3.MultiIOModule
 
 /**
   * Generates the Module specific verilator harness cpp file for verilator compilation

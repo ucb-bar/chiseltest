@@ -2,7 +2,7 @@
 
 package chisel3.tester.internal
 
-import chisel3.experimental.MultiIOModule
+import chisel3.MultiIOModule
 import chisel3.tester.backends.BackendExecutive
 import chisel3.tester.backends.treadle.TreadleExecutive
 import chisel3.tester.legacy.backends.vcs.VcsExecutive

@@ -2,7 +2,6 @@ package chisel3.tests
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.MultiIOModule
 
 class StaticModule[T <: Data](ioLit: T) extends MultiIOModule {
   val out = IO(Output(chiselTypeOf(ioLit)))

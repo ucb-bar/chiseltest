@@ -2,8 +2,8 @@ package chisel3.tester.legacy.backends.verilator
 
 import java.io.{File, FileWriter}
 
-import chisel3.assert
-import chisel3.experimental.{DataMirror, MultiIOModule}
+import chisel3.{assert, MultiIOModule}
+import chisel3.experimental.DataMirror
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
 import chisel3.tester.backends.BackendExecutive
 import chisel3.tester.internal.{BackendInstance, WriteVcdAnnotation}

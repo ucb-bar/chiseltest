@@ -2,7 +2,8 @@
 
 package chisel3.tester.backends.treadle
 
-import chisel3.experimental.{DataMirror, MultiIOModule}
+import chisel3.experimental.DataMirror
+import chisel3.MultiIOModule
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation}
 import chisel3.tester.backends.BackendExecutive
 import chisel3.tester.internal._
@@ -23,30 +24,37 @@ object TreadleExecutive extends BackendExecutive {
     // Force a cleanup: long SBT runs tend to fail with memory issues
     System.gc()
 
-    val annotationSeq = (new OptionsAdapter).transform(testersAnnotationSeq)
-
     val generatorAnnotation = chisel3.stage.ChiselGeneratorAnnotation(dutGen)
 
-    val circuit = generatorAnnotation.elaborate.collect { case x: ChiselCircuitAnnotation => x }.head.circuit
+    // This provides an opportunity to translate from top level generic flags to backend specific annos
+    var annotationSeq = (new OptionsAdapter).transform(testersAnnotationSeq)
+
+    // This produces a chisel circuit annotation, a later pass will generate a firrtl circuit
+    // Can't do both at once currently because generating the latter deletes the former
+    annotationSeq = (new chisel3.stage.phases.Elaborate).transform(annotationSeq :+ generatorAnnotation)
+
+    val circuit = annotationSeq.collect { case x: ChiselCircuitAnnotation => x }.head.circuit
     val dut = getTopModule(circuit).asInstanceOf[T]
     val portNames = DataMirror.modulePorts(dut).flatMap { case (name, data) =>
       getDataNames(name, data).toList
     }.toMap
 
-    val chiseledAnnotations = (new ChiselStage).run(
-      annotationSeq ++ Seq(generatorAnnotation, NoRunFirrtlCompilerAnnotation)
+    // This generates the firrtl circuit needed by the TreadleTesterPhase
+    annotationSeq = (new ChiselStage).run(
+      annotationSeq ++ Seq(NoRunFirrtlCompilerAnnotation)
     )
 
-    val treadledAnnotations = TreadleTesterPhase.transform(chiseledAnnotations)
+    // This generates a TreadleTesterAnnotation with a treadle tester instance
+    annotationSeq = TreadleTesterPhase.transform(annotationSeq)
 
-    val treadleTester = treadledAnnotations.collectFirst { case TreadleTesterAnnotation(t) => t }.getOrElse(
+    val treadleTester = annotationSeq.collectFirst { case TreadleTesterAnnotation(t) => t }.getOrElse(
       throw new Exception(
         s"TreadleTesterPhase could not build a treadle tester from these annotations" +
-        chiseledAnnotations.mkString("Annotations:\n", "\n  ", "")
+        annotationSeq.mkString("Annotations:\n", "\n  ", "")
       )
     )
 
-    val circuitState = treadledAnnotations.collectFirst { case TreadleCircuitStateAnnotation(s) => s }.get
+    val circuitState = annotationSeq.collectFirst { case TreadleCircuitStateAnnotation(s) => s }.get
     val pathAnnotations = (new CheckCombLoops).execute(circuitState).annotations
     val paths = pathAnnotations.collect {
       case c: CombinationalPath => c
