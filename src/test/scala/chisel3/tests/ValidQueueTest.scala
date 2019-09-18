@@ -8,7 +8,7 @@ import chisel3.util.{Pipe, Valid}
 import org.scalatest._
 import treadle.VerboseAnnotation
 
-class ValidQueueModule(typeGen: Data, delay: Int) extends MultiIOModule {
+class ValidQueueModule(typeGen: Data, val delay: Int) extends MultiIOModule {
   val in = IO(Flipped(Valid(typeGen)))
   val out = IO(Valid(typeGen))
 
@@ -44,9 +44,7 @@ class ValidQueueTest extends FlatSpec with ChiselScalatestTester {
       fork {
         c.in.enqueueSeq(Seq(42.U, 43.U, 44.U))
       }.fork {
-        c.out.expectDequeue(42.U)
-        c.out.expectDequeue(43.U) // check that queue stalls
-        c.out.expectDequeue(44.U)
+        c.out.expectDequeueSeq(Seq(42.U, 43.U, 44.U))
         c.out.expectInvalid()
       }.join()
     }
@@ -65,24 +63,49 @@ class ValidQueueTest extends FlatSpec with ChiselScalatestTester {
     }
   }
 
-  it should "wait for data until valid data presented" in {
-    test(new ValidQueueModule(UInt(8.W), delay = 3)) { c =>
-      c.in.initSource().setSourceClock(c.clock)
-      c.out.initSink().setSinkClock(c.clock)
+  it should "expectInvalid can be used to wait for data" in {
+    for(delay <- 1 until 4) {
+      test(new ValidQueueModule(UInt(8.W), delay = delay)) { c =>
+        c.in.initSource().setSourceClock(c.clock)
+        c.out.initSink().setSinkClock(c.clock)
 
-      for(_ <- 0 until 10) {
-        c.out.expectInvalid()
-        c.clock.step()
+        for (_ <- 0 until 10) {
+          c.out.expectInvalid()
+          c.clock.step()
+        }
+
+        for (value <- 70 to 80) {
+          c.in.enqueueNow(value.U)
+          for (_ <- 0 until c.delay - 1) {
+            c.out.expectInvalid()
+            c.clock.step()
+          }
+          c.out.expectDequeueNow(value.U)
+        }
       }
+    }
+  }
 
-      c.in.enqueueNow(77.U)
+  it should "expectInvalid can be used to wait for data" in {
+    for(delay <- 1 until 4) {
+      test(new ValidQueueModule(UInt(8.W), delay = delay)) { c =>
+        c.in.initSource().setSourceClock(c.clock)
+        c.out.initSink().setSinkClock(c.clock)
 
-      c.out.expectInvalid()
-      c.clock.step()
-      c.out.expectInvalid()
-      c.clock.step()
+        for (_ <- 0 until 10) {
+          c.out.expectInvalid()
+          c.clock.step()
+        }
 
-      c.out.expectDequeueNow(77.U)
+        for (value <- 70 to 80) {
+          c.in.enqueueNow(value.U)
+          for (_ <- 0 until c.delay - 1) {
+            c.out.expectInvalid()
+            c.clock.step()
+          }
+          c.out.expectDequeueNow(value.U)
+        }
+      }
     }
   }
 

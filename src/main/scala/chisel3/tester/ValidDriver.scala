@@ -21,7 +21,7 @@ class ValidDriver[T <: Data](x: ValidIO[T]) {
 
   protected def getSourceClock: Clock = {
     ClockResolutionUtils.getClock(ValidDriver.validSourceKey, x,
-      x.valid.getSourceClock)  // TODO: validate against bits/valid sink clocks
+      x.valid.getSourceClock())  // TODO: validate against bits/valid sink clocks
   }
 
   def enqueueNow(data: T): Unit = timescope {
@@ -50,12 +50,12 @@ class ValidDriver[T <: Data](x: ValidIO[T]) {
 
   protected def getSinkClock: Clock = {
     ClockResolutionUtils.getClock(ValidDriver.validSinkKey, x,
-      x.valid.getSourceClock)  // TODO: validate against bits/valid sink clocks
+      x.valid.getSourceClock())  // TODO: validate against bits/valid sink clocks
   }
 
   // NOTE: this doesn't happen in the Monitor phase, unlike public functions
   def waitForValid(): Unit = {
-    while (x.valid.peek().litToBoolean == false) {
+    while (!x.valid.peek().litToBoolean) {
       getSinkClock.step(1)
     }
   }
@@ -83,6 +83,9 @@ class ValidDriver[T <: Data](x: ValidIO[T]) {
     }
   }
 
+  /** This does not advance time, unlike expectDequeue
+    * this method will throw an error if valid has not been asserted
+    */
   def expectPeek(data: T): Unit = {
     fork.withRegion(Monitor) {
       x.valid.expect(true.B)
