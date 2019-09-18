@@ -2,8 +2,8 @@ package chisel3.tester.legacy.backends.vcs
 
 import java.io.Writer
 
-import chisel3.{ActualDirection, Element}
-import chisel3.experimental.{DataMirror, MultiIOModule}
+import chisel3._
+import chisel3.experimental.DataMirror
 import chisel3.tester.legacy.backends.verilator.getDataNames
 
 /**

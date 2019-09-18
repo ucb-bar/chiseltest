@@ -14,16 +14,15 @@ object CopyVpiFiles {
     val vpiHFilePath = Paths.get(destinationDirPath + "/vpi.h")
     val vpiCppFilePath = Paths.get(destinationDirPath + "/vpi.cpp")
     val vpiTabFilePath = Paths.get(destinationDirPath + "/vpi.tab")
-    try {
-      Files.createFile(simApiHFilePath)
-      Files.createFile(vpiHFilePath)
-      Files.createFile(vpiCppFilePath)
-      Files.createFile(vpiTabFilePath)
-    } catch {
-      case _: FileAlreadyExistsException =>
-        System.out.format("")
-      case x: IOException =>
-        System.err.format("createFile error: %s%n", x)
+
+    for(fileName <- Seq(simApiHFilePath, vpiHFilePath, vpiCppFilePath, vpiTabFilePath)) {
+      try {
+        Files.createFile(fileName)
+      } catch {
+        case _: FileAlreadyExistsException =>
+        case x: IOException =>
+          System.err.format("createFile error: %s%n", x)
+      }
     }
 
     val resourceDir = "/chisel3/tester/legacy/backends/verilator"

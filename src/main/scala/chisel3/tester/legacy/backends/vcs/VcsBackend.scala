@@ -3,7 +3,6 @@
 package chisel3.tester.legacy.backends.vcs
 
 import chisel3._
-import chisel3.experimental.MultiIOModule
 import chisel3.tester.legacy.backends.verilator.VerilatorBackend
 
 /** Supports Backend and Threaded traits for ex
