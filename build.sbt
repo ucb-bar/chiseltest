@@ -44,6 +44,9 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.5",
   "com.lihaoyi" %% "utest" % "0.7.1"
 )
+
+testFrameworks += new TestFramework("utest.runner.Framework")
+
 publishMavenStyle := true
 
 publishArtifact in Test := false
