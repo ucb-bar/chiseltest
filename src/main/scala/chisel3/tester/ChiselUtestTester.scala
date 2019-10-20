@@ -37,7 +37,7 @@ trait ChiselUtestTester extends TestSuite with TestEnvInterface {
   val topFileName = Some(getClass.getSimpleName)
 
   /**
-   * Since [[utest.test]] is collided with [[chisel3.tester.RawTester.test]], it is renamed to [[testCircuit]],
+   * Since [[utest.test]] collides with [[chisel3.tester.RawTester.test]], it is renamed to [[testCircuit]],
    * Here is a example to constructs a unit test harness for the Chisel Module PlusOne generated as dutGen.
    * {{{
    *   testCircuit(new PlusOne) { c =>
@@ -62,7 +62,6 @@ trait ChiselUtestTester extends TestSuite with TestEnvInterface {
    * @note This API is experimental and forward compatibility is not yet guaranteed
    * @param dutGen A generator of a Chisel Module
    * @tparam T The DUT type, must be a subclass of MultiIOModule
-   * @return
    */
   def testCircuit[T <: MultiIOModule](dutGen: => T, annotationSeq: AnnotationSeq = Seq.empty)(testFn: T => Unit): Unit = {
     def testName = s"${getClass.getSimpleName}_${System.currentTimeMillis()}"
