@@ -12,24 +12,24 @@ import firrtl.AnnotationSeq
  * {{{
  *   // define test spec in trait
  *   trait HasTestChipSpec {
- *   import chisel3.tester._
- *   def testChipSpec(dut: TestChip): Unit = { c =>
- *     // body of the unit test, c is a reference
- *     c.io.input.poke(1.U)
- *     c.io.output.expect(2.U)
- *   }
- * }
- *
- *   object SomeCircuitSpecTester extends ChiselUtestTester with HasSomeCircuitSpec {
- *   // define test by Tests macro
- *   val tests: Tests = Tests {
- *     // invoke test with test(""){}
- *     test("comments or name to a test"){
- *       // test function runs here
- *       testCircuit(new SomeCircuit, Seq(WriteVcdAnnotation))(SomeCircuitSpec)
+ *     import chisel3.tester._
+ *     def testChipSpec(dut: TestChip): Unit = { c =>
+ *       // body of the unit test, c is a reference
+ *       c.io.input.poke(1.U)
+ *       c.io.output.expect(2.U)
  *     }
  *   }
- * }
+ *
+ *   object SomeCircuitSpecTester extends ChiselUtestTester with HasSomeCircuitSpec {
+ *     // define test by Tests macro
+ *     val tests: Tests = Tests {
+ *       // invoke test with test(""){}
+ *       test("comments or name to a test"){
+ *         // test function runs here
+ *         testCircuit(new SomeCircuit, Seq(WriteVcdAnnotation))(SomeCircuitSpec)
+ *       }
+ *     }
+ *   }
  * }}}
  * */
 
