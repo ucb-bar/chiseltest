@@ -42,7 +42,7 @@ resolvers ++= Seq(
 
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.5",
-  "com.lihaoyi" %% "utest" % "0.7.1"
+  "com.lihaoyi" %% "utest" % "latest.integration"
 )
 
 testFrameworks += new TestFramework("utest.runner.Framework")
