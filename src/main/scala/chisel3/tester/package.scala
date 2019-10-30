@@ -4,7 +4,7 @@ package chisel3
 
 import scala.language.implicitConversions
 import chisel3.tester.internal._
-import chisel3.experimental.{DataMirror, Direction, FixedPoint}
+import chisel3.experimental.{DataMirror, Direction, FixedPoint, Interval}
 import chisel3.util._
 
 class NotLiteralException(message: String) extends Exception(message)
@@ -38,6 +38,10 @@ package object tester {
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
         pokeBits(x, value.litValue)
       }
+      case (x: Interval, value: Interval) =>
+        require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
+        pokeBits(x, value.litValue)
+
       case (x: Bundle, value: Bundle) => {
         // TODO: chisel needs to expose typeEquivalent
         require(x.elements.keys == value.elements.keys)  // TODO: this discards type data =(
@@ -61,6 +65,10 @@ package object tester {
         val multiplier = math.pow(2, x.binaryPoint.get)
         (Context().backend.peekBits(x, stale).toDouble / multiplier).F(x.binaryPoint).asInstanceOf[T]
       }
+      case x: Interval =>
+        val multiplier = math.pow(2, x.binaryPoint.get)
+        (Context().backend.peekBits(x, stale).toDouble / multiplier).F(x.binaryPoint).asInstanceOf[T]
+
       case x => throw new LiteralTypeException(s"don't know how to peek $x")
     }
 
@@ -78,6 +86,10 @@ package object tester {
         require(x.binaryPoint == value.binaryPoint, s"binary point mismatch between value $value from IO $x")
         Context().backend.expectBits(x, value.litValue, message, stale)
       }
+      case (x: Interval, value: Interval) =>
+        require(x.binaryPoint == value.binaryPoint, s"binary point mismatch between value $value from IO $x")
+        Context().backend.expectBits(x, value.litValue, message, stale)
+
       case (x: Bundle, value: Bundle) => {
         // TODO: chisel needs to expose typeEquivalent
         require(x.elements.keys == value.elements.keys)  // TODO: this discards type data =(

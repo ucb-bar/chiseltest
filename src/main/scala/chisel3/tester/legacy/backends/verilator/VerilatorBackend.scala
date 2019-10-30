@@ -2,7 +2,7 @@
 
 package chisel3.tester.legacy.backends.verilator
 
-import chisel3.experimental.FixedPoint
+import chisel3.experimental.{FixedPoint, Interval}
 import chisel3.internal.firrtl.KnownWidth
 import chisel3.tester.internal.{BackendInstance, Context, ThreadedBackend}
 import chisel3.tester.legacy.backends.verilator.Utils.unsignedBigIntToSigned
@@ -103,6 +103,9 @@ class VerilatorBackend[T <: MultiIOModule](
         unsignedBigIntToSigned(a, width)
       case f: FixedPoint =>
         val width = f.width.asInstanceOf[KnownWidth].value
+        unsignedBigIntToSigned(a, width)
+      case i: Interval =>
+        val width = i.width.asInstanceOf[KnownWidth].value
         unsignedBigIntToSigned(a, width)
       case _ => a
     }
