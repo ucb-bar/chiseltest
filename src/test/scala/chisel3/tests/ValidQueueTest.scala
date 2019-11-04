@@ -63,52 +63,6 @@ class ValidQueueTest extends FlatSpec with ChiselScalatestTester {
     }
   }
 
-  it should "expectInvalid can be used to wait for data" in {
-    for(delay <- 1 until 4) {
-      test(new ValidQueueModule(UInt(8.W), delay = delay)) { c =>
-        c.in.initSource().setSourceClock(c.clock)
-        c.out.initSink().setSinkClock(c.clock)
-
-        for (_ <- 0 until 10) {
-          c.out.expectInvalid()
-          c.clock.step()
-        }
-
-        for (value <- 70 to 80) {
-          c.in.enqueueNow(value.U)
-          for (_ <- 0 until c.delay - 1) {
-            c.out.expectInvalid()
-            c.clock.step()
-          }
-          c.out.expectDequeueNow(value.U)
-        }
-      }
-    }
-  }
-
-  it should "expectInvalid can be used to wait for data" in {
-    for(delay <- 1 until 4) {
-      test(new ValidQueueModule(UInt(8.W), delay = delay)) { c =>
-        c.in.initSource().setSourceClock(c.clock)
-        c.out.initSink().setSinkClock(c.clock)
-
-        for (_ <- 0 until 10) {
-          c.out.expectInvalid()
-          c.clock.step()
-        }
-
-        for (value <- 70 to 80) {
-          c.in.enqueueNow(value.U)
-          for (_ <- 0 until c.delay - 1) {
-            c.out.expectInvalid()
-            c.clock.step()
-          }
-          c.out.expectDequeueNow(value.U)
-        }
-      }
-    }
-  }
-
   class TriBundle extends Bundle {
     val a = UInt(8.W)
     val b = UInt(8.W)
