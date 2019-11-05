@@ -6,28 +6,26 @@ import chisel3._
 import chisel3.tester._
 import org.scalatest.FreeSpec
 
-
-class VecIO extends Bundle {
-  val x = UInt(5.W)
-}
-
 class UsesVec extends MultiIOModule {
-  val in   = IO(Input(Vec(4, new VecIO)))
+  val in   = IO(Input(Vec(4, UInt(5.W))))
   val addr = IO(Input(UInt(8.W)))
   val out  = IO(Output(UInt(5.W)))
 
-  out := in(addr).x
+  out := in(addr)
 }
 
 class UsesVecSpec extends FreeSpec with ChiselScalatestTester {
   "run" in {
     test(new UsesVec) { c =>
-      c.in(0).x.poke(5.U)
-      c.in(1).x.poke(5.U)
-      c.in(2).x.poke(4.U)
-      c.addr.poke(2.U)
-      c.clock.step()
-      c.out.expect(4.U)
+      c.in(0).poke(5.U)
+      c.in(1).poke(6.U)
+      c.in(2).poke(7.U)
+      c.in(3).poke(8.U)
+
+      for(vecIndex <- c.in.indices) {
+        c.addr.poke(vecIndex.U)
+        c.out.expect((vecIndex + 5).U)
+      }
     }
   }
 }

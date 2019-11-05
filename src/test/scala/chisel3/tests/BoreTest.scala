@@ -2,11 +2,9 @@
 
 package chisel3.tests
 
-import org.scalatest._
 import chisel3._
 import chisel3.tester._
-import chisel3.tester.experimental.TestOptionBuilder._
-import chisel3.tester.internal.VerilatorBackendAnnotation
+import org.scalatest._
 
 class BoreTest extends FlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2"
@@ -31,9 +29,7 @@ class BoreTest extends FlatSpec with ChiselScalatestTester with Matchers {
   }
 
   it should "honor Wiring Transform for BoringUtils" in {
-//    val annos = Seq(VerilatorBackendAnnotation)
-    val annos = Seq()
-    test(new Top).withAnnotations(annos) { c =>
+    test(new Top) { c =>
       c.y.expect(42.U)
     }
   }
