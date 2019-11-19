@@ -9,6 +9,7 @@ import chisel3.experimental.BundleLiterals._
 import chisel3.util._
 
 class NotLiteralException(message: String) extends Exception(message)
+class LiteralValueException(message: String) extends Exception(message)
 class LiteralTypeException(message: String) extends Exception(message)
 class UnpokeableException(message: String) extends Exception(message)
 class UnsupportedOperationException(message: String) extends Exception(message)
@@ -39,11 +40,19 @@ package object tester {
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
         pokeBits(x, value.litValue)
       }
-      case (x: Bundle, value: Bundle) => {
+      case (xx: Bundle, value: Bundle) => {
         // TODO: chisel needs to expose typeEquivalent
-        require(x.elements.keys == value.elements.keys)  // TODO: this discards type data =(
-        (x.elements zip value.elements) foreach { case ((_, x), (_, value)) =>
-          x.poke(value)
+        require(xx.elements.keys == value.elements.keys)  // TODO: this discards type data =(
+        (xx.elements zip value.elements) foreach { case ((fieldName, xxx), (_, value)) =>
+          try {
+            xxx.poke(value)
+          }
+          catch {
+            case _: NoSuchElementException =>
+              val bundleFieldName = x.toString.split("[(]").head + "." + fieldName
+              throw new LiteralValueException(
+                s"""Error: Maybe bundle field $bundleFieldName was not given a value during poke""")
+          }
         }
       }
       case x => throw new LiteralTypeException(s"don't know how to poke $x")

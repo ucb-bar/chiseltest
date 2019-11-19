@@ -69,4 +69,13 @@ class BundleLiteralsSpec extends FlatSpec with ChiselScalatestTester with Matche
       c.out.expect(chiselTypeOf(c.in).Lit(_.a -> 0.U, _.b -> 1.U))
     }
   }
+
+  it should "provide helpful exception when missing field in poke" in {
+    val caught = intercept[LiteralValueException] {
+      test(new PassthroughModule(new DoubleElements)) { c =>
+        c.in.poke(chiselTypeOf(c.in).Lit(_.a -> 0.U))
+      }
+    }
+    caught.getMessage.contains("Maybe bundle field DoubleElements.b was not given a value during poke") should be (true)
+  }
 }
