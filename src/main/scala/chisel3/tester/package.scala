@@ -5,6 +5,7 @@ package chisel3
 import scala.language.implicitConversions
 import chisel3.tester.internal._
 import chisel3.experimental.{DataMirror, Direction, FixedPoint}
+import chisel3.experimental.BundleLiterals._
 import chisel3.util._
 
 class NotLiteralException(message: String) extends Exception(message)
@@ -60,6 +61,12 @@ package object tester {
       case (x: FixedPoint) => {
         val multiplier = math.pow(2, x.binaryPoint.get)
         (Context().backend.peekBits(x, stale).toDouble / multiplier).F(x.binaryPoint).asInstanceOf[T]
+      }
+      case (x: Bundle) => {
+        val elementValueFns = x.elements.map { case (name: String, elt: Data) =>
+          (y: Bundle) => (y.elements(name), elt.peekWithStale(stale))
+        }.toSeq
+        chiselTypeOf(x).Lit(elementValueFns: _*).asInstanceOf[T]
       }
       case x => throw new LiteralTypeException(s"don't know how to peek $x")
     }

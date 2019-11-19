@@ -53,17 +53,20 @@ class BundleLiteralsSpec extends FlatSpec with ChiselScalatestTester with Matche
     }
   }
 
-  // peek on bundle not supported yet, this test will fail and should
-  // be altered when BundleLiteral peeking works
-  // it is not altogether what the use case is for peeking a bundle
-  // possibly to poke that value somewhere else
-  // this should be considered when peeking Bundles is supported
-  ignore should "return a BundleLiteral when peeking" in {
+  it should "return a Bundle literal when peeking" in {
     test(new PassthroughModule(new DoubleElements)) { c =>
       c.in.poke(chiselTypeOf(c.in).Lit(_.a -> 0.U, _.b -> 1.U))
       val output = c.out.peek()
-      output.a === 0.U should be(true.B)
-      output.a === 1.U should be(true.B)
+      output.a.litValue should be (0)
+      output.b.litValue should be (1)
+    }
+  }
+
+  it should "roundtrip Bundle literals" in {
+    test(new PassthroughModule(new DoubleElements)) { c =>
+      c.in.poke(chiselTypeOf(c.in).Lit(_.a -> 0.U, _.b -> 1.U))
+      c.in.poke(c.out.peek())
+      c.out.expect(chiselTypeOf(c.in).Lit(_.a -> 0.U, _.b -> 1.U))
     }
   }
 }
