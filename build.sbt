@@ -61,6 +61,12 @@ pomExtra := (
   <url>https://github.com/ucb-bar/chisel-testers2.git</url>
   <connection>scm:git:github.com/ucb-bar/chisel-testers2.git</connection>
 </scm>
+<developers>
+  <developer>
+    <id>ducky64</id>
+    <name>Richard Lin</name>
+  </developer>
+</developers>
 )
 
 publishTo := {
