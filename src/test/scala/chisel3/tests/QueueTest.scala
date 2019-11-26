@@ -66,16 +66,10 @@ class QueueTest extends FlatSpec with ChiselScalatestTester {
         val in = Flipped(Irrevocable(UInt(8.W)))
         val out = Irrevocable(UInt(8.W))
       })
-      val full = RegInit(false.B)
-      when(io.in.fire()){ full := true.B }.elsewhen(io.out.fire()){ full := false.B }
-      io.in.ready := !full
-      io.out.valid := full
-      io.out.bits := RegNext(io.in.bits)
+      io.out <> Queue(io.in)
     }){c =>
       c.io.in.initSource().setSourceClock(c.clock)
       c.io.out.initSink().setSinkClock(c.clock)
-      c.io.in.enqueue(9.U)
-      c.io.out.expectDequeue((9.U))
       parallel(
         c.io.in.enqueueSeq(Seq(5.U, 2.U)),
         c.io.out.expectDequeueSeq(Seq(5.U, 2.U))
