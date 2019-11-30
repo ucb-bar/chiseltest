@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.util._
 
 // implicit class, cannot maintain state
-class DecoupledDriver[T <: Data](x: DecoupledIO[T]) {
+class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
   // Source (enqueue) functions
   //
   def initSource(): this.type = {
