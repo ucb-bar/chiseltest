@@ -4,6 +4,8 @@ import org.scalatest._
 
 import chisel3._
 import chisel3.tester._
+import chisel3.util._
+
 
 class QueueTest extends FlatSpec with ChiselScalatestTester {
   behavior of "Testers2 with Queue"
@@ -57,4 +59,22 @@ class QueueTest extends FlatSpec with ChiselScalatestTester {
       }.join()
     }
   }
+
+  it should "work with IrrevocableIO" in{
+    test(new Module{
+      val io = IO(new Bundle{
+        val in = Flipped(Irrevocable(UInt(8.W)))
+        val out = Irrevocable(UInt(8.W))
+      })
+      io.out <> Queue(io.in)
+    }){c =>
+      c.io.in.initSource().setSourceClock(c.clock)
+      c.io.out.initSink().setSinkClock(c.clock)
+      parallel(
+        c.io.in.enqueueSeq(Seq(5.U, 2.U)),
+        c.io.out.expectDequeueSeq(Seq(5.U, 2.U))
+      )
+    }
+  }
+
 }

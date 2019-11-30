@@ -171,7 +171,7 @@ package object tester {
     }
   }
 
-  implicit def decoupledToDriver[T <: Data](x: DecoupledIO[T]) = new DecoupledDriver(x)
+  implicit def decoupledToDriver[T <: Data](x: ReadyValidIO[T]) = new DecoupledDriver(x)
 
   implicit def validToDriver[T <: Data](x: ValidIO[T]) = new ValidDriver(x)
 }
