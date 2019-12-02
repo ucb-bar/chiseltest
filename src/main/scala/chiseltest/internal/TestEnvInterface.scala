@@ -68,7 +68,7 @@ trait TestEnvInterface {
 
       val trace = new Throwable
       val expectStackDepth = trace.getStackTrace.indexWhere(ste =>
-        ste.getClassName == "chisel3.tester.package$testableData" && ste.getMethodName == "expect")
+        ste.getClassName == "chiseltest.package$testableData" && ste.getMethodName == "expect")
       require(expectStackDepth != -1,
         s"Failed to find expect in stack trace:\r\n${trace.getStackTrace.mkString("\r\n")}")
 
