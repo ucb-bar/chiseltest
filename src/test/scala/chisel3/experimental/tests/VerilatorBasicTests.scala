@@ -3,8 +3,8 @@ package chisel3.experimental.tests
 import chisel3._
 import chisel3.tester._
 import chisel3.tests.{PassthroughModule, StaticModule}
-import chisel3.tester.experimental.TestOptionBuilder._
-import chisel3.tester.internal.VerilatorBackendAnnotation
+import chiseltest.experimental.TestOptionBuilder._
+import chiseltest.internal.VerilatorBackendAnnotation
 import org.scalatest._
 
 class VerilatorBasicTests extends FlatSpec with ChiselScalatestTester with Matchers {

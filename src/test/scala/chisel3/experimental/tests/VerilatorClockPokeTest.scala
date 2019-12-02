@@ -4,7 +4,7 @@ import chisel3._
 import chisel3.tester._
 import chisel3.tester.experimental.TestOptionBuilder._
 import chisel3.tester.experimental.UncheckedClockPoke._
-import chisel3.tester.internal.{TreadleBackendAnnotation, VerilatorBackendAnnotation}
+import chiseltest.internal.{TreadleBackendAnnotation, VerilatorBackendAnnotation}
 import chisel3.util._
 import org.scalatest._
 import treadle.executable.ClockInfo
