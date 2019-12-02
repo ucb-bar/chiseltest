@@ -41,8 +41,8 @@ In this file:
 1.  Add the necessary imports:
     ```scala
     import org.scalatest._
+    import chiseltest._
     import chisel3._
-    import chisel3.tester._
     ```
 2.  Create a test class:
     ```scala
@@ -95,8 +95,8 @@ See the test cases for examples:
 - [VerilatorBasicTests](src/test/scala/chisel3/experimental/tests/VerilatorBasicTests.scala) shows an example using Verilator as the simulator.
   - Note: the simulator is selected by passing an annotation into the `test` function, which requires experimental imports:
     ```scala
-    import chisel3.tester.experimental.TestOptionBuilder._
-    import chisel3.tester.internal.VerilatorBackendAnnotation
+    import chiseltest.experimental.TestOptionBuilder._
+    import chiseltest.internal.VerilatorBackendAnnotation
     ```
     ```scala
     test(new MyModule).withAnnotations(Seq(VerilatorBackendAnnotation)) { c =>
@@ -117,7 +117,7 @@ See the test cases for examples:
 ## Quick References
 To dump VCDs (into the test_run_dir subfolder) using sbt:
 ```
-testOnly chisel3.tests.BasicTest -- -DwriteVcd=1
+testOnly chiseltest.tests.BasicTest -- -DwriteVcd=1
 ```
 
 
