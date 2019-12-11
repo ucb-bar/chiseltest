@@ -4,6 +4,7 @@ package chisel3.tester
 
 import chisel3._
 import chisel3.util._
+import chiseltest._
 
 package object TestAdapters {
   @deprecated("Use implicit conversion to DecoupledDriver with setSourceClock or implicit clock resolution", "0.1")
