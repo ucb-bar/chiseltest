@@ -42,7 +42,6 @@ package object tester {
       case (x: Interval, value: Interval) =>
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
         pokeBits(x, value.litValue)
-
       case (x: Bundle, value: Bundle) => {
         // TODO: chisel needs to expose typeEquivalent
         require(x.elements.keys == value.elements.keys)  // TODO: this discards type data =(
@@ -93,7 +92,6 @@ package object tester {
       }
       case (x: Interval, value: Interval) =>
         Context().backend.expectBits(x, value.litValue, message, stale)
-
       case (x: Bundle, value: Bundle) => {
         // TODO: chisel needs to expose typeEquivalent
         require(x.elements.keys == value.elements.keys)  // TODO: this discards type data =(
