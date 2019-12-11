@@ -1,22 +1,23 @@
-# chisel-testers2
+# ChiselTest
+*formerly known as testers2*
+
 This is **alpha software** that is currently under development, and interfaces may be subject to change (see [stability](#stability) for details).
 However, it is very much in a usable state, so if you're fine living on the bleeding edge, give it a try. 
 
-
 ## Overview
-Testers2 is a test harness for [Chisel](https://github.com/freechipsproject/chisel3)-based RTL designs, currently supporting directed testing (all test stimulus manually specified - no constrained random and coverage-driven flows).
-Testers2 emphasizes tests that are lightweight (minimizes boilerplate code), easy to read and write (understandability), and compose (for better test code reuse).
+ChiselTest is a test harness for [Chisel](https://github.com/freechipsproject/chisel3)-based RTL designs, currently supporting directed testing (all test stimulus manually specified - no constrained random and coverage-driven flows).
+ChiselTest emphasizes tests that are lightweight (minimizes boilerplate code), easy to read and write (understandability), and compose (for better test code reuse).
 
 The core primitives are similar to nonsynthesizable Verilog: input pin assignment (`poke`), pin value assertion (`expect`), and time advance (`step`). Threading concurrency is also supported with the use of `fork` and `join`, and concurrent accesses to wires are checked to prevent race conditions.
 
-### Migrating from chisel-testers
-The core abstractions (`poke`, `expect`, `step`) are similar to [chisel-testers](https://github.com/freechipsproject/chisel-testers), but the syntax is inverted: instead of doing `tester.poke(wire, value)` with a Scala number value, in testers2 you would write `write.poke(value)` with a Chisel literal value.
+### Migrating from chisel-testers / iotesters
+The core abstractions (`poke`, `expect`, `step`) are similar to [chisel-testers](https://github.com/freechipsproject/chisel-testers), but the syntax is inverted: instead of doing `tester.poke(wire, value)` with a Scala number value, in ChiselTest you would write `write.poke(value)` with a Chisel literal value.
 Furthermore, as no reference to the tester context is needed, test helper functions can be defined outside a test class and written as libraries.
 
 Currently, this should support all the functionality that was in chisel-testers, and provides additional features.
 This project is meant to supersede chisel-testers, and eventually may become a default part of chisel3.
 
-Test cases written in chisel-testers cannot be directly used in testers2, as the syntax is significantly different.
+Test cases written in chisel-testers cannot be directly used in ChiselTest, as the syntax is significantly different.
 
 
 ## Getting Started
@@ -24,16 +25,16 @@ Test cases written in chisel-testers cannot be directly used in testers2, as the
 ### Installation 
 To use chisel-testers as a managed dependency, add this in your build.sbt:
 ```scala
-libraryDependencies += "edu.berkeley.cs" %% "chisel-testers2" % "0.1-SNAPSHOT"
+libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.1-SNAPSHOT"
 ```
 
-Note, chisel-testers2 snapshots generally track chisel3 snapshots, and requires the use of a chisel3 snapshot.
+Note, `chiseltest` snapshots generally track chisel3 snapshots, and requires the use of a chisel3 snapshot.
 We may introduce versioned snapshots and releases in the future, tied to a particular release of chisel3.
 
-You can also build testers2 locally with `publishLocal`.
+You can also build ChiselTest locally with `publishLocal`.
 
 ### Writing a Test
-Testers2 integrates with the [ScalaTest](http://scalatest.org) framework, which provides a framework for detection and execution of unit tests.
+ChiselTest integrates with the [ScalaTest](http://scalatest.org) framework, which provides a framework for detection and execution of unit tests.
 
 Assuming a typical Chisel project, create a new file in `src/test/scala/`, for example, `BasicTest.scala`.
 

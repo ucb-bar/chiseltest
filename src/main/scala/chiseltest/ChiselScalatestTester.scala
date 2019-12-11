@@ -79,7 +79,7 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     *
     * For example:
     * {{{
-    *   test(new TestModule).withAnnotations(Seq(WriteVcdAnnotation) { c =>
+    *   test(new TestModule).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
     *     // body of the unit test
     *   }
     * }}}
