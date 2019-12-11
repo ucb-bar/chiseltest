@@ -12,11 +12,17 @@ import treadle.{BlackBoxFactoriesAnnotation, HasTreadleSuite}
 
 /** This test uses a deprecated class and method to test backward compatibility
   *
+  * @note This test is used to illustrate workaround for treadle
+  *
   */
 class OptionsBackwardCompatibilityTest extends FreeSpec with ChiselScalatestTester {
   private val manager = new ExecutionOptionsManager("asyncResetRegTest") with HasTreadleSuite {
     treadleOptions = treadleOptions.copy(
       blackBoxFactories = Seq(new AsyncResetBlackBoxFactory)
+    )
+    // This is the backward compatible way to use the Treadle backend, which is necessary for this test to run.
+    firrtlOptions = firrtlOptions.copy(
+      compilerName = "none"
     )
 
     def toAnnotations: AnnotationSeq = Seq(BlackBoxFactoriesAnnotation(treadleOptions.blackBoxFactories))
