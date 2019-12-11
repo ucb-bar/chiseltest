@@ -66,8 +66,7 @@ package object tester {
         (Context().backend.peekBits(x, stale).toDouble / multiplier).F(x.binaryPoint).asInstanceOf[T]
       }
       case x: Interval =>
-        val multiplier = math.pow(2, x.binaryPoint.get)
-        (Context().backend.peekBits(x, stale).toDouble / multiplier).F(x.binaryPoint).asInstanceOf[T]
+        Context().backend.peekBits(x, stale).I(x.binaryPoint).asInstanceOf[T]
 
       case x => throw new LiteralTypeException(s"don't know how to peek $x")
     }
@@ -87,7 +86,6 @@ package object tester {
         Context().backend.expectBits(x, value.litValue, message, stale)
       }
       case (x: Interval, value: Interval) =>
-        require(x.binaryPoint == value.binaryPoint, s"binary point mismatch between value $value from IO $x")
         Context().backend.expectBits(x, value.litValue, message, stale)
 
       case (x: Bundle, value: Bundle) => {
@@ -177,4 +175,11 @@ package object tester {
   }
 
   implicit def decoupledToDriver[T <: Data](x: DecoupledIO[T]) = new DecoupledDriver(x)
+
+  def intervalToBigDecimal(i: Interval): BigDecimal = {
+    val value = BigDecimal(i.litValue())
+    val binaryPoint: Int = i.binaryPoint.get
+    val multiplier = math.pow(2, binaryPoint)
+    value / multiplier
+  }
 }
