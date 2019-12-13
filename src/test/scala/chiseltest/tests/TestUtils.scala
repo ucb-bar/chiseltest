@@ -34,6 +34,18 @@ class ShifterModule[T <: Data](ioType: T, cycles: Int = 1) extends MultiIOModule
   out := ShiftRegister(in, cycles)
 }
 
+class DummyModule extends Module {
+  val io = IO(new Bundle {
+        val condition = Input(Bool())
+        val out = Output(UInt(2.W))
+      })
+  val counter = RegInit(0.U(2.W))
+  when (io.condition) {
+    counter := counter + 1.U
+  }
+  io.out := counter
+}
+
 class QueueModule[T <: Data](ioType: T, entries: Int) extends MultiIOModule {
   val in = IO(Flipped(Decoupled(ioType)))
   val out = IO(Decoupled(ioType))
