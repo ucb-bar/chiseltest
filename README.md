@@ -1,5 +1,5 @@
 # ChiselTest
-*formerly known as testers2*
+*formerly affectionately known as testers2*
 
 This is **alpha software** that is currently under development, and interfaces may be subject to change (see [stability](#stability) for details).
 However, it is very much in a usable state, so if you're fine living on the bleeding edge, give it a try. 
