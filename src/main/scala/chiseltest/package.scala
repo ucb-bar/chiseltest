@@ -174,11 +174,4 @@ package object chiseltest {
   implicit def decoupledToDriver[T <: Data](x: ReadyValidIO[T]) = new DecoupledDriver(x)
 
   implicit def validToDriver[T <: Data](x: ValidIO[T]) = new ValidDriver(x)
-
-  def intervalToBigDecimal(i: Interval): BigDecimal = {
-    val value = BigDecimal(i.litValue())
-    val binaryPoint: Int = i.binaryPoint.get
-    val multiplier = math.pow(2, binaryPoint)
-    value / multiplier
-  }
 }

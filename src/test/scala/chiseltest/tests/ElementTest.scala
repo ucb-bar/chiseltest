@@ -154,8 +154,6 @@ class ElementTest extends FlatSpec with ChiselScalatestTester {
         c.io.out1Wrap.expect(wrapped)
       }
 
-      val in1 = (-6.0).I(inputRange)
-
       checkOutcome((-6.0).I(inputRange), (-4.5).I(outputRange), 3.25.I(outputRange))
       checkOutcome((-3.25).I(inputRange), (-3.25).I(outputRange), (-3.25).I(outputRange))
       checkOutcome(0.I(inputRange), 0.I(outputRange), 0.I(outputRange))
