@@ -1,12 +1,12 @@
 // See LICENSE for license details.
 
-package chiseltest.internal
+package chisel3.tester.internal
 
-import chiseltest.backends.BackendExecutive
-import chiseltest.backends.treadle.TreadleExecutive
-import chiseltest.legacy.backends.verilator.VerilatorExecutive
-import chisel3.tester.legacy.backends.vcs.VcsExecutive
 import chisel3.MultiIOModule
+import chisel3.tester.backends.BackendExecutive
+import chisel3.tester.backends.treadle.TreadleExecutive
+import chisel3.tester.legacy.backends.vcs.VcsExecutive
+import chisel3.tester.legacy.backends.verilator.VerilatorExecutive
 import firrtl.AnnotationSeq
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
@@ -62,6 +62,7 @@ case object TreadleBackendAnnotation extends BackendAnnotation {
     )
   )
 }
+
 case object VerilatorBackendAnnotation extends BackendAnnotation {
   val executive: BackendExecutive = VerilatorExecutive
 
