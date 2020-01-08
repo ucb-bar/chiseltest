@@ -5,7 +5,7 @@ package chiseltest.legacy.backends.verilator
 import chiseltest.internal.{BackendInstance, Context, ThreadedBackend}
 import chiseltest.legacy.backends.verilator.Utils.unsignedBigIntToSigned
 import chiseltest.{Region, TimeoutException, ClockResolutionException}
-import chisel3.experimental.{DataMirror, FixedPoint}
+import chisel3.experimental.{DataMirror, FixedPoint, Interval}
 import chisel3.internal.firrtl.KnownWidth
 import chisel3.{SInt, _}
 
@@ -103,6 +103,9 @@ class VerilatorBackend[T <: MultiIOModule](
         unsignedBigIntToSigned(a, width)
       case f: FixedPoint =>
         val width = DataMirror.widthOf(f).asInstanceOf[KnownWidth].value
+        unsignedBigIntToSigned(a, width)
+      case i: Interval =>
+        val width = DataMirror.widthOf(i).asInstanceOf[KnownWidth].value
         unsignedBigIntToSigned(a, width)
       case _ => a
     }
