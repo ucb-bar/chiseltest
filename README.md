@@ -84,16 +84,16 @@ In this file:
 
 ## Usage References
 See the test cases for examples:
-- [BasicTest](src/test/scala/chisel3/tests/BasicTest.scala) shows basic `peek`, `poke`, and `step` functionality
-- [QueueTest](src/test/scala/chisel3/tests/QueueTest.scala) shows example uses of the DecoupledDriver library, providing functions like `enqueueNow`, `expectDequeueNow`, their sequence variants, `expectPeek`, and `expectInvalid`.
-  Also, check out the [DecoupledDriver](src/main/scala/chisel3/tester/DecoupledDriver.scala) implementation, and note that it is not a special case, but code that any user can write. 
-- [BundleLiteralsSpec](src/test/scala/chisel3/tests/BundleLiteralsSpec.scala) shows examples of using bundle literals to poke and expect bundle wires.
+- [BasicTest](src/test/scala/chiseltest/tests/BasicTest.scala) shows basic `peek`, `poke`, and `step` functionality
+- [QueueTest](src/test/scala/chiseltest/tests/QueueTest.scala) shows example uses of the DecoupledDriver library, providing functions like `enqueueNow`, `expectDequeueNow`, their sequence variants, `expectPeek`, and `expectInvalid`.
+  Also, check out the [DecoupledDriver](src/main/scala/chiseltest/tester/DecoupledDriver.scala) implementation, and note that it is not a special case, but code that any user can write. 
+- [BundleLiteralsSpec](src/test/scala/chiseltest/tests/BundleLiteralsSpec.scala) shows examples of using bundle literals to poke and expect bundle wires.
   - Note: Bundle literals are still an experimental chisel3 feature and need to be explicitly imported:
     ```scala
     import chisel3.experimental.BundleLiterals._
     ```
-- [ShiftRegisterTest](src/test/scala/chisel3/tests/ShiftRegisterTest.scala) shows an example of using fork/join to define a test helper function, where multiple invocations of it are pipelined using `fork`.
-- [VerilatorBasicTests](src/test/scala/chisel3/experimental/tests/VerilatorBasicTests.scala) shows an example using Verilator as the simulator.
+- [ShiftRegisterTest](src/test/scala/chiseltest/tests/ShiftRegisterTest.scala) shows an example of using fork/join to define a test helper function, where multiple invocations of it are pipelined using `fork`.
+- [VerilatorBasicTests](src/test/scala/chiseltest/experimental/tests/VerilatorBasicTests.scala) shows an example using Verilator as the simulator.
   - Note: the simulator is selected by passing an annotation into the `test` function, which requires experimental imports:
     ```scala
     import chiseltest.experimental.TestOptionBuilder._
@@ -112,7 +112,7 @@ See the test cases for examples:
   This can be used to create monitors that run after other main testdriver threads have been run, and can read wires those threads have poked.
 - `timescope` allows pokes to be scoped - that is, pokes inside the timescope block "disappear" and the wire reverts to its previous value at the end of the block.
   This fits well with the pattern of assigning a default pull-up/down to a wire, and temporarily overriding that value, for example a Decoupled `valid` signal defaulting low but driven high during an enqueue transaction.
-  See [TimescopeTest](src/test/scala/chisel3/tests/TimescopeTest.scala) for examples.
+  See [TimescopeTest](src/test/scala/chiseltest/tests/TimescopeTest.scala) for examples.
 
 
 ## Quick References
