@@ -86,7 +86,7 @@ In this file:
 See the test cases for examples:
 - [BasicTest](src/test/scala/chiseltest/tests/BasicTest.scala) shows basic `peek`, `poke`, and `step` functionality
 - [QueueTest](src/test/scala/chiseltest/tests/QueueTest.scala) shows example uses of the DecoupledDriver library, providing functions like `enqueueNow`, `expectDequeueNow`, their sequence variants, `expectPeek`, and `expectInvalid`.
-  Also, check out the [DecoupledDriver](src/main/scala/chiseltest/tester/DecoupledDriver.scala) implementation, and note that it is not a special case, but code that any user can write. 
+  Also, check out the [DecoupledDriver](src/main/scala/chiseltest/DecoupledDriver.scala) implementation, and note that it is not a special case, but code that any user can write. 
 - [BundleLiteralsSpec](src/test/scala/chiseltest/tests/BundleLiteralsSpec.scala) shows examples of using bundle literals to poke and expect bundle wires.
   - Note: Bundle literals are still an experimental chisel3 feature and need to be explicitly imported:
     ```scala
