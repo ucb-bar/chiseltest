@@ -8,7 +8,7 @@ import chisel3.MultiIOModule
 import firrtl.AnnotationSeq
 import org.scalatest._
 import org.scalatest.exceptions.TestFailedException
-import treadle.WriteVcdAnnotation  // TODO this shouldn't be treadle-specific, but this feature is important
+import internal.WriteVcdAnnotation
 
 import scala.util.DynamicVariable
 
@@ -19,13 +19,11 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     }
 
     def apply(testFn: T => Unit): Unit = {
-      val newAnnos = addDefaultTargetDir(getTestName, annotationSeq)
-      val withVcdAnnos = if (scalaTestContext.value.get.configMap.contains("writeVcd")) {
-        AnnotationSeq(newAnnos ++ Seq(WriteVcdAnnotation))
-      } else {
-        newAnnos
+      var newAnnos = addDefaultTargetDir(getTestName, annotationSeq)
+      if (scalaTestContext.value.get.configMap.contains("writeVcd")) {
+        newAnnos = newAnnos ++ Seq(WriteVcdAnnotation)
       }
-      runTest(defaults.createDefaultTester(dutGen, withVcdAnnos))(testFn)
+      runTest(defaults.createDefaultTester(dutGen, newAnnos))(testFn)
     }
     // TODO: in the future, allow reset and re-use of a compiled design to avoid recompilation cost per test
 
