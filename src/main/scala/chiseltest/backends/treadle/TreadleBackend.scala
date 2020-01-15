@@ -61,7 +61,7 @@ extends BackendInstance[T] with ThreadedBackend[T] {
     a > 0
   }
 
-  override def pokeBits(signal: Bits, value: BigInt): Unit = {
+  override def pokeBits(signal: Data, value: BigInt): Unit = {
     doPoke(signal, value, new Throwable)
     if (tester.peek(dataNames(signal)) != value) {
       idleCycles.clear()
@@ -70,7 +70,7 @@ extends BackendInstance[T] with ThreadedBackend[T] {
     debugLog(s"${resolveName(signal)} <- $value")
   }
 
-  override def peekBits(signal: Bits, stale: Boolean): BigInt = {
+  override def peekBits(signal: Data, stale: Boolean): BigInt = {
     require(!stale, "Stale peek not yet implemented")
 
     doPeek(signal, new Throwable)
@@ -79,7 +79,7 @@ extends BackendInstance[T] with ThreadedBackend[T] {
     a
   }
 
-  override def expectBits(signal: Bits, value: BigInt, message: Option[String], stale: Boolean): Unit = {
+  override def expectBits(signal: Data, value: BigInt, message: Option[String], stale: Boolean): Unit = {
     require(!stale, "Stale peek not yet implemented")
 
     debugLog(s"${resolveName(signal)} ?> $value")
