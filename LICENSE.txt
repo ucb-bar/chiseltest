@@ -1,0 +1,1 @@
+Contributions to this repository prior to January 1, 2020 are licensed under the BSD 3-Clause license. Contributions on or after that date are licensed under the Apache 2.0 license.
