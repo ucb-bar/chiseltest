@@ -95,7 +95,7 @@ object VerilatorExecutive extends BackendExecutive {
     )
     assert(
       chisel3.Driver.cppToExe(circuit.name, targetDirFile).! == 0,
-      s"Compilation of verilator generated code faile for circuit ${circuit.name} in work dir $targetDir"
+      s"Compilation of verilator generated code failed for circuit ${circuit.name} in work dir $targetDir"
     )
 
     val command = compiledAnnotations
