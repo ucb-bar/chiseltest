@@ -41,15 +41,15 @@ trait BackendInterface {
   /** Writes a value to a writable wire.
     * Throws an exception if write is not writable.
     */
-  def pokeBits(signal: Bits, value: BigInt): Unit
+  def pokeBits(signal: Data, value: BigInt): Unit
 
   /** Returns the current value on a wire.
     * If stale is true, returns the current combinational value (after previous pokes have taken effect).
     * If stale is false, returns the value at the beginning of the current cycle.
     */
-  def peekBits(signal: Bits, stale: Boolean): BigInt
+  def peekBits(signal: Data, stale: Boolean): BigInt
 
-  def expectBits(signal: Bits, value: BigInt, message: Option[String], stale: Boolean): Unit
+  def expectBits(signal: Data, value: BigInt, message: Option[String], stale: Boolean): Unit
 
   /**
    * Sets the timeout of the clock: the number of cycles the clock can advance without
