@@ -4,8 +4,9 @@ import org.scalatest._
 
 import chisel3._
 import chiseltest._
+import org.scalatest.flatspec.AnyFlatSpec
 
-class TimescopeTest extends FlatSpec with ChiselScalatestTester {
+class TimescopeTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Testers2 timescopes"
 
   it should "revert signals at the end" in {

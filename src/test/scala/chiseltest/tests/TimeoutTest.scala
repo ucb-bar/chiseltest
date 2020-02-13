@@ -4,8 +4,10 @@ import org.scalatest._
 
 import chisel3._
 import chiseltest._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class TimeoutTest extends FlatSpec with ChiselScalatestTester with Matchers {
+class TimeoutTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2"
 
   it should "fail on default timeout at 1000 cycles" in {

@@ -4,8 +4,10 @@ import org.scalatest._
 
 import chisel3._
 import chiseltest._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class BasicTest extends FlatSpec with ChiselScalatestTester with Matchers {
+class BasicTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2"
 
   it should "test static circuits" in {

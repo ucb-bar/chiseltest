@@ -4,8 +4,9 @@ import org.scalatest._
 
 import chisel3._
 import chiseltest._
+import org.scalatest.flatspec.AnyFlatSpec
 
-class ThreadSafetyTest extends FlatSpec with ChiselScalatestTester {
+class ThreadSafetyTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Testers2 thread safety checker"
 
   it should "disallow simultaneous pokes from parallel threads" in {

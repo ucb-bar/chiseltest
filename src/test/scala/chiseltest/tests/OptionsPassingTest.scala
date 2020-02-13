@@ -8,8 +8,10 @@ import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.experimental.sanitizeFileName
 import org.scalatest._
 import treadle.{VerboseAnnotation, WriteVcdAnnotation}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class OptionsPassingTest extends FlatSpec with ChiselScalatestTester with Matchers {
+class OptionsPassingTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2"
 
   it should "write vcd output when passing in a WriteVcdAnnotation" in {
