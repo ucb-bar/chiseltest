@@ -3,7 +3,7 @@
 package chiseltest
 
 import chiseltest.internal._
-import chiseltest.experimental.sanitizeFileName
+import chiseltest.experimental.{ChiselTestShell, sanitizeFileName}
 import chisel3.MultiIOModule
 import firrtl.AnnotationSeq
 import org.scalatest._
@@ -13,10 +13,23 @@ import internal.WriteVcdAnnotation
 import scala.util.DynamicVariable
 
 trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvInterface { this: TestSuite =>
-  class TestBuilder[T <: MultiIOModule](val dutGen: () => T, annotationSeq: AnnotationSeq) {
+
+  abstract class  TestBuilder[T <: MultiIOModule](val dutGen: () => T) {
     def getTestName: String = {
       sanitizeFileName(scalaTestContext.value.get.name)
     }
+    def apply(testFn: T => Unit): Unit
+
+    // TODO: in the future, allow reset and re-use of a compiled design to avoid recompilation cost per test
+    val outer: ChiselScalatestTester = ChiselScalatestTester.this
+  }
+
+  /** Provides the machinery to take the annotations provided by the test helper .withAnnotations
+    * to the test runner
+    *
+    */
+  class AnnotatedTestBuilder[T <: MultiIOModule](override val dutGen: () => T, annotationSeq: AnnotationSeq)
+    extends TestBuilder(dutGen) {
 
     def apply(testFn: T => Unit): Unit = {
       var newAnnos = addDefaultTargetDir(getTestName, annotationSeq)
@@ -25,9 +38,23 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
       }
       runTest(defaults.createDefaultTester(dutGen, newAnnos))(testFn)
     }
-    // TODO: in the future, allow reset and re-use of a compiled design to avoid recompilation cost per test
 
-    val outer: ChiselScalatestTester = ChiselScalatestTester.this
+  }
+
+  /** Provides the machinery to take the command line arguments provided by the test helper .withFlags
+    * to the test runner
+    *
+    */
+  class FlaggedTestBuilder[T <: MultiIOModule](override val dutGen: () => T, flags: Array[String])
+    extends TestBuilder(dutGen) {
+
+    def apply(testFn: T => Unit): Unit = {
+      var newAnnos = addDefaultTargetDir(getTestName, (new ChiselTestShell).parse(flags))
+      if (scalaTestContext.value.get.configMap.contains("writeVcd")) {
+        newAnnos = newAnnos ++ Seq(WriteVcdAnnotation)
+      }
+      runTest(defaults.createDefaultTester(dutGen, newAnnos))(testFn)
+    }
   }
 
   // Provide test fixture data as part of 'global' context during test runs
@@ -96,6 +123,6 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     * @return
     */
   def test[T <: MultiIOModule](dutGen: => T): TestBuilder[T] = {
-    new TestBuilder(() => dutGen, Seq.empty)
+    new AnnotatedTestBuilder(() => dutGen, Seq.empty)
   }
 }

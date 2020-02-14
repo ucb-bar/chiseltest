@@ -36,7 +36,7 @@ class VerilatorBasicTests extends FlatSpec with ChiselScalatestTester with Match
 
   it should "fail with user-defined message" in {
     intercept[exceptions.TestFailedException] {
-      test(new StaticModule(42.U)).withAnnotations(annos) { c =>
+      test(new StaticModule(42.U)).withFlags(Array("--t-use-verilator")) { c =>
         c.out.expect(0.U, "user-defined failure message =(")
       }
     }.getMessage should include ("user-defined failure message =(")
