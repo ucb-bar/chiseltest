@@ -80,11 +80,11 @@ package object chiseltest {
 
     protected def expectWithStale(value: T, message: Option[String], stale: Boolean): Unit = (x, value) match {
       case (x: Bool, value: Bool) => Context().backend.expectBits(x, value.litValue, message, stale)
-      // TODO can't happen because of type paramterization
+      // TODO can't happen because of type parameterization
       case (x: Bool, value: Bits) => throw new LiteralTypeException(s"cannot expect non-Bool value $value from Bool IO $x")
       case (x: Bits, value: UInt) => Context().backend.expectBits(x, value.litValue, message, stale)
       case (x: SInt, value: SInt) => Context().backend.expectBits(x, value.litValue, message, stale)
-      // TODO can't happen because of type paramterization
+      // TODO can't happen because of type parameterization
       case (x: Bits, value: SInt) => throw new LiteralTypeException(s"cannot expect non-SInt value $value from SInt IO $x")
       case (x: FixedPoint, value: FixedPoint) => {
         require(x.binaryPoint == value.binaryPoint, s"binary point mismatch between value $value from IO $x")
