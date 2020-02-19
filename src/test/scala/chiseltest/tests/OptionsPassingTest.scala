@@ -6,10 +6,11 @@ import chisel3._
 import chiseltest._
 import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.experimental.sanitizeFileName
+import logger.{LazyLogging, Logger}
 import org.scalatest._
 import treadle.{VerboseAnnotation, WriteVcdAnnotation}
 
-class OptionsPassingTest extends FlatSpec with ChiselScalatestTester with Matchers {
+class OptionsPassingTest extends FlatSpec with ChiselScalatestTester with Matchers with LazyLogging {
   behavior of "Testers2"
 
   it should "write vcd output when passing in a WriteVcdAnnotation" in {
@@ -51,5 +52,28 @@ class OptionsPassingTest extends FlatSpec with ChiselScalatestTester with Matche
 
     output.contains("Symbol table:") should be (true)
     output.contains("clock/prev") should be (true)
+  }
+
+  class LogsSomething extends MultiIOModule with LazyLogging {
+    val out = IO(Output(UInt(16.W)))
+    out := 42.U
+  }
+
+  def testCliFlagging(expectedResult: Boolean, flags: Array[String]): Unit = {
+    val loggingCaptor = new Logger.OutputCaptor
+    test(new LogsSomething {}).withFlags(flags) { c =>
+        Logger.setOutput(loggingCaptor.printStream)
+
+        c.out.expect(42.U)
+        logger.info("Testing module LogsSomething")
+      }
+    loggingCaptor.getOutputAsString.contains("Testing module LogsSomething") should be(expectedResult)
+  }
+
+  it should "Not show logging when logging not set by CLI" in {
+    testCliFlagging(expectedResult = false, Array.empty)
+  }
+  it should "allow specifying configuration options using CLI style flags" in {
+    testCliFlagging(expectedResult = true, Array("--class-log-level", "chiseltest.tests.OptionsPassingTest:info"))
   }
 }

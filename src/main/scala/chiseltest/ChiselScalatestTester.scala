@@ -9,6 +9,7 @@ import firrtl.AnnotationSeq
 import org.scalatest._
 import org.scalatest.exceptions.TestFailedException
 import internal.WriteVcdAnnotation
+import logger.Logger
 
 import scala.util.DynamicVariable
 
@@ -36,7 +37,9 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
       if (scalaTestContext.value.get.configMap.contains("writeVcd")) {
         newAnnos = newAnnos ++ Seq(WriteVcdAnnotation)
       }
-      runTest(defaults.createDefaultTester(dutGen, newAnnos))(testFn)
+      Logger.makeScope(newAnnos) {
+        runTest(defaults.createDefaultTester(dutGen, newAnnos))(testFn)
+      }
     }
 
   }
@@ -53,7 +56,9 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
       if (scalaTestContext.value.get.configMap.contains("writeVcd")) {
         newAnnos = newAnnos ++ Seq(WriteVcdAnnotation)
       }
-      runTest(defaults.createDefaultTester(dutGen, newAnnos))(testFn)
+      Logger.makeScope(newAnnos) {
+        runTest(defaults.createDefaultTester(dutGen, newAnnos))(testFn)
+      }
     }
   }
 
