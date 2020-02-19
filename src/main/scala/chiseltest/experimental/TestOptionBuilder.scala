@@ -14,11 +14,18 @@ import firrtl.{
 package object TestOptionBuilder {
   implicit class ChiselScalatestOptionBuilder[T <: MultiIOModule](x: ChiselScalatestTester#TestBuilder[T]) {
     def withAnnotations(annotationSeq: AnnotationSeq): ChiselScalatestTester#TestBuilder[T] = {
-      new x.outer.AnnotatedTestBuilder[T](x.dutGen, annotationSeq)
+      new x.outer.TestBuilder[T](x.dutGen, annotationSeq, Array.empty)
     }
 
     def withFlags(flags: Array[String]): ChiselScalatestTester#TestBuilder[T] = {
-      new x.outer.FlaggedTestBuilder[T](x.dutGen, flags)
+      new x.outer.TestBuilder[T](x.dutGen, Seq.empty, flags)
+    }
+
+    def withAnnotationsAndFlags(
+                                 annotationSeq: AnnotationSeq,
+                                 flags: Array[String]
+                               ): ChiselScalatestTester#TestBuilder[T] = {
+      new x.outer.TestBuilder[T](x.dutGen, annotationSeq, flags)
     }
 
     @deprecated("Use withAnnotations instead", "a long time ago")
@@ -32,12 +39,12 @@ package object TestOptionBuilder {
         case anno => anno
       }
 
-      new x.outer.AnnotatedTestBuilder[T](x.dutGen, annos)
+      new x.outer.TestBuilder[T](x.dutGen, annos, Array.empty)
     }
 
     @deprecated("Use withAnnotations instead", "a long time ago")
     def withTesterOptions(opt: TesterOptions): ChiselScalatestTester#TestBuilder[T] = {
-      new x.outer.AnnotatedTestBuilder[T](x.dutGen, opt.toAnnotations)
+      new x.outer.TestBuilder[T](x.dutGen, opt.toAnnotations, Array.empty)
     }
   }
 }

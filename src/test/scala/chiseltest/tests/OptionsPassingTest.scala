@@ -6,6 +6,7 @@ import chisel3._
 import chiseltest._
 import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.experimental.sanitizeFileName
+import firrtl.stage.OutputFileAnnotation
 import logger.{LazyLogging, Logger}
 import org.scalatest._
 import treadle.{VerboseAnnotation, WriteVcdAnnotation}
@@ -40,6 +41,32 @@ class OptionsPassingTest extends FlatSpec with ChiselScalatestTester with Matche
     vcdFileOpt.get.delete()
   }
 
+  it should "allow specifying configuration options using CLI style flags" in {
+    val targetDirName = "test_run_dir/overridden_dir"
+    val targetDir = new File(targetDirName)
+    if(targetDir.exists()) {
+      targetDir.delete()
+    }
+    test(new MultiIOModule() {}).withFlags(Array("--target-dir", targetDirName)) { c =>
+      targetDir.exists() should be (true)
+    }
+  }
+
+  it should "allow specifying configuration options using annotations and CLI style flags" in {
+    val targetDirName = "test_run_dir/overridden_dir_2"
+    val annotations = Seq(OutputFileAnnotation("wheaton"))
+    val targetDir = new File(targetDirName)
+    if(targetDir.exists()) {
+      targetDir.delete()
+    }
+    test(new MultiIOModule() {})
+      .withAnnotationsAndFlags(annotations, Array("--target-dir", targetDirName)) { c =>
+      targetDir.exists() should be (true)
+      val firrtlFile = new File(targetDir + File.separator + "wheaton.lo.fir")
+      firrtlFile.exists() should be (true)
+    }
+  }
+
   it should "allow turning on verbose mode" in {
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
@@ -52,29 +79,5 @@ class OptionsPassingTest extends FlatSpec with ChiselScalatestTester with Matche
 
     output.contains("Symbol table:") should be (true)
     output.contains("clock/prev") should be (true)
-  }
-
-  class DummyModule extends MultiIOModule with LazyLogging {
-    val out = IO(Output(UInt(16.W)))
-    out := 42.U
-  }
-
-  def testCliFlagging(expectedResult: Boolean, flags: Array[String]): Unit = {
-    val loggingCaptor = new Logger.OutputCaptor
-    test(new DummyModule {}).withFlags(flags) { c =>
-        Logger.setOutput(loggingCaptor.printStream)
-
-        c.out.expect(42.U)
-        logger.info("Testing module LogsSomething")
-      }
-    println(loggingCaptor.getOutputAsString)
-    loggingCaptor.getOutputAsString.contains("Testing module LogsSomething") should be(expectedResult)
-  }
-
-  it should "Not show logging when logging not set by CLI" in {
-    testCliFlagging(expectedResult = false, Array.empty)
-  }
-  it should "allow specifying configuration options using CLI style flags" in {
-    testCliFlagging(expectedResult = true, Array("--class-log-level", "chiseltest.tests.OptionsPassingTest:info"))
   }
 }
