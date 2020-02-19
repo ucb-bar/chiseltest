@@ -8,6 +8,7 @@ import chisel3.tester.experimental.sanitizeFileName
 import firrtl.AnnotationSeq
 import org.scalatest._
 import org.scalatest.exceptions.TestFailedException
+import internal.WriteVcdAnnotation
 
 import scala.util.DynamicVariable
 
@@ -18,7 +19,10 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     }
 
     def apply(testFn: T => Unit): Unit = {
-      val newAnnos = addDefaultTargetDir(getTestName, annotationSeq)
+      var newAnnos = addDefaultTargetDir(getTestName, annotationSeq)
+      if (scalaTestContext.value.get.configMap.contains("writeVcd")) {
+        newAnnos = newAnnos ++ Seq(WriteVcdAnnotation)
+      }
       runTest(defaults.createDefaultTester(dutGen, newAnnos))(testFn)
     }
     // TODO: in the future, allow reset and re-use of a compiled design to avoid recompilation cost per test
@@ -79,7 +83,7 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     *
     * For example:
     * {{{
-    *   test(new TestModule).withAnnotations(Seq(WriteVcdAnnotation) { c =>
+    *   test(new TestModule).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
     *     // body of the unit test
     *   }
     * }}}

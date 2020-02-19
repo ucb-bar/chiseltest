@@ -4,13 +4,14 @@ package chisel3.tester.backends.treadle
 
 import chisel3.experimental.DataMirror
 import chisel3.MultiIOModule
-import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation}
+import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
 import chisel3.tester.backends.BackendExecutive
 import chisel3.tester.internal._
 import firrtl.annotations.ReferenceTarget
+import firrtl.stage.CompilerAnnotation
 import firrtl.transforms.{CheckCombLoops, CombinationalPath}
 import treadle.stage.TreadleTesterPhase
-import treadle.{TreadleCircuitStateAnnotation, TreadleTesterAnnotation}
+import treadle.{TreadleCircuitStateAnnotation, TreadleFirrtlFormHint, TreadleTesterAnnotation}
 
 object TreadleExecutive extends BackendExecutive {
   import firrtl._
@@ -40,12 +41,10 @@ object TreadleExecutive extends BackendExecutive {
     }.toMap
 
     // This generates the firrtl circuit needed by the TreadleTesterPhase
-    annotationSeq = (new ChiselStage).run(
-      annotationSeq ++ Seq(NoRunFirrtlCompilerAnnotation)
-    )
+    annotationSeq = (new ChiselStage).run(annotationSeq ++ Seq(CompilerAnnotation(new LowFirrtlCompiler)))
 
     // This generates a TreadleTesterAnnotation with a treadle tester instance
-    annotationSeq = TreadleTesterPhase.transform(annotationSeq)
+    annotationSeq = TreadleTesterPhase.transform(annotationSeq :+ TreadleFirrtlFormHint(LowForm))
 
     val treadleTester = annotationSeq.collectFirst { case TreadleTesterAnnotation(t) => t }.getOrElse(
       throw new Exception(
@@ -56,9 +55,7 @@ object TreadleExecutive extends BackendExecutive {
 
     val circuitState = annotationSeq.collectFirst { case TreadleCircuitStateAnnotation(s) => s }.get
     val pathAnnotations = (new CheckCombLoops).execute(circuitState).annotations
-    val paths = pathAnnotations.collect {
-      case c: CombinationalPath => c
-    }
+    val paths = pathAnnotations.collect { case c: CombinationalPath => c }
 
     val pathsAsData = combinationalPathsToData(dut, paths, portNames, componentToName)
 

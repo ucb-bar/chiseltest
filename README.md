@@ -4,13 +4,13 @@ However, it is very much in a usable state, so if you're fine living on the blee
 
 
 ## Overview
-Testers2 is a test harness for [Chisel](freechipsproject/chisel3)-based RTL designs, currently supporting directed testing (all test stimulus manually specified - no constrained random and coverage-driven flows).
+Testers2 is a test harness for [Chisel](https://github.com/freechipsproject/chisel3)-based RTL designs, currently supporting directed testing (all test stimulus manually specified - no constrained random and coverage-driven flows).
 Testers2 emphasizes tests that are lightweight (minimizes boilerplate code), easy to read and write (understandability), and compose (for better test code reuse).
 
 The core primitives are similar to nonsynthesizable Verilog: input pin assignment (`poke`), pin value assertion (`expect`), and time advance (`step`). Threading concurrency is also supported with the use of `fork` and `join`, and concurrent accesses to wires are checked to prevent race conditions.
 
 ### Migrating from chisel-testers
-The core abstractions (`poke`, `expect`, `step`) are similar to [chisel-testers](freechipsproject/chisel-testers), but the syntax is inverted: instead of doing `tester.poke(wire, value)` with a Scala number value, in testers2 you would write `write.poke(value)` with a Chisel literal value.
+The core abstractions (`poke`, `expect`, `step`) are similar to [chisel-testers](https://github.com/freechipsproject/chisel-testers), but the syntax is inverted: instead of doing `tester.poke(wire, value)` with a Scala number value, in testers2 you would write `write.poke(value)` with a Chisel literal value.
 Furthermore, as no reference to the tester context is needed, test helper functions can be defined outside a test class and written as libraries.
 
 Currently, this should support all the functionality that was in chisel-testers, and provides additional features.
@@ -33,7 +33,7 @@ We may introduce versioned snapshots and releases in the future, tied to a parti
 You can also build testers2 locally with `publishLocal`.
 
 ### Writing a Test
-Testers2 integrates with the [ScalaTest](scalatest.org) framework, which provides a framework for detection and execution of unit tests.
+Testers2 integrates with the [ScalaTest](http://scalatest.org) framework, which provides a framework for detection and execution of unit tests.
 
 Assuming a typical Chisel project, create a new file in `src/test/scala/`, for example, `BasicTest.scala`.
 
@@ -67,7 +67,7 @@ In this file:
       // test body here
     }
     ```
-    `test` automatically runs the default simulator (which is [treadle](freechipsproject/treadle)), and runs the test stimulus in the block.
+    `test` automatically runs the default simulator (which is [treadle](https://github.com/freechipsproject/treadle)), and runs the test stimulus in the block.
     The argument to the test stimulus block (`c` in this case) is a handle to the module under test.
 5.  In the test body, use `poke`, `step`, and `expect` operations to write the test:
     ```scala
@@ -77,22 +77,22 @@ In this file:
     c.out.expect(42.U)
     ```
 6.  With your test case complete, you can run all the test cases in your project by invoking ScalaTest.
-    If you're using [sbt](scala-sbt.org), you can either run `sbt test` from the command line, or `test` from the sbt console.
+    If you're using [sbt](http://scala-sbt.org), you can either run `sbt test` from the command line, or `test` from the sbt console.
     `testOnly` can also be used to run specific tests.
 
 
 ## Usage References
 See the test cases for examples:
-- [BasicTest](src/test/scala/chisel3/tests/BasicTest.scala) shows basic `peek`, `poke`, and `step` functionality
-- [QueueTest](src/test/scala/chisel3/tests/QueueTest.scala) shows example uses of the DecoupledDriver library, providing functions like `enqueueNow`, `expectDequeueNow`, their sequence variants, `expectPeek`, and `expectInvalid`.
-  Also, check out the [DecoupledDriver](src/main/scala/chisel3/tester/DecoupledDriver.scala) implementation, and note that it is not a special case, but code that any user can write. 
-- [BundleLiteralsSpec](src/test/scala/chisel3/tests/BundleLiteralsSpec.scala) shows examples of using bundle literals to poke and expect bundle wires.
+- [BasicTest](src/test/scala/chiseltest/tests/BasicTest.scala) shows basic `peek`, `poke`, and `step` functionality
+- [QueueTest](src/test/scala/chiseltest/tests/QueueTest.scala) shows example uses of the DecoupledDriver library, providing functions like `enqueueNow`, `expectDequeueNow`, their sequence variants, `expectPeek`, and `expectInvalid`.
+  Also, check out the [DecoupledDriver](src/main/scala/chiseltest/DecoupledDriver.scala) implementation, and note that it is not a special case, but code that any user can write. 
+- [BundleLiteralsSpec](src/test/scala/chiseltest/tests/BundleLiteralsSpec.scala) shows examples of using bundle literals to poke and expect bundle wires.
   - Note: Bundle literals are still an experimental chisel3 feature and need to be explicitly imported:
     ```scala
     import chisel3.experimental.BundleLiterals._
     ```
-- [ShiftRegisterTest](src/test/scala/chisel3/tests/ShiftRegisterTest.scala) shows an example of using fork/join to define a test helper function, where multiple invocations of it are pipelined using `fork`.
-- [VerilatorBasicTests](src/test/scala/chisel3/experimental/tests/VerilatorBasicTests.scala) shows an example using Verilator as the simulator.
+- [ShiftRegisterTest](src/test/scala/chiseltest/tests/ShiftRegisterTest.scala) shows an example of using fork/join to define a test helper function, where multiple invocations of it are pipelined using `fork`.
+- [VerilatorBasicTests](src/test/scala/chiseltest/experimental/tests/VerilatorBasicTests.scala) shows an example using Verilator as the simulator.
   - Note: the simulator is selected by passing an annotation into the `test` function, which requires experimental imports:
     ```scala
     import chisel3.tester.experimental.TestOptionBuilder._
@@ -111,7 +111,7 @@ See the test cases for examples:
   This can be used to create monitors that run after other main testdriver threads have been run, and can read wires those threads have poked.
 - `timescope` allows pokes to be scoped - that is, pokes inside the timescope block "disappear" and the wire reverts to its previous value at the end of the block.
   This fits well with the pattern of assigning a default pull-up/down to a wire, and temporarily overriding that value, for example a Decoupled `valid` signal defaulting low but driven high during an enqueue transaction.
-  See [TimescopeTest](src/test/scala/chisel3/tests/TimescopeTest.scala) for examples.
+  See [TimescopeTest](src/test/scala/chiseltest/tests/TimescopeTest.scala) for examples.
 
 
 ## Quick References
