@@ -15,11 +15,28 @@ import scala.util.DynamicVariable
 
 trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvInterface { this: TestSuite =>
 
-  abstract class  TestBuilder[T <: MultiIOModule](val dutGen: () => T) {
+  abstract class TestBuilder[T <: MultiIOModule](val dutGen: () => T) {
     def getTestName: String = {
       sanitizeFileName(scalaTestContext.value.get.name)
     }
     def apply(testFn: T => Unit): Unit
+
+    /** Add a targetDir if none has been specified, check the context
+      * to see if a writeVcd should be added
+      */
+    def updateAnnotations(annotationSeq: AnnotationSeq): AnnotationSeq = {
+      var newAnnos = addDefaultTargetDir(getTestName, annotationSeq)
+      if (scalaTestContext.value.get.configMap.contains("writeVcd")) {
+        newAnnos = newAnnos ++ Seq(WriteVcdAnnotation)
+      }
+      newAnnos
+    }
+
+    def run(testFn: T => Unit, annotations: AnnotationSeq): Unit = {
+      Logger.makeScope(annotations) {
+        runTest(defaults.createDefaultTester(dutGen, annotations))(testFn)
+      }
+    }
 
     // TODO: in the future, allow reset and re-use of a compiled design to avoid recompilation cost per test
     val outer: ChiselScalatestTester = ChiselScalatestTester.this
@@ -33,15 +50,8 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     extends TestBuilder(dutGen) {
 
     def apply(testFn: T => Unit): Unit = {
-      var newAnnos = addDefaultTargetDir(getTestName, annotationSeq)
-      if (scalaTestContext.value.get.configMap.contains("writeVcd")) {
-        newAnnos = newAnnos ++ Seq(WriteVcdAnnotation)
-      }
-      Logger.makeScope(newAnnos) {
-        runTest(defaults.createDefaultTester(dutGen, newAnnos))(testFn)
-      }
+      run(testFn, updateAnnotations(annotationSeq))
     }
-
   }
 
   /** Provides the machinery to take the command line arguments provided by the test helper .withFlags
@@ -52,13 +62,7 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     extends TestBuilder(dutGen) {
 
     def apply(testFn: T => Unit): Unit = {
-      var newAnnos = addDefaultTargetDir(getTestName, (new ChiselTestShell).parse(flags))
-      if (scalaTestContext.value.get.configMap.contains("writeVcd")) {
-        newAnnos = newAnnos ++ Seq(WriteVcdAnnotation)
-      }
-      Logger.makeScope(newAnnos) {
-        runTest(defaults.createDefaultTester(dutGen, newAnnos))(testFn)
-      }
+      run(testFn, updateAnnotations((new ChiselTestShell).parse(flags)))
     }
   }
 
