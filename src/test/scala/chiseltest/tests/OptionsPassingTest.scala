@@ -54,19 +54,20 @@ class OptionsPassingTest extends FlatSpec with ChiselScalatestTester with Matche
     output.contains("clock/prev") should be (true)
   }
 
-  class LogsSomething extends MultiIOModule with LazyLogging {
+  class DummyModule extends MultiIOModule with LazyLogging {
     val out = IO(Output(UInt(16.W)))
     out := 42.U
   }
 
   def testCliFlagging(expectedResult: Boolean, flags: Array[String]): Unit = {
     val loggingCaptor = new Logger.OutputCaptor
-    test(new LogsSomething {}).withFlags(flags) { c =>
+    test(new DummyModule {}).withFlags(flags) { c =>
         Logger.setOutput(loggingCaptor.printStream)
 
         c.out.expect(42.U)
         logger.info("Testing module LogsSomething")
       }
+    println(loggingCaptor.getOutputAsString)
     loggingCaptor.getOutputAsString.contains("Testing module LogsSomething") should be(expectedResult)
   }
 
