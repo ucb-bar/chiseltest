@@ -11,7 +11,7 @@ import logger.{LazyLogging, Logger}
 import org.scalatest._
 import treadle.{VerboseAnnotation, WriteVcdAnnotation}
 
-class OptionsPassingTest extends FlatSpec with ChiselScalatestTester with Matchers with LazyLogging {
+class OptionsPassingTest extends FlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2"
 
   it should "write vcd output when passing in a WriteVcdAnnotation" in {

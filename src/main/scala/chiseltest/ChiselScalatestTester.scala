@@ -19,20 +19,16 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     def getTestName: String = {
       sanitizeFileName(scalaTestContext.value.get.name)
     }
-    def apply(testFn: T => Unit): Unit = {
-      val finalAnnos = updateAnnotations((new ChiselTestShell).parse(flags) ++ annotationSeq)
-      runTest(defaults.createDefaultTester(dutGen, finalAnnos))(testFn)
-    }
 
-    /** Add a targetDir if none has been specified, check the context
-      * to see if a writeVcd should be added
-      */
-    def updateAnnotations(annotationSeq: AnnotationSeq): AnnotationSeq = {
-      var newAnnos = addDefaultTargetDir(getTestName, annotationSeq)
-      if (scalaTestContext.value.get.configMap.contains("writeVcd")) {
-        newAnnos = newAnnos ++ Seq(WriteVcdAnnotation)
-      }
-      newAnnos
+    def apply(testFn: T => Unit): Unit = {
+      val finalAnnos = addDefaultTargetDir(getTestName, (new ChiselTestShell).parse(flags) ++ annotationSeq) ++
+        (if (scalaTestContext.value.get.configMap.contains("writeVcd")) {
+          Seq(WriteVcdAnnotation)
+        } else {
+          Seq.empty
+        })
+
+      runTest(defaults.createDefaultTester(dutGen, finalAnnos))(testFn)
     }
 
     def run(testFn: T => Unit, annotations: AnnotationSeq): Unit = {
