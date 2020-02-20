@@ -21,13 +21,6 @@ package object TestOptionBuilder {
       new x.outer.TestBuilder[T](x.dutGen, Seq.empty, flags)
     }
 
-    def withAnnotationsAndFlags(
-                                 annotationSeq: AnnotationSeq,
-                                 flags: Array[String]
-                               ): ChiselScalatestTester#TestBuilder[T] = {
-      new x.outer.TestBuilder[T](x.dutGen, annotationSeq, flags)
-    }
-
     @deprecated("Use withAnnotations instead", "a long time ago")
     def withExecOptions(manager: ExecutionOptionsManager with HasTreadleSuite): ChiselScalatestTester#TestBuilder[T] = {
       val annos = manager.toAnnotationSeq.map {

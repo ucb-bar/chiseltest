@@ -60,7 +60,7 @@ class OptionsPassingTest extends FlatSpec with ChiselScalatestTester with Matche
       targetDir.delete()
     }
     test(new MultiIOModule() {})
-      .withAnnotationsAndFlags(annotations, Array("--target-dir", targetDirName)) { c =>
+      .withAnnotations(annotations).withFlags(Array("--target-dir", targetDirName)) { c =>
       targetDir.exists() should be (true)
       val firrtlFile = new File(targetDir + File.separator + "wheaton.lo.fir")
       firrtlFile.exists() should be (true)
