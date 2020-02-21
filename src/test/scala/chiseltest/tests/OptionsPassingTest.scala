@@ -7,7 +7,6 @@ import chiseltest._
 import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.experimental.sanitizeFileName
 import firrtl.stage.OutputFileAnnotation
-import logger.{LazyLogging, Logger}
 import org.scalatest._
 import treadle.{VerboseAnnotation, WriteVcdAnnotation}
 
