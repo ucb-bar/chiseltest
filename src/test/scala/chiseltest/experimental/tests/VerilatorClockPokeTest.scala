@@ -9,8 +9,9 @@ import chisel3.util._
 import org.scalatest._
 import treadle.executable.ClockInfo
 import treadle.{ClockInfoAnnotation, WriteVcdAnnotation}
+import org.scalatest.flatspec.AnyFlatSpec
 
-class VerilatorClockPokeTest extends FlatSpec with ChiselScalatestTester {
+class VerilatorClockPokeTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Testers2 with a clock input"
 
   it should "verilator-clock-poke" in {

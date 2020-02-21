@@ -4,8 +4,9 @@ import org.scalatest._
 
 import chisel3._
 import chiseltest._
+import org.scalatest.flatspec.AnyFlatSpec
 
-class ExceptionPropagationTest extends FlatSpec with ChiselScalatestTester {
+class ExceptionPropagationTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Testers2"
 
   class PropagationTestException extends Exception
