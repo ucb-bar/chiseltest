@@ -25,7 +25,7 @@ Test cases written in chisel-testers cannot be directly used in ChiselTest, as t
 ### Installation 
 To use chisel-testers as a managed dependency, add this in your build.sbt:
 ```scala
-libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.1-SNAPSHOT"
+libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.2-SNAPSHOT"
 ```
 
 Note, `chiseltest` snapshots generally track chisel3 snapshots, and requires the use of a chisel3 snapshot.
