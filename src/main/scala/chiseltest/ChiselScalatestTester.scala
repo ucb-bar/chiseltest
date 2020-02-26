@@ -3,26 +3,39 @@
 package chiseltest
 
 import chiseltest.internal._
-import chiseltest.experimental.sanitizeFileName
+import chiseltest.experimental.{ChiselTestShell, sanitizeFileName}
 import chisel3.MultiIOModule
 import firrtl.AnnotationSeq
 import org.scalatest._
 import org.scalatest.exceptions.TestFailedException
+import internal.WriteVcdAnnotation
+import logger.Logger
 
 import scala.util.DynamicVariable
 
 trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvInterface { this: TestSuite =>
-  class TestBuilder[T <: MultiIOModule](val dutGen: () => T, annotationSeq: AnnotationSeq) {
+
+  class TestBuilder[T <: MultiIOModule](val dutGen: () => T, annotationSeq: AnnotationSeq, flags: Array[String]) {
     def getTestName: String = {
       sanitizeFileName(scalaTestContext.value.get.name)
     }
 
     def apply(testFn: T => Unit): Unit = {
-      val newAnnos = addDefaultTargetDir(getTestName, annotationSeq)
-      runTest(defaults.createDefaultTester(dutGen, newAnnos))(testFn)
-    }
-    // TODO: in the future, allow reset and re-use of a compiled design to avoid recompilation cost per test
+      val finalAnnos = addDefaultTargetDir(getTestName, (new ChiselTestShell).parse(flags) ++ annotationSeq) ++
+        (if (scalaTestContext.value.get.configMap.contains("writeVcd")) {
+          Seq(WriteVcdAnnotation)
+        } else {
+          Seq.empty
+        })
 
+      runTest(defaults.createDefaultTester(dutGen, finalAnnos))(testFn)
+    }
+
+    def run(testFn: T => Unit, annotations: AnnotationSeq): Unit = {
+        runTest(defaults.createDefaultTester(dutGen, annotations))(testFn)
+    }
+
+    // TODO: in the future, allow reset and re-use of a compiled design to avoid recompilation cost per test
     val outer: ChiselScalatestTester = ChiselScalatestTester.this
   }
 
@@ -92,6 +105,6 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     * @return
     */
   def test[T <: MultiIOModule](dutGen: => T): TestBuilder[T] = {
-    new TestBuilder(() => dutGen, Seq.empty)
+    new TestBuilder(() => dutGen, Seq.empty, Array.empty)
   }
 }

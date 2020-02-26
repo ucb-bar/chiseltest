@@ -3,7 +3,7 @@
 import scala.language.implicitConversions
 import chiseltest.internal._
 import chisel3._
-import chisel3.experimental.{DataMirror, Direction, FixedPoint, Interval}
+import chisel3.experimental.{DataMirror, Direction, FixedPoint, Interval, EnumType}
 import chisel3.experimental.BundleLiterals._
 import chisel3.util._
 
@@ -13,7 +13,7 @@ package object chiseltest {
   import chisel3.internal.firrtl.{LitArg, ULit, SLit}
 
   implicit class testableData[T <: Data](x: T) {
-    protected def pokeBits(signal: Bits, value: BigInt): Unit = {
+    protected def pokeBits(signal: Data, value: BigInt): Unit = {
       if (DataMirror.directionOf(signal) != Direction.Input) {
         throw new UnpokeableException("Cannot only poke inputs")
       }
@@ -42,6 +42,10 @@ package object chiseltest {
           x.poke(value)
         }
       }
+      case (x: EnumType, value: EnumType) => {
+        require(x.getClass() == value.getClass())  // TODO: chisel needs to expose typeEquivalent
+        pokeBits(x, value.litValue)
+      }
       case x => throw new LiteralTypeException(s"don't know how to poke $x")
       // TODO: aggregate types
     }
@@ -66,6 +70,9 @@ package object chiseltest {
         }.toSeq
         chiselTypeOf(x).Lit(elementValueFns: _*).asInstanceOf[T]
       }
+      case (x: EnumType) => {
+        throw new NotImplementedError(s"peeking enums ($x) not yet supported, need programmatic enum construction")
+      }
       case x => throw new LiteralTypeException(s"don't know how to peek $x")
     }
 
@@ -73,11 +80,11 @@ package object chiseltest {
 
     protected def expectWithStale(value: T, message: Option[String], stale: Boolean): Unit = (x, value) match {
       case (x: Bool, value: Bool) => Context().backend.expectBits(x, value.litValue, message, stale)
-      // TODO can't happen because of type paramterization
+      // TODO can't happen because of type parameterization
       case (x: Bool, value: Bits) => throw new LiteralTypeException(s"cannot expect non-Bool value $value from Bool IO $x")
       case (x: Bits, value: UInt) => Context().backend.expectBits(x, value.litValue, message, stale)
       case (x: SInt, value: SInt) => Context().backend.expectBits(x, value.litValue, message, stale)
-      // TODO can't happen because of type paramterization
+      // TODO can't happen because of type parameterization
       case (x: Bits, value: SInt) => throw new LiteralTypeException(s"cannot expect non-SInt value $value from SInt IO $x")
       case (x: FixedPoint, value: FixedPoint) => {
         require(x.binaryPoint == value.binaryPoint, s"binary point mismatch between value $value from IO $x")
@@ -91,6 +98,10 @@ package object chiseltest {
         (x.elements zip value.elements) foreach { case ((_, x), (_, value)) =>
           x.expectWithStale(value, message, stale)
         }
+      }
+      case (x: EnumType, value: EnumType) => {
+        require(x.getClass() == value.getClass())  // TODO: chisel needs to expose typeEquivalent
+        Context().backend.expectBits(x, value.litValue, message, stale)
       }
       case x => throw new LiteralTypeException(s"don't know how to expect $x")
       // TODO: aggregate types
