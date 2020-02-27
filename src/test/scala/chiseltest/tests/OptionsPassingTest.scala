@@ -3,9 +3,11 @@ package chiseltest.tests
 import java.io.{ByteArrayOutputStream, File, PrintStream}
 
 import chisel3._
+import chisel3.stage.ChiselOutputFileAnnotation
 import chiseltest._
 import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.experimental.sanitizeFileName
+import firrtl.options.OutputAnnotationFileAnnotation
 import firrtl.stage.OutputFileAnnotation
 import org.scalatest._
 import treadle.{VerboseAnnotation, WriteVcdAnnotation}
@@ -53,15 +55,21 @@ class OptionsPassingTest extends FlatSpec with ChiselScalatestTester with Matche
 
   it should "allow specifying configuration options using annotations and CLI style flags" in {
     val targetDirName = "test_run_dir/overridden_dir_2"
-    val annotations = Seq(OutputFileAnnotation("wheaton"))
+    val fileBaseName = "wheaton"
+    val annotations = Seq(
+      ChiselOutputFileAnnotation(fileBaseName),
+      OutputFileAnnotation(fileBaseName),
+      OutputAnnotationFileAnnotation(fileBaseName)
+    )
     val targetDir = new File(targetDirName)
     if(targetDir.exists()) {
       targetDir.delete()
     }
     test(new MultiIOModule() {})
-      .withAnnotations(annotations).withFlags(Array("--target-dir", targetDirName)) { c =>
+      .withAnnotations(annotations)
+      .withFlags(Array("--target-dir", targetDirName)) { c =>
       targetDir.exists() should be (true)
-      val firrtlFile = new File(targetDir + File.separator + "wheaton.lo.fir")
+      val firrtlFile = new File(targetDir + File.separator + s"$fileBaseName.lo.fir")
       firrtlFile.exists() should be (true)
     }
   }

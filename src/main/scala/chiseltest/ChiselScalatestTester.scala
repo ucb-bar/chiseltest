@@ -9,13 +9,12 @@ import firrtl.AnnotationSeq
 import org.scalatest._
 import org.scalatest.exceptions.TestFailedException
 import internal.WriteVcdAnnotation
-import logger.Logger
 
 import scala.util.DynamicVariable
 
 trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvInterface { this: TestSuite =>
 
-  class TestBuilder[T <: MultiIOModule](val dutGen: () => T, annotationSeq: AnnotationSeq, flags: Array[String]) {
+  class TestBuilder[T <: MultiIOModule](val dutGen: () => T, val annotationSeq: AnnotationSeq, val flags: Array[String]) {
     def getTestName: String = {
       sanitizeFileName(scalaTestContext.value.get.name)
     }
@@ -87,7 +86,8 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     *   }
     * }}}
     *
-    * If you need to add options to this unit test you can tack on a .withAnnotations modifier
+    * If you need to add options to this unit test you can tack on .withAnnotations modifier
+    * or a .withFlags modifier. These modifiers can be used together.
     * You must add `import chisel3.tester.experimental.TestOptionBuilder._` to use .withAnnotations
     *
     * For example:
