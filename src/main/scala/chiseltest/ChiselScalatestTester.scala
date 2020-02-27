@@ -14,9 +14,7 @@ import scala.util.DynamicVariable
 
 trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvInterface { this: TestSuite =>
 
-  class TestBuilder[T <: MultiIOModule](val dutGen:        () => T,
-                                        val annotationSeq: AnnotationSeq,
-                                        val flags:         Array[String]) {
+  class TestBuilder[T <: MultiIOModule](val dutGen: () => T, val annotationSeq: AnnotationSeq, val flags: Array[String]) {
     def getTestName: String = {
       sanitizeFileName(scalaTestContext.value.get.name)
     }
