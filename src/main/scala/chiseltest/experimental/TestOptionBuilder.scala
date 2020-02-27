@@ -14,11 +14,11 @@ import firrtl.{
 package object TestOptionBuilder {
   implicit class ChiselScalatestOptionBuilder[T <: MultiIOModule](x: ChiselScalatestTester#TestBuilder[T]) {
     def withAnnotations(annotationSeq: AnnotationSeq): ChiselScalatestTester#TestBuilder[T] = {
-      new x.outer.TestBuilder[T](x.dutGen, annotationSeq, Array.empty)
+      new x.outer.TestBuilder[T](x.dutGen, x.annotationSeq ++ annotationSeq, x.flags)
     }
 
     def withFlags(flags: Array[String]): ChiselScalatestTester#TestBuilder[T] = {
-      new x.outer.TestBuilder[T](x.dutGen, Seq.empty, flags)
+      new x.outer.TestBuilder[T](x.dutGen, x.annotationSeq, x.flags ++ flags)
     }
 
     @deprecated("Use withAnnotations instead", "a long time ago")
