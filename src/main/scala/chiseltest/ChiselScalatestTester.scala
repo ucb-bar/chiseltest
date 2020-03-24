@@ -3,26 +3,38 @@
 package chiseltest
 
 import chiseltest.internal._
-import chiseltest.experimental.sanitizeFileName
+import chiseltest.experimental.{ChiselTestShell, sanitizeFileName}
 import chisel3.MultiIOModule
 import firrtl.AnnotationSeq
 import org.scalatest._
 import org.scalatest.exceptions.TestFailedException
+import internal.WriteVcdAnnotation
 
 import scala.util.DynamicVariable
 
 trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvInterface { this: TestSuite =>
-  class TestBuilder[T <: MultiIOModule](val dutGen: () => T, annotationSeq: AnnotationSeq) {
+
+  class TestBuilder[T <: MultiIOModule](val dutGen: () => T, val annotationSeq: AnnotationSeq, val flags: Array[String]) {
     def getTestName: String = {
       sanitizeFileName(scalaTestContext.value.get.name)
     }
 
     def apply(testFn: T => Unit): Unit = {
-      val newAnnos = addDefaultTargetDir(getTestName, annotationSeq)
-      runTest(defaults.createDefaultTester(dutGen, newAnnos))(testFn)
-    }
-    // TODO: in the future, allow reset and re-use of a compiled design to avoid recompilation cost per test
+      val finalAnnos = addDefaultTargetDir(getTestName, (new ChiselTestShell).parse(flags) ++ annotationSeq) ++
+        (if (scalaTestContext.value.get.configMap.contains("writeVcd")) {
+          Seq(WriteVcdAnnotation)
+        } else {
+          Seq.empty
+        })
 
+      runTest(defaults.createDefaultTester(dutGen, finalAnnos))(testFn)
+    }
+
+    def run(testFn: T => Unit, annotations: AnnotationSeq): Unit = {
+        runTest(defaults.createDefaultTester(dutGen, annotations))(testFn)
+    }
+
+    // TODO: in the future, allow reset and re-use of a compiled design to avoid recompilation cost per test
     val outer: ChiselScalatestTester = ChiselScalatestTester.this
   }
 
@@ -74,7 +86,8 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     *   }
     * }}}
     *
-    * If you need to add options to this unit test you can tack on a .withAnnotations modifier
+    * If you need to add options to this unit test you can tack on .withAnnotations modifier
+    * or a .withFlags modifier. These modifiers can be used together.
     * You must add `import chisel3.tester.experimental.TestOptionBuilder._` to use .withAnnotations
     *
     * For example:
@@ -92,6 +105,6 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     * @return
     */
   def test[T <: MultiIOModule](dutGen: => T): TestBuilder[T] = {
-    new TestBuilder(() => dutGen, Seq.empty)
+    new TestBuilder(() => dutGen, Seq.empty, Array.empty)
   }
 }

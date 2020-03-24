@@ -31,9 +31,9 @@ name := "chiseltest"
 
 version := "0.2-SNAPSHOT"
 
-scalaVersion := "2.12.6"
+scalaVersion := "2.12.10"
 
-crossScalaVersions := Seq("2.12.6", "2.11.12")
+crossScalaVersions := Seq("2.12.10", "2.11.12")
 
 resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
@@ -41,7 +41,7 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "org.scalatest" %% "scalatest" % "3.0.5",
+  "org.scalatest" %% "scalatest" % "3.0.8",
   "com.lihaoyi" %% "utest" % "latest.integration"
 )
 
