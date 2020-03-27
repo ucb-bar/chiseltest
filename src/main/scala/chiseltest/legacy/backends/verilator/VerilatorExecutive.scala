@@ -4,7 +4,7 @@ import java.io.{File, FileWriter}
 
 import chiseltest.backends.BackendExecutive
 import chiseltest.internal.{BackendInstance, WriteVcdAnnotation}
-import chisel3.{assert, MultiIOModule}
+import chisel3.{MultiIOModule, assert}
 import chisel3.experimental.DataMirror
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
 import firrtl.annotations.ReferenceTarget
@@ -43,7 +43,8 @@ object VerilatorExecutive extends BackendExecutive {
     val targetDirFile = new File(targetDir)
 
     val generatorAnnotation = chisel3.stage.ChiselGeneratorAnnotation(dutGen)
-    val circuit = generatorAnnotation.elaborate.collect { case x: ChiselCircuitAnnotation => x }.head.circuit
+    val elaboratedAnno = (new chisel3.stage.phases.Elaborate).transform(annotationSeq :+ generatorAnnotation)
+    val circuit = elaboratedAnno.collect { case x: ChiselCircuitAnnotation => x }.head.circuit
     val dut = getTopModule(circuit).asInstanceOf[T]
 
     // Create the header files that verilator needs
@@ -57,8 +58,7 @@ object VerilatorExecutive extends BackendExecutive {
     // - TestCommandOverride
     // - CombinationalPath
     val compiledAnnotations = (new ChiselStage).run(
-      annotationSeq ++
-        Seq(generatorAnnotation, CompilerAnnotation(new VerilogCompiler()))
+      elaboratedAnno :+ CompilerAnnotation(new VerilogCompiler())
     )
 
     val cppHarnessFileName = s"${circuit.name}-harness.cpp"
@@ -95,7 +95,7 @@ object VerilatorExecutive extends BackendExecutive {
     )
     assert(
       chisel3.Driver.cppToExe(circuit.name, targetDirFile).! == 0,
-      s"Compilation of verilator generated code faile for circuit ${circuit.name} in work dir $targetDir"
+      s"Compilation of verilator generated code failed for circuit ${circuit.name} in work dir $targetDir"
     )
 
     val command = compiledAnnotations
