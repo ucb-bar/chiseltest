@@ -4,7 +4,7 @@ import java.io.{File, FileWriter}
 
 import chiseltest.backends.BackendExecutive
 import chiseltest.internal.{BackendInstance, WriteVcdAnnotation}
-import chisel3.{assert, MultiIOModule}
+import chisel3.{MultiIOModule, assert}
 import chisel3.experimental.DataMirror
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
 import firrtl.annotations.ReferenceTarget

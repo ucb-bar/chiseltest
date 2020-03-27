@@ -5,10 +5,10 @@ package chiseltest
 import chiseltest.internal._
 import chiseltest.experimental.{ChiselTestShell, sanitizeFileName}
 import chisel3.MultiIOModule
+import chiseltest.internal.WriteVcdAnnotation
 import firrtl.AnnotationSeq
 import org.scalatest._
 import org.scalatest.exceptions.TestFailedException
-import internal.WriteVcdAnnotation
 
 import scala.util.DynamicVariable
 
