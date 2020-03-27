@@ -8,8 +8,9 @@ import chiseltest.internal.VerilatorBackendAnnotation
 import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.flatspec.AnyFlatSpec
 
-class VerilatorBasicTests extends FlatSpec with ChiselScalatestTester with Matchers {
+class VerilatorBasicTests extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2 with Verilator"
 
   val annos = Seq(VerilatorBackendAnnotation)
