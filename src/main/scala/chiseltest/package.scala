@@ -17,7 +17,9 @@ package object chiseltest {
       if (DataMirror.directionOf(signal) != Direction.Input) {
         throw new UnpokeableException("Cannot only poke inputs")
       }
-      Context().backend.pokeBits(signal, value)
+      // Some backends can behave incorrectly if too many bits are poked into their inputs
+      val maskedValue = value & ((BigInt(1) << signal.widthOption.get) - 1)
+      Context().backend.pokeBits(signal, maskedValue)
     }
 
     def poke(value: T): Unit = (x, value) match {

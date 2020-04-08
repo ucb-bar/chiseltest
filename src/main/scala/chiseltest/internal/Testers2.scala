@@ -2,10 +2,11 @@
 
 package chiseltest.internal
 
+import chisel3.MultiIOModule
 import chiseltest.backends.BackendExecutive
 import chiseltest.backends.treadle.TreadleExecutive
+import chiseltest.legacy.backends.vcs.VcsExecutive
 import chiseltest.legacy.backends.verilator.VerilatorExecutive
-import chisel3.MultiIOModule
 import firrtl.AnnotationSeq
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
@@ -61,6 +62,7 @@ case object TreadleBackendAnnotation extends BackendAnnotation {
     )
   )
 }
+
 case object VerilatorBackendAnnotation extends BackendAnnotation {
   val executive: BackendExecutive = VerilatorExecutive
 
@@ -69,6 +71,18 @@ case object VerilatorBackendAnnotation extends BackendAnnotation {
       longOption = "t-use-verilator",
       toAnnotationSeq = _ => Seq(VerilatorBackendAnnotation),
       helpText = "direct tester to use verilator backend"
+    )
+  )
+}
+
+case object VcsBackendAnnotation extends BackendAnnotation {
+  val executive: BackendExecutive = VcsExecutive
+
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "t-use-vcs",
+      toAnnotationSeq = _ => Seq(VerilatorBackendAnnotation),
+      helpText = "direct tester to use VCS backend"
     )
   )
 }
