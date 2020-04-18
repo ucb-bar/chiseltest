@@ -12,6 +12,51 @@ import chisel3.util._
 package object chiseltest {
   import chisel3.internal.firrtl.{LitArg, ULit, SLit}
 
+  implicit class testableRecord[T <: Record](x: T) {
+    /** Poke the given signal with a [[Record.litValue()]]
+      * Literals of this Record can be instantiated with
+      * {{{
+      *   someRecord.Lit(_.elements("foo") -> 4.U)
+      * }}}
+      * `pokePartial` will only poke [[Input]] signals of `x`,
+      * and elements of `x` which contain no literal will be ignored.
+      * */
+    def pokePartial(value: T): Unit = {
+      require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
+      x.elements
+        .filter {
+          case (k, v) => DataMirror.directionOf(v) != ActualDirection.Output && {
+            value.elements(k) match {
+              case _: Record => true
+              case data: Data => data.isLit()
+            }
+          }
+        }
+        .foreach { case (k, v) => v match {
+          case record: Record => record.pokePartial(value.elements(k).asInstanceOf[Record])
+          case data: Data => data.poke(value.elements(k))
+        }}
+    }
+
+    /** Check the given signal with a [[Record.litValue()]];
+      * elements of `x` which contain no literal will be ignored.
+      * */
+    def expectPartial(value: T): Unit = {
+      require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
+      x.elements
+        .filter {
+          case (k, v) => value.elements(k) match {
+              case _: Record => true
+              case d: Data => d.isLit()
+            }
+        }
+        .foreach { case (k, v) => v match {
+          case record: Record => record.expectPartial(value.elements(k).asInstanceOf[Record])
+          case data: Data => data.expect(value.elements(k))
+        }}
+    }
+  }
+
   implicit class testableData[T <: Data](x: T) {
     protected def pokeBits(signal: Data, value: BigInt): Unit = {
       if (DataMirror.directionOf(signal) != Direction.Input) {
@@ -37,15 +82,14 @@ package object chiseltest {
       case (x: Interval, value: Interval) =>
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
         pokeBits(x, value.litValue)
-      case (x: Bundle, value: Bundle) => {
-        // TODO: chisel needs to expose typeEquivalent
-        require(x.elements.keys == value.elements.keys)  // TODO: this discards type data =(
+      case (x: Record, value: Record) => {
+        require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
         (x.elements zip value.elements) foreach { case ((_, x), (_, value)) =>
           x.poke(value)
         }
       }
       case (x: EnumType, value: EnumType) => {
-        require(x.getClass() == value.getClass())  // TODO: chisel needs to expose typeEquivalent
+        require(DataMirror.checkTypeEquivalence(x, value), s"EnumType mismatch")
         pokeBits(x, value.litValue)
       }
       case x => throw new LiteralTypeException(s"don't know how to poke $x")
@@ -66,9 +110,9 @@ package object chiseltest {
       }
       case x: Interval =>
         Context().backend.peekBits(x, stale).I(x.binaryPoint).asInstanceOf[T]
-      case (x: Bundle) => {
+      case (x: Record) => {
         val elementValueFns = x.elements.map { case (name: String, elt: Data) =>
-          (y: Bundle) => (y.elements(name), elt.peekWithStale(stale))
+          (y: Record) => (y.elements(name), elt.peekWithStale(stale))
         }.toSeq
         chiselTypeOf(x).Lit(elementValueFns: _*).asInstanceOf[T]
       }
@@ -89,20 +133,20 @@ package object chiseltest {
       // TODO can't happen because of type parameterization
       case (x: Bits, value: SInt) => throw new LiteralTypeException(s"cannot expect non-SInt value $value from SInt IO $x")
       case (x: FixedPoint, value: FixedPoint) => {
-        require(x.binaryPoint == value.binaryPoint, s"binary point mismatch between value $value from IO $x")
+        require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
         Context().backend.expectBits(x, value.litValue, message, stale)
       }
       case (x: Interval, value: Interval) =>
+        require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
         Context().backend.expectBits(x, value.litValue, message, stale)
-      case (x: Bundle, value: Bundle) => {
-        // TODO: chisel needs to expose typeEquivalent
-        require(x.elements.keys == value.elements.keys)  // TODO: this discards type data =(
+      case (x: Record, value: Record) => {
+        require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
         (x.elements zip value.elements) foreach { case ((_, x), (_, value)) =>
           x.expectWithStale(value, message, stale)
         }
       }
       case (x: EnumType, value: EnumType) => {
-        require(x.getClass() == value.getClass())  // TODO: chisel needs to expose typeEquivalent
+        require(DataMirror.checkTypeEquivalence(x, value), s"EnumType mismatch")
         Context().backend.expectBits(x, value.litValue, message, stale)
       }
       case x => throw new LiteralTypeException(s"don't know how to expect $x")

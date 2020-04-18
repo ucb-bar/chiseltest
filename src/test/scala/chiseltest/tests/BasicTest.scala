@@ -3,6 +3,7 @@ package chiseltest.tests
 import org.scalatest._
 
 import chisel3._
+import chisel3.experimental.BundleLiterals._
 import chiseltest._
 
 class BasicTest extends FlatSpec with ChiselScalatestTester with Matchers {
@@ -26,6 +27,55 @@ class BasicTest extends FlatSpec with ChiselScalatestTester with Matchers {
     assertThrows[exceptions.TestFailedException] {
       test(new StaticModule(42.U)) { c =>
         c.out.expect(0.U)
+      }
+    }
+  }
+
+  it should "test record partial poke" in {
+    val typ = new CustomBundle("foo" -> UInt(32.W), "bar" -> UInt(32.W))
+    test(new PassthroughModule(typ)) { c =>
+      c.in.pokePartial(typ.Lit(
+        _.elements("foo") -> 4.U
+      ))
+      c.out.expectPartial(typ.Lit(
+        _.elements("foo") -> 4.U
+      ))
+      c.in.pokePartial(typ.Lit(
+        _.elements("bar") -> 5.U
+      ))
+      c.out.expect(typ.Lit(
+        _.elements("foo") -> 4.U,
+        _.elements("bar") -> 5.U
+      ))
+    }
+  }
+
+  it should "fail on record expect mismatch" in {
+    val typ = new CustomBundle("foo" -> UInt(32.W), "bar" -> UInt(32.W))
+    assertThrows[exceptions.TestFailedException] {
+      test(new PassthroughModule(typ)) { c =>
+        c.in.pokePartial(typ.Lit(
+          _.elements("foo") -> 4.U
+        ))
+        c.out.expect(typ.Lit(
+          _.elements("foo") -> 4.U,
+          _.elements("bar") -> 5.U
+        ))
+      }
+    }
+  }
+
+  it should "fail on partial expect mismatch" in {
+    val typ = new CustomBundle("foo" -> UInt(32.W), "bar" -> UInt(32.W))
+    assertThrows[exceptions.TestFailedException] {
+      test(new PassthroughModule(typ)) { c =>
+        c.in.poke(typ.Lit(
+          _.elements("foo") -> 4.U,
+          _.elements("bar") -> 5.U
+        ))
+        c.out.expectPartial(typ.Lit(
+          _.elements("foo") -> 5.U
+        ))
       }
     }
   }
