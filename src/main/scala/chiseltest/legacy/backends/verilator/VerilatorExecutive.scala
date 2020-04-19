@@ -6,9 +6,12 @@ import chiseltest.backends.BackendExecutive
 import chiseltest.internal.{BackendInstance, WriteVcdAnnotation}
 import chisel3.{MultiIOModule, assert}
 import chisel3.experimental.DataMirror
+import chisel3.internal.firrtl.DefModule
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
-import firrtl.annotations.ReferenceTarget
-import firrtl.stage.CompilerAnnotation
+import firrtl.annotations.{DeletedAnnotation, ReferenceTarget}
+import firrtl.ir.{Circuit, Port}
+import firrtl.options.{Dependency, Phase, PhaseManager, PreservesAll, Shell, Stage}
+import firrtl.stage.{CompilerAnnotation, FirrtlCircuitAnnotation, FirrtlSourceAnnotation}
 import firrtl.transforms.CombinationalPath
 
 object VerilatorExecutive extends BackendExecutive {
@@ -44,8 +47,7 @@ object VerilatorExecutive extends BackendExecutive {
 
     val generatorAnnotation = chisel3.stage.ChiselGeneratorAnnotation(dutGen)
     val elaboratedAnno = (new chisel3.stage.phases.Elaborate).transform(annotationSeq :+ generatorAnnotation)
-    val circuit = elaboratedAnno.collect { case x: ChiselCircuitAnnotation => x }.head.circuit
-    val dut = getTopModule(circuit).asInstanceOf[T]
+    val chiselCircuit = elaboratedAnno.collect { case x: ChiselCircuitAnnotation => x }.head.circuit
 
     // Create the header files that verilator needs
     CopyVerilatorHeaderFiles(targetDir)
@@ -57,16 +59,23 @@ object VerilatorExecutive extends BackendExecutive {
     // - CommandEditsFile
     // - TestCommandOverride
     // - CombinationalPath
-    val compiledAnnotations = (new ChiselStage).run(
-      elaboratedAnno :+ CompilerAnnotation(new VerilogCompiler())
-    )
+    val compiledAnnotations = new PhaseManager(
+      Seq(
+        Dependency[chisel3.stage.phases.MaybeAspectPhase],
+        Dependency[chisel3.stage.phases.Convert],
+        Dependency[chisel3.stage.phases.MaybeFirrtlStage]),
+      Seq(Dependency[chisel3.stage.phases.Elaborate])
+    ).transformOrder.foldLeft(elaboratedAnno :+ CompilerAnnotation(new VerilogCompiler()))( (a, f) => f.transform(a))
 
-    val cppHarnessFileName = s"${circuit.name}-harness.cpp"
+    val firrtlCircuit: Circuit = compiledAnnotations.collectFirst { case FirrtlCircuitAnnotation(a) => a }.get
+    val dut = getTopModule(chiselCircuit).asInstanceOf[T]
+
+    val cppHarnessFileName = s"${chiselCircuit.name}-harness.cpp"
     val cppHarnessFile = new File(targetDir, cppHarnessFileName)
     val cppHarnessWriter = new FileWriter(cppHarnessFile)
-    val vcdFile = new File(targetDir, s"${circuit.name}.vcd")
+    val vcdFile = new File(targetDir, s"${chiselCircuit.name}.vcd")
     val emittedStuff =
-      VerilatorCppHarnessGenerator.codeGen(dut, vcdFile.toString)
+      VerilatorCppHarnessGenerator.codeGen(dut, firrtlCircuit, vcdFile.toString)
     cppHarnessWriter.append(emittedStuff)
     cppHarnessWriter.close()
 
@@ -84,25 +93,27 @@ object VerilatorExecutive extends BackendExecutive {
     val verilatorFlags = moreVerilatorFlags ++ writeVcdFlag
     assert(
       verilogToVerilator(
-        circuit.name,
+        chiselCircuit.name,
         new File(targetDir),
         cppHarnessFile,
         moreVerilatorFlags = verilatorFlags,
         moreVerilatorCFlags = moreVerilatorCFlags,
         editCommands = commandEditsFile
       ).! == 0,
-      s"verilator command failed on circuit ${circuit.name} in work dir $targetDir"
+      s"verilator command failed on circuit ${chiselCircuit.name} in work dir $targetDir"
     )
     assert(
-      chisel3.Driver.cppToExe(circuit.name, targetDirFile).! == 0,
-      s"Compilation of verilator generated code failed for circuit ${circuit.name} in work dir $targetDir"
+      chisel3.Driver.cppToExe(chiselCircuit.name, targetDirFile).! == 0,
+      s"Compilation of verilator generated code failed for circuit ${chiselCircuit.name} in work dir $targetDir"
     )
 
     val command = compiledAnnotations
       .collectFirst[Seq[String]] {
         case TestCommandOverride(f) => f.split(" +")
       }
-      .getOrElse { Seq(new File(targetDir, s"V${circuit.name}").toString) }
+      .getOrElse { Seq(new File(targetDir, s"V${chiselCircuit.name}").toString) }
+
+    val firPorts = firrtlCircuit.modules.collectFirst { case firrtl.ir.Module(_, name, port, _) if name == firrtlCircuit.main => port }.get.map { case Port(_, name, _, _) => name }
 
     val portNames = DataMirror
       .modulePorts(dut)
@@ -111,7 +122,7 @@ object VerilatorExecutive extends BackendExecutive {
           getDataNames(name, data).toList.map {
             case (p, "reset") => (p, "reset")
             case (p, "clock") => (p, "clock")
-            case (p, n)       => (p, s"${circuit.name}.$n")
+            case (p, n)       => (p, s"${chiselCircuit.name}.$n")
             //          case (p, n) => (p, s"$n")
           }
       }
@@ -122,6 +133,6 @@ object VerilatorExecutive extends BackendExecutive {
     val pathsAsData =
       combinationalPathsToData(dut, paths, portNames, componentToName)
 
-    new VerilatorBackend(dut, portNames, pathsAsData, command)
+    new VerilatorBackend(dut, firrtlCircuit, portNames, pathsAsData, command)
   }
 }

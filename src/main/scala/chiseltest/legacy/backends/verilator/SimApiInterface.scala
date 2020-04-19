@@ -5,6 +5,7 @@ import java.io.File
 import java.nio.channels.FileChannel
 
 import chisel3._
+import firrtl.ir.Circuit
 import logger.LazyLogging
 
 import scala.collection.immutable.ListMap
@@ -19,14 +20,14 @@ import scala.language.implicitConversions
   * @param dut  The device under test
   * @param cmd  The command to run as a Seq of strings
   */
-private[chiseltest] class SimApiInterface(dut: MultiIOModule, cmd: Seq[String])
+private[chiseltest] class SimApiInterface(dut: MultiIOModule, fir: Circuit, cmd: Seq[String])
     extends LazyLogging {
   //
   // Construct maps for the input and output
   // Remove zero length fields during the process
   //
   val (inputsNameToChunkSizeMap, outputsNameToChunkSizeMap) = {
-    val (inputs, outputs) = getPorts(dut)
+    val (inputs, outputs) = getPorts(dut, fir)
 
     def genChunk(args: (Data, String)): Option[(String, Int)] = args match {
       case (pin, name) if pin.getWidth > 0 =>

@@ -4,6 +4,7 @@ package chiseltest.legacy.backends.vcs
 
 import chisel3._
 import chiseltest.legacy.backends.verilator.VerilatorBackend
+import firrtl.ir.Circuit
 
 /** Supports Backend and Threaded traits for ex
   *
@@ -15,8 +16,9 @@ import chiseltest.legacy.backends.verilator.VerilatorBackend
   */
 class VcsBackend[T <: MultiIOModule](
   dut: T,
+  fir: Circuit,
   dataNames: Map[Data, String],
   combinationalPaths: Map[Data, Set[Data]],
   command: Seq[String]
-) extends VerilatorBackend(dut, dataNames, combinationalPaths, command)
+) extends VerilatorBackend(dut, fir, dataNames, combinationalPaths, command)
 

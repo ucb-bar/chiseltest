@@ -7,7 +7,7 @@ import java.io.File
 import chisel3._
 import chisel3.experimental._
 import chisel3.internal.InstanceId
-import chisel3.internal.firrtl.Circuit
+import chisel3.internal.firrtl.{Circuit, Port}
 import treadle.utils.BitMasks
 
 import scala.collection.mutable.ArrayBuffer
@@ -19,22 +19,29 @@ private[chiseltest] object validName {
     else name) replace (".", "_") replace ("[", "_") replace ("]", "")
 }
 
-private[chiseltest] object getDataNames {
+private[chiseltest] object getTopPortsDataName {
   def apply(name: String, data: Data): Seq[(Element, String)] = data match {
     case e: Element => Seq(e -> name)
     case b: Record => b.elements.toSeq flatMap {case (n, e) => apply(s"${name}_$n", e)}
     case v: Vec[_] => v.zipWithIndex flatMap {case (e, i) => apply(s"${name}_$i", e)}
   }
-  def apply(dut: MultiIOModule, separator: String = "."): Seq[(Element, String)] =
-    dut.getPorts.flatMap { case chisel3.internal.firrtl.Port(data, _) =>
-      apply(data.pathName replace (".", separator), data)
-    }
 
+  def apply(dut: MultiIOModule, circuit: firrtl.ir.Circuit, separator: String = "."): Seq[(Element, String)] = {
+    val topPorts = circuit.modules.flatMap {
+      case module@firrtl.ir.Module(_, name, _, _) if name == circuit.main => module.ports.map(_.name)
+      case _ => Nil
+    }
+    dut.getPorts.flatMap { case chisel3.internal.firrtl.Port(data, _) =>
+      apply(data.pathName, data).filter { case (_, n) =>
+        topPorts.contains(n.split("\\.", 2).last)
+      }.map { case (e, n) => (e, n replace(".", separator)) }
+    }
+  }
 }
 
 private[chiseltest] object getPorts {
-  def apply(dut: MultiIOModule, separator: String = "."): (Seq[(Element, String)], Seq[(Element, String)]) =
-    getDataNames(dut, separator) partition { case (e, _) => DataMirror.directionOf(e) == ActualDirection.Input }
+  def apply(dut: MultiIOModule, fir: firrtl.ir.Circuit, separator: String = "."): (Seq[(Element, String)], Seq[(Element, String)]) =
+    getTopPortsDataName(dut, fir, separator) partition { case (e, _) => DataMirror.directionOf(e) == ActualDirection.Input }
 }
 
 private[chiseltest] object flatten {

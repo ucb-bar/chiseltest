@@ -8,6 +8,7 @@ import chiseltest.{Region, TimeoutException, ClockResolutionException}
 import chisel3.experimental.{DataMirror, FixedPoint, Interval}
 import chisel3.internal.firrtl.KnownWidth
 import chisel3.{SInt, _}
+import firrtl.ir.Circuit
 
 import scala.collection.mutable
 import scala.math.BigInt
@@ -23,13 +24,14 @@ import scala.math.BigInt
 // TODO: is Seq[CombinationalPath] the right API here? It's unclear where name -> Data resolution should go
 class VerilatorBackend[T <: MultiIOModule](
   val dut: T,
+  val fir: Circuit,
   val dataNames: Map[Data, String],
   val combinationalPaths: Map[Data, Set[Data]],
   command: Seq[String]
 ) extends BackendInstance[T]
     with ThreadedBackend[T] {
 
-  private[chiseltest] val simApiInterface = new SimApiInterface(dut, command)
+  private[chiseltest] val simApiInterface = new SimApiInterface(dut, fir, command)
 
   //
   // Debug utility functions

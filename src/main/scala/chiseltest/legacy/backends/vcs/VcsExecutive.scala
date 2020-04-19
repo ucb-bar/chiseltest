@@ -7,8 +7,11 @@ import chisel3.experimental.DataMirror
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
 import chiseltest.internal.BackendInstance
 import chiseltest.backends.BackendExecutive
+import chiseltest.legacy.backends.verilator.VerilatorExecutive.getTopModule
 import firrtl.annotations.{DeletedAnnotation, ReferenceTarget}
-import firrtl.stage.CompilerAnnotation
+import firrtl.ir.Circuit
+import firrtl.options.{Dependency, PhaseManager}
+import firrtl.stage.{CompilerAnnotation, FirrtlCircuitAnnotation}
 import firrtl.transforms.CombinationalPath
 
 object VcsExecutive extends BackendExecutive {
@@ -43,11 +46,9 @@ object VcsExecutive extends BackendExecutive {
     val targetDirFile = new File(targetDir)
 
     val generatorAnnotation = chisel3.stage.ChiselGeneratorAnnotation(dutGen)
-    val circuit = generatorAnnotation.elaborate
-      .collect { case x: ChiselCircuitAnnotation => x }
-      .head
-      .circuit
-    val dut = getTopModule(circuit).asInstanceOf[T]
+    val elaboratedAnno = (new chisel3.stage.phases.Elaborate).transform(annotationSeq :+ generatorAnnotation)
+    val chiselCircuit = elaboratedAnno.collect { case x: ChiselCircuitAnnotation => x }.head.circuit
+
 
     // Generate the verilog file and some or all of the following annotations
     // - OutputFileAnnotation
@@ -59,22 +60,26 @@ object VcsExecutive extends BackendExecutive {
     //
     // This run also creates the target dir and places the verilog in it
 
-    val compiledAnnotations = (new ChiselStage)
-      .run(
-        annotationSeq ++ Seq(
-          generatorAnnotation,
-          CompilerAnnotation(new VerilogCompiler())
-        )
-      )
-      .filterNot(_.isInstanceOf[DeletedAnnotation])
+    val compiledAnnotations = new PhaseManager(
+      Seq(
+        Dependency[chisel3.stage.phases.MaybeAspectPhase],
+        Dependency[chisel3.stage.phases.Convert],
+        Dependency[chisel3.stage.phases.MaybeFirrtlStage]),
+      Seq(Dependency[chisel3.stage.phases.Elaborate])
+    ).transformOrder.foldLeft(elaboratedAnno :+ CompilerAnnotation(new VerilogCompiler()))( (a, f) => f.transform(a))
+
+    val firrtlCircuit: Circuit = compiledAnnotations.collectFirst { case DeletedAnnotation(_, FirrtlCircuitAnnotation(a)) => a }.get
+    val dut = getTopModule(chiselCircuit).asInstanceOf[T]
+
+
 
     // Generate Harness
-    val vcsHarnessFileName = s"${circuit.name}-harness.v"
+    val vcsHarnessFileName = s"${chiselCircuit.name}-harness.v"
     val vcsHarnessFile = new File(targetDir, vcsHarnessFileName)
-    val vpdFile = new File(targetDir, s"${circuit.name}.vpd")
+    val vpdFile = new File(targetDir, s"${chiselCircuit.name}.vpd")
     CopyVpiFiles(targetDir.toString)
 
-    GenVcsVerilogHarness(dut, new FileWriter(vcsHarnessFile), vpdFile.toString)
+    GenVcsVerilogHarness(dut, firrtlCircuit, new FileWriter(vcsHarnessFile), vpdFile.toString)
 
     val portNames = DataMirror
       .modulePorts(dut)
@@ -83,7 +88,7 @@ object VcsExecutive extends BackendExecutive {
           getDataNames(name, data).toList.map {
             case (p, "reset") => (p, "reset")
             case (p, "clock") => (p, "clock")
-            case (p, n)       => (p, s"${circuit.name}.$n")
+            case (p, n)       => (p, s"${chiselCircuit.name}.$n")
             //          case (p, n) => (p, s"$n")
           }
       }
@@ -101,7 +106,7 @@ object VcsExecutive extends BackendExecutive {
 
     assert(
       VerilogToVcs(
-        circuit.name,
+        chiselCircuit.name,
         targetDirFile,
         new File(vcsHarnessFileName),
         moreVcsFlags,
@@ -114,13 +119,13 @@ object VcsExecutive extends BackendExecutive {
       .collectFirst[Seq[String]] {
         case TestCommandOverride(f) => f.split(" +")
       }
-      .getOrElse { Seq(new File(targetDir, circuit.name).toString) }
+      .getOrElse { Seq(new File(targetDir, chiselCircuit.name).toString) }
 
     val paths = compiledAnnotations.collect { case c: CombinationalPath => c }
 
     val pathsAsData =
       combinationalPathsToData(dut, paths, portNames, componentToName)
 
-    new VcsBackend(dut, portNames, pathsAsData, command)
+    new VcsBackend(dut, firrtlCircuit, portNames, pathsAsData, command)
   }
 }

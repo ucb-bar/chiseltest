@@ -1,13 +1,13 @@
 package chiseltest.legacy.backends.verilator
 
 import chisel3.MultiIOModule
-import scala.sys.process._
+import firrtl.ir.Circuit
 
 /**
   * Generates the Module specific verilator harness cpp file for verilator compilation
   */
 object VerilatorCppHarnessGenerator {
-  def codeGen(dut: MultiIOModule, vcdFilePath: String): String = {
+  def codeGen(dut: MultiIOModule, fir: Circuit, vcdFilePath: String): String = {
     val codeBuffer = new StringBuilder
 
     def pushBack(vector: String, pathName: String, width: BigInt) {
@@ -37,7 +37,7 @@ object VerilatorCppHarnessGenerator {
       }
     }
 
-    val (inputs, outputs) = getPorts(dut, "->")
+    val (inputs, outputs) = getPorts(dut, fir, "->")
     val dutName = dut.name
     val dutApiClassName = dutName + "_api_t"
     val dutVerilatorClassName = "V" + dutName

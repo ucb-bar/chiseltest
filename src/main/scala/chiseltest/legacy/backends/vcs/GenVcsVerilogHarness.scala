@@ -4,15 +4,16 @@ import java.io.Writer
 
 import chisel3._
 import chisel3.experimental.DataMirror
-import chiseltest.legacy.backends.verilator.getDataNames
+import chiseltest.legacy.backends.verilator.getTopPortsDataName
+import firrtl.ir.Circuit
 
 /**
   * Generates the Module specific verilator harness cpp file for verilator compilation
   */
 object GenVcsVerilogHarness {
 
-  def getPorts(dut: MultiIOModule, separator: String = "."): (Seq[(Element, String)], Seq[(Element, String)]) = {
-    getDataNames(dut, separator) partition { case (e, _) => DataMirror.directionOf(e) == ActualDirection.Input }
+  def getPorts(dut: MultiIOModule, fir: Circuit, separator: String = "."): (Seq[(Element, String)], Seq[(Element, String)]) = {
+    getTopPortsDataName(dut, fir, separator) partition { case (e, _) => DataMirror.directionOf(e) == ActualDirection.Input }
   }
 
   // getPorts() is going to return names prefixed with the dut name.
@@ -27,7 +28,7 @@ object GenVcsVerilogHarness {
     )
   }
 
-  def apply(dut: MultiIOModule, writer: Writer, vpdFilePath: String, isGateLevel: Boolean = false) {
+  def apply(dut: MultiIOModule, fir: Circuit, writer: Writer, vpdFilePath: String, isGateLevel: Boolean = false) {
     val dutName = dut.name
     // getPorts() is going to return names prefixed with the dut name.
     // These don't correspond to code currently generated for verilog modules,
@@ -41,7 +42,7 @@ object GenVcsVerilogHarness {
       )
     }
 
-    val (inputs, outputs) = fixNames(getPorts(dut, "_"))
+    val (inputs, outputs) = fixNames(getPorts(dut, fir, "_"))
 
     writer write "module test;\n"
     writer write "  reg clock = 1;\n"
