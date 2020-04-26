@@ -13,11 +13,10 @@ import firrtl.ir.Circuit
 import firrtl.options.{Dependency, PhaseManager}
 import firrtl.stage.{CompilerAnnotation, FirrtlCircuitAnnotation}
 import firrtl.transforms.CombinationalPath
-
+import firrtl._
 object VcsExecutive extends BackendExecutive {
-  import firrtl._
 
-  /** Verilator wants to have module name prefix except for
+  /** vcs wants to have module name prefix except for
     * default reset and clock
     *
     * @param component signal name to be mapped into backend string form
@@ -32,100 +31,72 @@ object VcsExecutive extends BackendExecutive {
     }
   }
 
-  def start[T <: MultiIOModule](
-    dutGen: () => T,
-    annotationSeq: AnnotationSeq
-  ): BackendInstance[T] = {
+  def start[T <: MultiIOModule](dutGen: () => T, annotationSeq: AnnotationSeq): BackendInstance[T] = {
 
     // Force a cleanup: long SBT runs tend to fail with memory issues
     System.gc()
 
-    val targetDir = annotationSeq.collectFirst {
-      case TargetDirAnnotation(t) => t
-    }.get
-    val targetDirFile = new File(targetDir)
-
-    val generatorAnnotation = chisel3.stage.ChiselGeneratorAnnotation(dutGen)
-    val elaboratedAnno = (new chisel3.stage.phases.Elaborate).transform(annotationSeq :+ generatorAnnotation)
-    val chiselCircuit = elaboratedAnno.collect { case x: ChiselCircuitAnnotation => x }.head.circuit
-
-
-    // Generate the verilog file and some or all of the following annotations
-    // - OutputFileAnnotation
-    // - VerilatorFlagsAnnotation
-    // - VerilatorCFlagsAnnotation
-    // - CommandEditsFile
-    // - TestCommandOverride
-    // - CombinationalPath
-    //
-    // This run also creates the target dir and places the verilog in it
-
-    val compiledAnnotations = new PhaseManager(
-      Seq(
-        Dependency[chisel3.stage.phases.MaybeAspectPhase],
-        Dependency[chisel3.stage.phases.Convert],
-        Dependency[chisel3.stage.phases.MaybeFirrtlStage]),
+    val chiselAnnotations = (new chisel3.stage.phases.Elaborate).transform(annotationSeq :+ chisel3.stage.ChiselGeneratorAnnotation(dutGen))
+    val firrtlAnnotations = new PhaseManager(
+      Seq(Dependency[chisel3.stage.phases.MaybeAspectPhase], Dependency[chisel3.stage.phases.Convert], Dependency[firrtl.stage.FirrtlPhase]),
       Seq(Dependency[chisel3.stage.phases.Elaborate])
-    ).transformOrder.foldLeft(elaboratedAnno :+ CompilerAnnotation(new VerilogCompiler()))( (a, f) => f.transform(a))
+    ).transformOrder.foldLeft(chiselAnnotations :+ CompilerAnnotation(new VerilogCompiler()))((a, f) => f.transform(a))
+    val tester2Annotations = (new chiseltest.stage.VerilatorCompilerPhase).transform(firrtlAnnotations)
+    val dut = getTopModule(chiselAnnotations.collect { case x: ChiselCircuitAnnotation => x }.head.circuit).asInstanceOf[T]
 
-    val firrtlCircuit: Circuit = compiledAnnotations.collectFirst { case DeletedAnnotation(_, FirrtlCircuitAnnotation(a)) => a }.get
-    val dut = getTopModule(chiselCircuit).asInstanceOf[T]
+//    // Generate Harness
+//    val vcsHarnessFileName = s"${chiselCircuit.name}-harness.v"
+//    val vcsHarnessFile = new File(targetDir, vcsHarnessFileName)
+//    val vpdFile = new File(targetDir, s"${chiselCircuit.name}.vpd")
+//    CopyVpiFiles(targetDir.toString)
+//
+//    GenVcsVerilogHarness(dut, firrtlCircuit, new FileWriter(vcsHarnessFile), vpdFile.toString)
+//
+//    val portNames = DataMirror
+//      .modulePorts(dut)
+//      .flatMap {
+//        case (name, data) =>
+//          getDataNames(name, data).toList.map {
+//            case (p, "reset") => (p, "reset")
+//            case (p, "clock") => (p, "clock")
+//            case (p, n)       => (p, s"${chiselCircuit.name}.$n")
+//            //          case (p, n) => (p, s"$n")
+//          }
+//      }
+//      .toMap
+//
+//    val moreVcsFlags = compiledAnnotations
+//      .collectFirst { case VcsFlags(flagSeq) => flagSeq }
+//      .getOrElse(Seq())
+//    val moreVcsCFlags = compiledAnnotations
+//      .collectFirst { case VcsCFlags(flagSeq) => flagSeq }
+//      .getOrElse(Seq())
+//    val editCommands = compiledAnnotations.collectFirst {
+//      case CommandEditsFile(fileName) => fileName
+//    }.getOrElse("")
+//
+//    assert(
+//      VerilogToVcs(
+//        chiselCircuit.name,
+//        targetDirFile,
+//        new File(vcsHarnessFileName),
+//        moreVcsFlags,
+//        moreVcsCFlags,
+//        editCommands
+//      ).! == 0
+//    )
+//
+//    val command = compiledAnnotations
+//      .collectFirst[Seq[String]] {
+//        case TestCommandOverride(f) => f.split(" +")
+//      }
+//      .getOrElse { Seq(new File(targetDir, chiselCircuit.name).toString) }
+//
+//    val paths = compiledAnnotations.collect { case c: CombinationalPath => c }
+//
+//    val pathsAsData =
+//      combinationalPathsToData(dut, paths, portNames, componentToName)
 
-
-
-    // Generate Harness
-    val vcsHarnessFileName = s"${chiselCircuit.name}-harness.v"
-    val vcsHarnessFile = new File(targetDir, vcsHarnessFileName)
-    val vpdFile = new File(targetDir, s"${chiselCircuit.name}.vpd")
-    CopyVpiFiles(targetDir.toString)
-
-    GenVcsVerilogHarness(dut, firrtlCircuit, new FileWriter(vcsHarnessFile), vpdFile.toString)
-
-    val portNames = DataMirror
-      .modulePorts(dut)
-      .flatMap {
-        case (name, data) =>
-          getDataNames(name, data).toList.map {
-            case (p, "reset") => (p, "reset")
-            case (p, "clock") => (p, "clock")
-            case (p, n)       => (p, s"${chiselCircuit.name}.$n")
-            //          case (p, n) => (p, s"$n")
-          }
-      }
-      .toMap
-
-    val moreVcsFlags = compiledAnnotations
-      .collectFirst { case VcsFlags(flagSeq) => flagSeq }
-      .getOrElse(Seq())
-    val moreVcsCFlags = compiledAnnotations
-      .collectFirst { case VcsCFlags(flagSeq) => flagSeq }
-      .getOrElse(Seq())
-    val editCommands = compiledAnnotations.collectFirst {
-      case CommandEditsFile(fileName) => fileName
-    }.getOrElse("")
-
-    assert(
-      VerilogToVcs(
-        chiselCircuit.name,
-        targetDirFile,
-        new File(vcsHarnessFileName),
-        moreVcsFlags,
-        moreVcsCFlags,
-        editCommands
-      ).! == 0
-    )
-
-    val command = compiledAnnotations
-      .collectFirst[Seq[String]] {
-        case TestCommandOverride(f) => f.split(" +")
-      }
-      .getOrElse { Seq(new File(targetDir, chiselCircuit.name).toString) }
-
-    val paths = compiledAnnotations.collect { case c: CombinationalPath => c }
-
-    val pathsAsData =
-      combinationalPathsToData(dut, paths, portNames, componentToName)
-
-    new VcsBackend(dut, firrtlCircuit, portNames, pathsAsData, command)
+    new VcsBackend(dut, tester2Annotations)
   }
 }

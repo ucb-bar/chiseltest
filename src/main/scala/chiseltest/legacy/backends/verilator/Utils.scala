@@ -13,12 +13,7 @@ import treadle.utils.BitMasks
 import scala.collection.mutable.ArrayBuffer
 import scala.sys.process._
 
-// TODO: FIRRTL will eventually return valid names
-private[chiseltest] object validName {
-  def apply(name: String): String = (if (firrtl.Utils.v_keywords contains name) name + "$"
-    else name) replace (".", "_") replace ("[", "_") replace ("]", "")
-}
-
+/** @todo remove this. */
 private[chiseltest] object getTopPortsDataName {
   def apply(name: String, data: Data): Seq[(Element, String)] = data match {
     case e: Element => Seq(e -> name)
@@ -36,60 +31,6 @@ private[chiseltest] object getTopPortsDataName {
         topPorts.contains(n.split("\\.", 2).last)
       }.map { case (e, n) => (e, n replace(".", separator)) }
     }
-  }
-}
-
-private[chiseltest] object getPorts {
-  def apply(dut: MultiIOModule, fir: firrtl.ir.Circuit, separator: String = "."): (Seq[(Element, String)], Seq[(Element, String)]) =
-    getTopPortsDataName(dut, fir, separator) partition { case (e, _) => DataMirror.directionOf(e) == ActualDirection.Input }
-}
-
-private[chiseltest] object flatten {
-  def apply(data: Data): Seq[Element] = data match {
-    case b: Element => Seq(b)
-    case b: Record => b.elements.toSeq flatMap (x => apply(x._2))
-    case v: Vec[_] => v flatMap apply
-  }
-}
-
-private[chiseltest] object getTopModule {
-  def apply(circuit: Circuit): BaseModule = {
-    (circuit.components find (_.name == circuit.name)).get.id
-  }
-}
-
-/* TODO: Chisel should provide nodes of the circuit? */
-private[chiseltest] object getChiselNodes {
-  import chisel3.internal.firrtl._
-  def apply(circuit: Circuit): Seq[InstanceId] = {
-    circuit.components flatMap {
-      case m: DefModule =>
-        m.commands flatMap {
-          case x: DefReg => flatten(x.id)
-          case x: DefRegInit => flatten(x.id)
-          case mem: DefMemory => mem.t match {
-            case _: Element => Seq(mem.id)
-            case _ => Nil // Do not support aggregate type memories
-          }
-          case mem: DefSeqMemory => mem.t match {
-            case _: Element => Seq(mem.id)
-            case _ => Nil // Do not support aggregate type memories
-          }
-          case _ => Nil
-        }
-        // If it's anything else (i.e., a DefBlackBox), we don't know what to do with it.
-      case _ => Nil
-    } filterNot (x => (x.instanceName slice (0, 2)) == "T_")
-  }
-}
-
-private[chiseltest] object bigIntToStr {
-  def apply(x: BigInt, base: Int): String = base match {
-    case 2  if x < 0 => s"-0b${(-x).toString(base)}"
-    case 16 if x < 0 => s"-0x${(-x).toString(base)}"
-    case 2  => s"0b${x.toString(base)}"
-    case 16 => s"0x${x.toString(base)}"
-    case _ => x.toString(base)
   }
 }
 
