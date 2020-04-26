@@ -30,7 +30,7 @@ class VerilatorBackend[T <: MultiIOModule](
   command: Seq[String]
 ) extends BackendInstance[T]
     with ThreadedBackend[T] {
-
+  /** @todo remove dut. */
   private[chiseltest] val simApiInterface = new SimApiInterface(dut, fir, command)
 
   //
