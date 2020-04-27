@@ -42,16 +42,12 @@ private[chiseltest] class SimApiInterface(circuit: Circuit, cmd: Seq[String])
             s"${circuit.main}.$name"
           }
           Some(n -> ((width.asInstanceOf[IntWidth].width.toInt - 1) / 64 + 1))
-        case _ => {
+        case _ =>
           None
-        }
       }
     }
 
-    (
-      ListMap(inputs flatMap genChunk: _*),
-      ListMap(outputs flatMap genChunk: _*)
-    )
+    (ListMap(inputs flatMap genChunk: _*), ListMap(outputs flatMap genChunk: _*))
   }
   private object SIM_CMD extends Enumeration {
     val RESET, STEP, UPDATE, POKE, PEEK, FORCE, GETID, GETCHK, FIN = Value

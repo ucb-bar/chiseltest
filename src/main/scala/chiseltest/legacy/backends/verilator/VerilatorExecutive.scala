@@ -21,7 +21,7 @@ object VerilatorExecutive extends BackendExecutive {
       Seq(Dependency[chisel3.stage.phases.Elaborate])
     ).transformOrder.foldLeft(chiselAnnotations :+ CompilerAnnotation(new VerilogCompiler()))((a, f) => f.transform(a))
     // run tester2 stage
-    val tester2Annotations = (new chiseltest.stage.VerilatorCompilerPhase).transform(firrtlAnnotations)
+    val tester2Annotations = (new chiseltest.stage.VerilatorCompiler).transform(firrtlAnnotations)
     val dut = getTopModule(chiselAnnotations.collect { case x: ChiselCircuitAnnotation => x }.head.circuit).asInstanceOf[T]
     new VerilatorBackend(dut, tester2Annotations)
   }

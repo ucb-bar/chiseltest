@@ -46,7 +46,7 @@ trait EditableBuildCSimulatorCommand {
     * @return sequence of strings (suitable for passing as arguments to the simulator builder) specifying a flag and the absolute path to the file.
     */
   def blackBoxVerilogList(dir: java.io.File): Seq[String] = {
-    val list_file = new File(dir, firrtl.transforms.BlackBoxSourceHelper.fileListName)
+    val list_file = new File(dir, firrtl.transforms.BlackBoxSourceHelper.defaultFileListName)
     if(list_file.exists()) {
       Seq("-f", list_file.getAbsolutePath)
     } else {
@@ -195,7 +195,6 @@ private[chiseltest] object verilogToVCS extends EditableBuildCSimulatorCommand {
                                  flags: Seq[String],
                                  cFlags: Seq[String]): String = {
     Seq("cd", dir.toString, "&&", "vcs") ++ flags mkString " "
-
   }
 
 
@@ -263,7 +262,6 @@ private[chiseltest] object verilogToVerilator extends EditableBuildCSimulatorCom
                                  flags: Seq[String],
                                  cFlags: Seq[String]): String = {
     Seq("cd", dir.getAbsolutePath, "&&", "verilator", "--cc", s"$topModule.v") ++ flags mkString " "
-
   }
 
   def composeFlags(
@@ -345,12 +343,6 @@ private[chiseltest] object TesterProcess {
     while(!sim.exitValue.isCompleted) sim.process.destroy
     println("Exit Code: %d".format(sim.process.exitValue))
   }
-//  def kill(p: IVLBackend) {
-//    kill(p.simApiInterface)
-//  }
-//  def kill(p: VCSBackend) {
-//    kill(p.simApiInterface)
-//  }
   def kill(p: VerilatorBackend[_]) {
     kill(p.simApiInterface)
   }

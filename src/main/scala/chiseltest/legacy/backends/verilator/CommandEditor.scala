@@ -69,27 +69,6 @@ object CommandEditor {
     val editCommands = fileOrEditor match {
       case "" =>
         Seq.empty
-      //TODO: must make these work before PR
-//      case TesterOptions.IvlFileCommands(fileName) =>
-//        val file = new java.io.File(fileName)
-//        if (!file.exists()) {
-//          val currDir = new File(".").getAbsolutePath
-//          println(s"""$DefaultPrefix can't find specified file $fileName, cur dir is $currDir""")
-//          Seq.empty
-//        }
-//        else {
-//          Source.fromFile(file).getLines.toSeq
-//        }
-//      case TesterOptions.VcsFileCommands(fileName) =>
-//        val file = new java.io.File(fileName)
-//        if (!file.exists()) {
-//          val currDir = new File(".").getAbsolutePath
-//          println(s"""$DefaultPrefix can't find specified file $fileName, cur dir is $currDir""")
-//          Seq.empty
-//        }
-//        else {
-//          Source.fromFile(file).getLines.toSeq
-//        }
       case RegexPrefixPattern(_) =>
         Seq(fileOrEditor)
       case _ =>

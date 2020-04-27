@@ -1,19 +1,13 @@
 package chiseltest.legacy.backends.vcs
 
-import java.io.{File, FileWriter}
-
 import chisel3._
-import chisel3.experimental.DataMirror
-import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
-import chiseltest.internal.BackendInstance
+import chisel3.stage.ChiselCircuitAnnotation
 import chiseltest.backends.BackendExecutive
-import chiseltest.legacy.backends.verilator.VerilatorExecutive.getTopModule
-import firrtl.annotations.{DeletedAnnotation, ReferenceTarget}
-import firrtl.ir.Circuit
-import firrtl.options.{Dependency, PhaseManager}
-import firrtl.stage.{CompilerAnnotation, FirrtlCircuitAnnotation}
-import firrtl.transforms.CombinationalPath
+import chiseltest.internal.BackendInstance
 import firrtl._
+import firrtl.annotations.ReferenceTarget
+import firrtl.options.{Dependency, PhaseManager}
+import firrtl.stage.CompilerAnnotation
 object VcsExecutive extends BackendExecutive {
 
   /** vcs wants to have module name prefix except for
@@ -41,7 +35,7 @@ object VcsExecutive extends BackendExecutive {
       Seq(Dependency[chisel3.stage.phases.MaybeAspectPhase], Dependency[chisel3.stage.phases.Convert], Dependency[firrtl.stage.FirrtlPhase]),
       Seq(Dependency[chisel3.stage.phases.Elaborate])
     ).transformOrder.foldLeft(chiselAnnotations :+ CompilerAnnotation(new VerilogCompiler()))((a, f) => f.transform(a))
-    val tester2Annotations = (new chiseltest.stage.VerilatorCompilerPhase).transform(firrtlAnnotations)
+    val tester2Annotations = (new chiseltest.stage.VerilatorCompiler).transform(firrtlAnnotations)
     val dut = getTopModule(chiselAnnotations.collect { case x: ChiselCircuitAnnotation => x }.head.circuit).asInstanceOf[T]
 
 //    // Generate Harness
