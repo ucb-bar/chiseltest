@@ -1,18 +1,16 @@
 // See LICENSE for license details.
-
-package chiseltest.legacy.backends.verilator
+package chiseltest.backends.verilator
 
 import chisel3.experimental.{DataMirror, FixedPoint, Interval}
 import chisel3.internal.firrtl.KnownWidth
 import chisel3.{SInt, _}
 import chiseltest.internal.{BackendInstance, Context, ThreadedBackend}
-import chiseltest.legacy.backends.verilator.Utils.unsignedBigIntToSigned
-import chiseltest.stage.CommandAnnotation
 import chiseltest.{ClockResolutionException, Region, TimeoutException}
 import firrtl.AnnotationSeq
 import firrtl.annotations.ReferenceTarget
 import firrtl.stage.FirrtlCircuitAnnotation
 import firrtl.transforms.CombinationalPath
+import treadle.utils.BitMasks
 
 import scala.collection.mutable
 import scala.math.BigInt
@@ -142,6 +140,19 @@ class VerilatorBackend[T <: MultiIOModule](val dut: T, val annos: AnnotationSeq)
       case None => {
         debugLog(s"${resolveName(signal)} is eliminated by firrtl, default 0.")
         BigInt(0)
+      }
+    }
+
+    def unsignedBigIntToSigned(unsigned: BigInt, width: Int): BigInt = {
+      val bitMasks = BitMasks.getBitMasksBigs(width)
+      if (unsigned < 0) {
+        unsigned
+      } else {
+        if (bitMasks.isMsbSet(unsigned)) {
+          (unsigned & bitMasks.allBitsMask) - bitMasks.nextPowerOfTwo
+        } else {
+          unsigned & bitMasks.allBitsMask
+        }
       }
     }
 

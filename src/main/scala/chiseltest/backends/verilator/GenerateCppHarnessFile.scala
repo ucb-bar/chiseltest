@@ -1,37 +1,14 @@
-package chiseltest.stage
+package chiseltest.backends.verilator
 
-import java.io.{File, FileWriter, IOException}
-import java.nio.file.StandardCopyOption.REPLACE_EXISTING
-import java.nio.file.{FileAlreadyExistsException, Files, Paths}
+import java.io.{File, FileWriter}
 
-import chiseltest.internal.WriteVcdAnnotation
-import chiseltest.legacy.backends.verilator.verilogToVerilator.{constructCSimulatorCommand, editCSimulatorCommand}
-import chiseltest.legacy.backends.verilator.{CommandEditor, CommandEditsFile, TestCommandOverride, VerilatorCFlags, VerilatorFlags, verilogToVerilator}
 import firrtl.AnnotationSeq
 import firrtl.annotations.NoTargetAnnotation
-import firrtl.ir._
+import firrtl.ir.{Circuit, GroundType, Input, IntWidth, Module, Output, Port}
 import firrtl.options.{Phase, PreservesAll, TargetDirAnnotation}
 import firrtl.stage.FirrtlCircuitAnnotation
 
-import scala.sys.process.{ProcessBuilder, ProcessLogger, _}
-
-case class CommandAnnotation(value: Seq[String]) extends NoTargetAnnotation
-
-case class SimulatorHFileDictionary(file: String) extends NoTargetAnnotation
-
-case class VerilatorBinaryPath(file: String) extends NoTargetAnnotation
-
 case class CppHarnessFile(file: String) extends NoTargetAnnotation
-
-class Prepare extends Phase with PreservesAll[Phase] {
-  def transform(a: AnnotationSeq): AnnotationSeq = {
-    a :+ a.collectFirst { case f: SimulatorHFileDictionary => f }.getOrElse {
-      SimulatorHFileDictionary(getClass.getResource("/chisel3/tester/legacy/backends/verilator/").getPath)
-    } :+ a.collectFirst { case f: VerilatorBinaryPath => f }.getOrElse {
-      VerilatorBinaryPath("verilator")
-    }
-  }
-}
 
 class GenerateCppHarnessFile extends Phase with PreservesAll[Phase] {
   def pushBack(vector: String, pathName: String, width: BigInt) = width match {
@@ -199,65 +176,5 @@ class GenerateCppHarnessFile extends Phase with PreservesAll[Phase] {
       cppHarnessWriter.close()
       CppHarnessFile(cppHarnessFile.getAbsoluteFile.toString)
     }
-  }
-}
-
-class VerilatorCompile extends Phase with PreservesAll[Phase] {
-  override def transform(a: AnnotationSeq): AnnotationSeq = {
-    val targetDir: String = new File(a.collectFirst { case TargetDirAnnotation(t) => t }.get).getAbsolutePath
-    val circuit: Circuit = a.collectFirst { case FirrtlCircuitAnnotation(c) => c }.get
-    val topName = circuit.main
-    val verilatorBinary = a.collectFirst { case VerilatorBinaryPath(p) => p }.get
-    val writeVcdFlag: Seq[String] = if (a.contains(WriteVcdAnnotation)) Seq("--trace") else Seq.empty
-    val userVerilatorFlags: Seq[String] = a.collectFirst { case VerilatorFlags(f) => f }.getOrElse(Seq.empty)
-    val moreVerilatorCFlags: Seq[String] = a.collectFirst { case VerilatorCFlags(f) => f }.getOrElse(Seq.empty)
-    val commandEditsFile: String = a.collectFirst { case CommandEditsFile(f) => f }.getOrElse("")
-    val cppHarnessFile: String = a.collectFirst { case CppHarnessFile(f) => f }.get
-    val simulatorHFileDirectory: String = a.collectFirst { case SimulatorHFileDictionary(f) => f }.get
-    val blackBoxVerilogListFile = new File(targetDir, firrtl.transforms.BlackBoxSourceHelper.defaultFileListName)
-    val blackBoxVerilogListFlag = if (blackBoxVerilogListFile.exists()) {
-      Seq("-f", blackBoxVerilogListFile.getAbsolutePath)
-    } else {
-      Seq.empty[String]
-    }
-    val verilatorCFlags = Seq(
-      "-Wno-undefined-bool-conversion", "-O1", s"-DTOP_TYPE=V$topName", "-DVL_USER_FINISH",
-      s"-include V$topName.h", s"-I${simulatorHFileDirectory}"
-    ) ++ moreVerilatorCFlags
-    val verilatorFlags = Seq(
-      "--assert", "-Wno-fatal", "-Wno-WIDTH", "-Wno-STMTDLY", "-O1",
-      "--top-module", topName,
-      s"+define+TOP_TYPE=V$topName", s"+define+PRINTF_COND=!$topName.reset", s"+define+STOP_COND=!$topName.reset",
-      "-CFLAGS", s""""${verilatorCFlags mkString " "}"""",
-      "-Mdir", targetDir,
-      "--exe", cppHarnessFile
-    ) ++ blackBoxVerilogListFlag ++ writeVcdFlag ++ userVerilatorFlags
-
-    val generatedCommand = s"cd $targetDir && $verilatorBinary --cc $topName.v ${verilatorFlags.mkString(" ")}"
-    /** @todo new phase here. */
-    val commandEditorPrefix = "verilator-command-edit"
-    val commandEditor = CommandEditor(commandEditsFile, commandEditorPrefix)
-    val editedCommand = commandEditor(generatedCommand)
-    /** @todo new phase here. */
-    assert(
-      Seq("bash", "-c", editedCommand).! == 0,
-      s"verilator command failed on circuit $topName in work dir $targetDir: \n$editedCommand"
-    )
-    assert(
-      Seq("make", "-C", targetDir, "-j", "-f", s"V$topName.mk", s"V$topName").! == 0,
-      s"Compilation of verilator generated code failed for circuit $topName in work dir $targetDir"
-    )
-    val command = a.collectFirst[Seq[String]] { case TestCommandOverride(f) => f.split(" +") }.getOrElse(Seq(new File(targetDir, s"V$topName").toString))
-    a ++ Seq(CommandAnnotation(command))
-  }
-}
-
-class VerilatorCompiler extends Phase {
-  override def transform(a: AnnotationSeq): AnnotationSeq = {
-    Seq(
-      new Prepare,
-      new GenerateCppHarnessFile,
-      new VerilatorCompile
-    ).foldLeft(a) { case (a, t) => t.transform(a) }
   }
 }
