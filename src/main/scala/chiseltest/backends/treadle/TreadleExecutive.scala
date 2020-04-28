@@ -46,12 +46,7 @@ object TreadleExecutive extends BackendExecutive {
     // This generates a TreadleTesterAnnotation with a treadle tester instance
     annotationSeq = (new TreadleTesterPhase).transform(annotationSeq :+ TreadleFirrtlFormHint(LowForm))
 
-    val treadleTester = annotationSeq.collectFirst { case TreadleTesterAnnotation(t) => t }.getOrElse(
-      throw new Exception(
-        s"TreadleTesterPhase could not build a treadle tester from these annotations" +
-        annotationSeq.mkString("Annotations:\n", "\n  ", "")
-      )
-    )
+
 
     val circuitState = annotationSeq.collectFirst { case TreadleCircuitStateAnnotation(s) => s }.get
     val pathAnnotations = (new CheckCombLoops).execute(circuitState).annotations
@@ -59,6 +54,6 @@ object TreadleExecutive extends BackendExecutive {
 
     val pathsAsData = combinationalPathsToData(dut, paths, portNames, componentToName)
 
-    new TreadleBackend(dut, portNames, pathsAsData, treadleTester)
+    new TreadleBackend(annotationSeq)
   }
 }

@@ -2,31 +2,31 @@
 
 package chiseltest.backends.treadle
 
-import chiseltest.internal._
-import chiseltest.{Region, TimeoutException, ClockResolutionException}
 import chisel3._
-import treadle.TreadleTester
+import chiseltest.internal._
+import chiseltest.{ClockResolutionException, Region, TimeoutException}
+import firrtl.AnnotationSeq
+import treadle.TreadleTesterAnnotation
 
 import scala.collection.mutable
 
 // TODO: is Seq[CombinationalPath] the right API here? It's unclear where name -> Data resolution should go
-class TreadleBackend[T <: MultiIOModule](
-  val dut: T,
-  val dataNames: Map[Data, String],
-  val combinationalPaths: Map[Data, Set[Data]],
-  tester: TreadleTester
-)
-extends BackendInstance[T] with ThreadedBackend[T] {
-
+class TreadleBackend[T <: MultiIOModule](val annos: AnnotationSeq) extends BackendInstance[T] with ThreadedBackend[T] {
+  val tester = annos.collectFirst { case TreadleTesterAnnotation(t) => t }.getOrElse(
+    throw new Exception(
+      s"TreadleTesterPhase could not build a treadle tester from these annotations" +
+        annos.mkString("Annotations:\n", "\n  ", "")
+    )
+  )
   //
   // Debug utility functions
   //
-  val verbose: Boolean = false  // hard-coded debug flag
+  val verbose: Boolean = false // hard-coded debug flag
   def debugLog(str: => String) {
     if (verbose) println(str)
   }
 
-  protected def resolveName(signal: Data): String = {  // TODO: unify w/ dataNames?
+  protected def resolveName(signal: Data): String = { // TODO: unify w/ dataNames?
     dataNames.getOrElse(signal, signal.toString)
   }
 
@@ -40,12 +40,6 @@ extends BackendInstance[T] with ThreadedBackend[T] {
   override def getSinkClocks(signal: Data): Set[Clock] = {
     throw new ClockResolutionException("ICR not available on chisel-testers2 / firrtl master")
   }
-
-  //
-  // Everything else
-  //
-
-  def getModule: T = dut
 
   override def pokeClock(signal: Clock, value: Boolean): Unit = {
     // TODO: check thread ordering
@@ -87,10 +81,12 @@ extends BackendInstance[T] with ThreadedBackend[T] {
     Context().env.testerExpect(value, peekBits(signal, stale), resolveName(signal), message, decode)
   }
 
-  protected val clockCounter : mutable.HashMap[Clock, Int] = mutable.HashMap()
+  protected val clockCounter: mutable.HashMap[Clock, Int] = mutable.HashMap()
+
   protected def getClockCycle(clk: Clock): Int = {
     clockCounter.getOrElse(clk, 0)
   }
+
   protected def getClock(clk: Clock): Boolean = tester.peek(dataNames(clk)).toInt match {
     case 0 => false
     case 1 => true
@@ -113,7 +109,7 @@ extends BackendInstance[T] with ThreadedBackend[T] {
           debugLog(s"${resolveName(data)} <- (revert) $value")
         case None =>
           idleCycles.clear()
-          tester.poke(dataNames(data), 0)  // TODO: randomize or 4-state sim
+          tester.poke(dataNames(data), 0) // TODO: randomize or 4-state sim
           debugLog(s"${resolveName(data)} <- (revert) DC")
       }
     }
@@ -137,13 +133,13 @@ extends BackendInstance[T] with ThreadedBackend[T] {
 
   override def run(testFn: T => Unit): Unit = {
     rootTimescope = Some(new RootTimescope)
-    val mainThread = new TesterThread( () => {
-        tester.poke("reset", 1)
-        tester.step(1)
-        tester.poke("reset", 0)
+    val mainThread = new TesterThread(() => {
+      tester.poke("reset", 1)
+      tester.step(1)
+      tester.poke("reset", 0)
 
-        testFn(dut)
-      }, TimeRegion(0, Region.default), rootTimescope.get, 0, Region.default, None)
+      testFn(dut)
+    }, TimeRegion(0, Region.default), rootTimescope.get, 0, Region.default, None)
     mainThread.thread.start()
     require(allThreads.isEmpty)
     allThreads += mainThread
@@ -189,7 +185,7 @@ extends BackendInstance[T] with ThreadedBackend[T] {
         }
       }
 
-      tester.report()  // needed to dump VCDs
+      tester.report() // needed to dump VCDs
     }
   }
 }

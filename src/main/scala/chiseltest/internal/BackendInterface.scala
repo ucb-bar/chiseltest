@@ -108,14 +108,7 @@ trait BackendInterface {
 /** Backend associated with a particular circuit, and can run tests
   */
 trait BackendInstance[T <: MultiIOModule] extends BackendInterface {
-  /** Returns a Seq of (data reference, fully qualified element names) for the input.
-    * name is the name of data
-    */
-  def getDataNames(name: String, data: Data): Seq[(Data, String)] = Seq(data -> name) ++ (data match {
-    case _: Element => Seq()
-    case b: Record => b.elements.toSeq flatMap { case (n, e) => getDataNames(s"${name}_$n", e) }
-    case v: Vec[_] => v.zipWithIndex flatMap { case (e, i) => getDataNames(s"${name}_$i", e) }
-  })
+
 
   /** Runs of tests are wrapped in this, for any special setup/teardown that needs to happen.
     * Takes the test function, which takes the module used as the testing interface.

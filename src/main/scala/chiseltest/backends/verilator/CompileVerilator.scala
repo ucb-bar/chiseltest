@@ -23,7 +23,9 @@ case class CommandAnnotation(value: Seq[String]) extends NoTargetAnnotation
 class CompileVerilator extends Phase with PreservesAll[Phase] {
   override def transform(a: AnnotationSeq): AnnotationSeq = {
     // if user define his own Command to run
-    if (a.contains(CommandAnnotation)) return a
+    val customCommand = a.exists { case _: CommandAnnotation => true; case _ => false }
+    val enableCache = a.exists { case _: EnableCache => true; case _ => false }
+    if (customCommand) return a
     val targetDir: String = a.collectFirst { case TargetDirAnnotation(t) => t }.get
     val circuit: Circuit = a.collectFirst { case FirrtlCircuitAnnotation(c) => c }.get
     val topName = circuit.main
@@ -35,14 +37,16 @@ class CompileVerilator extends Phase with PreservesAll[Phase] {
     val oldHash = if (hashFile.canRead) {
       val f = scala.io.Source.fromFile(hashFile)
       val r = f.mkString
-      f.close()
       r
     } else ""
     // write new to file.
     val hashWriter = new PrintWriter(new FileOutputStream(hashFile, false))
     hashWriter.append(hash)
-
-    if (oldHash != hash & a.contains(EnableCache)) {
+    hashWriter.close()
+    if (oldHash == hash & enableCache) {
+      println("use cache circuit")
+    } else {
+      println("run compile.")
       val verilatorBinary = a.collectFirst { case SimulatorBinaryPath(p) => p }.get
       val writeVcdFlag: Seq[String] = if (a.contains(WriteVcdAnnotation)) Seq("--trace") else Seq.empty
       val userVerilatorFlags: Seq[String] = a.collectFirst { case VerilatorFlags(f) => f }.getOrElse(Seq.empty)

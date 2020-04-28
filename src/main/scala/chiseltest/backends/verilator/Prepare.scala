@@ -12,10 +12,13 @@ case class SimulatorBinaryPath(file: String) extends NoTargetAnnotation
 
 class Prepare extends Phase with PreservesAll[Phase] {
   def transform(a: AnnotationSeq): AnnotationSeq = {
-    a :+ a.collectFirst { case f: SimulatorHFileDictionary => f }.getOrElse {
+    (a :+ a.collectFirst { case f: SimulatorHFileDictionary => f }.getOrElse {
       SimulatorHFileDictionary(getClass.getResource("/verilator/").getPath)
     } :+ a.collectFirst { case f: SimulatorBinaryPath => f }.getOrElse {
       SimulatorBinaryPath("verilator")
-    } :+ a.collectFirst { case TargetDirAnnotation(f) => TargetDirAnnotation(new File(f).getAbsolutePath) }.get
+    }).map{
+      case TargetDirAnnotation(f) => TargetDirAnnotation(new File(f).getAbsolutePath)
+      case a => a
+    }
   }
 }
