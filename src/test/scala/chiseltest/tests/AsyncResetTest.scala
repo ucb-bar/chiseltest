@@ -8,6 +8,7 @@ import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.internal.VerilatorBackendAnnotation
 import firrtl.AnnotationSeq
 import org.scalatest._
+import org.scalatest.freespec.AnyFreeSpec
 
 /**
   * circuit that illustrates usage of async register
@@ -41,7 +42,7 @@ class AsyncResetFeedbackModule() extends MultiIOModule {
   }
 }
 
-class AsyncResetTest extends FreeSpec with ChiselScalatestTester {
+class AsyncResetTest extends AnyFreeSpec with ChiselScalatestTester {
 
   val annotations: AnnotationSeq = {
     if(true) Seq() else Seq(VerilatorBackendAnnotation)

@@ -7,6 +7,7 @@ import chiseltest.experimental.TestOptionBuilder._
 import chisel3.util.{Pipe, Valid}
 import org.scalatest._
 import treadle.VerboseAnnotation
+import org.scalatest.flatspec.AnyFlatSpec
 
 class ValidQueueModule(typeGen: Data, val delay: Int) extends MultiIOModule {
   val in = IO(Flipped(Valid(typeGen)))
@@ -16,7 +17,7 @@ class ValidQueueModule(typeGen: Data, val delay: Int) extends MultiIOModule {
 }
 
 
-class ValidQueueTest extends FlatSpec with ChiselScalatestTester {
+class ValidQueueTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Testers2 with ValidQueue"
 
   it should "pass through elements, using enqueueNow" in {

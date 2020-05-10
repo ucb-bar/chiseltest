@@ -4,8 +4,9 @@ import org.scalatest._
 import chisel3._
 import chisel3.experimental._
 import chiseltest._
+import org.scalatest.flatspec.AnyFlatSpec
 
-class ElementTest extends FlatSpec with ChiselScalatestTester {
+class ElementTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Testers2 with Element types"
 
   // TODO: automatically detect overflow conditions and error out
