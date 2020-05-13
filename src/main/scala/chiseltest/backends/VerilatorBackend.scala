@@ -1,12 +1,14 @@
 // See LICENSE for license details.
-package chiseltest.backends.verilator
+package chiseltest.backends
 
 import chisel3.experimental.{DataMirror, FixedPoint, Interval}
 import chisel3.internal.firrtl.KnownWidth
 import chisel3.{SInt, _}
-import chiseltest.internal.{BackendInstance, Context, ThreadedBackend}
-import chiseltest.{ClockResolutionException, Region, TimeoutException}
+import chiseltest.backends.verilator.SimApiInterface
+import chiseltest.internal.{FailedExpectException, ThreadedBackend}
+import chiseltest.{Region, TimeoutException}
 import firrtl.AnnotationSeq
+import logger.LazyLogging
 import treadle.utils.BitMasks
 
 import scala.collection.mutable
@@ -18,35 +20,13 @@ import scala.math.BigInt
   * @tparam T the dut's type
   */
 // TODO: is Seq[CombinationalPath] the right API here? It's unclear where name -> Data resolution should go
-class VerilatorBackend[T <: MultiIOModule](val annos: AnnotationSeq) extends BackendInstance[T]
-  with ThreadedBackend[T] {
+class VerilatorBackend[T <: MultiIOModule](val annos: AnnotationSeq) extends ThreadedBackend[T]
+  with LazyLogging {
 
   private[chiseltest] val simApiInterface = new SimApiInterface(circuit, command)
-  //
-  // Debug utility functions
-  //
-  val verbose: Boolean = false // hard-coded debug flag
-  def debugLog(str: => String) {
-    if (verbose) println(str)
-  }
 
   protected def resolveName(signal: Data): String = { // TODO: unify w/ dataNames?
     dataNames.getOrElse(signal, signal.toString)
-  }
-
-  //
-  // Circuit introspection functionality
-  //
-  override def getSourceClocks(signal: Data): Set[Clock] = {
-    throw new ClockResolutionException(
-      "ICR not available on chisel-testers2 / firrtl master"
-    )
-  }
-
-  override def getSinkClocks(signal: Data): Set[Clock] = {
-    throw new ClockResolutionException(
-      "ICR not available on chisel-testers2 / firrtl master"
-    )
   }
 
   //
@@ -60,13 +40,13 @@ class VerilatorBackend[T <: MultiIOModule](val annos: AnnotationSeq) extends Bac
 
     val intValue = if (value) 1 else 0
     simApiInterface.poke(dataNames(signal), intValue)
-    debugLog(s"${resolveName(signal)} <- $intValue")
+    logger debug (s"${resolveName(signal)} <- $intValue")
   }
 
   override def peekClock(signal: Clock): Boolean = {
     doPeek(signal, new Throwable)
     val a = simApiInterface.peek(dataNames(signal)).getOrElse(BigInt(0))
-    debugLog(s"${resolveName(signal)} -> $a")
+    logger debug (s"${resolveName(signal)} -> $a")
     a > 0
   }
 
@@ -79,9 +59,9 @@ class VerilatorBackend[T <: MultiIOModule](val annos: AnnotationSeq) extends Bac
           idleCycles.clear()
         }
         simApiInterface.poke(dataNames(signal), value)
-        debugLog(s"${resolveName(signal)} <- $value")
+        logger debug (s"${resolveName(signal)} <- $value")
       case None =>
-        debugLog(s"${resolveName(signal)} is eliminated by firrtl, ignore it. ")
+        logger debug (s"${resolveName(signal)} is eliminated by firrtl, ignore it. ")
     }
   }
 
@@ -92,11 +72,11 @@ class VerilatorBackend[T <: MultiIOModule](val annos: AnnotationSeq) extends Bac
     val dataName = dataNames(signal)
     val a = simApiInterface.peek(dataName) match {
       case Some(peekValue) => {
-        debugLog(s"${resolveName(signal)} -> $peekValue")
+        logger debug (s"${resolveName(signal)} -> $peekValue")
         peekValue
       }
       case None => {
-        debugLog(s"${resolveName(signal)} is eliminated by firrtl, default 0.")
+        logger debug (s"${resolveName(signal)} is eliminated by firrtl, default 0.")
         BigInt(0)
       }
     }
@@ -131,18 +111,26 @@ class VerilatorBackend[T <: MultiIOModule](val annos: AnnotationSeq) extends Bac
   override def expectBits(signal: Data,
                           value: BigInt,
                           message: Option[String],
+                          // @todo rebase wip.
                           decode: Option[BigInt => String],
                           stale: Boolean): Unit = {
     require(!stale, "Stale peek not yet implemented")
+    logger debug (s"${resolveName(signal)} ?> $value")
+    val actual = peekBits(signal, stale)
+    if (value != actual) {
+      val appendMsg = message match {
+        case Some(_) => s": $message"
+        case _ => ""
+      }
 
-    debugLog(s"${resolveName(signal)} ?> $value")
-    Context().env.testerExpect(
-      value,
-      peekBits(signal, stale),
-      resolveName(signal),
-      message,
-      decode
-    )
+      val trace = new Throwable
+      val expectStackDepth = trace.getStackTrace.indexWhere(ste =>
+        ste.getClassName == "chiseltest.package$testableData" && ste.getMethodName == "expect")
+      require(expectStackDepth != -1, s"Failed to find expect in stack trace:\r\n${trace.getStackTrace.mkString("\r\n")}")
+      val message1 = s"$signal=$actual did not equal expected=$value$appendMsg"
+      val stackIndex = expectStackDepth + 1
+      throw new FailedExpectException(message1, stackIndex)
+    }
   }
 
   protected val clockCounter: mutable.HashMap[Clock, Int] = mutable.HashMap()
@@ -173,11 +161,11 @@ class VerilatorBackend[T <: MultiIOModule](val annos: AnnotationSeq) extends Bac
               idleCycles.clear()
             }
             simApiInterface.poke(dataNames(data), value)
-            debugLog(s"${resolveName(data)} <- (revert) $value")
+            logger debug (s"${resolveName(data)} <- (revert) $value")
           case None =>
             idleCycles.clear()
             simApiInterface.poke(dataNames(data), 0) // TODO: randomize or 4-state sim
-            debugLog(s"${resolveName(data)} <- (revert) DC")
+            logger debug (s"${resolveName(data)} <- (revert) DC")
         }
     }
   }
@@ -222,7 +210,7 @@ class VerilatorBackend[T <: MultiIOModule](val annos: AnnotationSeq) extends Bac
       while (!mainThread.done) { // iterate timesteps
         clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
 
-        debugLog(s"clock step")
+        logger debug (s"clock step")
 
         // TODO: allow dependent clocks to step based on test stimulus generator
         // TODO: remove multiple invocations of getClock
@@ -241,7 +229,6 @@ class VerilatorBackend[T <: MultiIOModule](val annos: AnnotationSeq) extends Bac
         }
 
         runThreads(steppedClocks.toSet)
-        Context().env.checkpoint()
 
         idleLimits foreach {
           case (clock, limit) =>

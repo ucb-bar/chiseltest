@@ -5,27 +5,25 @@ package chiseltest
 import chiseltest.internal._
 import chiseltest.experimental.sanitizeFileName
 import chisel3.MultiIOModule
-
+import chisel3.stage.ChiselGeneratorAnnotation
+import chiseltest.stage.{ChiselTestStage, TestFunctionAnnotation}
 import firrtl.AnnotationSeq
 import org.scalatest._
 
 /**
   * Used to run simple tests that do not require a scalatest environment in order to run
+  *
   * @param testName This will be used to generate a working directory in ./test_run_dir
   */
 private class RawTester(testName: String) extends Assertions with TestEnvInterface {
   // Provide test fixture data as part of 'global' context during test runs
   val topFileName = Some(testName)
 
-  private def runTest[T <: MultiIOModule](tester: BackendInstance[T])(testFn: T => Unit) {
-    batchedFailures.clear()
-
-    Context.run(tester, this, testFn)
-  }
-
   def test[T <: MultiIOModule](dutGen: => T, annotationSeq: AnnotationSeq)(testFn: T => Unit) {
-    val newAnnos = addDefaultTargetDir(sanitizeFileName(testName), annotationSeq)
-    runTest(defaults.createDefaultTester(() => dutGen, newAnnos))(testFn)
+    (new ChiselTestStage).run(Seq(
+      TestFunctionAnnotation(testFn),
+      new ChiselGeneratorAnnotation(() => dutGen)
+    ) ++ annotationSeq)
   }
 }
 
@@ -48,9 +46,9 @@ object RawTester {
     *
     * @note every test should use a different name, it, suitably sanitized, is used as the subdirectory in the
     *       test_run_dir directory
-    * @param dutGen    The generator of the device under tests
-    * @param testFn    The block of code that implements the test
-    * @tparam T        The type of device, derived from dutGen
+    * @param dutGen The generator of the device under tests
+    * @param testFn The block of code that implements the test
+    * @tparam T The type of device, derived from dutGen
     */
   def test[T <: MultiIOModule](dutGen: => T, annotationSeq: AnnotationSeq = Seq.empty)(testFn: T => Unit): Unit = {
 

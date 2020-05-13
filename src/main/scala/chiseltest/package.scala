@@ -10,6 +10,7 @@ import chisel3.util._
 /** Basic interfaces and implicit conversions for testers2
   */
 package object chiseltest {
+
   import chisel3.internal.firrtl.{LitArg, ULit, SLit}
 
   implicit class testableRecord[T <: Record](x: T) {
@@ -35,7 +36,8 @@ package object chiseltest {
         .foreach { case (k, v) => v match {
           case record: Record => record.pokePartial(value.elements(k).asInstanceOf[Record])
           case data: Data => data.poke(value.elements(k))
-        }}
+        }
+        }
     }
 
     /** Check the given signal with a [[Record.litValue()]];
@@ -46,14 +48,15 @@ package object chiseltest {
       x.elements
         .filter {
           case (k, v) => value.elements(k) match {
-              case _: Record => true
-              case d: Data => d.isLit()
-            }
+            case _: Record => true
+            case d: Data => d.isLit()
+          }
         }
         .foreach { case (k, v) => v match {
           case record: Record => record.expectPartial(value.elements(k).asInstanceOf[Record])
           case data: Data => data.expect(value.elements(k))
-        }}
+        }
+        }
     }
   }
 
@@ -178,6 +181,7 @@ package object chiseltest {
     }
 
     def expect(value: T): Unit = expectWithStale(value, None, false)
+
     def expect(value: T, message: String): Unit = expectWithStale(value, Some(message), false)
 
     /** @return the single clock that drives the source of this signal.
@@ -185,17 +189,11 @@ package object chiseltest {
       * @throws ClockResolutionException if sinks of this signal have an associated clock
       */
     def getSourceClock(): Clock = {
-      Context().backend.getSourceClocks(x).toList match {
-        case clock :: Nil => clock
-        case clocks => throw new ClockResolutionException(s"number of source clocks for $x is not one: $clocks")
-      }
+      throw new ClockResolutionException(s"circuit connectivity not implemented.")
     }
 
     def getSinkClock(): Clock = {
-      Context().backend.getSinkClocks(x).toList match {
-        case clock :: Nil => clock
-        case clocks => throw new ClockResolutionException(s"number of sink clocks for $x is not one: $clocks")
-      }
+      throw new ClockResolutionException(s"circuit connectivity not implemented.")
     }
   }
 
@@ -213,8 +211,12 @@ package object chiseltest {
 
   // TODO: call-by-name doesn't work with varargs, is there a better way to do this?
   def parallel(run1: => Unit, run2: => Unit): Unit = {
-    fork { run1 }
-      .fork { run2 }
+    fork {
+      run1
+    }
+      .fork {
+        run2
+      }
       .join
   }
 

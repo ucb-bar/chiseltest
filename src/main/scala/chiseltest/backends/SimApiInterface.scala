@@ -5,6 +5,7 @@ import java.io.File
 import java.nio.channels.FileChannel
 
 import chisel3._
+import chiseltest.backends.VerilatorBackend
 import firrtl.ir.{Circuit, GroundType, IntWidth, Module, Port}
 import logger.LazyLogging
 

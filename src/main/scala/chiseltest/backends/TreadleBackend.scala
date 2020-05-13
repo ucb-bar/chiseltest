@@ -1,57 +1,40 @@
 // See LICENSE for license details.
 
-package chiseltest.backends.treadle
+package chiseltest.backends
 
 import chisel3._
 import chiseltest.internal._
-import chiseltest.{ClockResolutionException, Region, TimeoutException}
+import chiseltest.{Region, TimeoutException}
 import firrtl.AnnotationSeq
+import logger.LazyLogging
 import treadle.TreadleTesterAnnotation
 
 import scala.collection.mutable
 
 // TODO: is Seq[CombinationalPath] the right API here? It's unclear where name -> Data resolution should go
-class TreadleBackend[T <: MultiIOModule](val annos: AnnotationSeq) extends BackendInstance[T] with ThreadedBackend[T] {
+class TreadleBackend[T <: MultiIOModule](val annos: AnnotationSeq) extends BackendInstance[T] with ThreadedBackend[T] with LazyLogging {
   val tester = annos.collectFirst { case TreadleTesterAnnotation(t) => t }.getOrElse(
     throw new Exception(
       s"TreadleTesterPhase could not build a treadle tester from these annotations" +
         annos.mkString("Annotations:\n", "\n  ", "")
     )
   )
-  //
-  // Debug utility functions
-  //
-  val verbose: Boolean = false // hard-coded debug flag
-  def debugLog(str: => String) {
-    if (verbose) println(str)
-  }
 
   protected def resolveName(signal: Data): String = { // TODO: unify w/ dataNames?
     dataNames.getOrElse(signal, signal.toString)
-  }
-
-  //
-  // Circuit introspection functionality
-  //
-  override def getSourceClocks(signal: Data): Set[Clock] = {
-    throw new ClockResolutionException("ICR not available on chisel-testers2 / firrtl master")
-  }
-
-  override def getSinkClocks(signal: Data): Set[Clock] = {
-    throw new ClockResolutionException("ICR not available on chisel-testers2 / firrtl master")
   }
 
   override def pokeClock(signal: Clock, value: Boolean): Unit = {
     // TODO: check thread ordering
     val intValue = if (value) 1 else 0
     tester.poke(dataNames(signal), intValue)
-    debugLog(s"${resolveName(signal)} <- $intValue")
+    logger debug (s"${resolveName(signal)} <- $intValue")
   }
 
   override def peekClock(signal: Clock): Boolean = {
     doPeek(signal, new Throwable)
     val a = tester.peek(dataNames(signal))
-    debugLog(s"${resolveName(signal)} -> $a")
+    logger debug (s"${resolveName(signal)} -> $a")
     a > 0
   }
 
@@ -61,7 +44,7 @@ class TreadleBackend[T <: MultiIOModule](val annos: AnnotationSeq) extends Backe
       idleCycles.clear()
     }
     tester.poke(dataNames(signal), value)
-    debugLog(s"${resolveName(signal)} <- $value")
+    logger debug (s"${resolveName(signal)} <- $value")
   }
 
   override def peekBits(signal: Data, stale: Boolean): BigInt = {
@@ -69,15 +52,14 @@ class TreadleBackend[T <: MultiIOModule](val annos: AnnotationSeq) extends Backe
 
     doPeek(signal, new Throwable)
     val a = tester.peek(dataNames(signal))
-    debugLog(s"${resolveName(signal)} -> $a")
+    logger debug (s"${resolveName(signal)} -> $a")
     a
   }
 
-  override def expectBits(signal: Data, value: BigInt, message: Option[String], decode: Option[BigInt => String],
-                          stale: Boolean): Unit = {
+  override def expectBits(signal: Data, value: BigInt, message: Option[String], decode: Option[BigInt => String], stale: Boolean): Unit = {
     require(!stale, "Stale peek not yet implemented")
 
-    debugLog(s"${resolveName(signal)} ?> $value")
+    logger debug (s"${resolveName(signal)} ?> $value")
     Context().env.testerExpect(value, peekBits(signal, stale), resolveName(signal), message, decode)
   }
 
@@ -106,11 +88,11 @@ class TreadleBackend[T <: MultiIOModule](val annos: AnnotationSeq) extends Backe
             idleCycles.clear()
           }
           tester.poke(dataNames(data), value)
-          debugLog(s"${resolveName(data)} <- (revert) $value")
+          logger debug (s"${resolveName(data)} <- (revert) $value")
         case None =>
           idleCycles.clear()
           tester.poke(dataNames(data), 0) // TODO: randomize or 4-state sim
-          debugLog(s"${resolveName(data)} <- (revert) DC")
+          logger debug (s"${resolveName(data)} <- (revert) DC")
       }
     }
   }
@@ -134,6 +116,7 @@ class TreadleBackend[T <: MultiIOModule](val annos: AnnotationSeq) extends Backe
   override def run(testFn: T => Unit): Unit = {
     rootTimescope = Some(new RootTimescope)
     val mainThread = new TesterThread(() => {
+      /** @todo consume init anonation here. */
       tester.poke("reset", 1)
       tester.step(1)
       tester.poke("reset", 0)
@@ -148,7 +131,7 @@ class TreadleBackend[T <: MultiIOModule](val annos: AnnotationSeq) extends Backe
       while (!mainThread.done) { // iterate timesteps
         clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
 
-        debugLog(s"clock step")
+        logger debug (s"clock step")
 
         // TODO: allow dependent clocks to step based on test stimulus generator
         // TODO: remove multiple invocations of getClock
@@ -164,7 +147,6 @@ class TreadleBackend[T <: MultiIOModule](val annos: AnnotationSeq) extends Backe
         }
 
         runThreads(steppedClocks.toSet)
-        Context().env.checkpoint()
 
         idleLimits foreach { case (clock, limit) =>
           idleCycles.put(clock, idleCycles.getOrElse(clock, -1) + 1)

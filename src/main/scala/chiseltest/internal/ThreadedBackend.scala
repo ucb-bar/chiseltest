@@ -8,9 +8,9 @@ import chiseltest.{Region, TemporalParadox, ThreadOrderDependentException}
 import chisel3._
 import chisel3.experimental.DataMirror
 import chisel3.stage.DesignAnnotation
-import chiseltest.backends.verilator.CommandAnnotation
+import chiseltest.stage.CommandAnnotation
 import firrtl.AnnotationSeq
-import firrtl.annotations.ReferenceTarget
+import firrtl.annotations.{NoTargetAnnotation, ReferenceTarget}
 import firrtl.stage.FirrtlCircuitAnnotation
 import firrtl.transforms.CombinationalPath
 
@@ -44,12 +44,18 @@ case class ForkBuilder(name: Option[String], region: Option[Region], threads: Se
   * - runThreads: runs all threads waiting on a set of clocks
   * - scheduler: called from within a test thread, suspends the current thread and runs the next one
   */
-trait ThreadedBackend[T <: MultiIOModule] extends BackendInterface {
+
+case class ThreadedBackendAnnotation[DUT <: MultiIOModule](backend: ThreadedBackend[DUT]) extends NoTargetAnnotation
+
+trait ThreadedBackend[DUT <: MultiIOModule] extends BackendInterface {
   val annos: AnnotationSeq
-  val dut: T = annos.collect { case DesignAnnotation(m) => m }.head.asInstanceOf[T]
+  val dut: DUT = annos.collect { case DesignAnnotation(m) => m }.head.asInstanceOf[DUT]
   val command = annos.collectFirst { case CommandAnnotation(value) => value }.get
   val circuit = annos.collectFirst { case FirrtlCircuitAnnotation(c) => c }.get
   val topName = circuit.main
+
+  def run(testFn: DUT => Unit): Unit
+
   /** need to resolve signal exist in chisel and not in firrtl. */
   val dataNames: Map[Data, String] = DataMirror.modulePorts(dut).flatMap {
     case (name, data) =>
