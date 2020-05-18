@@ -4,7 +4,7 @@ import java.io.{File, FileOutputStream, FileWriter, PrintWriter}
 import java.security.MessageDigest
 
 import chisel3.MultiIOModule
-import chiseltest.backends.{TreadleBackend, VerilatorBackend}
+import chiseltest.backends.{TreadleBackend, VPIBackend}
 import chiseltest.internal.ThreadedBackendAnnotation
 import chiseltest.stage._
 import firrtl.AnnotationSeq
@@ -275,7 +275,7 @@ class CompileDut extends Phase with ChiselTesterAnnotationHelper with PreservesA
           Seq(new File(getTargetDir(a), s"V${getCircuit(a).main}").toString)
         }
         val annos = a :+ CommandAnnotation(command)
-        annos :+ ThreadedBackendAnnotation(new VerilatorBackend[MultiIOModule](annos))
+        annos :+ ThreadedBackendAnnotation(new VPIBackend[MultiIOModule](annos))
       case "vcs" => a
     }
   }

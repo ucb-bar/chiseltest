@@ -4,6 +4,7 @@ import java.io.File
 
 import chiseltest.stage._
 import firrtl.AnnotationSeq
+import firrtl.annotations.Annotation
 import firrtl.options.{Phase, PreservesAll, TargetDirAnnotation}
 
 /** [[AddDefault]] is a shared [[Phase]] between different backend,
@@ -21,25 +22,25 @@ import firrtl.options.{Phase, PreservesAll, TargetDirAnnotation}
   * For the better compatibility to verilator/vcs, [[TargetDirAnnotation]] will be convert absolute path.
   * */
 class AddDefault extends Phase with ChiselTesterAnnotationHelper with PreservesAll[Phase] {
-  def addDefaultBackend(annos: AnnotationSeq) = annos.collectFirst {
+  def addDefaultBackend(annos: AnnotationSeq): SimulatorBackendAnnotation = annos.collectFirst {
     case b: SimulatorBackendAnnotation => b
     case VerilatorBackendAnnotation() => SimulatorBackendAnnotation("verilator")
     case VcsBackendAnnotation() => SimulatorBackendAnnotation("vcs")
     case TreadleBackendAnnotation() => SimulatorBackendAnnotation("treadle")
   }.getOrElse(SimulatorBackendAnnotation("treadle"))
 
-  def addDefaultBinary(annos: AnnotationSeq) = annos.collectFirst {
+  def addDefaultBinary(annos: AnnotationSeq): SimulatorBinary = annos.collectFirst {
     case f: SimulatorBinary => f
   }.getOrElse {
     SimulatorBinary(annos.collectFirst { case SimulatorBackendAnnotation(b) => b }.get)
   }
 
-  def addWaveForm(annos: AnnotationSeq) = annos.collectFirst {
+  def addWaveForm(annos: AnnotationSeq): WaveFormAnnotation = annos.collectFirst {
     case w: WaveFormAnnotation => w
     case WriteVcdAnnotation() => WaveFormAnnotation("vcd")
   }.getOrElse(WaveFormAnnotation("none"))
 
-  def convertAbsoluteTargetDir(annos: AnnotationSeq) = annos.map {
+  def convertAbsoluteTargetDir(annos: AnnotationSeq): Seq[Annotation] = annos.map {
     case TargetDirAnnotation(f) => TargetDirAnnotation(new File(f).getAbsolutePath)
     case a => a
   }

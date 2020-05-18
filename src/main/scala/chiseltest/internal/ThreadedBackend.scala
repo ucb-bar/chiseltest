@@ -4,17 +4,18 @@ package chiseltest.internal
 
 import java.util.concurrent.{ConcurrentLinkedQueue, Semaphore}
 
-import chiseltest.{Region, TemporalParadox, ThreadOrderDependentException}
 import chisel3._
 import chisel3.experimental.DataMirror
-import chisel3.stage.DesignAnnotation
-import chiseltest.stage.CommandAnnotation
+import chiseltest.backends.SimulatorInterface
+import chiseltest.stage.ChiselTesterAnnotationHelper
+import chiseltest.{Region, TemporalParadox, ThreadOrderDependentException, TimeoutException}
 import firrtl.AnnotationSeq
 import firrtl.annotations.{NoTargetAnnotation, ReferenceTarget}
-import firrtl.stage.FirrtlCircuitAnnotation
 import firrtl.transforms.CombinationalPath
+import logger.LazyLogging
 
 import scala.collection.mutable
+import scala.math.BigInt
 
 case class ForkBuilder(name: Option[String], region: Option[Region], threads: Seq[AbstractTesterThread]) {
   def apply(runnable: => Unit): TesterThreadList = {
@@ -44,19 +45,221 @@ case class ForkBuilder(name: Option[String], region: Option[Region], threads: Se
   * - runThreads: runs all threads waiting on a set of clocks
   * - scheduler: called from within a test thread, suspends the current thread and runs the next one
   */
-
 case class ThreadedBackendAnnotation[DUT <: MultiIOModule](backend: ThreadedBackend[DUT]) extends NoTargetAnnotation
 
-trait ThreadedBackend[DUT <: MultiIOModule] extends BackendInterface {
+/** @todo convert to transform.
+  *       is Seq[CombinationalPath] the right API here? It's unclear where name -> Data resolution should go
+  *       use [[RawModule]]. */
+trait ThreadedBackend[DUT <: MultiIOModule]
+  extends BackendInterface
+    with ChiselTesterAnnotationHelper
+    with LazyLogging {
+
   val annos: AnnotationSeq
-  val dut: DUT = annos.collect { case DesignAnnotation(m) => m }.head.asInstanceOf[DUT]
-  val command = annos.collectFirst { case CommandAnnotation(value) => value }.get
-  val circuit = annos.collectFirst { case FirrtlCircuitAnnotation(c) => c }.get
-  val topName = circuit.main
+  val simulatorInterface: SimulatorInterface
+  val dut: DUT = getDut(annos).asInstanceOf[DUT]
+  val circuit = getCircuit(annos)
+  val topName = getTopName(annos)
 
-  def run(testFn: DUT => Unit): Unit
+  /** @todo check thread ordering. */
+  def pokeClock(signal: Clock, value: Boolean): Unit = {
+    val intValue = if (value) 1 else 0
+    simulatorInterface.poke(dataNames(signal), intValue)
+    logger debug (s"${resolveName(signal)} <- $intValue")
+  }
 
-  /** need to resolve signal exist in chisel and not in firrtl. */
+  override def peekClock(signal: Clock): Boolean = {
+    doPeek(signal, new Throwable)
+    /** @todo resolve [[None]]*/
+    val a = simulatorInterface.peek(dataNames(signal)).getOrElse(BigInt(0))
+    logger debug s"${resolveName(signal)} -> $a"
+    a > 0
+  }
+
+  override def pokeBits(signal: Data, value: BigInt): Unit = {
+    doPoke(signal, value, new Throwable)
+    val dataName = dataNames(signal)
+    simulatorInterface.peek(dataName) match {
+      case Some(peekValue) =>
+        if (peekValue != value) {
+          idleCycles.clear()
+        }
+        simulatorInterface.poke(dataNames(signal), value)
+        logger debug (s"${resolveName(signal)} <- $value")
+      case None =>
+        logger debug (s"${resolveName(signal)} is eliminated by firrtl, ignore it. ")
+    }
+  }
+
+  override def peekBits(signal: Data, stale: Boolean): BigInt = {
+    require(!stale, "Stale peek not yet implemented")
+
+    doPeek(signal, new Throwable)
+    val dataName = dataNames(signal)
+    val a = simulatorInterface.peek(dataName) match {
+      case Some(peekValue) => {
+        logger debug (s"${resolveName(signal)} -> $peekValue")
+        peekValue
+      }
+      case None => {
+        logger debug (s"${resolveName(signal)} is eliminated by firrtl, default 0.")
+        BigInt(0)
+      }
+    }
+    a
+  }
+
+  override def expectBits(signal: Data, value: BigInt, message: Option[String], stale: Boolean): Unit = {
+    require(!stale, "Stale peek not yet implemented")
+    logger debug (s"${resolveName(signal)} ?> $value")
+    val actual = peekBits(signal, stale)
+    if (value != actual) {
+      val appendMsg = message match {
+        case Some(_) => s": $message"
+        case _ => ""
+      }
+
+      val trace = new Throwable
+      val expectStackDepth = trace.getStackTrace.indexWhere(ste =>
+        ste.getClassName == "chiseltest.package$testableData" && ste.getMethodName == "expect")
+      require(expectStackDepth != -1, s"Failed to find expect in stack trace:\r\n${trace.getStackTrace.mkString("\r\n")}")
+      val message1 = s"$signal=$actual did not equal expected=$value$appendMsg"
+      val stackIndex = expectStackDepth + 1
+
+      /** @todo Don't Throw, generate an Annotation here. */
+      throw new FailedExpectException(message1, stackIndex)
+    }
+  }
+
+  protected val clockCounter: mutable.HashMap[Clock, Int] = mutable.HashMap()
+
+  protected def getClockCycle(clk: Clock): Int = {
+    clockCounter.getOrElse(clk, 0)
+  }
+
+  protected def getClock(clk: Clock): Boolean =
+    simulatorInterface.peek(dataNames(clk)) match {
+      case Some(x) if x == BigInt(1) => true
+      case _ => false
+    }
+
+  protected val lastClockValue: mutable.HashMap[Clock, Boolean] =
+    mutable.HashMap()
+
+  /** @todo is timescope really work in verilator? */
+  override def doTimescope(contents: () => Unit): Unit = {
+    val createdTimescope = newTimescope()
+
+    contents()
+
+    closeTimescope(createdTimescope).foreach {
+      case (data, valueOption) =>
+        valueOption match {
+          case Some(value) =>
+            if (simulatorInterface.peek(dataNames(data)).get != value) {
+              idleCycles.clear()
+            }
+            simulatorInterface.poke(dataNames(data), value)
+            logger debug (s"${resolveName(data)} <- (revert) $value")
+          case None =>
+            idleCycles.clear()
+            simulatorInterface.poke(dataNames(data), 0) // TODO: randomize or 4-state sim
+            logger debug (s"${resolveName(data)} <- (revert) DC")
+        }
+    }
+  }
+
+  /** @todo: maybe a fast condition for when threading is not in use? */
+  override def step(signal: Clock, cycles: Int): Unit = {
+    for (_ <- 0 until cycles) {
+      // If a new clock, record the current value so change detection is instantaneous
+      /** @todo set the main clock to replace `dut.clock`. */
+      if (signal != dut.clock && !lastClockValue.contains(signal)) {
+        lastClockValue.put(signal, getClock(signal))
+      }
+
+      val thisThread = currentThread.get
+      thisThread.clockedOn = Some(signal)
+      schedulerState.currentThreadIndex += 1
+      scheduler()
+      thisThread.waiting.acquire()
+    }
+  }
+
+  def run(testFn: MultiIOModule => Unit): Unit = {
+    rootTimescope = Some(new RootTimescope)
+    val mainThread = new TesterThread(
+      () => {
+        /** @todo make user be able to set his own init logic,
+          *       for example reset, local last state or etc.
+          * */
+        simulatorInterface.poke("reset", 1)
+        simulatorInterface.step(1)
+        simulatorInterface.poke("reset", 0)
+
+        testFn(dut)
+      },
+      TimeRegion(0, Region.default),
+      rootTimescope.get,
+      0,
+      Region.default,
+      None
+    )
+    mainThread.thread.start()
+    require(allThreads.isEmpty)
+    allThreads += mainThread
+
+    try {
+      while (!mainThread.done) { // iterate timesteps
+        clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
+
+        logger debug s"clock step"
+
+        /** @todo allow dependent clocks to step based on test stimulus generator
+          *       remove multiple invocations of getClock
+          * */
+        // Unblock threads waiting on dependent clock
+        val steppedClocks = Seq(dut.clock) ++ lastClockValue.collect {
+          case (clock, lastValue)
+            if getClock(clock) != lastValue && getClock(clock) =>
+            clock
+        }
+
+        /** @todo ignores cycles before a clock was stepped on. */
+        steppedClocks foreach { clock =>
+          clockCounter.put(dut.clock, getClockCycle(clock) + 1)
+        }
+        lastClockValue foreach { case (clock, _) =>
+          lastClockValue.put(clock, getClock(clock))
+        }
+
+        runThreads(steppedClocks.toSet)
+
+        idleLimits foreach { case (clock, limit) =>
+          idleCycles.put(clock, idleCycles.getOrElse(clock, -1) + 1)
+          if (idleCycles(clock) >= limit) {
+            throw new TimeoutException(s"timeout on $clock at $limit idle cycles")
+          }
+        }
+        simulatorInterface.step(1)
+      }
+    } finally {
+      rootTimescope = None
+
+      for (thread <- allThreads.clone()) {
+        // Kill the threads using an InterruptedException
+        if (thread.thread.isAlive) {
+          thread.thread.interrupt()
+        }
+      }
+
+      simulatorInterface.finish() // Do this to close down the communication
+    }
+  }
+
+  def resolveName(signal: Data): String = dataNames.getOrElse(signal, signal.toString)
+
+  /** @todo get dataNames from firrtl. */
   val dataNames: Map[Data, String] = DataMirror.modulePorts(dut).flatMap {
     case (name, data) =>
       getDataNames(name, data).toList.map {
@@ -65,6 +268,7 @@ trait ThreadedBackend[DUT <: MultiIOModule] extends BackendInterface {
         case (p, n) => (p, s"$topName.$n")
       }
   }.toMap
+
   /** @todo refactor this with firrtl? */
   val combinationalPaths: Map[Data, Set[Data]] = {
     def componentToName(component: ReferenceTarget): String = {
@@ -78,10 +282,10 @@ trait ThreadedBackend[DUT <: MultiIOModule] extends BackendInterface {
     val paths = annos.collect { case c: CombinationalPath => c }
     val nameToData = dataNames.map(_.swap)
     val filteredPaths = paths.filter { p => // only keep paths involving top-level IOs
-      p.sink.module == circuit.main && p.sources.exists(_.module == circuit.main)
+      p.sink.module == topName && p.sources.exists(_.module == topName)
     }
     val filterPathsByName = filteredPaths.map { p => // map ComponentNames in paths into string forms
-      val mappedSources = p.sources.filter(_.module == circuit.main).map { component => componentToName(component) }
+      val mappedSources = p.sources.filter(_.module == topName).map { component => componentToName(component) }
       componentToName(p.sink) -> mappedSources
     }
     val mapPairs = filterPathsByName.map { case (sink, sources) => // convert to Data
@@ -491,6 +695,7 @@ trait ThreadedBackend[DUT <: MultiIOModule] extends BackendInterface {
                                openedTime: TimeRegion, parentTimescope: BaseTimescope, parentActionId: Int,
                                val region: Region, val trace: Option[(TesterThread, Throwable)])
     extends AbstractTesterThread {
+    tt =>
     val level: Int = parentTimescope.threadOption match {
       case Some(parentThread) => parentThread.level + 1
       case None => 0
@@ -523,7 +728,7 @@ trait ThreadedBackend[DUT <: MultiIOModule] extends BackendInterface {
 
           require(bottomTimescope == topTimescope) // ensure timescopes unrolled properly
           done = true
-          threadFinished(TesterThread.this)
+          threadFinished(tt)
           scheduler()
         } catch {
           case _: InterruptedException =>
