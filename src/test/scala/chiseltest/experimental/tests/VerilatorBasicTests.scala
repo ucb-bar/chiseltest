@@ -3,8 +3,7 @@ package chiseltest.experimental.tests
 import chisel3._
 import chiseltest.tests.{PassthroughModule, StaticModule}
 import chiseltest._
-import chiseltest.experimental.TestOptionBuilder._
-import chiseltest.internal.VerilatorBackendAnnotation
+import chiseltest.stage.VerilatorBackendAnnotation
 import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -12,7 +11,7 @@ import org.scalatest.matchers.should.Matchers
 class VerilatorBasicTests extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2 with Verilator"
 
-  val annos = Seq(VerilatorBackendAnnotation)
+  val annos = Seq(VerilatorBackendAnnotation())
 
   it should "test static circuits" in {
     test(new StaticModule(42.U)).withAnnotations(annos) { c =>

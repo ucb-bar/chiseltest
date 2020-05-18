@@ -5,13 +5,11 @@ package chiseltest.internal
 import java.util.concurrent.{ConcurrentLinkedQueue, Semaphore}
 
 import chisel3._
-import chisel3.experimental.DataMirror
 import chiseltest.backends.SimulatorInterface
 import chiseltest.stage.ChiselTesterAnnotationHelper
 import chiseltest.{Region, TemporalParadox, ThreadOrderDependentException, TimeoutException}
 import firrtl.AnnotationSeq
-import firrtl.annotations.{NoTargetAnnotation, ReferenceTarget}
-import firrtl.transforms.CombinationalPath
+import firrtl.annotations.NoTargetAnnotation
 import logger.LazyLogging
 
 import scala.collection.mutable
@@ -127,7 +125,6 @@ trait ThreadedBackend[DUT <: MultiIOModule]
       val stackIndex = expectStackDepth + 1
 
       /** @todo Don't Throw, generate an Annotation here. */
-      throw new FailedExpectException(message1, stackIndex)
     }
   }
 
@@ -871,14 +868,5 @@ trait ThreadedBackend[DUT <: MultiIOModule]
     thisThread.clockedOn = None
     scheduler()
     thisThread.waiting.acquire()
-  }
-
-  override def getParentTraceElements: Seq[StackTraceElement] = {
-    def processThread(thread: TesterThread): Seq[StackTraceElement] = thread.trace match {
-      case Some((parent, trace)) => processThread(parent) ++ trace.getStackTrace
-      case None => Seq()
-    }
-
-    processThread(currentThread.get)
   }
 }

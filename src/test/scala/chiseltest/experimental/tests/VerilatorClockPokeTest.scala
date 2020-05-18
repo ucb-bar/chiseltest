@@ -1,14 +1,13 @@
 package chiseltest.experimental.tests
 
 import chisel3._
-import chiseltest._
-import chiseltest.experimental.TestOptionBuilder._
-import chiseltest.experimental.UncheckedClockPoke._
-import chiseltest.internal.{TreadleBackendAnnotation, VerilatorBackendAnnotation}
 import chisel3.util._
+import chiseltest._
+import chiseltest.experimental.UncheckedClockPoke._
+import chiseltest.stage.{VerilatorBackendAnnotation, WriteVcdAnnotation}
 import org.scalatest._
 import treadle.executable.ClockInfo
-import treadle.{ClockInfoAnnotation, WriteVcdAnnotation}
+import treadle.ClockInfoAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 
 class VerilatorClockPokeTest extends AnyFlatSpec with ChiselScalatestTester {
@@ -22,7 +21,7 @@ class VerilatorClockPokeTest extends AnyFlatSpec with ChiselScalatestTester {
       withClock(inClock) {
         out := Counter(true.B, 8)._1
       }
-    }).withAnnotations(Seq(VerilatorBackendAnnotation)) { c =>
+    }).withAnnotations(Seq(VerilatorBackendAnnotation())) { c =>
       c.inClock.low()
       c.out.expect(0.U)
 
@@ -59,7 +58,7 @@ class VerilatorClockPokeTest extends AnyFlatSpec with ChiselScalatestTester {
       withClock(inClock.asClock()) {
         out := Counter(true.B, 8)._1
       }
-    }).withAnnotations(Seq(VerilatorBackendAnnotation)) { c =>
+    }).withAnnotations(Seq(VerilatorBackendAnnotation())) { c =>
       //      c.inClock.low()
       c.inClock.poke(false.B)
       c.out.expect(0.U)
@@ -85,7 +84,7 @@ class VerilatorClockPokeTest extends AnyFlatSpec with ChiselScalatestTester {
         out := Counter(true.B, 8)._1
       }
     }).withAnnotations(
-      Seq(VerilatorBackendAnnotation, WriteVcdAnnotation, ClockInfoAnnotation(Seq(ClockInfo(period = 2))))
+      Seq(VerilatorBackendAnnotation(), WriteVcdAnnotation(), ClockInfoAnnotation(Seq(ClockInfo(period = 2))))
     ) { c =>
       c.inClock.low()
       c.out.expect(0.U)

@@ -24,9 +24,9 @@ import firrtl.options.{Phase, PreservesAll, TargetDirAnnotation}
 class AddDefault extends Phase with ChiselTesterAnnotationHelper with PreservesAll[Phase] {
   def addDefaultBackend(annos: AnnotationSeq): SimulatorBackendAnnotation = annos.collectFirst {
     case b: SimulatorBackendAnnotation => b
-    case VerilatorBackendAnnotation() => SimulatorBackendAnnotation("verilator")
-    case VcsBackendAnnotation() => SimulatorBackendAnnotation("vcs")
-    case TreadleBackendAnnotation() => SimulatorBackendAnnotation("treadle")
+    case _: VerilatorBackendAnnotation => SimulatorBackendAnnotation("verilator")
+    case _: VcsBackendAnnotation => SimulatorBackendAnnotation("vcs")
+    case _: TreadleBackendAnnotation => SimulatorBackendAnnotation("treadle")
   }.getOrElse(SimulatorBackendAnnotation("treadle"))
 
   def addDefaultBinary(annos: AnnotationSeq): SimulatorBinary = annos.collectFirst {
@@ -57,14 +57,14 @@ class AddDefault extends Phase with ChiselTesterAnnotationHelper with PreservesA
           case p@WaveFormAnnotation("vcd") => p
           case _ => WaveFormAnnotation("none")
         }
-        val binary = addDefaultBinary(a)
+        val binary = addDefaultBinary(a :+ backendAnnotation)
         Seq(enableCache, vcd, backendAnnotation, license, binary)
       case SimulatorBackendAnnotation("verilator") =>
         val waveForm = addWaveForm(a) match {
           case p@WaveFormAnnotation("fsdb") => Seq(p, getLicense(a))
           case p: WaveFormAnnotation => Seq(p)
         }
-        val binary = addDefaultBinary(a)
+        val binary = addDefaultBinary(a :+ backendAnnotation)
         Seq(backendAnnotation, binary) ++ waveForm
       case SimulatorBackendAnnotation("treadle") =>
         Seq(backendAnnotation)

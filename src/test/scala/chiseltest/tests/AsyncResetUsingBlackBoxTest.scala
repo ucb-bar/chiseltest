@@ -4,7 +4,6 @@ package chiseltest.tests
 
 import chisel3._
 import chiseltest._
-import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.experimental.{AsyncResetBlackBoxFactory, AsyncResetReg}
 import org.scalatest._
 import treadle.BlackBoxFactoriesAnnotation

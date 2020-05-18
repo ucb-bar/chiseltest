@@ -2,8 +2,6 @@
 
 package chiseltest.internal
 
-import chisel3.MultiIOModule
-
 import scala.util.DynamicVariable
 
 object Context {

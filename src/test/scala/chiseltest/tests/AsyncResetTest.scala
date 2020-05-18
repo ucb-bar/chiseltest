@@ -4,8 +4,7 @@ package chiseltest.tests
 
 import chisel3._
 import chiseltest._
-import chiseltest.experimental.TestOptionBuilder._
-import chiseltest.internal.VerilatorBackendAnnotation
+import chiseltest.stage.VerilatorBackendAnnotation
 import firrtl.AnnotationSeq
 import org.scalatest._
 import org.scalatest.freespec.AnyFreeSpec
@@ -45,7 +44,7 @@ class AsyncResetFeedbackModule() extends MultiIOModule {
 class AsyncResetTest extends AnyFreeSpec with ChiselScalatestTester {
 
   val annotations: AnnotationSeq = {
-    if(true) Seq() else Seq(VerilatorBackendAnnotation)
+    if(true) Seq() else Seq(VerilatorBackendAnnotation())
   }
 
   "register is set to reset value (1), after tester startup's default reset" in {

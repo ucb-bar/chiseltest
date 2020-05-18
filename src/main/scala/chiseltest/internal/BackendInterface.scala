@@ -71,12 +71,6 @@ trait BackendInterface {
 
   def doTimescope(contents: () => Unit): Unit
 
-  /** Returns the stack trace elements of parent threads. If currently in the root thread, returns
-    * empty.
-    * TODO: refactor this, figure out how to do this in a structurally cleaner way
-    */
-  def getParentTraceElements: Seq[StackTraceElement] = Seq()
-
   protected val testMap = mutable.HashMap[Any, Any]()
 
   /** Sets the value associated with a key in a per-test map.
