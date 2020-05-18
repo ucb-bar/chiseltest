@@ -11,6 +11,7 @@ class SimulationPhase extends Phase with ChiselTesterAnnotationHelper with Prese
   override def prerequisites: Seq[Dependency[Phase]] = Seq(
     Dependency[CompileDut]
   )
+
   def transform(a: AnnotationSeq): AnnotationSeq = {
     /** cast to MultiIOModule here.
       *
@@ -27,10 +28,7 @@ class SimulationPhase extends Phase with ChiselTesterAnnotationHelper with Prese
     val testFn = getTestFunction(a)
 
     require(context.value.isEmpty)
-    /** @todo remove TestEnvInterface later, use Transform to handle. */
-    context.withValue(Some(new Instance(backend, new TestEnvInterface {
-      def topFileName: Option[String] = None
-    }))) {
+    context.withValue(Some(new Instance(backend))) {
       backend.run(testFn)
     }
     a

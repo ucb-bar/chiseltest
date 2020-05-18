@@ -10,7 +10,9 @@ class TreadleInterface(val annotations: AnnotationSeq)
   val wrapper: TreadleTester = annotations.collectFirst { case TreadleTesterAnnotation(t) => t }.get
 
   /** poke a signal name with a [[BigInt]]. */
-  def poke(signal: String, value: BigInt): Unit = wrapper.poke _
+  def poke(signal: String, value: BigInt): Unit = {
+    wrapper.poke(signal, value)
+  }
 
   /** peek a signal name,
     * return a [[BigInt]] if found,
@@ -26,7 +28,7 @@ class TreadleInterface(val annotations: AnnotationSeq)
   }
 
   /** step the main clock. */
-  def step(n: Int): Unit = wrapper.step _
+  def step(n: Int): Unit = wrapper.step(n)
 
   /** finish all simulator. */
   def finish(): Unit = if (!wrapper.finish) throw new Exception("fail to stop simulator.")

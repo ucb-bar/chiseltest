@@ -260,41 +260,9 @@ trait ThreadedBackend[DUT <: MultiIOModule]
   def resolveName(signal: Data): String = dataNames.getOrElse(signal, signal.toString)
 
   /** @todo get dataNames from firrtl. */
-  val dataNames: Map[Data, String] = DataMirror.modulePorts(dut).flatMap {
-    case (name, data) =>
-      getDataNames(name, data).toList.map {
-        case (p, "reset") => (p, "reset")
-        case (p, "clock") => (p, "clock")
-        case (p, n) => (p, s"$topName.$n")
-      }
-  }.toMap
-
+  val dataNames: Map[Data, String] = getDutTopPortsNameMap(annos)
   /** @todo refactor this with firrtl? */
-  val combinationalPaths: Map[Data, Set[Data]] = {
-    def componentToName(component: ReferenceTarget): String = {
-      component.name match {
-        case "reset" => "reset"
-        case "clock" => "clock"
-        case _ => s"${component.module}.${component.name}"
-      }
-    }
-
-    val paths = annos.collect { case c: CombinationalPath => c }
-    val nameToData = dataNames.map(_.swap)
-    val filteredPaths = paths.filter { p => // only keep paths involving top-level IOs
-      p.sink.module == topName && p.sources.exists(_.module == topName)
-    }
-    val filterPathsByName = filteredPaths.map { p => // map ComponentNames in paths into string forms
-      val mappedSources = p.sources.filter(_.module == topName).map { component => componentToName(component) }
-      componentToName(p.sink) -> mappedSources
-    }
-    val mapPairs = filterPathsByName.map { case (sink, sources) => // convert to Data
-      nameToData(sink) -> sources.map { source =>
-        nameToData(source)
-      }.toSet
-    }
-    mapPairs.toMap
-  }
+  val combinationalPaths: Map[Data, Set[Data]] = getTopCombinationalPath(annos)
 
   /** Returns a Seq of (data reference, fully qualified element names) for the input.
     * name is the name of data

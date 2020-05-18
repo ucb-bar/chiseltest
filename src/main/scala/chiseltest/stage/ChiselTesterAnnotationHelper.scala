@@ -65,7 +65,7 @@ trait ChiselTesterAnnotationHelper {
     case a: TestFunctionAnnotation[T] => a.func
   }.get.asInstanceOf[MultiIOModule => Unit]
 
-  def getDutTopPortsNameMap(annos: AnnotationSeq): Map[Data, String] = annos.collectFirst {
+    def getDutTopPortsNameMap(annos: AnnotationSeq): Map[Data, String] = annos.collectFirst {
     case DutTopPortsNameMapAnnotation(a) => a
   }.get
 

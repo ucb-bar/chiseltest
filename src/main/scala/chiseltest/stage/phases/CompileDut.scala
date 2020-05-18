@@ -40,6 +40,7 @@ class CompileDut extends Phase with ChiselTesterAnnotationHelper with PreservesA
     case _ => s"        sim_data.$vector.push_back(new VerilatorWData($pathName, ${(width - 1) / 32 + 1}));"
   }
 
+  /** @todo peek internal signal need to be export from harness. */
   private def generateVerilatorCppHarness(annos: AnnotationSeq) = {
     val targetDir = getTargetDir(annos)
     val circuit = getCircuit(annos)
