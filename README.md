@@ -11,7 +11,7 @@ ChiselTest emphasizes tests that are lightweight (minimizes boilerplate code), e
 The core primitives are similar to nonsynthesizable Verilog: input pin assignment (`poke`), pin value assertion (`expect`), and time advance (`step`). Threading concurrency is also supported with the use of `fork` and `join`, and concurrent accesses to wires are checked to prevent race conditions.
 
 ### Migrating from chisel-testers / iotesters
-The core abstractions (`poke`, `expect`, `step`) are similar to [chisel-testers](https://github.com/freechipsproject/chisel-testers), but the syntax is inverted: instead of doing `tester.poke(wire, value)` with a Scala number value, in ChiselTest you would write `write.poke(value)` with a Chisel literal value.
+The core abstractions (`poke`, `expect`, `step`) are similar to [chisel-testers](https://github.com/freechipsproject/chisel-testers), but the syntax is inverted: instead of doing `tester.poke(wire, value)` with a Scala number value, in ChiselTest you would write `wire.poke(value)` with a Chisel literal value.
 Furthermore, as no reference to the tester context is needed, test helper functions can be defined outside a test class and written as libraries.
 
 Currently, this should support all the functionality that was in chisel-testers, and provides additional features.
