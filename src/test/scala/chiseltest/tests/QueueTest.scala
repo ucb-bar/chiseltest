@@ -60,6 +60,24 @@ class QueueTest extends FlatSpec with ChiselScalatestTester {
     }
   }
 
+
+  it should "pass through elements, using enqueueSeq and dequeueSeq, with custom error message" in {
+    test(new QueueModule(UInt(8.W), 2)) { c =>
+      c.in.initSource().setSourceClock(c.clock)
+      c.out.initSink().setSinkClock(c.clock)
+
+      val seq = Seq(42.U, 43.U, 44.U)
+
+
+      fork {
+        c.in.enqueueSeq(seq)
+      }.fork {
+        // print error value and expected value in hex
+        c.out.expectDequeueSeq(seq, x => Some(x.litValue().toString(16)))
+      }.join()
+    }
+  }
+
   it should "work with IrrevocableIO" in{
     test(new Module{
       val io = IO(new Bundle{

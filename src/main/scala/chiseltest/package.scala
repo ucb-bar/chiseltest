@@ -155,6 +155,12 @@ package object chiseltest {
 
     def expect(value: T): Unit = expectWithStale(value, None, false)
     def expect(value: T, message: String): Unit = expectWithStale(value, Some(message), false)
+    def expect(value: T, msgGen: T => Option[String] = _ => None): Unit = {
+      val errMsg =
+        if(msgGen(value).isEmpty) None
+        else Some(s"\nExpected:${msgGen(value).get}\nActual:${msgGen(peek()).get}\n")
+      expectWithStale(value, errMsg, false)
+    }
 
     /** @return the single clock that drives the source of this signal.
       * @throws ClockResolutionException if sources of this signal have more than one, or zero clocks

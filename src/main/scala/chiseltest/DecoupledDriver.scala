@@ -74,35 +74,35 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
     }
   }
 
-  def expectDequeue(data: T): Unit = timescope {
+  def expectDequeue(data: T, msgGen: T => Option[String] = _ => None): Unit = timescope {
     // TODO: check for init
     x.ready.poke(true.B)
     fork.withRegion(Monitor) {
       waitForValid()
       x.valid.expect(true.B)
-      x.bits.expect(data)
+      x.bits.expect(data, msgGen)
     }.joinAndStep(getSinkClock)
   }
 
-  def expectDequeueNow(data: T): Unit = timescope {
+  def expectDequeueNow(data: T, msgGen: T => Option[String] = _ => None): Unit = timescope {
     // TODO: check for init
     x.ready.poke(true.B)
     fork.withRegion(Monitor) {
       x.valid.expect(true.B)
-      x.bits.expect(data)
+      x.bits.expect(data, msgGen)
     }.joinAndStep(getSinkClock)
   }
 
-  def expectDequeueSeq(data: Seq[T]): Unit = timescope {
+  def expectDequeueSeq(data: Seq[T], msgGen: T => Option[String] = _ => None): Unit = timescope {
     for (elt <- data) {
-      expectDequeue(elt)
+      expectDequeue(elt, msgGen)
     }
   }
 
-  def expectPeek(data: T): Unit = {
+  def expectPeek(data: T, msgGen: T => Option[String] = _ => None): Unit = {
     fork.withRegion(Monitor) {
       x.valid.expect(true.B)
-      x.bits.expect(data)
+      x.bits.expect(data, msgGen)
     }
   }
 
