@@ -141,4 +141,3 @@ No timeframe is currently available, but feel free to let us know if some featur
 - [#28](https://github.com/ucb-bar/chisel-testers2/issues/28) faster Verilator / VCS testing using mechanisms that avoid interprocess communication, like JNI
 - [#58](https://github.com/ucb-bar/chisel-testers2/issues/58) faster threading (note, unclear if there are good solutions here, especially ones that are fully API compatible - Scala generally lacks good coroutine support)
 - [#60](https://github.com/ucb-bar/chisel-testers2/issues/60), [#34](https://github.com/ucb-bar/chisel-testers2/issues/34), [#2](https://github.com/ucb-bar/chisel-testers2/issues/2) support for testing non-Chisel modules, such as post-syn Verilog, or generally a separation of DUT interface and implementation
-
