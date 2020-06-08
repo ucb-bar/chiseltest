@@ -76,7 +76,7 @@ package object chiseltest {
     }
 
     def enumToString(record: EnumType): BigInt => String = {
-      def inner(bits: BigInt): String = "[unimplemented record conversion]"
+      def inner(bits: BigInt): String = "[unimplemented enum decode]"
       inner
     }
   }
