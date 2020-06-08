@@ -7,7 +7,6 @@ import chisel3.experimental.{DataMirror, Direction, FixedPoint, Interval, EnumTy
 import chisel3.experimental.BundleLiterals._
 import chisel3.util._
 
-
 /** Basic interfaces and implicit conversions for testers2
   */
 package object chiseltest {
