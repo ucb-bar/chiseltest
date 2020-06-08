@@ -56,6 +56,14 @@ trait TestEnvInterface {
     }
   }
 
+  protected def bigintToHex(x: BigInt): String = {
+    if (x < 0) {
+      f"-0x${-x}%x"
+    } else {
+      f"0x$x%x"
+    }
+  }
+
   /** Expect a specific value on a wire, calling testerFail if the expectation isn't met.
     * Failures queued until the next checkpoint.
     */
@@ -78,9 +86,11 @@ trait TestEnvInterface {
 
       val (actualStr, expectedStr) = decode match {
         case Some(decode) =>
-          (f"${decode(actual)} ($actual, 0x$actual%x)", s"${decode(expected)} ($expected, 0x$actual%x)")
+          (s"${decode(actual)} ($actual, ${bigintToHex(actual)})",
+              s"${decode(expected)} ($expected, ${bigintToHex(expected)})")
         case None =>
-          (f"$actual (0x$actual%x)", s"$expected (0x$actual%x)")
+          (s"$actual (${bigintToHex(actual)})",
+              s"$expected (${bigintToHex(expected)})")
       }
 
       val message = s"$signal=$actualStr did not equal expected=$expectedStr$appendMsg$detailedTrace"

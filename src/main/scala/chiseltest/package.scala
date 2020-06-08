@@ -61,10 +61,17 @@ package object chiseltest {
   private object BitsDecoders {
     import chisel3.internal.firrtl.{BinaryPoint, KnownBinaryPoint, UnknownBinaryPoint}
 
-    def boolBitsToString(bits: BigInt): String = "[unimplemented bool conversion]"
+    def boolBitsToString(bits: BigInt): String = (bits != 0).toString
 
     def fixedToString(binaryPoint: BinaryPoint): BigInt => String = {
-      def inner(bits: BigInt): String = "[unimplemented fixed conversion]"
+      def inner(bits: BigInt): String = {
+        binaryPoint match {
+          case KnownBinaryPoint(binaryPoint) =>
+            val bpInteger = 1 << binaryPoint
+            (bits.toFloat / bpInteger).toString
+          case UnknownBinaryPoint => "[unknown binary point]"
+        }
+      }
       inner
     }
 
