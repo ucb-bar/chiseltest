@@ -59,7 +59,8 @@ trait TestEnvInterface {
   /** Expect a specific value on a wire, calling testerFail if the expectation isn't met.
     * Failures queued until the next checkpoint.
     */
-  def testerExpect(expected: Any, actual: Any, signal: String, msg: Option[String]): Unit = {
+  def testerExpect(expected: BigInt, actual: BigInt, signal: String,
+                   msg: Option[String], decode: Option[BigInt => String]): Unit = {
     if (expected != actual) {
       val appendMsg = msg match {
         case Some(_) => s": $msg"
@@ -75,7 +76,14 @@ trait TestEnvInterface {
       val trimmedTrace = trace.getStackTrace.drop(expectStackDepth + 2)
       val detailedTrace = topFileName.map(getExpectDetailedTrace(trimmedTrace.toSeq, _)).getOrElse("")
 
-      val message = s"$signal=$actual did not equal expected=$expected$appendMsg$detailedTrace"
+      val (actualStr, expectedStr) = decode match {
+        case Some(decode) =>
+          (f"${decode(actual)} ($actual, 0x$actual%x)", s"${decode(expected)} ($expected, 0x$actual%x)")
+        case None =>
+          (f"$actual (0x$actual%x)", s"$expected (0x$actual%x)")
+      }
+
+      val message = s"$signal=$actualStr did not equal expected=$expectedStr$appendMsg$detailedTrace"
       val stackIndex = expectStackDepth + 1
       batchedFailures += new FailedExpectException(message, stackIndex)
     }

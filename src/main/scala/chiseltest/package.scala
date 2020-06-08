@@ -7,6 +7,7 @@ import chisel3.experimental.{DataMirror, Direction, FixedPoint, Interval, EnumTy
 import chisel3.experimental.BundleLiterals._
 import chisel3.util._
 
+
 /** Basic interfaces and implicit conversions for testers2
   */
 package object chiseltest {
@@ -54,6 +55,22 @@ package object chiseltest {
           case record: Record => record.expectPartial(value.elements(k).asInstanceOf[Record])
           case data: Data => data.expect(value.elements(k))
         }}
+    }
+  }
+
+  private object BitsDecoders {
+    import chisel3.internal.firrtl.{BinaryPoint, KnownBinaryPoint, UnknownBinaryPoint}
+
+    def boolBitsToString(bits: BigInt): String = "[unimplemented bool conversion]"
+
+    def fixedToString(binaryPoint: BinaryPoint): BigInt => String = {
+      def inner(bits: BigInt): String = "[unimplemented fixed conversion]"
+      inner
+    }
+
+    def enumToString(record: EnumType): BigInt => String = {
+      def inner(bits: BigInt): String = "[unimplemented record conversion]"
+      inner
     }
   }
 
@@ -125,20 +142,21 @@ package object chiseltest {
     def peek(): T = peekWithStale(false)
 
     protected def expectWithStale(value: T, message: Option[String], stale: Boolean): Unit = (x, value) match {
-      case (x: Bool, value: Bool) => Context().backend.expectBits(x, value.litValue, message, stale)
+      case (x: Bool, value: Bool) =>
+        Context().backend.expectBits(x, value.litValue, message, Some(BitsDecoders.boolBitsToString), stale)
       // TODO can't happen because of type parameterization
       case (x: Bool, value: Bits) => throw new LiteralTypeException(s"cannot expect non-Bool value $value from Bool IO $x")
-      case (x: Bits, value: UInt) => Context().backend.expectBits(x, value.litValue, message, stale)
-      case (x: SInt, value: SInt) => Context().backend.expectBits(x, value.litValue, message, stale)
+      case (x: Bits, value: UInt) => Context().backend.expectBits(x, value.litValue, message, None, stale)
+      case (x: SInt, value: SInt) => Context().backend.expectBits(x, value.litValue, message, None, stale)
       // TODO can't happen because of type parameterization
       case (x: Bits, value: SInt) => throw new LiteralTypeException(s"cannot expect non-SInt value $value from SInt IO $x")
       case (x: FixedPoint, value: FixedPoint) => {
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
-        Context().backend.expectBits(x, value.litValue, message, stale)
+        Context().backend.expectBits(x, value.litValue, message, Some(BitsDecoders.fixedToString(x.binaryPoint)), stale)
       }
       case (x: Interval, value: Interval) =>
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
-        Context().backend.expectBits(x, value.litValue, message, stale)
+        Context().backend.expectBits(x, value.litValue, message, Some(BitsDecoders.fixedToString(x.binaryPoint)), stale)
       case (x: Record, value: Record) => {
         require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
         (x.elements zip value.elements) foreach { case ((_, x), (_, value)) =>
@@ -147,7 +165,7 @@ package object chiseltest {
       }
       case (x: EnumType, value: EnumType) => {
         require(DataMirror.checkTypeEquivalence(x, value), s"EnumType mismatch")
-        Context().backend.expectBits(x, value.litValue, message, stale)
+        Context().backend.expectBits(x, value.litValue, message, Some(BitsDecoders.enumToString(x)), stale)
       }
       case x => throw new LiteralTypeException(s"don't know how to expect $x")
       // TODO: aggregate types
