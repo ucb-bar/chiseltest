@@ -1,7 +1,7 @@
 package chiseltest.stage
 
 import chisel3.stage._
-import chiseltest.stage.phases.{AddDefault, AnalysisCircuit, CompileDut, SimulationPhase}
+import chiseltest.stage.phases.{AddDefaults, AnalysisCircuit, CompileDut, SimulationPhase}
 import firrtl.AnnotationSeq
 import firrtl.options._
 import firrtl.options.phases.DeletedWrapper
@@ -17,7 +17,7 @@ class ChiselTestStage extends Stage with PreservesAll[Phase] {
     Dependency[chisel3.stage.phases.Convert],
     Dependency[firrtl.stage.phases.Compiler],
     Dependency[firrtl.stage.phases.WriteEmitted],
-    Dependency[AddDefault],
+    Dependency[AddDefaults],
     Dependency[AnalysisCircuit],
     Dependency[CompileDut],
     Dependency[SimulationPhase]

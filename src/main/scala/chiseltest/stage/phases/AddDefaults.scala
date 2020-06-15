@@ -7,21 +7,21 @@ import firrtl.AnnotationSeq
 import firrtl.annotations.Annotation
 import firrtl.options.{Phase, PreservesAll, TargetDirAnnotation}
 
-/** [[AddDefault]] is a shared [[Phase]] between different backend,
-  * it will add:
-  * [[SimulatorBackendAnnotation]]
-  * default to be treadle.
-  * if backend is `vcs`, will add default `LM_LICENSE_FILE` based on `LicenseAnnotation` or find from system env.
-  * if backend is `verilator` and [[WaveFormAnnotation]] is `fsdb`, it will add `LM_LICENSE_FILE` too,
-  * and add a Vcd2FsdbBinaryAnnotation (@todo)
-  * [[SimulatorBinary]]:
-  * default to be same with name in [[SimulatorBackendAnnotation(name)]], which will be lookup by PATH env.
-  * [[WaveFormAnnotation]]:
-  * default to be none
-  *
-  * For the better compatibility to verilator/vcs, [[TargetDirAnnotation]] will be convert absolute path.
-  * */
-class AddDefault extends Phase with ChiselTesterAnnotationHelper with PreservesAll[Phase] {
+/** [[AddDefaults]] is a shared [[Phase]] between different backend,
+ * it will add:
+ * [[SimulatorBackendAnnotation]]
+ * default to be treadle.
+ * if backend is `vcs`, will add default `LM_LICENSE_FILE` based on `LicenseAnnotation` or find from system env.
+ * if backend is `verilator` and [[WaveFormAnnotation]] is `fsdb`, it will add `LM_LICENSE_FILE` too,
+ * and add a Vcd2FsdbBinaryAnnotation (@todo)
+ * [[SimulatorBinary]]:
+ * default to be same with name in [[SimulatorBackendAnnotation(name)]], which will be lookup by PATH env.
+ * [[WaveFormAnnotation]]:
+ * default to be none
+ *
+ * For the better compatibility to verilator/vcs, [[TargetDirAnnotation]] will be convert absolute path.
+ * */
+class AddDefaults extends Phase with ChiselTesterAnnotationHelper with PreservesAll[Phase] {
   def addDefaultBackend(annos: AnnotationSeq): SimulatorBackendAnnotation = annos.collectFirst {
     case b: SimulatorBackendAnnotation => b
     case _: VerilatorBackendAnnotation => SimulatorBackendAnnotation("verilator")
@@ -40,10 +40,9 @@ class AddDefault extends Phase with ChiselTesterAnnotationHelper with PreservesA
     case WriteVcdAnnotation() => WaveFormAnnotation("vcd")
   }.getOrElse(WaveFormAnnotation("none"))
 
-  def convertAbsoluteTargetDir(annos: AnnotationSeq): Seq[Annotation] = annos.map {
+  def convertAbsoluteTargetDir(annos: AnnotationSeq): TargetDirAnnotation = annos.collectFirst {
     case TargetDirAnnotation(f) => TargetDirAnnotation(new File(f).getAbsolutePath)
-    case a => a
-  }
+  }.get
 
   def transform(a: AnnotationSeq): AnnotationSeq = {
     val backendAnnotation = addDefaultBackend(a)
@@ -53,22 +52,27 @@ class AddDefault extends Phase with ChiselTesterAnnotationHelper with PreservesA
         val enableCache = a.collectFirst { case a: EnableCache => a }.getOrElse {
           EnableCache(true)
         }
-        val vcd = addWaveForm(a) match {
+        val waveForm = addWaveForm(a) match {
+          case p@WaveFormAnnotation("vcd") => p
+          case p@WaveFormAnnotation("fsdb") => p
+          case _ => WaveFormAnnotation("none")
+        }
+        val binary = addDefaultBinary(a :+ backendAnnotation)
+        a ++ Seq(backendAnnotation, license, enableCache, waveForm, binary)
+      case SimulatorBackendAnnotation("verilator") =>
+        val waveForm = addWaveForm(a) match {
           case p@WaveFormAnnotation("vcd") => p
           case _ => WaveFormAnnotation("none")
         }
         val binary = addDefaultBinary(a :+ backendAnnotation)
-        Seq(enableCache, vcd, backendAnnotation, license, binary)
-      case SimulatorBackendAnnotation("verilator") =>
-        val waveForm = addWaveForm(a) match {
-          case p@WaveFormAnnotation("fsdb") => Seq(p, getLicense(a))
-          case p: WaveFormAnnotation => Seq(p)
-        }
-        val binary = addDefaultBinary(a :+ backendAnnotation)
-        Seq(backendAnnotation, binary) ++ waveForm
+        a ++ Seq(backendAnnotation, waveForm, binary)
       case SimulatorBackendAnnotation("treadle") =>
-        Seq(backendAnnotation)
+        val waveForm = addWaveForm(a) match {
+          case p@WaveFormAnnotation("vcd") => treadle.WriteVcdAnnotation
+          case _ => WaveFormAnnotation("none")
+        }
+        a :+ waveForm
     }
-    convertAbsoluteTargetDir(a) ++ annotationPerBackend
+    annotationPerBackend :+ convertAbsoluteTargetDir(a)
   }
 }

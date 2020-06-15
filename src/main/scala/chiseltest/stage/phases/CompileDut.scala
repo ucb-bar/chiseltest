@@ -27,7 +27,7 @@ import scala.sys.process._
   * */
 class CompileDut extends Phase with ChiselTesterAnnotationHelper with PreservesAll[Phase] {
   override def prerequisites: Seq[Dependency[Phase]] = Seq(
-    Dependency[AddDefault],
+    Dependency[AddDefaults],
     Dependency[AnalysisCircuit]
   )
 
