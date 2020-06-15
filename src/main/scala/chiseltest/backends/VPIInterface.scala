@@ -1,5 +1,5 @@
 // See LICENSE for license details.
-package chiseltest.backends.verilator
+package chiseltest.backends
 
 import java.io.File
 import java.nio.channels.FileChannel
@@ -18,6 +18,7 @@ import scala.concurrent.{Await, ExecutionContext, Future, blocking}
 import scala.language.implicitConversions
 import scala.sys.process.{Process, ProcessLogger}
 
+/** @todo refactor this with TCP binding or FFI */
 class VPIInterface(val annotations: AnnotationSeq)
   extends SimulatorInterface
   with LazyLogging {

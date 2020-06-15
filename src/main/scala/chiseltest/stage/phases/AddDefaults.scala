@@ -4,23 +4,23 @@ import java.io.File
 
 import chiseltest.stage._
 import firrtl.AnnotationSeq
-import firrtl.annotations.Annotation
 import firrtl.options.{Phase, PreservesAll, TargetDirAnnotation}
 
 /** [[AddDefaults]] is a shared [[Phase]] between different backend,
- * it will add:
- * [[SimulatorBackendAnnotation]]
- * default to be treadle.
- * if backend is `vcs`, will add default `LM_LICENSE_FILE` based on `LicenseAnnotation` or find from system env.
- * if backend is `verilator` and [[WaveFormAnnotation]] is `fsdb`, it will add `LM_LICENSE_FILE` too,
- * and add a Vcd2FsdbBinaryAnnotation (@todo)
- * [[SimulatorBinary]]:
- * default to be same with name in [[SimulatorBackendAnnotation(name)]], which will be lookup by PATH env.
- * [[WaveFormAnnotation]]:
- * default to be none
- *
- * For the better compatibility to verilator/vcs, [[TargetDirAnnotation]] will be convert absolute path.
- * */
+  * it will add:
+  * [[SimulatorBackendAnnotation]]
+  * default to be treadle.
+  * if backend is `vcs`, will add default `LM_LICENSE_FILE` based on `LicenseAnnotation` or find from system env.
+  * if backend is `verilator` and [[WaveFormAnnotation]] is `fsdb`, it will add `LM_LICENSE_FILE` too,
+  * [[SimulatorBinary]]:
+  * default to be same with name in [[SimulatorBackendAnnotation(name)]], which will be lookup by PATH env.
+  * [[WaveFormAnnotation]]:
+  * default to be none
+  *
+  *
+  * @todo add main clock annotation for RawModules
+  * For the better compatibility to verilator/vcs, [[TargetDirAnnotation]] will be convert absolute path.
+  * */
 class AddDefaults extends Phase with ChiselTesterAnnotationHelper with PreservesAll[Phase] {
   def addDefaultBackend(annos: AnnotationSeq): SimulatorBackendAnnotation = annos.collectFirst {
     case b: SimulatorBackendAnnotation => b

@@ -21,7 +21,7 @@ import scala.sys.process._
   * currently, in treadle backend:
   * it will execute [[PrepareAstFromLowFIRRTL]] to [[treadle.utils.FixupOps]] and [[treadle.utils.AugmentPrintf]]
   * in verilator backend:
-  * if user has already define [[CommandAnnotation]], the command will directly pass to simulator execuator.
+  * if user has already define [[CommandAnnotation]], annotations will be directly passed to simulator executor.
   * if circuit md5 is different with the md5 file in the [[TargetDirAnnotation]],
   * it will generate verilator cpp harness based, and compile a dut.
   * */
@@ -40,7 +40,7 @@ class CompileDut extends Phase with ChiselTesterAnnotationHelper with PreservesA
     case _ => s"        sim_data.$vector.push_back(new VerilatorWData($pathName, ${(width - 1) / 32 + 1}));"
   }
 
-  /** @todo peek internal signal need to be export from harness. */
+  /** @todo refactor this with unified VPI. */
   private def generateVerilatorCppHarness(annos: AnnotationSeq) = {
     val targetDir = getTargetDir(annos)
     val circuit = getCircuit(annos)

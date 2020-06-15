@@ -4,7 +4,7 @@ package chiseltest.backends
 import chisel3.experimental.{DataMirror, FixedPoint, Interval}
 import chisel3.internal.firrtl.KnownWidth
 import chisel3.{SInt, _}
-import chiseltest.backends.verilator.VPIInterface
+import chiseltest.backends.VPIInterface
 import chiseltest.internal.ThreadedBackend
 import firrtl.AnnotationSeq
 import logger.LazyLogging
