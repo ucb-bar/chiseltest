@@ -8,21 +8,23 @@ import firrtl.annotations.{NoTargetAnnotation, ReferenceTarget}
 import firrtl.options.{Dependency, Phase, PreservesAll}
 import firrtl.transforms.CombinationalPath
 
-case class DutTopPortsNameMapAnnotation(ports: Map[Data, String]) extends NoTargetAnnotation
+case class ExportedSingalsAnnotation(ports: Map[Data, String]) extends NoTargetAnnotation
 
 case class TopCombinationalPathAnnotation(paths: Map[Data, Set[Data]]) extends NoTargetAnnotation
 
 /** This is the analysis phase for tester2 executor.
-  * */
+ * @todo inline to firrtl transform and gather annoation here, rather than analyse transform here.
+ */
 class AnalysisCircuit extends Phase with ChiselTesterAnnotationHelper with PreservesAll[Phase] {
   override def prerequisites: Seq[Dependency[Phase]] = Seq(
     Dependency[firrtl.stage.phases.Compiler]
   )
 
   /** generate componentToName based on dut(rather than firrtl IR).
-    * @todo use [[Data.toTarget]] -> Annotation -> for a stable data name.
-    * */
-  def dutTopPortsNameMap(annos: AnnotationSeq): Map[Data, String] = {
+   *
+   * @todo use [[Data.toTarget]] -> [[firrtl.annotations.Annotation]] -> analysis transform -> [[firrtl.annotations.Annotation]] here.
+   */
+  def exportedSignalMap(annos: AnnotationSeq): Map[Data, String] = {
     val backend = getSimulatorBackend(annos)
     val topName = getTopName(annos)
     val dut = getDut(annos)
@@ -34,10 +36,10 @@ class AnalysisCircuit extends Phase with ChiselTesterAnnotationHelper with Prese
     })
 
     /** all reference target should be found in dataNames.
-      *
-      * @todo make internal signals accessible for dataNames, and then we can poke/peek internal signals.
-      * @todo treadle and verilator has different behaviors, need be unified and replace by [[DataMirror.fullModulePorts]]
-      **/
+     *
+     * @todo make internal signals accessible for dataNames, and then we can poke/peek internal signals.
+     * @todo treadle and verilator has different behaviors, need be unified and replace by [[DataMirror.fullModulePorts]]
+     **/
     DataMirror.modulePorts(dut).flatMap {
       case (name, data) =>
         getDataNames(name, data).toList.map {
@@ -57,7 +59,7 @@ class AnalysisCircuit extends Phase with ChiselTesterAnnotationHelper with Prese
   def topCombinationalPaths(annos: AnnotationSeq): Map[Data, Set[Data]] = {
     val paths: Seq[CombinationalPath] = annos.collect { case c: CombinationalPath => c }
     val topName = getTopName(annos)
-    val nameToData = dutTopPortsNameMap(annos).map(_.swap)
+    val nameToData = exportedSignalMap(annos).map(_.swap)
     val backend = getSimulatorBackend(annos)
 
     def componentToName(component: ReferenceTarget): String = {
@@ -89,6 +91,6 @@ class AnalysisCircuit extends Phase with ChiselTesterAnnotationHelper with Prese
   }
 
   override def transform(a: AnnotationSeq): AnnotationSeq = {
-    a ++ Seq(TopCombinationalPathAnnotation(topCombinationalPaths(a)), DutTopPortsNameMapAnnotation(dutTopPortsNameMap(a)))
+    a ++ Seq(TopCombinationalPathAnnotation(topCombinationalPaths(a)), ExportedSingalsAnnotation(exportedSignalMap(a)))
   }
 }

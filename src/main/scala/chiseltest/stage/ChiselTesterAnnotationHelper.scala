@@ -3,7 +3,7 @@ package chiseltest.stage
 import chisel3.{Data, MultiIOModule, RawModule}
 import chisel3.stage.DesignAnnotation
 import chiseltest.internal.{ThreadedBackend, ThreadedBackendAnnotation}
-import chiseltest.stage.phases.{DutTopPortsNameMapAnnotation, TopCombinationalPathAnnotation}
+import chiseltest.stage.phases.{ExportedSingalsAnnotation, TopCombinationalPathAnnotation}
 import firrtl.ir.{Circuit, Module, Port}
 import firrtl.options.TargetDirAnnotation
 import firrtl.stage.FirrtlCircuitAnnotation
@@ -66,7 +66,7 @@ trait ChiselTesterAnnotationHelper {
   }.get.asInstanceOf[MultiIOModule => Unit]
 
     def getDutTopPortsNameMap(annos: AnnotationSeq): Map[Data, String] = annos.collectFirst {
-    case DutTopPortsNameMapAnnotation(a) => a
+    case ExportedSingalsAnnotation(a) => a
   }.get
 
   def getTopCombinationalPath(annos: AnnotationSeq): Map[Data, Set[Data]] = annos.collectFirst {
