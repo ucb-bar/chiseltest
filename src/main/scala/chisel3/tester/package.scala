@@ -21,10 +21,8 @@ package object tester {
   implicit def validToDriver[T <: Data](x: ValidIO[T]) = chiseltest.validToDriver(x)
 
   // Exceptions
-  type NotLiteralException = chiseltest.NotLiteralException
   type LiteralTypeException = chiseltest.LiteralTypeException
   type UnpokeableException = chiseltest.UnpokeableException
-  type UnsupportedOperationException = chiseltest.UnsupportedOperationException
 
   type ClockResolutionException = chiseltest.ClockResolutionException
   type ThreadOrderDependentException = chiseltest.ThreadOrderDependentException

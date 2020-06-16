@@ -1,8 +1,7 @@
 package chiseltest.stage.phases
 
-import chisel3.{MultiIOModule, RawModule}
+import chisel3.MultiIOModule
 import chiseltest.internal.Context.{Instance, context}
-import chiseltest.internal._
 import chiseltest.stage.ChiselTesterAnnotationHelper
 import firrtl.AnnotationSeq
 import firrtl.options.{Dependency, Phase, PreservesAll}
@@ -18,7 +17,7 @@ class SimulationPhase extends Phase with ChiselTesterAnnotationHelper with Prese
       * @todo adding default init annotation for reset.
       *       since if there are multi clock domain,
       *       the main reset cannot reset clock domain.
-      * @todo set main clock for [[RawModule]],
+      * @todo set main clock for [[MultiIOModule]],
       *       like verilator did, tester2 must have a clock.
       *       the correct logic is:
       *       we need to provide a api to user to let them change main clock.

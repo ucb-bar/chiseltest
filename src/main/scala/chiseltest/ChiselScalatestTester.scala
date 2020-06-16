@@ -3,7 +3,8 @@
 package chiseltest
 
 import chisel3.MultiIOModule
-import chiseltest.stage.ChiselTestStage
+import chisel3.stage.ChiselGeneratorAnnotation
+import chiseltest.stage.{ChiselTestStage, TestFunctionAnnotation}
 import firrtl.AnnotationSeq
 import org.scalatest._
 
@@ -19,10 +20,10 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin {
     def withFlags(newFlags: Array[String]): ChiselScalatestTester#TestBuilder[T] =
       new TestBuilder[T](dutGen, annotationSeq, flags ++ newFlags)
 
-    def apply(testFn: T => Unit): AnnotationSeq = (new ChiselTestStage).execute(flags, annotationSeq)
-
-    /** @todo append Annotations to outer to allow re-use of a compiled design to avoid recompilation cost per test. */
-    val outer: ChiselScalatestTester = ChiselScalatestTester.this
+    def apply(testFn: T => Unit): AnnotationSeq = (new ChiselTestStage).execute(flags, Seq(
+      TestFunctionAnnotation(testFn),
+      new ChiselGeneratorAnnotation(dutGen)
+    ) ++ annotationSeq)
   }
 
   // Provide test fixture data as part of 'global' context during test runs

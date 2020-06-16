@@ -64,11 +64,14 @@ class AddDefaults extends Phase with ChiselTesterAnnotationHelper with Preserves
           case p@WaveFormAnnotation("vcd") => p
           case _ => WaveFormAnnotation("none")
         }
+        val enableCache = a.collectFirst { case a: EnableCache => a }.getOrElse {
+          EnableCache(true)
+        }
         val binary = addDefaultBinary(a :+ backendAnnotation)
-        a ++ Seq(backendAnnotation, waveForm, binary)
+        a ++ Seq(backendAnnotation, enableCache, waveForm, binary)
       case SimulatorBackendAnnotation("treadle") =>
         val waveForm = addWaveForm(a) match {
-          case p@WaveFormAnnotation("vcd") => treadle.WriteVcdAnnotation
+          case WaveFormAnnotation("vcd") => treadle.WriteVcdAnnotation
           case _ => WaveFormAnnotation("none")
         }
         a :+ waveForm

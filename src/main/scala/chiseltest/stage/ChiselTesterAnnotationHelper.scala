@@ -1,13 +1,13 @@
 package chiseltest.stage
 
-import chisel3.{Data, MultiIOModule, RawModule}
 import chisel3.stage.DesignAnnotation
+import chisel3.{Data, MultiIOModule}
 import chiseltest.internal.{ThreadedBackend, ThreadedBackendAnnotation}
 import chiseltest.stage.phases.{ExportedSingalsAnnotation, TopCombinationalPathAnnotation}
+import firrtl.AnnotationSeq
 import firrtl.ir.{Circuit, Module, Port}
 import firrtl.options.TargetDirAnnotation
 import firrtl.stage.FirrtlCircuitAnnotation
-import firrtl.{AnnotationSeq, CircuitState}
 import treadle.TreadleCircuitStateAnnotation
 
 trait ChiselTesterAnnotationHelper {
@@ -61,7 +61,7 @@ trait ChiselTesterAnnotationHelper {
     case DesignAnnotation(m) => m
   }.get.asInstanceOf[MultiIOModule]
 
-  def getTestFunction[T <: RawModule](annos: AnnotationSeq): MultiIOModule => Unit = annos.collectFirst {
+  def getTestFunction[T <: MultiIOModule](annos: AnnotationSeq): MultiIOModule => Unit = annos.collectFirst {
     case a: TestFunctionAnnotation[T] => a.func
   }.get.asInstanceOf[MultiIOModule => Unit]
 

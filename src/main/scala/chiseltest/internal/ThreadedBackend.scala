@@ -47,7 +47,7 @@ case class ThreadedBackendAnnotation[DUT <: MultiIOModule](backend: ThreadedBack
 
 /** @todo convert to transform.
   *       is Seq[CombinationalPath] the right API here? It's unclear where name -> Data resolution should go
-  *       use [[RawModule]]. */
+  *       use [[MultiIOModule]]. */
 trait ThreadedBackend[DUT <: MultiIOModule]
   extends BackendInterface
     with ChiselTesterAnnotationHelper

@@ -1,6 +1,6 @@
 package chiseltest.stage
 
-import chisel3.RawModule
+import chisel3.MultiIOModule
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
 
@@ -8,7 +8,7 @@ sealed trait ChiselTestOption extends Unserializable {
   this: Annotation =>
 }
 
-case class TestFunctionAnnotation[T <: RawModule](func: T => Unit) extends NoTargetAnnotation with ChiselTestOption
+case class TestFunctionAnnotation[T <: MultiIOModule](func: T => Unit) extends NoTargetAnnotation with ChiselTestOption
 
 private[chiseltest] object TestFunctionAnnotation extends HasShellOptions {
   override val options = Seq(
