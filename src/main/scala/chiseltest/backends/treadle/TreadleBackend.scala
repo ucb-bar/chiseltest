@@ -79,11 +79,12 @@ extends BackendInstance[T] with ThreadedBackend[T] {
     a
   }
 
-  override def expectBits(signal: Data, value: BigInt, message: Option[String], stale: Boolean): Unit = {
+  override def expectBits(signal: Data, value: BigInt, message: Option[String], decode: Option[BigInt => String],
+                          stale: Boolean): Unit = {
     require(!stale, "Stale peek not yet implemented")
 
     debugLog(s"${resolveName(signal)} ?> $value")
-    Context().env.testerExpect(value, peekBits(signal, stale), resolveName(signal), message)
+    Context().env.testerExpect(value, peekBits(signal, stale), resolveName(signal), message, decode)
   }
 
   protected val clockCounter : mutable.HashMap[Clock, Int] = mutable.HashMap()

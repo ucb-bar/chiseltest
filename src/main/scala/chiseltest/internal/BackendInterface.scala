@@ -49,7 +49,8 @@ trait BackendInterface {
     */
   def peekBits(signal: Data, stale: Boolean): BigInt
 
-  def expectBits(signal: Data, value: BigInt, message: Option[String], stale: Boolean): Unit
+  def expectBits(signal: Data, value: BigInt, message: Option[String], decode: Option[BigInt => String],
+                 stale: Boolean): Unit
 
   /**
    * Sets the timeout of the clock: the number of cycles the clock can advance without
