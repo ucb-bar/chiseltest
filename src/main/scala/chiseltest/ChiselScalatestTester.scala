@@ -4,9 +4,11 @@ package chiseltest
 
 import chisel3.MultiIOModule
 import chisel3.stage.ChiselGeneratorAnnotation
+import chiseltest.internal.ExpectExceptionsAnnotation
 import chiseltest.stage.{ChiselTestStage, TestFunctionAnnotation}
 import firrtl.AnnotationSeq
 import org.scalatest._
+import org.scalatest.exceptions.TestFailedException
 
 import scala.util.DynamicVariable
 
@@ -20,10 +22,12 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin {
     def withFlags(newFlags: Array[String]): ChiselScalatestTester#TestBuilder[T] =
       new TestBuilder[T](dutGen, annotationSeq, flags ++ newFlags)
 
-    def apply(testFn: T => Unit): AnnotationSeq = (new ChiselTestStage).execute(flags, Seq(
+    def apply(testFn: T => Unit): Unit = (new ChiselTestStage).execute(flags, Seq(
       TestFunctionAnnotation(testFn),
       new ChiselGeneratorAnnotation(dutGen)
-    ) ++ annotationSeq)
+    ) ++ annotationSeq).collectFirst {
+      case ExpectExceptionsAnnotation(expects) => if (expects.nonEmpty) throw new TestFailedException(expects.map(_.message).mkString("\n"), 0)
+    }
   }
 
   // Provide test fixture data as part of 'global' context during test runs

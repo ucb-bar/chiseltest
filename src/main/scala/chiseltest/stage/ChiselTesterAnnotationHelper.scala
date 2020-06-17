@@ -57,7 +57,7 @@ trait ChiselTesterAnnotationHelper {
     case CommandAnnotation(e) => e
   }
 
-  def getDut(annos: AnnotationSeq) = annos.collectFirst {
+  def getDut(annos: AnnotationSeq): MultiIOModule = annos.collectFirst {
     case DesignAnnotation(m) => m
   }.get.asInstanceOf[MultiIOModule]
 

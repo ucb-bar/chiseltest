@@ -7,7 +7,7 @@ import java.util.concurrent.{ConcurrentLinkedQueue, Semaphore}
 import chisel3._
 import chiseltest.backends.SimulatorInterface
 import chiseltest.stage.ChiselTesterAnnotationHelper
-import chiseltest.{Region, TemporalParadox, ThreadOrderDependentException, TimeoutException}
+import chiseltest.{ExpectException, Region, TemporalParadox, ThreadOrderDependentException, TimeoutException}
 import firrtl.AnnotationSeq
 import firrtl.annotations.NoTargetAnnotation
 import logger.LazyLogging
@@ -121,10 +121,9 @@ trait ThreadedBackend[DUT <: MultiIOModule]
       val expectStackDepth = trace.getStackTrace.indexWhere(ste =>
         ste.getClassName == "chiseltest.package$testableData" && ste.getMethodName == "expect")
       require(expectStackDepth != -1, s"Failed to find expect in stack trace:\r\n${trace.getStackTrace.mkString("\r\n")}")
-      val message1 = s"$signal=$actual did not equal expected=$value$appendMsg"
+      val errorMessage = s"$signal=$actual did not equal expected=$value$appendMsg"
       val stackIndex = expectStackDepth + 1
-
-      /** @todo Don't Throw, generate an Annotation here. */
+      expectExceptions.append(new ExpectException(errorMessage, stackIndex))
     }
   }
 

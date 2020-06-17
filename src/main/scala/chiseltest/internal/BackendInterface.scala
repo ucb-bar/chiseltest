@@ -2,8 +2,9 @@
 
 package chiseltest.internal
 
-import chiseltest.Region
 import chisel3._
+import chiseltest.{ExpectException, Region}
+import firrtl.annotations.NoTargetAnnotation
 
 import scala.collection.mutable
 
@@ -27,9 +28,14 @@ class TesterThreadList(protected val elts: Seq[AbstractTesterThread]) {
   val fork: ForkBuilder = new ForkBuilder(None, None, elts)
 }
 
+case class ExpectExceptionsAnnotation(exceptions: Seq[ExpectException]) extends NoTargetAnnotation
+
 /** Common interface definition for tester backends. Internal API.
   */
 trait BackendInterface {
+  /** During the runtime, [[ExpectException]] will will be written to expectExceptions. */
+  val expectExceptions: mutable.ArrayBuffer[ExpectException] = new mutable.ArrayBuffer
+
   /** Writes a value to a clock.
     */
   def pokeClock(signal: Clock, value: Boolean): Unit

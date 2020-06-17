@@ -74,7 +74,7 @@ class AddDefaults extends Phase with ChiselTesterAnnotationHelper with Preserves
           case WaveFormAnnotation("vcd") => treadle.WriteVcdAnnotation
           case _ => WaveFormAnnotation("none")
         }
-        a :+ waveForm
+        a ++ Seq(backendAnnotation, waveForm)
     }
     annotationPerBackend :+ convertAbsoluteTargetDir(a)
   }

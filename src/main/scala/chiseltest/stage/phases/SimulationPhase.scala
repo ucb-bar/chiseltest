@@ -2,6 +2,7 @@ package chiseltest.stage.phases
 
 import chisel3.MultiIOModule
 import chiseltest.internal.Context.{Instance, context}
+import chiseltest.internal.ExpectExceptionsAnnotation
 import chiseltest.stage.ChiselTesterAnnotationHelper
 import firrtl.AnnotationSeq
 import firrtl.options.{Dependency, Phase, PreservesAll}
@@ -22,7 +23,7 @@ class SimulationPhase extends Phase with ChiselTesterAnnotationHelper with Prese
       *       the correct logic is:
       *       we need to provide a api to user to let them change main clock.
       *       and provide a analysis transform, if dut io has its own clock domain
-      **/
+      * */
     val backend = getThreadedBackend(a)
     val testFn = getTestFunction(a)
 
@@ -30,6 +31,6 @@ class SimulationPhase extends Phase with ChiselTesterAnnotationHelper with Prese
     context.withValue(Some(new Instance(backend))) {
       backend.run(testFn)
     }
-    a
+    a :+ ExpectExceptionsAnnotation(backend.expectExceptions.toSeq)
   }
 }
