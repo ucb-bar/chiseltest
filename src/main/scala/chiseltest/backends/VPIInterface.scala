@@ -99,10 +99,6 @@ class VPIInterface(val annotations: AnnotationSeq)
     val out_channel = new Channel(out_channel_name)
     val cmd_channel = new Channel(cmd_channel_name)
 
-    println(s"inChannelName: $in_channel_name")
-    println(s"outChannelName: $out_channel_name")
-    println(s"cmdChannelName: $cmd_channel_name")
-
     in_channel.consume()
     cmd_channel.consume()
     in_channel.release()

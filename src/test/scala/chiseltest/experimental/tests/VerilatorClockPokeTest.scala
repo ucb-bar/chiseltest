@@ -12,7 +12,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 class VerilatorClockPokeTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Testers2 with a clock input"
-
+  /*@todo*/
   it should "verilator-clock-poke" in {
     test(new MultiIOModule {
       val inClock = IO(Input(Clock()))
@@ -49,7 +49,7 @@ class VerilatorClockPokeTest extends AnyFlatSpec with ChiselScalatestTester {
       c.out.expect(2.U)
     }
   }
-
+  /*@todo*/
   it should "clock-as-bool-verilator-clock-poke" in {
     test(new MultiIOModule {
       val inClock = IO(Input(Bool()))
@@ -74,7 +74,7 @@ class VerilatorClockPokeTest extends AnyFlatSpec with ChiselScalatestTester {
       c.out.expect(1.U)
     }
   }
-
+  /*@todo*/
   it should "treadle-clock-poke" in {
     test(new MultiIOModule {
       val inClock = IO(Input(Clock()))

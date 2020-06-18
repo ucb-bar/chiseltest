@@ -10,6 +10,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 class ThreadSafetyLocatorTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Testers2 thread safety checker"
 
+  /*@todo*/
   it should "locate source lines for simultaneous pokes from parallel threads" in {
     val exceptionMessage = intercept[ThreadOrderDependentException] {
       test(new InputOnlyModule(Bool())) { c =>

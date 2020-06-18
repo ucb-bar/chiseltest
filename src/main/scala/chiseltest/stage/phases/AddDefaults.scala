@@ -40,9 +40,10 @@ class AddDefaults extends Phase with ChiselTesterAnnotationHelper with Preserves
     case WriteVcdAnnotation() => WaveFormAnnotation("vcd")
   }.getOrElse(WaveFormAnnotation("none"))
 
-  def convertAbsoluteTargetDir(annos: AnnotationSeq): TargetDirAnnotation = annos.collectFirst {
+  def convertAbsoluteTargetDir(annos: AnnotationSeq): AnnotationSeq = annos.map {
     case TargetDirAnnotation(f) => TargetDirAnnotation(new File(f).getAbsolutePath)
-  }.get
+    case a => a
+  }
 
   def transform(a: AnnotationSeq): AnnotationSeq = {
     val backendAnnotation = addDefaultBackend(a)
@@ -76,6 +77,6 @@ class AddDefaults extends Phase with ChiselTesterAnnotationHelper with Preserves
         }
         a ++ Seq(backendAnnotation, waveForm)
     }
-    annotationPerBackend :+ convertAbsoluteTargetDir(a)
+    convertAbsoluteTargetDir(annotationPerBackend)
   }
 }

@@ -35,7 +35,7 @@ class HasOddWidthSInt extends MultiIOModule {
 // bits first. This was fixed by masking those values to the proper width before poking
 class NegativeInputValuesTest extends AnyFreeSpec with ChiselScalatestTester {
   "Negative input values on odd width SInt should not cause verilator to fail" in {
-    test(new HasOddWidthSInt).withAnnotations(Seq(VerilatorBackendAnnotation)) { dut =>
+    test(new HasOddWidthSInt).withAnnotations(Seq(VerilatorBackendAnnotation())) { dut =>
       for(inputValue <- Seq(-4, -3, -2, -1, 0, 1, 2, 3, 4)) {
         dut.in.poke(inputValue.S)
         dut.clock.step()

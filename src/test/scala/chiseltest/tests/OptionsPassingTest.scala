@@ -43,6 +43,7 @@ class OptionsPassingTest extends AnyFlatSpec with ChiselScalatestTester with Mat
     vcdFileOpt.get.delete()
   }
 
+  /*@todo*/
   it should "allow specifying configuration options using CLI style flags" in {
     val targetDirName = "test_run_dir/overridden_dir"
     val targetDir = new File(targetDirName)
@@ -54,6 +55,7 @@ class OptionsPassingTest extends AnyFlatSpec with ChiselScalatestTester with Mat
     }
   }
 
+  /*@todo*/
   it should "allow specifying configuration options using annotations and CLI style flags" in {
     val targetDirName = "test_run_dir/overridden_dir_2"
     val fileBaseName = "wheaton"
