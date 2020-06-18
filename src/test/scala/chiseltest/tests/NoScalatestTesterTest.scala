@@ -5,6 +5,7 @@ package chiseltest.tests
 import chisel3._
 import chiseltest._
 import chiseltest.RawTester.test
+import firrtl.options.TargetDirAnnotation
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -19,7 +20,9 @@ class NoScalatestTesterTest extends AnyFreeSpec with Matchers {
       out.expect(value)
     }
 
-    test(new ShifterModule(UInt(8.W), 4)) { c =>
+    test(new ShifterModule(UInt(8.W), 4),
+      Seq(TargetDirAnnotation("test_run_dir" + java.io.File.separator + sanitizeFileName(this.toString)))
+    ) { c =>
       fork { shiftTest(c.in, c.out, c.clock, 42.U) }
       c.clock.step()
       fork { shiftTest(c.in, c.out, c.clock, 43.U) }

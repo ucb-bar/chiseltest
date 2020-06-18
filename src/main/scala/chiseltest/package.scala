@@ -224,6 +224,10 @@ package object chiseltest {
     Context().backend.doTimescope(() => contents)
   }
 
+  def sanitizeFileName(name: String): String = {
+    name.replaceAll(" ", "_").replaceAll("\\W+", "") // sanitize name
+  }
+
   object TestInstance {
     def setVar(key: Any, value: Any): Unit = {
       Context().backend.setVar(key, value)

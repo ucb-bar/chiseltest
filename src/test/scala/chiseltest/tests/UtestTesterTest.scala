@@ -5,11 +5,14 @@ package chiseltest.tests
 import utest._
 import chiseltest._
 import chisel3._
+import firrtl.options.TargetDirAnnotation
 
 object UtestTesterTest extends ChiselUtestTester {
   val tests: Tests = Tests {
-    "This tester does not rely on scalatest to run" - {
-      testCircuit(new StaticModule(42.U)) { c =>
+    "Utest should work" - {
+      testCircuit(new StaticModule(42.U),
+        Seq(TargetDirAnnotation("test_run_dir" + java.io.File.separator + implicitly[utest.framework.TestPath].value.map(sanitizeFileName).mkString(java.io.File.separator)))
+      ) { c =>
         c.out.expect(42.U)
       }
     }

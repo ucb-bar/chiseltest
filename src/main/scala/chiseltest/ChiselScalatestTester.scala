@@ -7,6 +7,7 @@ import chisel3.stage.ChiselGeneratorAnnotation
 import chiseltest.internal.ExpectExceptionsAnnotation
 import chiseltest.stage.{ChiselTestStage, TestFunctionAnnotation}
 import firrtl.AnnotationSeq
+import firrtl.options.TargetDirAnnotation
 import org.scalatest._
 import org.scalatest.exceptions.TestFailedException
 
@@ -23,6 +24,7 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin {
       new TestBuilder[T](dutGen, annotationSeq, flags ++ newFlags)
 
     def apply(testFn: T => Unit): Unit = (new ChiselTestStage).execute(flags, Seq(
+      TargetDirAnnotation("test_run_dir" + java.io.File.separator + sanitizeFileName(scalaTestContext.value.get.name)),
       TestFunctionAnnotation(testFn),
       new ChiselGeneratorAnnotation(dutGen)
     ) ++ annotationSeq).collectFirst {

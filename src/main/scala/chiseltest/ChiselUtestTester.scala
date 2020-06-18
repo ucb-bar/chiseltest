@@ -69,11 +69,10 @@ trait ChiselUtestTester extends TestSuite {
     * @tparam T The DUT type, must be a subclass of MultiIOModule
     */
   def testCircuit[T <: MultiIOModule](dutGen: => T, annotationSeq: AnnotationSeq = Seq.empty)(testFn: T => Unit)(implicit testPath: utest.framework.TestPath): Unit = {
-    def testName = s"${testPath.value.reduce(_ + _)}"
     (new ChiselTestStage).run(Seq(
+      TargetDirAnnotation("./test_run_dir" + java.io.File.separator + implicitly[utest.framework.TestPath].value.map(sanitizeFileName).mkString(java.io.File.separator)),
       TestFunctionAnnotation(testFn),
       new ChiselGeneratorAnnotation(() => dutGen),
-      TargetDirAnnotation(sanitizeFileName(testName)),
     ) ++ annotationSeq)
   }
 }

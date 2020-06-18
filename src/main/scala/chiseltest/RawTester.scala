@@ -6,6 +6,7 @@ import chisel3.MultiIOModule
 import chisel3.stage.ChiselGeneratorAnnotation
 import chiseltest.stage.{ChiselTestStage, TestFunctionAnnotation}
 import firrtl.AnnotationSeq
+import firrtl.options.TargetDirAnnotation
 
 /**
   * This is a simple tester that does not require that it be within the scope of a scalatest
