@@ -4,8 +4,9 @@ import org.scalatest._
 
 import chisel3._
 import chiseltest._
+import org.scalatest.flatspec.AnyFlatSpec
 
-class RegionsTest extends FlatSpec with ChiselScalatestTester {
+class RegionsTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Testers2 Regions"
 
   it should "resolve read-after-write dependencies" in {

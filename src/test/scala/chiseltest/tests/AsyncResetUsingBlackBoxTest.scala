@@ -8,6 +8,7 @@ import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.experimental.{AsyncResetBlackBoxFactory, AsyncResetReg}
 import org.scalatest._
 import treadle.BlackBoxFactoriesAnnotation
+import org.scalatest.freespec.AnyFreeSpec
 
 /**
   * circuit that illustrates usage of async register
@@ -53,7 +54,7 @@ class AsyncResetUsingBlackBoxFeedbackModule() extends Module {
   reg1.en := 1.U
 }
 
-class AsyncResetUsingBlackBoxTest extends FreeSpec with ChiselScalatestTester {
+class AsyncResetUsingBlackBoxTest extends AnyFreeSpec with ChiselScalatestTester {
   private val annotations = Seq(BlackBoxFactoriesAnnotation(Seq(new AsyncResetBlackBoxFactory)))
 
   "register is zero, after tester startup's default reset" in {
