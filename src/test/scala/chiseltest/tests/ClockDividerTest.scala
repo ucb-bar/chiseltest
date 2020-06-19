@@ -5,8 +5,9 @@ import org.scalatest._
 import chisel3._
 import chisel3.util._
 import chiseltest._
+import org.scalatest.flatspec.AnyFlatSpec
 
-class ClockDividerTest extends FlatSpec with ChiselScalatestTester {
+class ClockDividerTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Testers2 with a clock divider"
 
   it should "test 1:2 clock divider counter" in {

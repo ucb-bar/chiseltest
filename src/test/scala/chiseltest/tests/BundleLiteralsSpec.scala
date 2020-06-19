@@ -5,8 +5,10 @@ import org.scalatest._
 import chisel3._
 import chiseltest._
 import chisel3.experimental.BundleLiterals._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class BundleLiteralsSpec extends FlatSpec with ChiselScalatestTester with Matchers {
+class BundleLiteralsSpec extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2"
 
   class DoubleElements extends Bundle {

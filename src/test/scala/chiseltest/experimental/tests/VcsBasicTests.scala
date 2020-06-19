@@ -5,8 +5,10 @@ import chiseltest._
 import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.internal.VcsBackendAnnotation
 import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class VcsBasicTests extends FlatSpec with ChiselScalatestTester with Matchers {
+class VcsBasicTests extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2 with Vcs"
 
   val annos = Seq(VcsBackendAnnotation)
