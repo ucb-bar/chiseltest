@@ -29,7 +29,7 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
 organization := "edu.berkeley.cs"
 name := "chisel-testers2"
 
-version := "0.1.6"
+version := "0.1.7"
 
 scalaVersion := "2.12.6"
 
@@ -86,8 +86,8 @@ publishTo := {
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Seq(
-  "chisel3" -> "3.2.6",
-  "treadle" -> "1.1.6"
+  "chisel3" -> "3.2.7",
+  "treadle" -> "1.1.7"
 )
 
 libraryDependencies ++= defaultVersions.map { case (dep, ver) =>
