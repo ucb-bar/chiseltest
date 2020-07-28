@@ -56,10 +56,19 @@ trait TestEnvInterface {
     }
   }
 
+  protected def bigintToHex(x: BigInt): String = {
+    if (x < 0) {
+      f"-0x${-x}%x"
+    } else {
+      f"0x$x%x"
+    }
+  }
+
   /** Expect a specific value on a wire, calling testerFail if the expectation isn't met.
     * Failures queued until the next checkpoint.
     */
-  def testerExpect(expected: Any, actual: Any, signal: String, msg: Option[String]): Unit = {
+  def testerExpect(expected: BigInt, actual: BigInt, signal: String,
+                   msg: Option[String], decode: Option[BigInt => String]): Unit = {
     if (expected != actual) {
       val appendMsg = msg match {
         case Some(_) => s": $msg"
@@ -75,7 +84,16 @@ trait TestEnvInterface {
       val trimmedTrace = trace.getStackTrace.drop(expectStackDepth + 2)
       val detailedTrace = topFileName.map(getExpectDetailedTrace(trimmedTrace.toSeq, _)).getOrElse("")
 
-      val message = s"$signal=$actual did not equal expected=$expected$appendMsg$detailedTrace"
+      val (actualStr, expectedStr) = decode match {
+        case Some(decode) =>
+          (s"${decode(actual)} ($actual, ${bigintToHex(actual)})",
+              s"${decode(expected)} ($expected, ${bigintToHex(expected)})")
+        case None =>
+          (s"$actual (${bigintToHex(actual)})",
+              s"$expected (${bigintToHex(expected)})")
+      }
+
+      val message = s"$signal=$actualStr did not equal expected=$expectedStr$appendMsg$detailedTrace"
       val stackIndex = expectStackDepth + 1
       batchedFailures += new FailedExpectException(message, stackIndex)
     }

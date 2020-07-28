@@ -114,6 +114,7 @@ class VerilatorBackend[T <: MultiIOModule](
   override def expectBits(signal: Data,
                           value: BigInt,
                           message: Option[String],
+                          decode: Option[BigInt => String],
                           stale: Boolean): Unit = {
     require(!stale, "Stale peek not yet implemented")
 
@@ -122,7 +123,8 @@ class VerilatorBackend[T <: MultiIOModule](
       value,
       peekBits(signal, stale),
       resolveName(signal),
-      message
+      message,
+      decode
     )
   }
 
