@@ -4,8 +4,9 @@ import org.scalatest._
 
 import chisel3._
 import chiseltest._
+import org.scalatest.flatspec.AnyFlatSpec
 
-class CombinationalPathTest extends FlatSpec with ChiselScalatestTester {
+class CombinationalPathTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Testers2"
 
   it should "detect combinationally-dependent operations when a poke is active" in {

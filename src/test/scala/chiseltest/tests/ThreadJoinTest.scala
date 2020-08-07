@@ -4,8 +4,9 @@ import org.scalatest._
 
 import chisel3._
 import chiseltest._
+import org.scalatest.flatspec.AnyFlatSpec
 
-class ThreadJoinTest extends FlatSpec with ChiselScalatestTester {
+class ThreadJoinTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Testers2 threading fork-joins"
 
   class PassthroughModule[T <: Data](ioType: T) extends Module {

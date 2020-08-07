@@ -9,13 +9,14 @@ import chiseltest.experimental.TestOptionBuilder._
 import firrtl.{AnnotationSeq, ExecutionOptionsManager}
 import org.scalatest._
 import treadle.{BlackBoxFactoriesAnnotation, HasTreadleSuite}
+import org.scalatest.freespec.AnyFreeSpec
 
 /** This test uses a deprecated class and method to test backward compatibility
   *
   * @note This test is used to illustrate workaround for treadle
   *
   */
-class OptionsBackwardCompatibilityTest extends FreeSpec with ChiselScalatestTester {
+class OptionsBackwardCompatibilityTest extends AnyFreeSpec with ChiselScalatestTester {
   private val manager = new ExecutionOptionsManager("asyncResetRegTest") with HasTreadleSuite {
     treadleOptions = treadleOptions.copy(
       blackBoxFactories = Seq(new AsyncResetBlackBoxFactory)

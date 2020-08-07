@@ -4,8 +4,9 @@ import org.scalatest._
 
 import chisel3._
 import chiseltest._
+import org.scalatest.flatspec.AnyFlatSpec
 
-class ClockCrossingTest extends FlatSpec with ChiselScalatestTester {
+class ClockCrossingTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Testers2 with clock crossing signals"
 
   it should "test crossing from a 2:1 divider domain" in {

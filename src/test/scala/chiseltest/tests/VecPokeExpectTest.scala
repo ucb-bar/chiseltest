@@ -4,7 +4,7 @@ package chiseltest.tests
 
 import chisel3._
 import chiseltest._
-import org.scalatest.FreeSpec
+import org.scalatest.freespec.AnyFreeSpec
 
 class UsesVec extends MultiIOModule {
   val in   = IO(Input(Vec(4, UInt(5.W))))
@@ -14,7 +14,7 @@ class UsesVec extends MultiIOModule {
   out := in(addr)
 }
 
-class UsesVecSpec extends FreeSpec with ChiselScalatestTester {
+class UsesVecSpec extends AnyFreeSpec with ChiselScalatestTester {
   "run" in {
     test(new UsesVec) { c =>
       c.in(0).poke(5.U)
