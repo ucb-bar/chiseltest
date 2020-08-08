@@ -1,6 +1,7 @@
 package chiseltest.legacy.backends.verilator
 
 import chisel3.MultiIOModule
+import scala.sys.process._
 
 /**
   * Generates the Module specific verilator harness cpp file for verilator compilation
@@ -40,6 +41,12 @@ object VerilatorCppHarnessGenerator {
     val dutName = dut.name
     val dutApiClassName = dutName + "_api_t"
     val dutVerilatorClassName = "V" + dutName
+    val verilatorVersion = "verilator --version".!!.split(' ').last.stripLineEnd
+    val verilatorRunFlushCallback = if(verilatorVersion >= "v4.038"){
+      "Verilated::runFlushCallbacks();\nVerilated::runExitCallbacks();\n"
+    } else {
+      "Verilated::flushCall();\n"
+    }
     codeBuffer.append(s"""
 #include "$dutVerilatorClassName.h"
 #include "verilated.h"
@@ -145,7 +152,7 @@ double sc_time_stamp () { return _Top_api->get_time_stamp(); }
 // Override Verilator definition so first $$finish ends simulation
 // Note: VL_USER_FINISH needs to be defined when compiling Verilator code
 void vl_finish(const char* filename, int linenum, const char* hier) {
-  Verilated::flushCall();
+  $verilatorRunFlushCallback
   exit(0);
 }
 
