@@ -7,7 +7,7 @@ import java.util.concurrent.{ConcurrentLinkedQueue, Semaphore}
 import chisel3._
 import chiseltest.backends.SimulatorInterface
 import chiseltest.stage.ChiselTesterAnnotationHelper
-import chiseltest.{ExpectException, Region, TemporalParadox, ThreadOrderDependentException, TimeoutException}
+import chiseltest.{ExpectException, ExpectsException, Region, TemporalParadox, ThreadOrderDependentException, TimeoutException}
 import firrtl.AnnotationSeq
 import firrtl.annotations.NoTargetAnnotation
 import logger.LazyLogging
@@ -546,6 +546,8 @@ trait ThreadedBackend[DUT <: MultiIOModule]
     * throwing exceptions if there were).
     */
   def timestep(): Unit = {
+    // throw if have exceptions
+    if (expectExceptions.nonEmpty) throw new ExpectsException(expectExceptions)
     // Check peeks first, before timescope overridingPokes gets purged
     // These are checked by walking up the tree of timescopes, and ensuring the closest poke
     // has not been overridden.
