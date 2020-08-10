@@ -26,7 +26,7 @@ class BasicTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   }
 
   it should "fail on expect mismatch" in {
-    assertThrows[exceptions.TestFailedException] {
+    assertThrows[ExpectsException] {
       test(new StaticModule(42.U)) { c =>
         c.out.expect(0.U)
       }
@@ -54,7 +54,7 @@ class BasicTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
 
   it should "fail on record expect mismatch" in {
     val typ = new CustomBundle("foo" -> UInt(32.W), "bar" -> UInt(32.W))
-    assertThrows[exceptions.TestFailedException] {
+    assertThrows[ExpectsException] {
       test(new PassthroughModule(typ)) { c =>
         c.in.pokePartial(typ.Lit(
           _.elements("foo") -> 4.U
@@ -69,7 +69,7 @@ class BasicTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
 
   it should "fail on partial expect mismatch" in {
     val typ = new CustomBundle("foo" -> UInt(32.W), "bar" -> UInt(32.W))
-    assertThrows[exceptions.TestFailedException] {
+    assertThrows[ExpectsException] {
       test(new PassthroughModule(typ)) { c =>
         c.in.poke(typ.Lit(
           _.elements("foo") -> 4.U,
@@ -83,7 +83,7 @@ class BasicTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   }
 
   it should "fail with user-defined message" in {
-    intercept[exceptions.TestFailedException] {
+    intercept[ExpectsException] {
       test(new StaticModule(42.U)) { c =>
         c.out.expect(0.U, "user-defined failure message =(")
       }

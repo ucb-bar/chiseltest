@@ -28,7 +28,7 @@ class VerilatorBasicTests extends AnyFlatSpec with ChiselScalatestTester with Ma
   }
 
   it should "fail on expect mismatch" in {
-    assertThrows[exceptions.TestFailedException] {
+    assertThrows[ExpectsException] {
       test(new StaticModule(42.U)).withAnnotations(annos) { c =>
         c.out.expect(0.U)
       }
@@ -36,7 +36,7 @@ class VerilatorBasicTests extends AnyFlatSpec with ChiselScalatestTester with Ma
   }
 
   it should "fail with user-defined message" in {
-    intercept[exceptions.TestFailedException] {
+    intercept[ExpectsException] {
       test(new StaticModule(42.U)).withAnnotations(annos) { c =>
         c.out.expect(0.U, "user-defined failure message =(")
       }

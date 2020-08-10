@@ -47,7 +47,7 @@ class BundleLiteralsSpec extends AnyFlatSpec with ChiselScalatestTester with Mat
   }
 
   it should "fail on expect mismatch" in {
-    assertThrows[exceptions.TestFailedException] {
+    assertThrows[ExpectsException] {
       test(new PassthroughModule(new DoubleElements)) { c =>
         c.in.poke(chiselTypeOf(c.in).Lit(_.a -> 0.U, _.b -> 1.U))
         c.out.expect(chiselTypeOf(c.in).Lit(_.a -> 0.U, _.b -> 2.U))

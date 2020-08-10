@@ -10,7 +10,7 @@ class FaultDecoderTest extends AnyFlatSpec with ChiselScalatestTester with Match
   behavior of "Testers2"
 
   it should "display both decimal and hex for ints" in {
-    val exc = intercept[exceptions.TestFailedException] {
+    val exc = intercept[ExpectsException] {
       test(new StaticModule(42.U)) { c =>
         c.out.expect(0.U)
       }
@@ -20,7 +20,7 @@ class FaultDecoderTest extends AnyFlatSpec with ChiselScalatestTester with Match
   }
 
   it should "display both decimal and hex for signed ints" in {
-    val exc = intercept[exceptions.TestFailedException] {
+    val exc = intercept[ExpectsException] {
       test(new StaticModule(-42.S)) { c =>
         c.out.expect(-2.S)
       }
@@ -30,7 +30,7 @@ class FaultDecoderTest extends AnyFlatSpec with ChiselScalatestTester with Match
   }
 
   it should "display boolean for bools" in {
-    val exc = intercept[exceptions.TestFailedException] {
+    val exc = intercept[ExpectsException] {
       test(new StaticModule(true.B)) { c =>
         c.out.expect(false.B)
       }
@@ -40,7 +40,7 @@ class FaultDecoderTest extends AnyFlatSpec with ChiselScalatestTester with Match
   }
 
   it should "display decimal for fixedpoint" in {
-    val exc = intercept[exceptions.TestFailedException] {
+    val exc = intercept[ExpectsException] {
       test(new StaticModule((1.5).F(1.BP))) { c =>
         c.out.expect((1).F(1.BP))
       }
@@ -50,7 +50,7 @@ class FaultDecoderTest extends AnyFlatSpec with ChiselScalatestTester with Match
   }
 
   it should "display decimal for negative fixedpoint" in {
-    val exc = intercept[exceptions.TestFailedException] {
+    val exc = intercept[ExpectsException] {
       test(new StaticModule((-2.0).F(1.BP))) { c =>
         c.out.expect((-0.5).F(1.BP))
       }
@@ -60,7 +60,7 @@ class FaultDecoderTest extends AnyFlatSpec with ChiselScalatestTester with Match
   }
 
   it should "display decimal for intervals" in {
-    val exc = intercept[exceptions.TestFailedException] {
+    val exc = intercept[ExpectsException] {
       test(new StaticModule((1.5).I(1.BP))) { c =>
         c.out.expect((1.0).I(1.BP))
       }
@@ -75,7 +75,7 @@ class FaultDecoderTest extends AnyFlatSpec with ChiselScalatestTester with Match
       val e0, e1, e2 = Value
     }
 
-    val exc = intercept[exceptions.TestFailedException] {
+    val exc = intercept[ExpectsException] {
       test(new StaticModule(EnumExample.e0)) { c =>
         c.out.expect(EnumExample.e1)
       }

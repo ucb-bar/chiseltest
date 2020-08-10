@@ -9,29 +9,42 @@ import org.scalatest.matchers.should.Matchers
 
 class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2"
-  /*@todo*/
+
   it should "locate source lines" in {
-    intercept[exceptions.TestFailedException] {
+    intercept[ExpectsException] {
       test(new StaticModule(42.U)) { c =>
         c.out.expect(0.U)
       }
-    }.failedCodeFileNameAndLineNumberString.get should equal ("FaultLocatorTest.scala:16")
+    }.expects.head.trace.toString should include regex """.*\(FaultLocatorTest.scala:14\)"""
+  }
+
+  it should "locate multiple exceptions" in {
+    intercept[ExpectsException] {
+      test(new PassthroughModule(new Bundle {
+        val a = UInt(6.W)
+        val b = UInt(6.W)
+      })) { c =>
+        c.in.a.poke(42.U)
+        c.in.b.poke(43.U)
+        c.out.a.expect(0.U)
+        c.out.b.expect(0.U)
+      }
+    }.expects.size should equal (2)
   }
 
   it should "locate source lines across threads" in {
-    val exc = intercept[exceptions.TestFailedException] {
+   intercept[ExpectsException] {
       test(new StaticModule(42.U)) { c =>
         fork {
           c.clock.step()
           c.out.expect(0.U)
         }.join()
       }
-    }
-    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*24.*\)""")
+    }.expects.head.trace.toString should include regex """.*\(FaultLocatorTest.scala:24\)"""
   }
 
   it should "locate source lines in libraries" in {
-    val exc = intercept[exceptions.TestFailedException] {
+    intercept[ExpectsException] {
       test(new PassthroughQueue(Bool())) { c =>
         c.out.initSink()
         c.out.setSinkClock(c.clock)
@@ -41,13 +54,12 @@ class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Match
         c.out.expectDequeueNow(true.B)
       }
     }
-    // Only check the filename to avoid this being too brittle as implementation changes
-    exc.failedCodeFileNameAndLineNumberString.get should startWith ("DecoupledDriver.scala:")
-    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*41.*\)""")
+      // Only check the filename to avoid this being too brittle as implementation changes
+      .expects.head.trace.toString should include regex ".*(DecoupledDriver.scala:\\d+)"
   }
 
   it should "locate source lines, even in a different thread" in {
-    val exc = intercept[exceptions.TestFailedException] {
+    intercept[ExpectsException] {
       test(new PassthroughQueue(Bool())) { c =>
         c.out.initSink()
         c.out.setSinkClock(c.clock)
@@ -59,7 +71,7 @@ class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Match
         } .join
       }
     }
-    exc.failedCodeFileNameAndLineNumberString.get should startWith ("DecoupledDriver.scala:")
-    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*58.*\)""")
+      // Only check the filename to avoid this being too brittle as implementation changes
+      .expects.head.trace.toString should include regex ".*(DecoupledDriver.scala:\\d+)"
   }
 }

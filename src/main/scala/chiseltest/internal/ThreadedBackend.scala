@@ -107,7 +107,15 @@ trait ThreadedBackend[DUT <: MultiIOModule]
     a
   }
 
-  override def expectBits(signal: Data, value: BigInt, message: Option[String], stale: Boolean): Unit = {
+  protected def bigintToHex(x: BigInt): String = {
+    if (x < 0) {
+      f"-0x${-x}%x"
+    } else {
+      f"0x$x%x"
+    }
+  }
+
+  override def expectBits(signal: Data, value: BigInt, message: Option[String], decode: Option[BigInt => String], stale: Boolean): Unit = {
     require(!stale, "Stale peek not yet implemented")
     logger debug (s"${resolveName(signal)} ?> $value")
     val actual = peekBits(signal, stale)
@@ -116,14 +124,18 @@ trait ThreadedBackend[DUT <: MultiIOModule]
         case Some(_) => s": $message"
         case _ => ""
       }
-
+      val (actualStr, expectedStr) = decode match {
+        case Some(decode) =>
+          (s"${decode(actual)} ($actual, ${bigintToHex(actual)})",
+            s"${decode(value)} ($value, ${bigintToHex(value)})")
+        case None =>
+          (s"$actual (${bigintToHex(actual)})",
+            s"$value (${bigintToHex(value)})")
+      }
       val trace = new Throwable
-      val expectStackDepth = trace.getStackTrace.indexWhere(ste =>
-        ste.getClassName == "chiseltest.package$testableData" && ste.getMethodName == "expect")
-      require(expectStackDepth != -1, s"Failed to find expect in stack trace:\r\n${trace.getStackTrace.mkString("\r\n")}")
-      val errorMessage = s"$signal=$actual did not equal expected=$value$appendMsg"
-      val stackIndex = expectStackDepth + 1
-      expectExceptions.append(new ExpectException(errorMessage, stackIndex))
+      val expectStackDepth = trace.getStackTrace.indexWhere(ste => ste.getClassName == "chiseltest.package$testableData" && ste.getMethodName == "expect") + 1
+      require(expectStackDepth != 0, s"Failed to find expect in stack trace:\r\n${trace.getStackTrace.mkString("\r\n")}")
+      expectExceptions.append(new ExpectException(s"$signal=$actualStr did not equal $expectedStr $appendMsg", trace.getStackTrace()(expectStackDepth)))
     }
   }
 

@@ -9,7 +9,6 @@ import chiseltest.stage.{ChiselTestStage, TestFunctionAnnotation}
 import firrtl.AnnotationSeq
 import firrtl.options.TargetDirAnnotation
 import org.scalatest._
-import org.scalatest.exceptions.TestFailedException
 
 import scala.util.DynamicVariable
 
@@ -28,7 +27,9 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin {
       TestFunctionAnnotation(testFn),
       new ChiselGeneratorAnnotation(dutGen)
     ) ++ annotationSeq).collectFirst {
-      case ExpectExceptionsAnnotation(expects) => if (expects.nonEmpty) throw new TestFailedException(expects.map(_.message).mkString("\n"), 0)
+      case ExpectExceptionsAnnotation(expects) => if (expects.nonEmpty) {
+        throw new ExpectsException(expects)
+      }
     }
   }
 

@@ -8,11 +8,10 @@ import chiseltest.backends.{TreadleBackend, VPIBackend}
 import chiseltest.internal.ThreadedBackendAnnotation
 import chiseltest.stage._
 import firrtl.AnnotationSeq
-import firrtl.ir.{Circuit, GroundType, Input, IntWidth, Output, Port}
+import firrtl.ir._
 import firrtl.options.{Dependency, Phase, PreservesAll, TargetDirAnnotation}
-import firrtl.stage.FirrtlCircuitAnnotation
+import treadle.stage.TreadleTesterPhase
 import treadle.{TreadleTester, TreadleTesterAnnotation}
-import treadle.stage.phases.PrepareAstFromLowFIRRTL
 
 import scala.sys.process._
 
@@ -261,7 +260,7 @@ class CompileDut extends Phase with ChiselTesterAnnotationHelper with PreservesA
 
     getSimulatorBackend(a) match {
       case "treadle" =>
-        val treadleAnnotations = PrepareAstFromLowFIRRTL.transform(a)
+        val treadleAnnotations = (new TreadleTesterPhase).transform(a)
         val treadleTesterAnnotations = TreadleTesterAnnotation(new TreadleTester(treadleAnnotations))
         val annos = treadleAnnotations :+ treadleTesterAnnotations
         annos :+ ThreadedBackendAnnotation(new TreadleBackend[MultiIOModule](annos))
