@@ -33,6 +33,21 @@ class BasicTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
     }
   }
 
+  it should "fail and stop at first cycle" in {
+    intercept[ExpectsException] {
+      test(new PassthroughModule(new Bundle {
+        val a = UInt(6.W)
+        val b = UInt(6.W)
+      })) { c =>
+        c.in.a.poke(42.U)
+        c.out.a.expect(0.U)
+        c.clock.step()
+        c.in.b.poke(43.U)
+        c.out.b.expect(0.U)
+      }
+    }.expects.size should equal (1)
+  }
+
   it should "test record partial poke" in {
     val typ = new CustomBundle("foo" -> UInt(32.W), "bar" -> UInt(32.W))
     test(new PassthroughModule(typ)) { c =>
