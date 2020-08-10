@@ -8,8 +8,9 @@ import chisel3.{MultiIOModule, assert}
 import chisel3.experimental.DataMirror
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
 import firrtl.annotations.ReferenceTarget
-import firrtl.stage.CompilerAnnotation
+import firrtl.stage.RunFirrtlTransformAnnotation
 import firrtl.transforms.CombinationalPath
+import firrtl.util.BackendCompilationUtilities
 
 object VerilatorExecutive extends BackendExecutive {
   import firrtl._
@@ -57,9 +58,8 @@ object VerilatorExecutive extends BackendExecutive {
     // - CommandEditsFile
     // - TestCommandOverride
     // - CombinationalPath
-    val compiledAnnotations = (new ChiselStage).run(
-      elaboratedAnno :+ CompilerAnnotation(new VerilogCompiler())
-    )
+    val runVerilogEmitter = RunFirrtlTransformAnnotation(new VerilogEmitter)
+    val compiledAnnotations = (new ChiselStage).run(elaboratedAnno :+ runVerilogEmitter)
 
     val cppHarnessFileName = s"${circuit.name}-harness.cpp"
     val cppHarnessFile = new File(targetDir, cppHarnessFileName)
@@ -94,7 +94,7 @@ object VerilatorExecutive extends BackendExecutive {
       s"verilator command failed on circuit ${circuit.name} in work dir $targetDir"
     )
     assert(
-      chisel3.Driver.cppToExe(circuit.name, targetDirFile).! == 0,
+      BackendCompilationUtilities.cppToExe(circuit.name, targetDirFile).! == 0,
       s"Compilation of verilator generated code failed for circuit ${circuit.name} in work dir $targetDir"
     )
 

@@ -8,10 +8,10 @@ import chisel3.experimental.DataMirror
 import chisel3.MultiIOModule
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
 import firrtl.annotations.ReferenceTarget
-import firrtl.stage.CompilerAnnotation
+import firrtl.stage.RunFirrtlTransformAnnotation
 import firrtl.transforms.{CheckCombLoops, CombinationalPath}
 import treadle.stage.TreadleTesterPhase
-import treadle.{TreadleCircuitStateAnnotation, TreadleFirrtlFormHint, TreadleTesterAnnotation}
+import treadle.{TreadleCircuitStateAnnotation, TreadleTesterAnnotation}
 
 object TreadleExecutive extends BackendExecutive {
   import firrtl._
@@ -41,10 +41,11 @@ object TreadleExecutive extends BackendExecutive {
     }.toMap
 
     // This generates the firrtl circuit needed by the TreadleTesterPhase
-    annotationSeq = (new ChiselStage).run(annotationSeq ++ Seq(CompilerAnnotation(new LowFirrtlCompiler)))
+    val runLowFirrtl = RunFirrtlTransformAnnotation(new LowFirrtlEmitter)
+    annotationSeq = (new ChiselStage).run(annotationSeq ++ Seq(runLowFirrtl))
 
     // This generates a TreadleTesterAnnotation with a treadle tester instance
-    annotationSeq = (new TreadleTesterPhase).transform(annotationSeq :+ TreadleFirrtlFormHint(LowForm))
+    annotationSeq = (new TreadleTesterPhase).transform(annotationSeq)
 
     val treadleTester = annotationSeq.collectFirst { case TreadleTesterAnnotation(t) => t }.getOrElse(
       throw new Exception(

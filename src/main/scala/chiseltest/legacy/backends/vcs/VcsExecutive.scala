@@ -8,7 +8,7 @@ import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
 import chiseltest.internal.BackendInstance
 import chiseltest.backends.BackendExecutive
 import firrtl.annotations.{DeletedAnnotation, ReferenceTarget}
-import firrtl.stage.CompilerAnnotation
+import firrtl.stage.RunFirrtlTransformAnnotation
 import firrtl.transforms.CombinationalPath
 
 object VcsExecutive extends BackendExecutive {
@@ -59,11 +59,12 @@ object VcsExecutive extends BackendExecutive {
     //
     // This run also creates the target dir and places the verilog in it
 
+    val runVerilogEmitter = RunFirrtlTransformAnnotation(new VerilogEmitter)
     val compiledAnnotations = (new ChiselStage)
       .run(
         annotationSeq ++ Seq(
           generatorAnnotation,
-          CompilerAnnotation(new VerilogCompiler())
+          runVerilogEmitter
         )
       )
       .filterNot(_.isInstanceOf[DeletedAnnotation])
