@@ -11,6 +11,7 @@ import firrtl.AnnotationSeq
 import firrtl.ir._
 import firrtl.options.{Dependency, Phase, PreservesAll, TargetDirAnnotation}
 import treadle.stage.TreadleTesterPhase
+import treadle.stage.phases.PrepareAst
 import treadle.{TreadleTester, TreadleTesterAnnotation}
 
 import scala.sys.process._
@@ -260,7 +261,7 @@ class CompileDut extends Phase with ChiselTesterAnnotationHelper with PreservesA
 
     getSimulatorBackend(a) match {
       case "treadle" =>
-        val treadleAnnotations = (new TreadleTesterPhase).transform(a)
+        val treadleAnnotations = (new PrepareAst).transform(a)
         val treadleTesterAnnotations = TreadleTesterAnnotation(new TreadleTester(treadleAnnotations))
         val annos = treadleAnnotations :+ treadleTesterAnnotations
         annos :+ ThreadedBackendAnnotation(new TreadleBackend[MultiIOModule](annos))
