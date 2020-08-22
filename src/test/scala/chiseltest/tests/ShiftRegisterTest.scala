@@ -4,8 +4,9 @@ import org.scalatest._
 
 import chisel3._
 import chiseltest._
+import org.scalatest.flatspec.AnyFlatSpec
 
-class ShiftRegisterTest extends FlatSpec with ChiselScalatestTester {
+class ShiftRegisterTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Testers2"
 
   it should "test shift registers with abstractions" in {

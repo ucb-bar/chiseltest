@@ -6,8 +6,9 @@ import chisel3._
 import chisel3.util._
 import chiseltest._
 import chiseltest.experimental.UncheckedClockPoke._
+import org.scalatest.flatspec.AnyFlatSpec
 
-class ClockPokeTest extends FlatSpec with ChiselScalatestTester {
+class ClockPokeTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Testers2 with a clock input"
 
   it should "work as expected" in {

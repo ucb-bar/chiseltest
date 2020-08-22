@@ -4,8 +4,10 @@ import org.scalatest._
 
 import chisel3._
 import chiseltest._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class FaultLocatorTest extends FlatSpec with ChiselScalatestTester with Matchers {
+class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2"
 
   it should "locate source lines" in {

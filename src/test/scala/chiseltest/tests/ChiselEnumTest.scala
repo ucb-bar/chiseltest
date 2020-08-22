@@ -5,8 +5,10 @@ import org.scalatest._
 import chisel3._
 import chiseltest._
 import chisel3.experimental.ChiselEnum
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class ChiselEnumTest extends FlatSpec with ChiselScalatestTester with Matchers {
+class ChiselEnumTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2"
 
   object EnumExample extends ChiselEnum {
