@@ -5,9 +5,10 @@ import org.scalatest._
 import chisel3._
 import chiseltest._
 import chisel3.util._
+import org.scalatest.flatspec.AnyFlatSpec
 
 
-class QueueTest extends FlatSpec with ChiselScalatestTester {
+class QueueTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Testers2 with Queue"
 
   it should "pass through elements, using enqueueNow" in {

@@ -3,8 +3,9 @@ package chiseltest.tests
 import chisel3._
 import chiseltest._
 import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
 
-class AsyncClockTest extends FlatSpec with ChiselScalatestTester {
+class AsyncClockTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Testers2 with clock crossing signals"
 
   it should "work with async clock signals" in {
