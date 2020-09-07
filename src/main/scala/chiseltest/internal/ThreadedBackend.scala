@@ -135,7 +135,7 @@ trait ThreadedBackend[DUT <: MultiIOModule]
       val trace = new Throwable
       val expectStackDepth = trace.getStackTrace.indexWhere(ste => ste.getClassName == "chiseltest.package$testableData" && ste.getMethodName == "expect") + 1
       require(expectStackDepth != 0, s"Failed to find expect in stack trace:\r\n${trace.getStackTrace.mkString("\r\n")}")
-      expectExceptions.append(new ExpectException(s"$signal=$actualStr did not equal $expectedStr $appendMsg", trace.getStackTrace()(expectStackDepth)))
+      expectExceptions.append(new ExpectException(s"$signal=$actualStr did not equal expected=$expectedStr $appendMsg", trace.getStackTrace()(expectStackDepth)))
     }
   }
 

@@ -15,7 +15,7 @@ class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Match
       test(new StaticModule(42.U)) { c =>
         c.out.expect(0.U)
       }
-    }.expects.head.trace.toString should include regex """.*\(FaultLocatorTest.scala:14\)"""
+    }.expects.head.trace.toString should include regex """.*\(FaultLocatorTest.scala:16\)"""
   }
 
   it should "locate multiple exceptions" in {
@@ -40,7 +40,7 @@ class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Match
           c.out.expect(0.U)
         }.join()
       }
-    }.expects.head.trace.toString should include regex """.*\(FaultLocatorTest.scala:24\)"""
+    }.expects.head.trace.toString should include regex """.*\(FaultLocatorTest.scala:40\)"""
   }
 
   it should "locate source lines in libraries" in {
