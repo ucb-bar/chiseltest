@@ -31,9 +31,9 @@ name := "chiseltest"
 
 version := "0.3-SNAPSHOT"
 
-scalaVersion := "2.12.10"
+scalaVersion := "2.12.12"
 
-crossScalaVersions := Seq("2.12.10", "2.11.12")
+crossScalaVersions := Seq("2.12.12", "2.11.12")
 
 resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
@@ -41,9 +41,8 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "org.scalatest" %% "scalatest" % "3.0.8",
-  "org.scalatest" %% "scalatest" % "3.2.0" % "test",
-  "com.lihaoyi" %% "utest" % "latest.integration"
+  "org.scalatest" %% "scalatest" % "3.2.0",
+  "com.lihaoyi" %% "utest" % "0.7.5"
 )
 
 testFrameworks += new TestFramework("utest.runner.Framework")
