@@ -3,7 +3,7 @@ package chiseltest.legacy.backends.verilator
 import java.io.{File, FileWriter}
 
 import chiseltest.backends.BackendExecutive
-import chiseltest.internal.{BackendInstance, WriteVcdAnnotation}
+import chiseltest.internal.{BackendInstance, WriteVcdAnnotation, LineCoverageAnnotation, ToggleCoverageAnnotation}
 import chisel3.{MultiIOModule, assert}
 import chisel3.experimental.DataMirror
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
@@ -77,11 +77,13 @@ object VerilatorExecutive extends BackendExecutive {
       .collectFirst { case VerilatorCFlags(f) => f }
       .getOrElse(Seq.empty)
     val writeVcdFlag = if(compiledAnnotations.contains(WriteVcdAnnotation)) { Seq("--trace") } else { Seq() }
+    val lineCoverageFlag = if(compiledAnnotations.contains(LineCoverageAnnotation)) {Seq("--coverage-line")} else { Seq() }
+    val toggleCoverageFlag = if(compiledAnnotations.contains(ToggleCoverageAnnotation)) {Seq("--coverage-toggle")} else { Seq() }
     val commandEditsFile = compiledAnnotations
       .collectFirst { case CommandEditsFile(f) => f }
       .getOrElse("")
 
-    val verilatorFlags = moreVerilatorFlags ++ writeVcdFlag
+    val verilatorFlags = moreVerilatorFlags ++ writeVcdFlag ++ lineCoverageFlag ++ toggleCoverageFlag
     assert(
       verilogToVerilator(
         circuit.name,

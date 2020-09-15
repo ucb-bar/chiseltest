@@ -7,6 +7,7 @@ import chisel3.stage.ChiselOutputFileAnnotation
 import chiseltest._
 import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.experimental.sanitizeFileName
+import chiseltest.internal._
 import firrtl.options.OutputAnnotationFileAnnotation
 import firrtl.stage.OutputFileAnnotation
 import org.scalatest._
@@ -88,5 +89,21 @@ class OptionsPassingTest extends AnyFlatSpec with ChiselScalatestTester with Mat
 
     output.contains("Symbol table:") should be (true)
     output.contains("clock/prev") should be (true)
+  }
+
+  it should "allow specifying coverage for Verilator" in {
+    test(new Module {
+      val io = IO(new Bundle {
+        val a = Input(UInt(8.W))
+        val b = Output(UInt(8.W))
+      })
+      io.b := io.a
+    }).withAnnotations(Seq(VerilatorBackendAnnotation, ToggleCoverageAnnotation, LineCoverageAnnotation)) { c =>
+      c.io.a.poke(1.U)
+      c.io.b.expect(1.U)
+      c.clock.step()
+      c.io.a.poke(42.U)
+      c.io.b.expect(42.U)
+    }
   }
 }

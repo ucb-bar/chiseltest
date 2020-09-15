@@ -46,6 +46,26 @@ case object WriteVcdAnnotation extends TestOptionObject {
   )
 }
 
+case object LineCoverageAnnotation extends TestOptionObject {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "t-line-coverage",
+      toAnnotationSeq = _ => Seq(LineCoverageAnnotation),
+      helpText = "adds line coverage in VCS or Verilator"
+    )
+  )
+}
+
+case object ToggleCoverageAnnotation extends TestOptionObject {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "t-toggle-coverage",
+      toAnnotationSeq = _ => Seq(ToggleCoverageAnnotation),
+      helpText = "adds toggle coverage in VCS or Verilator"
+    )
+  )
+}
+
 trait BackendAnnotation extends TestOptionObject {
   self: Object =>
   def executive: BackendExecutive
