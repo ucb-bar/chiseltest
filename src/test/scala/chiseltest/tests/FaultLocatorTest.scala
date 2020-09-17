@@ -4,8 +4,10 @@ import org.scalatest._
 
 import chisel3._
 import chiseltest._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class FaultLocatorTest extends FlatSpec with ChiselScalatestTester with Matchers {
+class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2"
 
   it should "locate source lines" in {
@@ -13,7 +15,7 @@ class FaultLocatorTest extends FlatSpec with ChiselScalatestTester with Matchers
       test(new StaticModule(42.U)) { c =>
         c.out.expect(0.U)
       }
-    }.failedCodeFileNameAndLineNumberString.get should equal ("FaultLocatorTest.scala:14")
+    }.failedCodeFileNameAndLineNumberString.get should equal ("FaultLocatorTest.scala:16")
   }
 
   it should "locate source lines across threads" in {
@@ -25,7 +27,7 @@ class FaultLocatorTest extends FlatSpec with ChiselScalatestTester with Matchers
         }.join()
       }
     }
-    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*22.*\)""")
+    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*24.*\)""")
   }
 
   it should "locate source lines in libraries" in {
@@ -41,7 +43,7 @@ class FaultLocatorTest extends FlatSpec with ChiselScalatestTester with Matchers
     }
     // Only check the filename to avoid this being too brittle as implementation changes
     exc.failedCodeFileNameAndLineNumberString.get should startWith ("DecoupledDriver.scala:")
-    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*39.*\)""")
+    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*41.*\)""")
   }
 
   it should "locate source lines, even in a different thread" in {
@@ -58,6 +60,6 @@ class FaultLocatorTest extends FlatSpec with ChiselScalatestTester with Matchers
       }
     }
     exc.failedCodeFileNameAndLineNumberString.get should startWith ("DecoupledDriver.scala:")
-    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*56.*\)""")
+    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*58.*\)""")
   }
 }

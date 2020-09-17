@@ -5,8 +5,10 @@ package chiseltest.tests
 import chisel3._
 import chiseltest._
 import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class BoreTest extends FlatSpec with ChiselScalatestTester with Matchers {
+class BoreTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2"
 
   class Constant extends MultiIOModule {

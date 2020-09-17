@@ -5,9 +5,10 @@ package chiseltest.tests
 import chisel3._
 import chiseltest._
 import chiseltest.RawTester.test
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class NoScalatestTesterTest extends FreeSpec with Matchers {
+class NoScalatestTesterTest extends AnyFreeSpec with Matchers {
   "This tester does not rely on scalatest to run" in {
     def shiftTest(in: UInt, out: UInt, clk: Clock, value: UInt) {
       timescope {
