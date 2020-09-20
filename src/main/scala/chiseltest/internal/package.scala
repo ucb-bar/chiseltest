@@ -2,10 +2,8 @@ package chiseltest
 
 package object internal {
   /* deprecations */
-  @deprecated("use chiseltest.stage.TestOption instead", "0.3")
-  type TestOption = chiseltest.stage.TestOption
-  @deprecated("use chiseltest.stage.TestOptionObject instead", "0.3")
-  type TestOptionObject = chiseltest.stage.TestOptionObject
+  @deprecated("use chiseltest.stage.TestOption instead, will be sealed in the future.", "0.3")
+  type TestOption = chiseltest.stage.ChiselTestOption
   @deprecated("use chiseltest.stage.BackendAnnotation instead", "0.3")
   type BackendAnnotation = chiseltest.stage.BackendAnnotation
   @deprecated("use chiseltest.stage.TreadleBackendAnnotation instead", "0.3")
