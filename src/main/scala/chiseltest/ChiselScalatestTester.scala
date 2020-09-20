@@ -3,10 +3,14 @@
 package chiseltest
 
 import chiseltest.internal._
-import chiseltest.experimental.{sanitizeFileName, ChiselTestShell}
+import chiseltest.experimental.{sanitizeFileName}
 import chisel3.MultiIOModule
+import chisel3.stage.ChiselCli
 import chiseltest.internal.WriteVcdAnnotation
+import chiseltest.stage.ChiselTestCli
 import firrtl.AnnotationSeq
+import firrtl.options.Shell
+import firrtl.stage.FirrtlCli
 import org.scalatest._
 import org.scalatest.exceptions.TestFailedException
 
@@ -23,7 +27,11 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     }
 
     def apply(testFn: T => Unit): Unit = {
-      val finalAnnos = addDefaultTargetDir(getTestName, (new ChiselTestShell).parse(flags) ++ annotationSeq) ++
+      val finalAnnos = addDefaultTargetDir(
+        getTestName,
+        (new Shell("chiseltest") with ChiselCli with FirrtlCli with ChiselTestCli)
+          .parse(flags) ++ annotationSeq
+      ) ++
         (if (scalaTestContext.value.get.configMap.contains("writeVcd")) {
            Seq(WriteVcdAnnotation)
          } else {
