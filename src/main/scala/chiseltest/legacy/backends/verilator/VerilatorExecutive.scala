@@ -3,10 +3,11 @@ package chiseltest.legacy.backends.verilator
 import java.io.{File, FileWriter}
 
 import chiseltest.backends.BackendExecutive
-import chiseltest.internal._
+import chiseltest.internal.{WriteVcdAnnotation => _, _}
 import chisel3.{assert, MultiIOModule}
 import chisel3.experimental.DataMirror
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
+import chiseltest.stage._
 import firrtl.annotations.ReferenceTarget
 import firrtl.stage.RunFirrtlTransformAnnotation
 import firrtl.transforms.CombinationalPath

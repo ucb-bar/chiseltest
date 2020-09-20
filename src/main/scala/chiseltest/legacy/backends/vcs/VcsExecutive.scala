@@ -7,6 +7,7 @@ import chisel3.experimental.DataMirror
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
 import chiseltest.internal._
 import chiseltest.backends.BackendExecutive
+import chiseltest.stage._
 import firrtl.annotations.{DeletedAnnotation, ReferenceTarget}
 import firrtl.stage.RunFirrtlTransformAnnotation
 import firrtl.transforms.CombinationalPath
