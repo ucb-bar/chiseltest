@@ -30,4 +30,7 @@ class ChiselTestStage extends Stage {
   def run(annotations: AnnotationSeq): AnnotationSeq = phaseManager.transform(annotations)
 }
 
+/** @todo before implementing [[ShellOption]] of [[TestFunctionAnnotation]],
+  *       ChiselTestMain is not allowed to be called
+  */
 object ChiselTestMain extends StageMain(new ChiselTestStage)
