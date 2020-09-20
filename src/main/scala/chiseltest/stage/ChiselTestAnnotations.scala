@@ -7,14 +7,22 @@ import chiseltest.legacy.backends.verilator.VerilatorExecutive
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
 
-/* General traits. */
-trait TestOption extends Unserializable { this: Annotation => }
-trait TestOptionObject extends NoTargetAnnotation with HasShellOptions with TestOption
+/** Indicates that this is an [[firrtl.annotations.Annotation Annotation]] directly used in the construction of a
+  * [[ChiselTestOptions]] view.
+  */
+sealed trait ChiselTestOption extends Unserializable {
+  this: Annotation =>
+}
 
-// This  Annotation may well be moved to firrtl to provide a single instance of this
-// concept (right now it exists separately in testers2 and treadle.
-//
-case object WriteVcdAnnotation extends TestOptionObject {
+sealed trait ChiselTestOptionObject extends NoTargetAnnotation with HasShellOptions with ChiselTestOption
+
+/* Waveform Annotations.
+ *
+ * @todo Different backends will have different ways of expressing things like WriteVCD,
+ *   there should be a formal mapping from testers2 options form to backend specific forms.
+ *
+ */
+case object WriteVcdAnnotation extends ChiselTestOptionObject {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
       longOption = "t-write-vcd",
@@ -23,8 +31,10 @@ case object WriteVcdAnnotation extends TestOptionObject {
     )
   )
 }
+/* Coverage Annotations. */
+trait CoverageAnnotations extends NoTargetAnnotation with ChiselTestOptionObject
 
-case object LineCoverageAnnotation extends TestOptionObject {
+case object LineCoverageAnnotation extends CoverageAnnotations {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
       longOption = "t-line-coverage",
@@ -34,7 +44,7 @@ case object LineCoverageAnnotation extends TestOptionObject {
   )
 }
 
-case object ToggleCoverageAnnotation extends TestOptionObject {
+case object ToggleCoverageAnnotation extends CoverageAnnotations {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
       longOption = "t-toggle-coverage",
@@ -44,7 +54,7 @@ case object ToggleCoverageAnnotation extends TestOptionObject {
   )
 }
 
-case object BranchCoverageAnnotation extends TestOptionObject {
+case object BranchCoverageAnnotation extends CoverageAnnotations {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
       longOption = "t-branch-coverage",
@@ -54,7 +64,7 @@ case object BranchCoverageAnnotation extends TestOptionObject {
   )
 }
 
-case object ConditionalCoverageAnnotation extends TestOptionObject {
+case object ConditionalCoverageAnnotation extends CoverageAnnotations {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
       longOption = "t-conditional-coverage",
@@ -64,7 +74,7 @@ case object ConditionalCoverageAnnotation extends TestOptionObject {
   )
 }
 
-case object StructuralCoverageAnnotation extends TestOptionObject {
+case object StructuralCoverageAnnotation extends CoverageAnnotations {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
       longOption = "t-structural-coverage",
@@ -74,7 +84,7 @@ case object StructuralCoverageAnnotation extends TestOptionObject {
   )
 }
 
-case object UserCoverageAnnotation extends TestOptionObject {
+case object UserCoverageAnnotation extends CoverageAnnotations {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
       longOption = "t-user-coverage",
@@ -84,7 +94,7 @@ case object UserCoverageAnnotation extends TestOptionObject {
   )
 }
 
-trait BackendAnnotation extends TestOptionObject {
+trait BackendAnnotation extends NoTargetAnnotation with ChiselTestOptionObject {
   self: Object =>
   def executive: BackendExecutive
 }
