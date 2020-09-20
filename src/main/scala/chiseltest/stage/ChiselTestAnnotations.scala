@@ -134,3 +134,21 @@ case object VcsBackendAnnotation extends BackendAnnotation {
     )
   )
 }
+
+case class TestFunctionAnnotation[T <: chisel3.RawModule](func: T => Unit)
+    extends NoTargetAnnotation
+    with ChiselTestOption
+
+/** @todo find a way to point to a test function in shell.
+  *       may be reflection?
+  */
+object TestFunctionAnnotation extends HasShellOptions {
+  override val options = Seq(
+    new ShellOption[String](
+      longOption = "t-test-function",
+      // @todo find a way to let user annotate test test function from console
+      toAnnotationSeq = a => Seq(),
+      helpText = "todo"
+    )
+  )
+}
