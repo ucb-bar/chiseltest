@@ -2,15 +2,17 @@
 
 package chiseltest
 
-class NotLiteralException(message: String) extends Exception(message)
-class LiteralTypeException(message: String) extends Exception(message)
-class UnpokeableException(message: String) extends Exception(message)
-class UnsupportedOperationException(message: String) extends Exception(message)
+class ChiselTestException(message: String, cause: Throwable = null) extends Exception(message, cause)
+class NotLiteralException(message: String) extends ChiselTestException(message)
+class LiteralTypeException(message: String) extends ChiselTestException(message)
+class UnpokeableException(message: String) extends ChiselTestException(message)
+class UnsupportedOperationException(message: String) extends ChiselTestException(message)
+class FailedExpectException(val message: String, val failedCodeStackDepth: Int) extends ChiselTestException(message)
 
-class ClockResolutionException(message: String) extends Exception(message)
+class ClockResolutionException(message: String) extends ChiselTestException(message)
 
-class ThreadOrderDependentException(message: String) extends Exception(message)
-class TimeoutException(message: String) extends Exception(message)
+class ThreadOrderDependentException(message: String) extends ChiselTestException(message)
+class TimeoutException(message: String) extends ChiselTestException(message)
 
 // when interfacing with the testdriver before stepping the clock after moving to an earlier region
-class TemporalParadox(message: String) extends Exception(message)
+class TemporalParadox(message: String) extends ChiselTestException(message)
