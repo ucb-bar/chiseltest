@@ -1,6 +1,7 @@
 package chiseltest.stage
 
 import chisel3.{Data, MultiIOModule}
+import chiseltest.ChiselTestException
 import firrtl.ir.Port
 
 class ChiselTestOptions private[stage] (
@@ -13,7 +14,8 @@ class ChiselTestOptions private[stage] (
   val testFunction:          Option[MultiIOModule => Unit] = None,
   val topPorts:              Option[Seq[Port]] = None,
   val topPortsNameMap:       Option[Map[Data, String]] = None,
-  val topCombinationalPaths: Option[Map[Data, Set[Data]]] = None) {
+  val topCombinationalPaths: Option[Map[Data, Set[Data]]] = None,
+  val chiselTestExceptions:  Option[collection.mutable.Buffer[ChiselTestException]] = None) {
 
   private[stage] def copy(
     circuit:               Option[firrtl.ir.Circuit] = circuit,
@@ -25,7 +27,8 @@ class ChiselTestOptions private[stage] (
     testFunction:          Option[MultiIOModule => Unit] = testFunction,
     topPorts:              Option[Seq[Port]] = topPorts,
     topPortsNameMap:       Option[Map[Data, String]] = topPortsNameMap,
-    topCombinationalPaths: Option[Map[Data, Set[Data]]] = topCombinationalPaths
+    topCombinationalPaths: Option[Map[Data, Set[Data]]] = topCombinationalPaths,
+    chiselTestExceptions:  Option[collection.mutable.Buffer[ChiselTestException]] = chiselTestExceptions
   ) =
     new ChiselTestOptions(
       circuit = circuit,
@@ -37,6 +40,7 @@ class ChiselTestOptions private[stage] (
       testFunction = testFunction,
       topPorts = topPorts,
       topPortsNameMap = topPortsNameMap,
-      topCombinationalPaths = topCombinationalPaths
+      topCombinationalPaths = topCombinationalPaths,
+      chiselTestExceptions = chiselTestExceptions
     )
 }
