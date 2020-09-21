@@ -4,6 +4,7 @@ package chiseltest.internal
 
 import java.io.File
 
+import chiseltest.ChiselTestException
 import firrtl.AnnotationSeq
 import firrtl.options.TargetDirAnnotation
 
