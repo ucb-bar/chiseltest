@@ -1,4 +1,5 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
+
 package chiseltest.legacy.backends.verilator
 
 import java.io.File

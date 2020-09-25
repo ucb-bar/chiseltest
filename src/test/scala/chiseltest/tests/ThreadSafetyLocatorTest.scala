@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package chiseltest.tests
 
 import chisel3._
@@ -22,7 +24,7 @@ class ThreadSafetyLocatorTest extends AnyFlatSpec with ChiselScalatestTester {
         }.join
       }
     }.getMessage()
-    exceptionMessage should include ("ThreadSafetyLocatorTest.scala:20")
-    exceptionMessage should include ("ThreadSafetyLocatorTest.scala:17")
+    exceptionMessage should include ("ThreadSafetyLocatorTest.scala:22")
+    exceptionMessage should include ("ThreadSafetyLocatorTest.scala:19")
   }
 }
