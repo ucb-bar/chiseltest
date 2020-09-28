@@ -106,7 +106,7 @@ class OptionsPassingTest extends AnyFlatSpec with ChiselScalatestTester with Mat
       c.clock.step()
       c.io.a.poke(42.U)
       c.io.b.expect(42.U)
-      coverage.exists() should be (true)
     }
+    coverage.exists() should be (true)
   }
 }
