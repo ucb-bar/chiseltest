@@ -92,6 +92,8 @@ class OptionsPassingTest extends AnyFlatSpec with ChiselScalatestTester with Mat
   }
 
   it should "allow specifying coverage for Verilator" in {
+    val coverageName = "test_run_dir/Testers2_should_allow_specifying_coverage_for_Verilator/logs/coverage.dat"
+    val coverage = new File(coverageName)
     test(new Module {
       val io = IO(new Bundle {
         val a = Input(UInt(8.W))
@@ -104,6 +106,7 @@ class OptionsPassingTest extends AnyFlatSpec with ChiselScalatestTester with Mat
       c.clock.step()
       c.io.a.poke(42.U)
       c.io.b.expect(42.U)
+      coverage.exists() should be (true)
     }
   }
 }

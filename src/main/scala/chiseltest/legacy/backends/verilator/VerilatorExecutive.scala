@@ -66,7 +66,7 @@ object VerilatorExecutive extends BackendExecutive {
     val cppHarnessWriter = new FileWriter(cppHarnessFile)
     val vcdFile = new File(targetDir, s"${circuit.name}.vcd")
     val emittedStuff =
-      VerilatorCppHarnessGenerator.codeGen(dut, vcdFile.toString)
+      VerilatorCppHarnessGenerator.codeGen(dut, vcdFile.toString, targetDir)
     cppHarnessWriter.append(emittedStuff)
     cppHarnessWriter.close()
 
@@ -83,14 +83,19 @@ object VerilatorExecutive extends BackendExecutive {
       .collectFirst { case CommandEditsFile(f) => f }
       .getOrElse("")
 
+    val coverageFlag = if(compiledAnnotations.contains(LineCoverageAnnotation) || compiledAnnotations
+      .contains(ToggleCoverageAnnotation)) { Seq("-DSP_COVERAGE_ENABLE") } else { Seq () }
+
     val verilatorFlags = moreVerilatorFlags ++ writeVcdFlag ++ lineCoverageFlag ++ toggleCoverageFlag
+    val verilatorCFlags = moreVerilatorCFlags ++ coverageFlag
+
     assert(
       verilogToVerilator(
         circuit.name,
         new File(targetDir),
         cppHarnessFile,
         moreVerilatorFlags = verilatorFlags,
-        moreVerilatorCFlags = moreVerilatorCFlags,
+        moreVerilatorCFlags = verilatorCFlags,
         editCommands = commandEditsFile
       ).! == 0,
       s"verilator command failed on circuit ${circuit.name} in work dir $targetDir"
