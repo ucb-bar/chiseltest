@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package chiseltest.tests
 
 import org.scalatest._
@@ -15,7 +17,7 @@ class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Match
       test(new StaticModule(42.U)) { c =>
         c.out.expect(0.U)
       }
-    }.failedCodeFileNameAndLineNumberString.get should equal ("FaultLocatorTest.scala:16")
+    }.failedCodeFileNameAndLineNumberString.get should equal ("FaultLocatorTest.scala:18")
   }
 
   it should "locate source lines across threads" in {
@@ -27,7 +29,7 @@ class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Match
         }.join()
       }
     }
-    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*24.*\)""")
+    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*26.*\)""")
   }
 
   it should "locate source lines in libraries" in {
@@ -43,7 +45,7 @@ class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Match
     }
     // Only check the filename to avoid this being too brittle as implementation changes
     exc.failedCodeFileNameAndLineNumberString.get should startWith ("DecoupledDriver.scala:")
-    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*41.*\)""")
+    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*43.*\)""")
   }
 
   it should "locate source lines, even in a different thread" in {
@@ -60,6 +62,6 @@ class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Match
       }
     }
     exc.failedCodeFileNameAndLineNumberString.get should startWith ("DecoupledDriver.scala:")
-    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*58.*\)""")
+    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*60.*\)""")
   }
 }
