@@ -8,7 +8,7 @@ import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
 import chiseltest.internal.BackendInstance
 import chiseltest.backends.BackendExecutive
 import firrtl.annotations.{DeletedAnnotation, ReferenceTarget}
-import firrtl.stage.CompilerAnnotation
+import firrtl.stage.RunFirrtlTransformAnnotation
 import firrtl.transforms.CombinationalPath
 
 object VcsExecutive extends BackendExecutive {
@@ -38,7 +38,7 @@ object VcsExecutive extends BackendExecutive {
     System.gc()
 
     val targetDir = annotationSeq.collectFirst {
-      case TargetDirAnnotation(t) => t
+      case firrtl.options.TargetDirAnnotation(t) => t
     }.get
     val targetDirFile = new File(targetDir)
 
@@ -63,7 +63,7 @@ object VcsExecutive extends BackendExecutive {
       .run(
         annotationSeq ++ Seq(
           generatorAnnotation,
-          CompilerAnnotation(new VerilogCompiler())
+          RunFirrtlTransformAnnotation(new VerilogEmitter)
         )
       )
       .filterNot(_.isInstanceOf[DeletedAnnotation])
