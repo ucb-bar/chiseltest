@@ -5,8 +5,8 @@ import mill.scalalib.publish._
 object chiseltest extends mill.Cross[chiseltestCrossModule]("2.11.12", "2.12.10")
 
 val defaultVersions = Map(
-  "chisel3" -> "3.4.0-RC3",
-  "treadle" -> "1.3.0-RC3"
+  "chisel3" -> "3.4.0",
+  "treadle" -> "1.3.0"
 )
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
@@ -32,7 +32,7 @@ class chiseltestCrossModule(val crossScalaVersion: String) extends CrossSbtModul
   // 2.12.12 -> Array("2", "12", "12") -> "12" -> 12
   private def majorVersion = crossScalaVersion.split('.')(1).toInt
 
-  def publishVersion = "0.3.0-RC3"
+  def publishVersion = "0.3.0"
 
   private def javacCrossOptions = majorVersion match {
     case i if i < 12 => Seq("-source", "1.7", "-target", "1.7")
