@@ -88,7 +88,7 @@ publishTo := {
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Seq(
   "chisel3" -> "3.4-SNAPSHOT",
-  "treadle" -> "1.3-SNAPSHOT"
+  "treadle" -> "1.3.0"
 )
 
 libraryDependencies ++= defaultVersions.map { case (dep, ver) =>
