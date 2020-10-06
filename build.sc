@@ -7,7 +7,7 @@ import mill.scalalib.publish._
 object chiseltest extends mill.Cross[chiseltestCrossModule]("2.11.12", "2.12.10")
 
 val defaultVersions = Map(
-  "chisel3" -> "3.4-SNAPSHOT",
+  "chisel3" -> "3.4.0",
   "treadle" -> "1.3-SNAPSHOT"
 )
 
