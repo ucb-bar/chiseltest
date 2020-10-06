@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiseltest.legacy.backends.verilator
 
@@ -98,7 +98,7 @@ trait EditableBuildCSimulatorCommand {
     * @return sequence of strings (suitable for passing as arguments to the simulator builder) specifying a flag and the absolute path to the file.
     */
   def blackBoxVerilogList(dir: java.io.File): Seq[String] = {
-    val list_file = new File(dir, firrtl.transforms.BlackBoxSourceHelper.fileListName)
+    val list_file = new File(dir, firrtl.transforms.BlackBoxSourceHelper.defaultFileListName)
     if(list_file.exists()) {
       Seq("-f", list_file.getAbsolutePath)
     } else {

@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 def scalacOptionsVersion(scalaVersion: String): Seq[String] = {
   Seq() ++ {
@@ -55,13 +55,13 @@ pomIncludeRepository := { x => false }
 
 pomExtra := (
 <url>http://chisel.eecs.berkeley.edu/</url>
-<licenses>
-  <license>
-    <name>BSD-style</name>
-    <url>http://www.opensource.org/licenses/bsd-license.php</url>
-    <distribution>repo</distribution>
-  </license>
-</licenses>
+  <licenses>
+    <license>
+      <name>apache_v2</name>
+      <url>https://opensource.org/licenses/Apache-2.0</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
 <scm>
   <url>https://github.com/ucb-bar/chisel-testers2.git</url>
   <connection>scm:git:github.com/ucb-bar/chisel-testers2.git</connection>
