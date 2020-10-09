@@ -7,13 +7,12 @@ import chiseltest.experimental.sanitizeFileName
 import chisel3.MultiIOModule
 
 import firrtl.AnnotationSeq
-import org.scalatest._
 
 /**
   * Used to run simple tests that do not require a scalatest environment in order to run
   * @param testName This will be used to generate a working directory in ./test_run_dir
   */
-private class RawTester(testName: String) extends Assertions with TestEnvInterface {
+private class RawTester(testName: String) extends TestEnvInterface {
   // Provide test fixture data as part of 'global' context during test runs
   val topFileName = Some(testName)
 
