@@ -108,6 +108,14 @@ See the test cases for examples:
 ## New Constructs
 - `fork` to spawn threads, and `join` to block (wait) on a thread.
   Pokes and peeks/expects to wires from threads are checked during runtime to ensure no collisions or unexpected behavior.
+  - `fork`ed threads provide a concurrency abstraction for writing testbenches only, without real parallelism.
+    The test infrastructure schedules threads one at a time, with threads running once per simulation cycle.
+  - Thread order is deterministic, and attempts to follow lexical order (as it would appear from the code text): `fork`ed (child) threads run immediately, then return to the spawning (parent) thread.
+    On future cycles, child threads run before their parent, in the order they were spawned.
+  - Only cross-thread operations that round-trip through the simulator (eg, peek-after-poke) are checked.
+    You can do cross-thread operations in Scala (eg, using shared variables) that aren't checked, but it is up to you to make sure they are correct and intuitive.
+    This is not recommended.
+    In the future, we may provide checked mechanisms for communicating between test threads.
 - Regions can be associated with a thread, with `fork.withRegion(...)`, which act as a synchronization barrier within simulator time steps.
   This can be used to create monitors that run after other main testdriver threads have been run, and can read wires those threads have poked.
 - `timescope` allows pokes to be scoped - that is, pokes inside the timescope block "disappear" and the wire reverts to its previous value at the end of the block.
