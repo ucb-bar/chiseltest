@@ -77,6 +77,7 @@ class AluTest extends AnyFlatSpec with AluBehavior with ChiselScalatestTester wi
     (4, 5)
   )
   testData.foreach { data =>
+    // TODO: re-use a single DUT elaboration / compilation, once https://github.com/ucb-bar/chisel-testers2/issues/212 is resolved
     it should behave like testAddition(data._1, data._2, 4)
     it should behave like testSubtraction(data._1, data._2, 4)
     it should behave like testOr(data._1, data._2, 4)
