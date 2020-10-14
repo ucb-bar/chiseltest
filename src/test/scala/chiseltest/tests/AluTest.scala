@@ -69,6 +69,10 @@ trait AluBehavior {
 }
 
 
+// This test case is written in a style that is finely granular, with one test case per operation and input-output combination.
+// There currently isn't consensus on a recommended test granularity, but factors to consider include:
+// - granularity of test failures
+// - number of test cases reported
 class AluTest extends AnyFlatSpec with AluBehavior with ChiselScalatestTester with Matchers {
   behavior of "ALU"
   val testData: List[(Int, Int)] = List[(Int, Int)](
