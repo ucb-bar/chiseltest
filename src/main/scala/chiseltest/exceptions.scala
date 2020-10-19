@@ -7,7 +7,8 @@ class NotLiteralException(message: String) extends ChiselTestException(message)
 class LiteralTypeException(message: String) extends ChiselTestException(message)
 class UnpokeableException(message: String) extends ChiselTestException(message)
 class UnsupportedOperationException(message: String) extends ChiselTestException(message)
-class FailedExpectException(val message: String, val failedCodeStackDepth: Int) extends ChiselTestException(message)
+class FailedExpectException(val message: String, val stackTraceElement: StackTraceElement)
+    extends ChiselTestException(message)
 
 class ClockResolutionException(message: String) extends ChiselTestException(message)
 
