@@ -2,6 +2,7 @@ package chiseltest.stage
 
 import chisel3.{Data, MultiIOModule}
 import chiseltest.ChiselTestException
+import chiseltest.backends.SimulatorInterface
 import firrtl.ir.Port
 
 class ChiselTestOptions private[stage] (
@@ -12,6 +13,7 @@ class ChiselTestOptions private[stage] (
   val waveForm:              Option[String] = None,
   val dut:                   Option[MultiIOModule] = None,
   val testFunction:          Option[MultiIOModule => Unit] = None,
+  val simulatorInterface:    Option[SimulatorInterface] = None,
   val topPorts:              Option[Seq[Port]] = None,
   val topPortsNameMap:       Option[Map[Data, String]] = None,
   val topCombinationalPaths: Option[Map[Data, Set[Data]]] = None,
@@ -25,6 +27,7 @@ class ChiselTestOptions private[stage] (
     waveForm:              Option[String] = waveForm,
     dut:                   Option[MultiIOModule] = dut,
     testFunction:          Option[MultiIOModule => Unit] = testFunction,
+    simulatorInterface:    Option[SimulatorInterface] = simulatorInterface,
     topPorts:              Option[Seq[Port]] = topPorts,
     topPortsNameMap:       Option[Map[Data, String]] = topPortsNameMap,
     topCombinationalPaths: Option[Map[Data, Set[Data]]] = topCombinationalPaths,
@@ -38,6 +41,7 @@ class ChiselTestOptions private[stage] (
       waveForm = waveForm,
       dut = dut,
       testFunction = testFunction,
+      simulatorInterface = simulatorInterface,
       topPorts = topPorts,
       topPortsNameMap = topPortsNameMap,
       topCombinationalPaths = topCombinationalPaths,
