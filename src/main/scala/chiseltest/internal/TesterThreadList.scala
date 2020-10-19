@@ -8,11 +8,11 @@ class TesterThreadList(protected val elts: Seq[AbstractTesterThread]) {
   def toSeq(): Seq[AbstractTesterThread] = elts
 
   def join() {
-    Context().backend.doJoin(elts, None)
+    Context().doJoin(elts, None)
   }
 
   def joinAndStep(clock: Clock) {
-    Context().backend.doJoin(elts, Some(clock))
+    Context().doJoin(elts, Some(clock))
   }
 
   def ++(others: TesterThreadList): TesterThreadList = {

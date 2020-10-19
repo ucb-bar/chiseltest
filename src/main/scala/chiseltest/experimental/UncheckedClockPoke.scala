@@ -18,14 +18,14 @@ package object UncheckedClockPoke {
       if (DataMirror.directionOf(signal) != Direction.Input) {
         throw new UnpokeableException("Can only poke inputs")
       }
-      Context().backend.pokeClock(signal, true)
+      Context().pokeClock(signal, true)
     }
 
     def low(): Unit = {
       if (DataMirror.directionOf(signal) != Direction.Input) {
         throw new UnpokeableException("Can only poke inputs")
       }
-      Context().backend.pokeClock(signal, false)
+      Context().pokeClock(signal, false)
     }
   }
 }

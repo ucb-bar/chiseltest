@@ -2,16 +2,13 @@
 
 package chiseltest.internal
 
-import chisel3.MultiIOModule
 import firrtl.AnnotationSeq
 import firrtl.stage.phases.DriverCompatibility.TopNameAnnotation
 
 import scala.util.DynamicVariable
 
 object Context {
-  class Instance(val backend: BackendInterface) {}
+  val context = new DynamicVariable[Option[ThreadedBackend]](None)
 
-  private var context = new DynamicVariable[Option[Instance]](None)
-
-  def apply(): Instance = context.value.get
+  def apply(): ThreadedBackend = context.value.get
 }

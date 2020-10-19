@@ -92,7 +92,7 @@ package object chiseltest {
       }
       // Some backends can behave incorrectly if too many bits are poked into their inputs
       val maskedValue = value & ((BigInt(1) << signal.widthOption.get) - 1)
-      Context().backend.pokeBits(signal, maskedValue)
+      Context().pokeBits(signal, maskedValue)
     }
 
     def poke(value: T): Unit = (x, value) match {
@@ -129,19 +129,19 @@ package object chiseltest {
 
     protected def peekWithStale(stale: Boolean): T = x match {
       case (x: Bool) =>
-        Context().backend.peekBits(x, stale) match {
+        Context().peekBits(x, stale) match {
           case x: BigInt if x == 0 => false.B.asInstanceOf[T]
           case x: BigInt if x == 1 => true.B.asInstanceOf[T]
           case x => throw new LiteralTypeException(s"peeked Bool with value $x not 0 or 1")
         }
-      case (x: UInt) => Context().backend.peekBits(x, stale).asUInt(DataMirror.widthOf(x)).asInstanceOf[T]
-      case (x: SInt) => Context().backend.peekBits(x, stale).asSInt(DataMirror.widthOf(x)).asInstanceOf[T]
+      case (x: UInt) => Context().peekBits(x, stale).asUInt(DataMirror.widthOf(x)).asInstanceOf[T]
+      case (x: SInt) => Context().peekBits(x, stale).asSInt(DataMirror.widthOf(x)).asInstanceOf[T]
       case (x: FixedPoint) => {
         val multiplier = BigDecimal(2).pow(x.binaryPoint.get)
-        (BigDecimal(Context().backend.peekBits(x, stale)) / multiplier).F(x.binaryPoint).asInstanceOf[T]
+        (BigDecimal(Context().peekBits(x, stale)) / multiplier).F(x.binaryPoint).asInstanceOf[T]
       }
       case x: Interval =>
-        Context().backend.peekBits(x, stale).I(x.binaryPoint).asInstanceOf[T]
+        Context().peekBits(x, stale).I(x.binaryPoint).asInstanceOf[T]
       case (x: Record) => {
         val elementValueFns = x.elements.map {
           case (name: String, elt: Data) =>
@@ -159,22 +159,22 @@ package object chiseltest {
 
     protected def expectWithStale(value: T, message: Option[String], stale: Boolean): Unit = (x, value) match {
       case (x: Bool, value: Bool) =>
-        Context().backend.expectBits(x, value.litValue, message, Some(BitsDecoders.boolBitsToString), stale)
+        Context().expectBits(x, value.litValue, message, Some(BitsDecoders.boolBitsToString), stale)
       // TODO can't happen because of type parameterization
       case (x: Bool, value: Bits) =>
         throw new LiteralTypeException(s"cannot expect non-Bool value $value from Bool IO $x")
-      case (x: Bits, value: UInt) => Context().backend.expectBits(x, value.litValue, message, None, stale)
-      case (x: SInt, value: SInt) => Context().backend.expectBits(x, value.litValue, message, None, stale)
+      case (x: Bits, value: UInt) => Context().expectBits(x, value.litValue, message, None, stale)
+      case (x: SInt, value: SInt) => Context().expectBits(x, value.litValue, message, None, stale)
       // TODO can't happen because of type parameterization
       case (x: Bits, value: SInt) =>
         throw new LiteralTypeException(s"cannot expect non-SInt value $value from SInt IO $x")
       case (x: FixedPoint, value: FixedPoint) => {
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
-        Context().backend.expectBits(x, value.litValue, message, Some(BitsDecoders.fixedToString(x.binaryPoint)), stale)
+        Context().expectBits(x, value.litValue, message, Some(BitsDecoders.fixedToString(x.binaryPoint)), stale)
       }
       case (x: Interval, value: Interval) =>
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
-        Context().backend.expectBits(x, value.litValue, message, Some(BitsDecoders.fixedToString(x.binaryPoint)), stale)
+        Context().expectBits(x, value.litValue, message, Some(BitsDecoders.fixedToString(x.binaryPoint)), stale)
       case (x: Record, value: Record) => {
         require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
         (x.elements.zip(value.elements)).foreach {
@@ -184,7 +184,7 @@ package object chiseltest {
       }
       case (x: EnumType, value: EnumType) => {
         require(DataMirror.checkTypeEquivalence(x, value), s"EnumType mismatch")
-        Context().backend.expectBits(x, value.litValue, message, Some(BitsDecoders.enumToString(x)), stale)
+        Context().expectBits(x, value.litValue, message, Some(BitsDecoders.enumToString(x)), stale)
       }
       case x => throw new LiteralTypeException(s"don't know how to expect $x")
       // TODO: aggregate types
@@ -198,14 +198,14 @@ package object chiseltest {
       * @throws ClockResolutionException if sinks of this signal have an associated clock
       */
     def getSourceClock(): Clock = {
-      Context().backend.getSourceClocks(x).toList match {
+      Context().getSourceClocks(x).toList match {
         case clock :: Nil => clock
         case clocks       => throw new ClockResolutionException(s"number of source clocks for $x is not one: $clocks")
       }
     }
 
     def getSinkClock(): Clock = {
-      Context().backend.getSinkClocks(x).toList match {
+      Context().getSinkClocks(x).toList match {
         case clock :: Nil => clock
         case clocks       => throw new ClockResolutionException(s"number of sink clocks for $x is not one: $clocks")
       }
@@ -214,11 +214,11 @@ package object chiseltest {
 
   implicit class testableClock(x: Clock) {
     def setTimeout(cycles: Int): Unit = {
-      Context().backend.setTimeout(x, cycles)
+      Context().setTimeout(x, cycles)
     }
 
     def step(cycles: Int = 1): Unit = {
-      Context().backend.step(x, cycles)
+      Context().step(x, cycles)
     }
   }
 
@@ -230,16 +230,16 @@ package object chiseltest {
   }
 
   def timescope(contents: => Unit): Unit = {
-    Context().backend.doTimescope(() => contents)
+    Context().doTimescope(() => contents)
   }
 
   object TestInstance {
     def setVar(key: Any, value: Any): Unit = {
-      Context().backend.setVar(key, value)
+      Context().setVar(key, value)
     }
 
     def getVar(key: Any): Option[Any] = {
-      Context().backend.getVar(key)
+      Context().getVar(key)
     }
   }
 

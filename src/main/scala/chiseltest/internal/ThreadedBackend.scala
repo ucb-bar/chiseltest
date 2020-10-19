@@ -489,7 +489,7 @@ trait ThreadedBackend[T <: MultiIOModule] extends BackendInterface {
           waiting.acquire()
 
           // TODO: maybe want to dedup w/ tester/package.timescope { ... }
-          Context().backend.doTimescope(() => runnable())
+          Context().doTimescope(() => runnable())
 
           require(bottomTimescope == topTimescope) // ensure timescopes unrolled properly
           done = true
