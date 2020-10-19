@@ -13,6 +13,6 @@ package object UncheckedClockPeek {
   implicit class PeekableClock(signal: Clock) {
 
     /** Peek the given clock signal. */
-    def peekClock(): Boolean = Context().backend.peekClock(signal)
+    def peekClock(): Boolean = Context().peekClock(signal)
   }
 }
