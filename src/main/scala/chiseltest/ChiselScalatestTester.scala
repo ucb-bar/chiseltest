@@ -2,51 +2,39 @@
 
 package chiseltest
 
-import chiseltest.internal._
-import chiseltest.experimental.{sanitizeFileName}
 import chisel3.MultiIOModule
-import chisel3.stage.ChiselCli
-import chiseltest.internal.WriteVcdAnnotation
-import chiseltest.stage.ChiselTestCli
+import chisel3.stage.ChiselGeneratorAnnotation
+import chiseltest.experimental.sanitizeFileName
+import chiseltest.stage.{ChiselTestStage, TestFunctionAnnotation}
 import firrtl.AnnotationSeq
-import firrtl.options.Shell
-import firrtl.stage.FirrtlCli
+import firrtl.options.TargetDirAnnotation
 import org.scalatest._
-import org.scalatest.exceptions.TestFailedException
 
 import scala.util.DynamicVariable
 
-trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvInterface { this: TestSuite =>
+trait ChiselScalatestTester extends Assertions with TestSuiteMixin { this: TestSuite =>
 
   class TestBuilder[T <: MultiIOModule](
     val dutGen:        () => T,
     val annotationSeq: AnnotationSeq,
     val flags:         Array[String]) {
-    def getTestName: String = {
-      sanitizeFileName(scalaTestContext.value.get.name)
-    }
+    def withAnnotations(newAnnotationSeq: AnnotationSeq): TestBuilder[T] =
+      new TestBuilder[T](dutGen, annotationSeq ++ newAnnotationSeq, flags)
 
-    def apply(testFn: T => Unit): Unit = {
-      val finalAnnos = addDefaultTargetDir(
-        getTestName,
-        (new Shell("chiseltest") with ChiselCli with FirrtlCli with ChiselTestCli)
-          .parse(flags) ++ annotationSeq
-      ) ++
-        (if (scalaTestContext.value.get.configMap.contains("writeVcd")) {
-           Seq(WriteVcdAnnotation)
-         } else {
-           Seq.empty
-         })
+    def withFlags(newFlags: Array[String]): ChiselScalatestTester#TestBuilder[T] =
+      new TestBuilder[T](dutGen, annotationSeq, flags ++ newFlags)
 
-      runTest(defaults.createDefaultTester(dutGen, finalAnnos))(testFn)
-    }
-
-    def run(testFn: T => Unit, annotations: AnnotationSeq): Unit = {
-      runTest(defaults.createDefaultTester(dutGen, annotations))(testFn)
-    }
-
-    // TODO: in the future, allow reset and re-use of a compiled design to avoid recompilation cost per test
-    val outer: ChiselScalatestTester = ChiselScalatestTester.this
+    /** @todo covert exception from stage to scalatest. */
+    def apply(testFn: T => Unit): Unit = (new ChiselTestStage).execute(
+      flags,
+      Seq(
+        TargetDirAnnotation(
+          "test_run_dir" + java.io.File.separator + sanitizeFileName(scalaTestContext.value.get.name)
+        ),
+        TestFunctionAnnotation(testFn),
+        new ChiselGeneratorAnnotation(dutGen)
+      ) ++ annotationSeq
+    )
   }
 
   // Provide test fixture data as part of 'global' context during test runs
@@ -56,33 +44,6 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     require(scalaTestContext.value.isEmpty)
     scalaTestContext.withValue(Some(test)) {
       super.withFixture(test)
-    }
-  }
-
-  // Stack trace data to help generate more informative (and localizable) failure messages
-  var topFileName: Option[String] = None // best guess at the testdriver top filename
-
-  private def runTest[T <: MultiIOModule](tester: BackendInstance[T])(testFn: T => Unit) {
-    // Try and get the user's top-level test filename
-    val internalFiles = Set("ChiselScalatestTester.scala", "BackendInterface.scala", "TestEnvInterface.scala")
-    val topFileNameGuess = (new Throwable).getStackTrace.apply(2).getFileName
-    if (internalFiles.contains(topFileNameGuess)) {
-      println("Unable to guess top-level testdriver filename from stack trace")
-      topFileName = None
-    } else {
-      topFileName = Some(topFileNameGuess)
-    }
-
-    batchedFailures.clear()
-
-    try {
-      Context.run(tester, this, testFn)
-    } catch {
-      // Translate testers2's FailedExpectException into ScalaTest TestFailedException that is more readable
-      case exc: FailedExpectException =>
-        val newExc = new TestFailedException(exc, exc.failedCodeStackDepth)
-        newExc.setStackTrace(exc.getStackTrace)
-        throw newExc
     }
   }
 

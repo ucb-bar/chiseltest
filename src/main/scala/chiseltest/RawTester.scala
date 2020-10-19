@@ -2,31 +2,10 @@
 
 package chiseltest
 
-import chiseltest.internal._
-import chiseltest.experimental.sanitizeFileName
 import chisel3.MultiIOModule
-
+import chisel3.stage.ChiselGeneratorAnnotation
+import chiseltest.stage.{ChiselTestStage, TestFunctionAnnotation}
 import firrtl.AnnotationSeq
-
-/**
-  * Used to run simple tests that do not require a scalatest environment in order to run
-  * @param testName This will be used to generate a working directory in ./test_run_dir
-  */
-private class RawTester(testName: String) extends TestEnvInterface {
-  // Provide test fixture data as part of 'global' context during test runs
-  val topFileName = Some(testName)
-
-  private def runTest[T <: MultiIOModule](tester: BackendInstance[T])(testFn: T => Unit) {
-    batchedFailures.clear()
-
-    Context.run(tester, this, testFn)
-  }
-
-  def test[T <: MultiIOModule](dutGen: => T, annotationSeq: AnnotationSeq)(testFn: T => Unit) {
-    val newAnnos = addDefaultTargetDir(sanitizeFileName(testName), annotationSeq)
-    runTest(defaults.createDefaultTester(() => dutGen, newAnnos))(testFn)
-  }
-}
 
 /**
   * This is a simple tester that does not require that it be within the scope of a scalatest
@@ -51,11 +30,11 @@ object RawTester {
     * @param testFn    The block of code that implements the test
     * @tparam T        The type of device, derived from dutGen
     */
-  def test[T <: MultiIOModule](dutGen: => T, annotationSeq: AnnotationSeq = Seq.empty)(testFn: T => Unit): Unit = {
-
-    val testName = s"chisel_test_${System.currentTimeMillis()}"
-
-    val tester = new RawTester(testName)
-    tester.test(dutGen, annotationSeq)(testFn)
-  }
+  def test[T <: MultiIOModule](dutGen: => T, annotationSeq: AnnotationSeq = Seq.empty)(testFn: T => Unit): Unit =
+    (new ChiselTestStage).run(
+      Seq(
+        TestFunctionAnnotation(testFn),
+        new ChiselGeneratorAnnotation(() => dutGen)
+      ) ++ annotationSeq
+    )
 }
