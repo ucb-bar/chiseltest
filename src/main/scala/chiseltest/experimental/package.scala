@@ -11,10 +11,6 @@ package chiseltest
   * You have been warned.
   */
 package object experimental {
-  /* deprecations. */
-  type TesterOptions = chiseltest.internal.TesterOptions
-  val TesterOptions = chiseltest.internal.TesterOptions // expose this internal object, whose "API" is unstable
-
   @deprecated("Use chiseltest.stage.ChiselTestCli instead.", "0.3")
   type ChiselTestCli = chiseltest.stage.ChiselTestCli
 
