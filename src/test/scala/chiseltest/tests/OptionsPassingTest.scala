@@ -7,7 +7,6 @@ import java.io.{ByteArrayOutputStream, File, PrintStream}
 import chisel3._
 import chisel3.stage.ChiselOutputFileAnnotation
 import chiseltest._
-import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.experimental.sanitizeFileName
 import chiseltest.internal._
 import firrtl.options.OutputAnnotationFileAnnotation
