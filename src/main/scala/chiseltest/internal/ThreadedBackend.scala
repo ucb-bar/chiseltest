@@ -4,10 +4,24 @@ package chiseltest.internal
 
 import java.util.concurrent.{ConcurrentLinkedQueue, Semaphore}
 
-import chiseltest.{Region, TemporalParadox, ThreadOrderDependentException}
 import chisel3._
+import chiseltest.stage.ChiselTestOptions
+import chiseltest.stage.phases.ExportedSingalsAnnotation
+import chiseltest.{
+  ChiselTestException,
+  ClockResolutionException,
+  FailedExpectException,
+  Region,
+  TemporalParadox,
+  ThreadOrderDependentException,
+  TimeoutException
+}
+import firrtl.AnnotationSeq
+import firrtl.options.Viewer
+import logger.LazyLogging
 
 import scala.collection.mutable
+import scala.math.BigInt
 
 /** Base trait for backends implementing concurrency by threading.
   *
@@ -21,14 +35,183 @@ import scala.collection.mutable
   * - runThreads: runs all threads waiting on a set of clocks
   * - scheduler: called from within a test thread, suspends the current thread and runs the next one
   */
-trait ThreadedBackend[T <: MultiIOModule] extends BackendInterface {
-  def dut: T
+class ThreadedBackend(annotations: AnnotationSeq) extends BackendInterface with LazyLogging {
+  val options = Viewer[ChiselTestOptions].view(annotations)
+  val simulatorInterface = options.simulatorInterface.get
+  val dut = options.dut.get
+  val testFunction = options.testFunction.get
+  val dataNames = options.topPortsNameMap.get
+  val combinationalPaths = options.topCombinationalPaths.get
+  val chiselTestExceptions = collection.mutable.Buffer[ChiselTestException]()
 
+  val lastClockValue: mutable.HashMap[Clock, Boolean] = mutable.HashMap()
   // State for deadlock detection timeout
   val idleCycles = mutable.Map[Clock, Int]()
   val idleLimits = mutable.Map[Clock, Int](dut.clock -> 1000)
+  val clockCounter:    mutable.HashMap[Clock, Int] = mutable.HashMap()
+  var currentTimestep: Int = 0 // current simulator timestep, in number of base clock cycles
+  protected val testMap = mutable.HashMap[Any, Any]()
 
-  override def setTimeout(signal: Clock, cycles: Int): Unit = {
+  protected def resolveName(signal: Data): String = dataNames.getOrElse(signal, signal.toString)
+  protected def bigintToHex(x: BigInt): String = {
+    if (x < 0) {
+      f"-0x${-x}%x"
+    } else {
+      f"0x$x%x"
+    }
+  }
+
+  def getClockCycle(clk: Clock): Int = {
+    clockCounter.getOrElse(clk, 0)
+  }
+
+  def getSourceClocks(signal: Data): Set[Clock] = {
+    throw new ClockResolutionException(
+      "ICR not available on chisel-testers2 / firrtl master"
+    )
+  }
+
+  def getSinkClocks(signal: Data): Set[Clock] = {
+    throw new ClockResolutionException(
+      "ICR not available on chisel-testers2 / firrtl master"
+    )
+  }
+
+  def run: AnnotationSeq = Context.context.withValue(Some(this)) {
+    rootTimescope = Some(new RootTimescope)
+    val mainThread = new TesterThread(
+      () => {
+
+        /** @todo make user be able to set his with his own init logic,
+          *       for example reset, local last state or etc.
+          */
+        simulatorInterface.poke("reset", 1)
+        simulatorInterface.step(1)
+        simulatorInterface.poke("reset", 0)
+        testFunction(dut)
+      },
+      TimeRegion(0, Region.default),
+      rootTimescope.get,
+      0,
+      Region.default,
+      None
+    )
+    mainThread.thread.start()
+    require(allThreads.isEmpty)
+    allThreads += mainThread
+
+    try {
+      while (!mainThread.done) { // iterate timesteps
+        clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
+
+        logger.debug(s"clock step")
+
+        /** @todo allow dependent clocks to step based on test stimulus generator
+          *       remove multiple invocations of getClock
+          */
+        // Unblock threads waiting on dependent clock
+        val steppedClocks = Seq(dut.clock) ++ lastClockValue.collect {
+          case (clock, lastValue) if getClock(clock) != lastValue && getClock(clock) =>
+            clock
+        }
+
+        /** @todo ignores cycles before a clock was stepped on. */
+        steppedClocks.foreach { clock =>
+          clockCounter.put(dut.clock, getClockCycle(clock) + 1)
+        }
+        lastClockValue.foreach {
+          case (clock, _) =>
+            lastClockValue.put(clock, getClock(clock))
+        }
+
+        runThreads(steppedClocks.toSet)
+
+        idleLimits.foreach {
+          case (clock, limit) =>
+            idleCycles.put(clock, idleCycles.getOrElse(clock, -1) + 1)
+            if (idleCycles(clock) >= limit) {
+              chiselTestExceptions.append(new TimeoutException(s"timeout on $clock at $limit idle cycles"))
+            }
+        }
+
+        simulatorInterface.step(1)
+      }
+      annotations
+    } finally {
+      rootTimescope = None
+
+      for (thread <- allThreads.clone()) {
+        // Kill the threads using an InterruptedException
+        if (thread.thread.isAlive) {
+          thread.thread.interrupt()
+        }
+      }
+
+      simulatorInterface.finish() // Do this to close down the communication
+    }
+  }
+
+  /** Sets the value associated with a key in a per-test map.
+    */
+  def setVar(key: Any, value: Any): Unit = {
+    testMap.put(key, value)
+  }
+
+  /** Returns the value associated with the key in a per-test map.
+    */
+  def getVar(key: Any): Option[Any] = {
+    testMap.get(key)
+  }
+
+  /** Check a signal is equal to a value,
+    * if not equal, store this exception to [[chiselTestExceptions]].
+    */
+  def expectBits(
+    signal:  Data,
+    value:   BigInt,
+    message: Option[String],
+    decode:  Option[BigInt => String],
+    stale:   Boolean
+  ): Unit = {
+    require(!stale, "Stale peek not yet implemented")
+    logger.debug(s"${resolveName(signal)} ?> $value")
+    val actual = peekBits(signal, stale)
+    if (value != actual) {
+      val appendMsg = message match {
+        case Some(_) => s": $message"
+        case _       => ""
+      }
+      val (actualStr, expectedStr) = decode match {
+        case Some(decode) =>
+          (s"${decode(actual)} ($actual, ${bigintToHex(actual)})", s"${decode(value)} ($value, ${bigintToHex(value)})")
+        case None =>
+          (s"$actual (${bigintToHex(actual)})", s"$value (${bigintToHex(value)})")
+      }
+      val trace = new Throwable
+      val expectStackDepth = trace.getStackTrace.indexWhere(ste =>
+        ste.getClassName == "chiseltest.package$testableData" && ste.getMethodName == "expect"
+      ) + 1
+      require(
+        expectStackDepth != 0,
+        s"Failed to find expect in stack trace:\r\n${trace.getStackTrace.mkString("\r\n")}"
+      )
+      chiselTestExceptions.append(
+        new FailedExpectException(
+          s"$signal=$actualStr did not equal expected=$expectedStr $appendMsg",
+          trace.getStackTrace()(expectStackDepth)
+        )
+      )
+    }
+  }
+
+  /**
+    * Sets the timeout of the clock: the number of cycles the clock can advance without
+    * some non-nop poke operation.
+    * Setting cycles=0 disables the timeout.
+    * Setting cycles=1 means every cycle must have some non-nop poke operation.
+    * Resets the idle counter associated with the specified clock.
+    */
+  def setTimeout(signal: Clock, cycles: Int): Unit = {
     require(signal == dut.clock, "timeout currently only supports master clock")
     if (cycles == 0) {
       idleLimits.remove(signal)
@@ -38,15 +221,22 @@ trait ThreadedBackend[T <: MultiIOModule] extends BackendInterface {
     idleCycles.remove(signal)
   }
 
-  //
-  // Variable references
-  //
-  val combinationalPaths: Map[Data, Set[Data]] // set of combinational Data inputs for each output
+  /** Advances the target clock by one cycle. */
+  def step(signal: Clock, cycles: Int): Unit = {
+    for (_ <- 0 until cycles) {
+      // If a new clock, record the current value so change detection is instantaneous
+      /** @todo set the main clock to replace `dut.clock`. */
+      if (signal != dut.clock && !lastClockValue.contains(signal)) {
+        lastClockValue.put(signal, getClock(signal))
+      }
 
-  //
-  // Common variables
-  //
-  var currentTimestep: Int = 0 // current simulator timestep, in number of base clock cycles
+      val thisThread = currentThread.get
+      thisThread.clockedOn = Some(signal)
+      schedulerState.currentThreadIndex += 1
+      scheduler()
+      thisThread.waiting.acquire()
+    }
+  }
 
   case class TimeRegion(timeslot: Int, region: Region) {
     def isBefore(other: TimeRegion): Boolean = {
@@ -680,7 +870,7 @@ trait ThreadedBackend[T <: MultiIOModule] extends BackendInterface {
     thisThread.waiting.acquire()
   }
 
-  override def getParentTraceElements: Seq[StackTraceElement] = {
+  def getParentTraceElements: Seq[StackTraceElement] = {
     def processThread(thread: TesterThread): Seq[StackTraceElement] = thread.trace match {
       case Some((parent, trace)) => processThread(parent) ++ trace.getStackTrace
       case None                  => Seq()

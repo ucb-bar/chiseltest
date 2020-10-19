@@ -8,7 +8,9 @@ import firrtl.stage.phases.DriverCompatibility.TopNameAnnotation
 import scala.util.DynamicVariable
 
 object Context {
-  val context = new DynamicVariable[Option[ThreadedBackend]](None)
+  class Instance(val backend: ThreadedBackend)
 
-  def apply(): ThreadedBackend = context.value.get
+  val context = new DynamicVariable[Option[Instance]](None)
+
+  def apply(): Instance = context.value.get
 }
