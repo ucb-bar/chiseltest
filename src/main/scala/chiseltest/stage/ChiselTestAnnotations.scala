@@ -1,9 +1,5 @@
 package chiseltest.stage
 
-import chiseltest.backends.BackendExecutive
-import chiseltest.backends.treadle.TreadleExecutive
-import chiseltest.legacy.backends.vcs.VcsExecutive
-import chiseltest.legacy.backends.verilator.VerilatorExecutive
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
 
@@ -94,14 +90,9 @@ case object UserCoverageAnnotation extends CoverageAnnotations {
   )
 }
 
-trait BackendAnnotation extends NoTargetAnnotation with ChiselTestOptionObject {
-  self: Object =>
-  def executive: BackendExecutive
-}
+sealed trait BackendAnnotation extends NoTargetAnnotation with ChiselTestOptionObject
 
 case object TreadleBackendAnnotation extends BackendAnnotation {
-  val executive: BackendExecutive = TreadleExecutive
-
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
       longOption = "t-use-treadle",
@@ -112,8 +103,6 @@ case object TreadleBackendAnnotation extends BackendAnnotation {
 }
 
 case object VerilatorBackendAnnotation extends BackendAnnotation {
-  val executive: BackendExecutive = VerilatorExecutive
-
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
       longOption = "t-use-verilator",
@@ -124,8 +113,6 @@ case object VerilatorBackendAnnotation extends BackendAnnotation {
 }
 
 case object VcsBackendAnnotation extends BackendAnnotation {
-  val executive: BackendExecutive = VcsExecutive
-
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
       longOption = "t-use-vcs",
