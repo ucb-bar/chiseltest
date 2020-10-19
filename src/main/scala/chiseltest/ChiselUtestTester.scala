@@ -6,7 +6,10 @@ import chiseltest.internal._
 import chiseltest.experimental.sanitizeFileName
 import utest.TestSuite
 import chisel3.MultiIOModule
+import chisel3.stage.ChiselGeneratorAnnotation
+import chiseltest.stage.{ChiselTestStage, TestFunctionAnnotation}
 import firrtl.AnnotationSeq
+import firrtl.options.TargetDirAnnotation
 import utest.framework.Formatter
 
 /**
@@ -34,9 +37,7 @@ import utest.framework.Formatter
   *   }
   * }}}
   */
-trait ChiselUtestTester extends TestSuite with TestEnvInterface {
-  val topFileName: Option[String] = None
-
+trait ChiselUtestTester extends TestSuite {
   override def utestFormatter: Formatter = new Formatter {
     override def exceptionStackFrameHighlighter(s: StackTraceElement): Boolean = {
       Set("chisel3.", "scala.", "java.").map(!s.getClassName.startsWith(_)).reduce(_ && _)
@@ -77,10 +78,16 @@ trait ChiselUtestTester extends TestSuite with TestEnvInterface {
   )(
     implicit testPath: utest.framework.TestPath
   ): Unit = {
-    def testName = s"${testPath.value.reduce(_ + _)}"
-
-    val newAnnos = addDefaultTargetDir(sanitizeFileName(testName), annotationSeq)
-    batchedFailures.clear()
-    Context.run(defaults.createDefaultTester(() => dutGen, newAnnos), this, testFn)
+    (new ChiselTestStage).run(
+      Seq(
+        TargetDirAnnotation(
+          "./test_run_dir" + java.io.File.separator + implicitly[utest.framework.TestPath].value
+            .map(sanitizeFileName)
+            .mkString(java.io.File.separator)
+        ),
+        TestFunctionAnnotation(testFn),
+        new ChiselGeneratorAnnotation(() => dutGen)
+      ) ++ annotationSeq
+    )
   }
 }
