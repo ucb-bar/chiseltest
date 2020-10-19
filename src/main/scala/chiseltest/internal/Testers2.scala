@@ -13,12 +13,5 @@ object Context {
 
   private var context = new DynamicVariable[Option[Instance]](None)
 
-  def run[T <: MultiIOModule](backend: BackendInstance[T], testFn: T => Unit) {
-    require(context.value.isEmpty)
-    context.withValue(Some(new Instance(backend))) {
-      backend.run(testFn)
-    }
-  }
-
   def apply(): Instance = context.value.get
 }

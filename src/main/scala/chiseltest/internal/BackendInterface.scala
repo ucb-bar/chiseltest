@@ -110,16 +110,3 @@ trait BackendInterface {
     testMap.get(key)
   }
 }
-
-/** Backend associated with a particular circuit, and can run tests
-  */
-trait BackendInstance[T <: MultiIOModule] extends BackendInterface {
-
-  /** Runs of tests are wrapped in this, for any special setup/teardown that needs to happen.
-    * Takes the test function, which takes the module used as the testing interface.
-    * TesterContext setup is done externally.
-    *
-    * Internal API
-    */
-  def run(testFn: T => Unit): Unit
-}

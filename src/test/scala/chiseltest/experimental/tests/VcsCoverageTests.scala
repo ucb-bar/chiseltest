@@ -6,8 +6,7 @@ import java.io.{ByteArrayOutputStream, File, PrintStream}
 
 import chisel3._
 import chiseltest._
-import chiseltest.experimental.TestOptionBuilder._
-import chiseltest.internal._
+import chiseltest.stage._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 

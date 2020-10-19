@@ -3,7 +3,6 @@ package chiseltest.experimental.tests
 
 import chisel3._
 import chiseltest._
-import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.experimental.UncheckedClockPoke._
 import chiseltest.internal.{TreadleBackendAnnotation, VerilatorBackendAnnotation}
 import chisel3.util._
