@@ -16,11 +16,12 @@ package object stage {
     override def view(options: AnnotationSeq): ChiselTestOptions = options
       .foldLeft(new ChiselTestOptions()) { (options, annos) =>
         annos match {
-          case TreadleBackendAnnotation => options.copy(backend = Some("treadle"), backendBinary = None)
+          case TreadleBackendAnnotation => options.copy(backend = Some("treadle"))
           case VerilatorBackendAnnotation =>
-            options.copy(backend = Some("verilator"), backendBinary = Some("verilator"))
-          case VcsBackendAnnotation => options.copy(backend = Some("vcs"), backendBinary = Some("vcs"))
+            options.copy(backend = Some("verilator"))
+          case VcsBackendAnnotation => options.copy(backend = Some("vcs"))
           case WriteVcdAnnotation   => options.copy(waveForm = Some("vcd"))
+          case TestCommandAnnotation(commands) => options.copy(commands = Some(commands))
           case TreadleCircuitStateAnnotation(state) =>
             val c = state.circuit
             options.copy(
