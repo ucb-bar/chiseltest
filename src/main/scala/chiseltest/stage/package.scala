@@ -2,6 +2,7 @@ package chiseltest
 
 import chisel3.MultiIOModule
 import chisel3.stage.DesignAnnotation
+import chiseltest.backends.SimulatorInterfaceAnnotation
 import chiseltest.stage.phases.{ExportedSingalsAnnotation, TopCombinationalPathAnnotation}
 import firrtl.AnnotationSeq
 import firrtl.ir.{Circuit, Module}
@@ -42,10 +43,15 @@ package object stage {
             options.copy(dut = Some(dut.asInstanceOf[MultiIOModule]))
           case a: TestFunctionAnnotation[MultiIOModule] =>
             options.copy(testFunction = Some(a.func))
+          case SimulatorInterfaceAnnotation(simulatorInterface) =>
+            options.copy(simulatorInterface = Some(simulatorInterface))
           case ExportedSingalsAnnotation(topPortsNameMap) =>
             options.copy(topPortsNameMap = Some(topPortsNameMap))
           case TopCombinationalPathAnnotation(topCombinationalPath) =>
             options.copy(topCombinationalPaths = Some(topCombinationalPath))
+          case ChiselTestExceptionsAnnotation(chiselTestExceptions) =>
+            options.copy(chiselTestExceptions = Some(chiselTestExceptions))
+          case _ => options
         }
       }
   }

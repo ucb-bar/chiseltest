@@ -17,7 +17,7 @@ class ChiselTestOptions private[stage] (
   val topPorts:              Option[Seq[Port]] = None,
   val topPortsNameMap:       Option[Map[Data, String]] = None,
   val topCombinationalPaths: Option[Map[Data, Set[Data]]] = None,
-  val chiselTestExceptions:  Option[collection.mutable.Buffer[ChiselTestException]] = None) {
+  val chiselTestExceptions:  Option[Seq[ChiselTestException]] = None) {
 
   private[stage] def copy(
     circuit:               Option[firrtl.ir.Circuit] = circuit,
@@ -31,7 +31,7 @@ class ChiselTestOptions private[stage] (
     topPorts:              Option[Seq[Port]] = topPorts,
     topPortsNameMap:       Option[Map[Data, String]] = topPortsNameMap,
     topCombinationalPaths: Option[Map[Data, Set[Data]]] = topCombinationalPaths,
-    chiselTestExceptions:  Option[collection.mutable.Buffer[ChiselTestException]] = chiselTestExceptions
+    chiselTestExceptions:  Option[Seq[ChiselTestException]] = chiselTestExceptions
   ) =
     new ChiselTestOptions(
       circuit = circuit,

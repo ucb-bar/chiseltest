@@ -17,9 +17,7 @@ case class TopCombinationalPathAnnotation(paths: Map[Data, Set[Data]]) extends N
   * @todo inline to firrtl transform and gather annoation here, rather than analyse transform here.
   */
 class AnalysisCircuit extends Phase {
-  override def prerequisites: Seq[Dependency[Phase]] = Seq(
-    Dependency[ChiselStage]
-  )
+  override def prerequisites: Seq[Dependency[Phase]] = Seq(Dependency[MaybeChiselStage])
 
   override def optionalPrerequisites = Seq.empty
 

@@ -15,11 +15,9 @@ private[chiseltest] object ChiselTestPhase {
     Seq(
       Dependency[Checks],
       Dependency[AddDefaults],
-      Dependency[ChiselStage],
-      Dependency[AnalysisCircuit]
-      /* @todo wip add these stages to chiseltest.
-      Dependency[chiseltest.stage.phases.CompileDut],
-      Dependency[chiseltest.stage.phases.SimulationPhase]
-       */
+      Dependency[MaybeChiselStage],
+      Dependency[AnalysisCircuit],
+      Dependency[CompileDut],
+      Dependency[Simulate]
     )
 }

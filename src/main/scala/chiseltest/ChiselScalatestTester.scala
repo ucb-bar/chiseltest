@@ -9,6 +9,7 @@ import chiseltest.stage.{ChiselTestStage, TestFunctionAnnotation}
 import firrtl.AnnotationSeq
 import firrtl.options.TargetDirAnnotation
 import org.scalatest._
+import org.scalatest.exceptions.TestFailedException
 
 import scala.util.DynamicVariable
 
@@ -25,16 +26,25 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin { this: TestS
       new TestBuilder[T](dutGen, annotationSeq, flags ++ newFlags)
 
     /** @todo covert exception from stage to scalatest. */
-    def apply(testFn: T => Unit): Unit = (new ChiselTestStage).execute(
-      flags,
-      Seq(
-        TargetDirAnnotation(
-          "test_run_dir" + java.io.File.separator + sanitizeFileName(scalaTestContext.value.get.name)
-        ),
-        TestFunctionAnnotation(testFn),
-        new ChiselGeneratorAnnotation(dutGen)
-      ) ++ annotationSeq
-    )
+    def apply(testFn: T => Unit): Unit = (new ChiselTestStage)
+      .execute(
+        flags,
+        Seq(
+          TargetDirAnnotation(
+            "test_run_dir" + java.io.File.separator + sanitizeFileName(scalaTestContext.value.get.name)
+          ),
+          TestFunctionAnnotation(testFn),
+          new ChiselGeneratorAnnotation(dutGen)
+        ) ++ annotationSeq
+      )
+      .collectFirst {
+        case ChiselTestExceptionsAnnotation(exceptions) =>
+          /** currently only throw first exception. */
+          val firstException = exceptions.head
+          firstException match {
+            case e: FailedExpectException => throw new TestFailedException(e, 0)
+          }
+      }
   }
 
   // Provide test fixture data as part of 'global' context during test runs
