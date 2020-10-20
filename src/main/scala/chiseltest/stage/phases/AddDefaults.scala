@@ -6,7 +6,7 @@ import firrtl.options.{Dependency, Phase, TargetDirAnnotation}
 
 /** add default [[TargetDirAnnotation]] and [[BackendAnnotation]]. */
 class AddDefaults extends Phase {
-  override def prerequisites: Seq[Dependency[Phase]] = Seq.empty
+  override def prerequisites: Seq[Dependency[Phase]] = Seq(Dependency[Checks])
 
   override def optionalPrerequisites = Seq.empty
 

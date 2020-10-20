@@ -7,7 +7,7 @@ import firrtl.options.{Dependency, OptionsException, Phase, TargetDirAnnotation}
 class Checks extends Phase {
   override def prerequisites = Seq.empty
 
-  override def optionalPrerequisites = Seq(Dependency[Checks])
+  override def optionalPrerequisites = Seq.empty
 
   override def optionalPrerequisiteOf = Seq.empty
 
@@ -23,9 +23,6 @@ class Checks extends Phase {
 
     if (backendAnnotation.size > 1)
       throw new OptionsException(s"Only one backend is allowed.")
-
-    if (backendAnnotation.isEmpty)
-      throw new OptionsException(s"Please specify a backend.")
 
     if (annotations.collectFirst { case TargetDirAnnotation(t) => t }.isEmpty)
       throw new OptionsException(s"ChiselTest must explicitly specify a target dir.")
