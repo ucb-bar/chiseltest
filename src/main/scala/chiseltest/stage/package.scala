@@ -3,6 +3,7 @@ package chiseltest
 import chisel3.MultiIOModule
 import chisel3.stage.DesignAnnotation
 import chiseltest.backends.SimulatorInterfaceAnnotation
+import chiseltest.stage.CoverageAnnotations
 import chiseltest.stage.phases.{ExportedSingalsAnnotation, TopCombinationalPathAnnotation}
 import firrtl.AnnotationSeq
 import firrtl.ir.{Circuit, Module}
@@ -21,7 +22,12 @@ package object stage {
             options.copy(backend = Some("verilator"))
           case VcsBackendAnnotation => options.copy(backend = Some("vcs"))
           case WriteVcdAnnotation   => options.copy(waveForm = Some("vcd"))
-          case TestCommandAnnotation(commands) => options.copy(commands = Some(commands))
+          case coverage: CoverageAnnotations =>
+            options.copy(coverageAnnotations = options.coverageAnnotations ++ Set(coverage))
+          case SimulatorCFlagsAnnotation(flags) => options.copy(simulatorCFlags = Some(flags))
+          case SimulatorFlagsAnnotation(flags)  => options.copy(simulatorFlags = Some(flags))
+          case TargetDirAnnotation(dir)         => options.copy(targetDir = Some(dir))
+          case TestCommandAnnotation(commands)  => options.copy(commands = Some(commands))
           case TreadleCircuitStateAnnotation(state) =>
             val c = state.circuit
             options.copy(
