@@ -124,6 +124,12 @@ case object VcsBackendAnnotation extends BackendAnnotation {
 
 case class TestCommandAnnotation(commands: Seq[String]) extends NoTargetAnnotation with ChiselTestOption
 
+case class CppHarnessFileAnnotation(file: String) extends NoTargetAnnotation with ChiselTestOption
+
+case class SimulatorCFlagsAnnotation(flags: Seq[String]) extends NoTargetAnnotation with ChiselTestOption
+
+case class SimulatorFlagsAnnotation(flags: Seq[String]) extends NoTargetAnnotation with ChiselTestOption
+
 case class TestFunctionAnnotation[T <: chisel3.RawModule](func: T => Unit)
     extends NoTargetAnnotation
     with ChiselTestOption

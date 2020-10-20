@@ -1,9 +1,10 @@
 package chiseltest.stage.phases
 
-import chiseltest.backends.TreadleBackend
+import chiseltest.backends.{TreadleBackend, VerilatorBackend}
 import chiseltest.stage.ChiselTestOptions
-import firrtl.{annoSeqToSeq, AnnotationSeq}
+import firrtl.AnnotationSeq
 import firrtl.options.{Dependency, Phase, Viewer}
+import firrtl.stage.FirrtlOptions
 
 /** add [[chiseltest.backends.SimulatorInterfaceAnnotation]] to annotations. */
 class CompileDut extends Phase {
@@ -18,7 +19,7 @@ class CompileDut extends Phase {
   override def transform(annotations: AnnotationSeq): AnnotationSeq = {
     Viewer[ChiselTestOptions].view(annotations).backend.get match {
       case "treadle"   => TreadleBackend.compileDut(annotations)
-      case "verilator" => annotations
+      case "verilator" => VerilatorBackend.compileDut(annotations)
     }
   }
 
