@@ -1,10 +1,12 @@
 package chiseltest.stage
 
 import chisel3.stage._
-
+import chiseltest.{ChiselTestException, FailedExpectException}
 import firrtl.AnnotationSeq
-import firrtl.options._
+import firrtl.options.{phases, _}
 import firrtl.stage._
+import logger.Logger
+import org.scalatest.exceptions.TestFailedException
 
 class ChiselTestStage extends Stage {
   override def prerequisites: Seq[Dependency[Phase]] = Seq.empty
@@ -26,8 +28,12 @@ class ChiselTestStage extends Stage {
     }
   }
 
-  /* unlike chisel and firrtl, chiseltest depends on a test framework. all exceptions will be captured there. */
-  def run(annotations: AnnotationSeq): AnnotationSeq = phaseManager.transform(annotations)
+  def run(annotations: AnnotationSeq): AnnotationSeq = try {
+    phaseManager.transform(annotations)
+  } catch {
+    case cte: ChiselTestException =>
+      throw new StageError(cause = cte)
+  }
 }
 
 /** @todo before implementing [[ShellOption]] of [[TestFunctionAnnotation]],

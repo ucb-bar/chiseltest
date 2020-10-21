@@ -29,7 +29,7 @@ class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Match
         }.join()
       }
     }
-    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*26.*\)""")
+    exc.getStackTrace.mkString("\n") should include regex ("""\(FaultLocatorTest\.scala:[^\)]*26.*\)""")
   }
 
   it should "locate source lines in libraries" in {
@@ -39,13 +39,13 @@ class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Match
         c.out.setSinkClock(c.clock)
 
         c.in.valid.poke(true.B)
-        c.in.bits.poke(false.B)  // Have this be a data failure only
+        c.in.bits.poke(false.B) // Have this be a data failure only
         c.out.expectDequeueNow(true.B)
       }
     }
     // Only check the filename to avoid this being too brittle as implementation changes
-    exc.failedCodeFileNameAndLineNumberString.get should startWith ("DecoupledDriver.scala:")
-    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*43.*\)""")
+    exc.failedCodeFileNameAndLineNumberString.get should startWith("DecoupledDriver.scala:")
+    exc.getStackTrace.mkString("\n") should include regex ("""\(FaultLocatorTest\.scala:[^\)]*43.*\)""")
   }
 
   it should "locate source lines, even in a different thread" in {
@@ -61,7 +61,7 @@ class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Match
         } .join
       }
     }
-    exc.failedCodeFileNameAndLineNumberString.get should startWith ("DecoupledDriver.scala:")
-    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*60.*\)""")
+    exc.failedCodeFileNameAndLineNumberString.get should startWith("DecoupledDriver.scala:")
+    exc.getStackTrace.mkString("\n") should include regex ("""\(FaultLocatorTest\.scala:[^\)]*60.*\)""")
   }
 }

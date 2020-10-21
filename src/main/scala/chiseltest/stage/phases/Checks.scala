@@ -14,6 +14,13 @@ class Checks extends Phase {
   override def invalidates(a: Phase) = false
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
+    if (
+      annotations.collectFirst {
+        case TestNameAnnotation(n) => n
+      }.isEmpty
+    )
+      throw new OptionsException(s"chiseltest cannot define the test path.")
+
     if (annotations.collectFirst { case TestFunctionAnnotation(t) => t }.isEmpty)
       throw new OptionsException(s"no test function provided.")
 
@@ -23,9 +30,6 @@ class Checks extends Phase {
 
     if (backendAnnotation.size > 1)
       throw new OptionsException(s"Only one backend is allowed.")
-
-    if (annotations.collectFirst { case TargetDirAnnotation(t) => t }.isEmpty)
-      throw new OptionsException(s"ChiselTest must explicitly specify a target dir.")
 
     annotations
   }
