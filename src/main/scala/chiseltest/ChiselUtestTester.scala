@@ -2,14 +2,12 @@
 
 package chiseltest
 
-import chiseltest.internal._
-import chiseltest.experimental.sanitizeFileName
-import utest.TestSuite
 import chisel3.MultiIOModule
 import chisel3.stage.ChiselGeneratorAnnotation
-import chiseltest.stage.{ChiselTestStage, TestFunctionAnnotation}
+import chiseltest.experimental.sanitizeFileName
+import chiseltest.stage.{ChiselTestStage, TestFunctionAnnotation, TestNameAnnotation}
 import firrtl.AnnotationSeq
-import firrtl.options.TargetDirAnnotation
+import utest.TestSuite
 import utest.framework.Formatter
 
 /**
@@ -80,10 +78,8 @@ trait ChiselUtestTester extends TestSuite {
   ): Unit = {
     (new ChiselTestStage).run(
       Seq(
-        TargetDirAnnotation(
-          "./test_run_dir" + java.io.File.separator + implicitly[utest.framework.TestPath].value
-            .map(sanitizeFileName)
-            .mkString(java.io.File.separator)
+        TestNameAnnotation(
+          implicitly[utest.framework.TestPath].value.map(sanitizeFileName).mkString(java.io.File.separator)
         ),
         TestFunctionAnnotation(testFn),
         new ChiselGeneratorAnnotation(() => dutGen)

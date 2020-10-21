@@ -4,7 +4,7 @@ package chiseltest
 
 import chisel3.MultiIOModule
 import chisel3.stage.ChiselGeneratorAnnotation
-import chiseltest.stage.{ChiselTestStage, TestFunctionAnnotation}
+import chiseltest.stage.{ChiselTestStage, TestFunctionAnnotation, TestNameAnnotation}
 import firrtl.AnnotationSeq
 
 /**
@@ -33,6 +33,7 @@ object RawTester {
   def test[T <: MultiIOModule](dutGen: => T, annotationSeq: AnnotationSeq = Seq.empty)(testFn: T => Unit): Unit =
     (new ChiselTestStage).run(
       Seq(
+        TestNameAnnotation("RawTester"),
         TestFunctionAnnotation(testFn),
         new ChiselGeneratorAnnotation(() => dutGen)
       ) ++ annotationSeq

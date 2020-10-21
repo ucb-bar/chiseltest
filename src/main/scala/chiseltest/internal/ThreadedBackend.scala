@@ -6,9 +6,7 @@ import java.util.concurrent.{ConcurrentLinkedQueue, Semaphore}
 
 import chisel3._
 import chiseltest.stage.ChiselTestOptions
-import chiseltest.stage.phases.ExportedSingalsAnnotation
 import chiseltest.{
-  ChiselTestException,
   ClockResolutionException,
   FailedExpectException,
   Region,
@@ -22,6 +20,13 @@ import logger.LazyLogging
 
 import scala.collection.mutable
 import scala.math.BigInt
+import scala.util.DynamicVariable
+
+object Context {
+  val context = new DynamicVariable[Option[ThreadedBackend]](None)
+
+  def apply(): ThreadedBackend = context.value.get
+}
 
 /** Base trait for backends implementing concurrency by threading.
   *
@@ -42,7 +47,7 @@ class ThreadedBackend(annotations: AnnotationSeq) extends BackendInterface with 
   val testFunction = options.testFunction.get
   val dataNames = options.topPortsNameMap.get
   val combinationalPaths = options.topCombinationalPaths.get
-  val chiselTestExceptions = collection.mutable.Buffer[ChiselTestException]()
+  val exceptExceptions = mutable.ArrayBuffer[FailedExpectException]()
 
   val lastClockValue: mutable.HashMap[Clock, Boolean] = mutable.HashMap()
   // State for deadlock detection timeout
@@ -130,10 +135,10 @@ class ThreadedBackend(annotations: AnnotationSeq) extends BackendInterface with 
           case (clock, limit) =>
             idleCycles.put(clock, idleCycles.getOrElse(clock, -1) + 1)
             if (idleCycles(clock) >= limit) {
-              chiselTestExceptions.append(new TimeoutException(s"timeout on $clock at $limit idle cycles"))
+              throw new TimeoutException(s"timeout on $clock at $limit idle cycles")
             }
         }
-
+        if (exceptExceptions.nonEmpty) throw exceptExceptions.head
         simulatorInterface.step(1)
       }
       annotations
@@ -164,7 +169,7 @@ class ThreadedBackend(annotations: AnnotationSeq) extends BackendInterface with 
   }
 
   /** Check a signal is equal to a value,
-    * if not equal, store this exception to [[chiselTestExceptions]].
+    * @throws FailedExpectException if not equal
     */
   def expectBits(
     signal:  Data,
@@ -188,18 +193,11 @@ class ThreadedBackend(annotations: AnnotationSeq) extends BackendInterface with 
           (s"$actual (${bigintToHex(actual)})", s"$value (${bigintToHex(value)})")
       }
       val trace = new Throwable
-      val expectStackDepth = trace.getStackTrace.indexWhere(ste =>
-        ste.getClassName == "chiseltest.package$testableData" && ste.getMethodName == "expect"
-      ) + 1
-      require(
-        expectStackDepth != 0,
-        s"Failed to find expect in stack trace:\r\n${trace.getStackTrace.mkString("\r\n")}"
+      val fullStackTraces = (trace.getStackTrace ++ getParentTraceElements).filterNot(ste =>
+        ste.getClassName.startsWith("chiseltest.internal.")
       )
-      chiselTestExceptions.append(
-        new FailedExpectException(
-          s"$signal=$actualStr did not equal expected=$expectedStr $appendMsg",
-          trace.getStackTrace()(expectStackDepth)
-        )
+      exceptExceptions.append(
+        new FailedExpectException(s"$signal=$actualStr did not equal expected=$expectedStr$appendMsg", fullStackTraces)
       )
     }
   }
@@ -614,7 +612,11 @@ class ThreadedBackend(annotations: AnnotationSeq) extends BackendInterface with 
       }
       if (overridingTimescopes.length > 1) { // multiple overlapping pokes, is an error
         // TODO: better stack trace element detection, chain reporting
-        val pokeTraces = overridingTimescopes.map { _.pokes(signal).last.trace.getStackTrace()(3) }
+        val pokeTraces = overridingTimescopes.map {
+          _.pokes(signal).last.trace.getStackTrace()(
+            if (scala.util.Properties.versionNumberString.contains("2.11")) 4 else 5
+          )
+        }
         throw new ThreadOrderDependentException(s"Overlapping pokes from $pokeTraces")
       } else if (overridingTimescopes.length == 1) { // just one poke, report the furthest down that chain
         processTimescope(signal, overridingTimescopes.head)

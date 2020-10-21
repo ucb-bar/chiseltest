@@ -56,8 +56,6 @@ package object stage {
             options.copy(topPortsNameMap = Some(topPortsNameMap))
           case TopCombinationalPathAnnotation(topCombinationalPath) =>
             options.copy(topCombinationalPaths = Some(topCombinationalPath))
-          case ChiselTestExceptionsAnnotation(chiselTestExceptions) =>
-            options.copy(chiselTestExceptions = Some(chiselTestExceptions))
           case _ => options
         }
       }

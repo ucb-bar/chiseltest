@@ -122,6 +122,8 @@ case object VcsBackendAnnotation extends BackendAnnotation {
   )
 }
 
+case class TestNameAnnotation(name: String) extends NoTargetAnnotation with ChiselTestOption
+
 case class TestCommandAnnotation(commands: Seq[String]) extends NoTargetAnnotation with ChiselTestOption
 
 case class CppHarnessFileAnnotation(file: String) extends NoTargetAnnotation with ChiselTestOption

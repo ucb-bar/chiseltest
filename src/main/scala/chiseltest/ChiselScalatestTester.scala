@@ -5,10 +5,10 @@ package chiseltest
 import chisel3.MultiIOModule
 import chisel3.stage.ChiselGeneratorAnnotation
 import chiseltest.experimental.sanitizeFileName
-import chiseltest.stage.{ChiselTestStage, TestFunctionAnnotation}
+import chiseltest.stage.{ChiselTestStage, TestFunctionAnnotation, TestNameAnnotation}
 import firrtl.AnnotationSeq
-import firrtl.options.TargetDirAnnotation
 import org.scalatest._
+import firrtl.options.StageError
 import org.scalatest.exceptions.TestFailedException
 
 import scala.util.DynamicVariable
@@ -25,26 +25,31 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin { this: TestS
     def withFlags(newFlags: Array[String]): ChiselScalatestTester#TestBuilder[T] =
       new TestBuilder[T](dutGen, annotationSeq, flags ++ newFlags)
 
-    /** @todo covert exception from stage to scalatest. */
-    def apply(testFn: T => Unit): Unit = (new ChiselTestStage)
-      .execute(
+    /** @todo convert exception from stage to scalatest. */
+    def apply(testFn: T => Unit): Unit = try {
+      (new ChiselTestStage).execute(
         flags,
         Seq(
-          TargetDirAnnotation(
-            "test_run_dir" + java.io.File.separator + sanitizeFileName(scalaTestContext.value.get.name)
-          ),
+          TestNameAnnotation(sanitizeFileName(scalaTestContext.value.get.name)),
           TestFunctionAnnotation(testFn),
           new ChiselGeneratorAnnotation(dutGen)
         ) ++ annotationSeq
       )
-      .collectFirst {
-        case ChiselTestExceptionsAnnotation(exceptions) =>
-          /** currently only throw first exception. */
-          val firstException = exceptions.head
-          firstException match {
-            case e: FailedExpectException => throw new TestFailedException(e, 0)
-          }
-      }
+    } catch {
+      case se: StageError =>
+        se.getCause match {
+          case exception: FailedExpectException =>
+            val scalatestException = new TestFailedException(
+              exception,
+              exception.stackTraceElements.indexWhere(ste =>
+                ste.getClassName == "chiseltest.package$testableData" && ste.getMethodName == "expect"
+              ) + 1
+            )
+            scalatestException.setStackTrace(exception.stackTraceElements.toArray)
+            throw scalatestException
+          case exception => throw exception
+        }
+    }
   }
 
   // Provide test fixture data as part of 'global' context during test runs
