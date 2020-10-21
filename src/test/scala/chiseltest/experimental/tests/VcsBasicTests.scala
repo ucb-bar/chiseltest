@@ -8,13 +8,15 @@ import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
+import scala.collection.Seq
+
 class VcsBasicTests extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2 with Vcs"
 
   val annos = Seq(VcsBackendAnnotation)
 
   it should "build and simulate a basic test with input and output" in {
-    assume(firrtl.FileUtils.isVCSAvailable)
+    assume(firrtl.FileUtils.isCommandAvailable(Seq("vcs", "-full64", "-platform")))
 
     test(new Module {
       val io = IO(new Bundle {
