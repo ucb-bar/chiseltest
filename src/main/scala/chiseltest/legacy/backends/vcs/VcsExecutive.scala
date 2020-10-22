@@ -95,21 +95,26 @@ object VcsExecutive extends BackendExecutive {
     val moreVcsCFlags = compiledAnnotations
       .collectFirst { case VcsCFlags(flagSeq) => flagSeq }
       .getOrElse(Seq())
-    val coverageFlags = if(compiledAnnotations.contains(StructuralCoverageAnnotation)) {Seq (
-      s"-cm line+tgl+branch+cond${if(compiledAnnotations.contains(UserCoverageAnnotation)) {"+assert"}}"
-    )} else if (compiledAnnotations.intersect(Seq(LineCoverageAnnotation, ToggleCoverageAnnotation, BranchCoverageAnnotation, ConditionalCoverageAnnotation, UserCoverageAnnotation)).nonEmpty) { Seq(
-      s"-cm ${
-        if(compiledAnnotations.contains(LineCoverageAnnotation)) {"+line"}
-      }${
-        if(compiledAnnotations.contains(ToggleCoverageAnnotation)) {"+tgl"}
-      }${
-        if(compiledAnnotations.contains(BranchCoverageAnnotation)) {"+branch"}
-      }${
-        if(compiledAnnotations.contains(ConditionalCoverageAnnotation)) {"+cond"}
-      }${
-        if(compiledAnnotations.contains(UserCoverageAnnotation)) {"+assert"}
-      }"
-    )} else {Seq.empty}
+    val coverageFlags = if (compiledAnnotations.contains(StructuralCoverageAnnotation)) {
+      Seq("-cm " + Seq(
+        "line",
+        "tgl",
+        "branch",
+        "cond",
+        if (compiledAnnotations.contains(UserCoverageAnnotation)) {"assert"} else {""})
+      .filter(item => item != "")
+      .mkString("+"))
+    } else if (compiledAnnotations.intersect(Seq(LineCoverageAnnotation, ToggleCoverageAnnotation,
+      BranchCoverageAnnotation, ConditionalCoverageAnnotation, UserCoverageAnnotation)).nonEmpty) {
+      Seq("-cm " + Seq(
+        if (compiledAnnotations.contains(LineCoverageAnnotation)) {"line"} else {""},
+        if (compiledAnnotations.contains(ToggleCoverageAnnotation)) {"tgl"} else {""},
+        if (compiledAnnotations.contains(BranchCoverageAnnotation)) {"branch"} else {""},
+        if (compiledAnnotations.contains(ConditionalCoverageAnnotation)) {"cond"} else {""},
+        if (compiledAnnotations.contains(UserCoverageAnnotation)) {"assert"} else {""})
+      .filter(item => item != "")
+      .mkString("+"))
+    } else {Seq.empty}
     val editCommands = compiledAnnotations.collectFirst {
       case CommandEditsFile(fileName) => fileName
     }.getOrElse("")
