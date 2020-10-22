@@ -35,7 +35,9 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
     }
     val output = outputStream.toString
     coverage.exists() should be(true)
-    output.contains("-cm +tgl") should be(true)
+    output.contains("--coverage-toggle") should be(true)
+    output.contains("--coverage-line") should be(false)
+    output.contains("--coverage-user") should be(false)
   }
 
   it should "allow specifying line coverage for Verilator" in {
