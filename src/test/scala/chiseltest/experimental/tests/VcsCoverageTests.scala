@@ -15,8 +15,8 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
   behavior of "Testers2"
 
   it should "allow specifying line coverage for Vcs" in {
-    val coverageName = "test_run_dir/Testers2_should_allow_specifying_line_coverage_for_Vcs/logs/coverage.dat"
-    val coverage = new File(coverageName)
+    assume(firrtl.FileUtils.isVCSAvailable)
+
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
       test(new Module {
@@ -34,13 +34,12 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
       }
     }
     val output = outputStream.toString
-    coverage.exists() should be(true)
     output.contains("-cm line") should be(true)
   }
 
   it should "allow specifying toggle coverage for Vcs" in {
-    val coverageName = "test_run_dir/Testers2_should_allow_specifying_toggle_coverage_for_Vcs/logs/coverage.dat"
-    val coverage = new File(coverageName)
+    assume(firrtl.FileUtils.isVCSAvailable)
+
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
       test(new Module {
@@ -58,13 +57,12 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
       }
     }
     val output = outputStream.toString
-    coverage.exists() should be(true)
     output.contains("-cm tgl") should be(true)
   }
 
   it should "allow specifying branch coverage for Vcs" in {
-    val coverageName = "test_run_dir/Testers2_should_allow_specifying_line_coverage_for_Vcs/logs/coverage.dat"
-    val coverage = new File(coverageName)
+    assume(firrtl.FileUtils.isVCSAvailable)
+
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
       test(new Module {
@@ -82,13 +80,12 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
       }
     }
     val output = outputStream.toString
-    coverage.exists() should be(true)
     output.contains("-cm branch") should be(true)
   }
 
   it should "allow specifying conditional coverage for Vcs" in {
-    val coverageName = "test_run_dir/Testers2_should_allow_specifying_line_coverage_for_Vcs/logs/coverage.dat"
-    val coverage = new File(coverageName)
+    assume(firrtl.FileUtils.isVCSAvailable)
+
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
       test(new Module {
@@ -106,13 +103,12 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
       }
     }
     val output = outputStream.toString
-    coverage.exists() should be(true)
     output.contains("-cm cond") should be(true)
   }
 
   it should "allow specifying structural coverage for Vcs" in {
-    val coverageName = "test_run_dir/Testers2_should_allow_specifying_structural_coverage_for_Vcs/logs/coverage.dat"
-    val coverage = new File(coverageName)
+    assume(firrtl.FileUtils.isVCSAvailable)
+
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
       test(new Module {
@@ -130,13 +126,12 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
       }
     }
     val output = outputStream.toString
-    coverage.exists() should be(true)
     output.contains("-cm line+tgl+branch+cond") should be(true)
   }
 
   it should "allow specifying user coverage for Vcs" in {
-    val coverageName = "test_run_dir/Testers2_should_allow_specifying_user_coverage_for_Vcs/logs/coverage.dat"
-    val coverage = new File(coverageName)
+    assume(firrtl.FileUtils.isVCSAvailable)
+
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
       test(new Module {
@@ -154,13 +149,12 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
       }
     }
     val output = outputStream.toString
-    coverage.exists() should be(true)
     output.contains("-cm assert") should be(true)
   }
 
   it should "allow stacking coverage for Vcs" in {
-    val coverageName = "test_run_dir/Testers2_should_allow_stacking_coverage_for_Vcs/logs/coverage.dat"
-    val coverage = new File(coverageName)
+    assume(firrtl.FileUtils.isVCSAvailable)
+
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
       test(new Module {
@@ -178,7 +172,6 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
       }
     }
     val output = outputStream.toString
-    coverage.exists() should be(true)
     output.contains("-cm line+tgl+branch+cond+assert") should be(true)
   }
 }
