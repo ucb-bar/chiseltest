@@ -92,7 +92,7 @@ object VerilatorExecutive extends BackendExecutive {
       .collectFirst { case CommandEditsFile(f) => f }
       .getOrElse("")
 
-    val coverageFlag = if(compiledAnnotations.intersect(Seq(LineCoverageAnnotation, ToggleCoverageAnnotation)).nonEmpty) {
+    val coverageFlag = if(compiledAnnotations.intersect(Seq(LineCoverageAnnotation, ToggleCoverageAnnotation, UserCoverageAnnotation)).nonEmpty) {
       Seq("-DSP_COVERAGE_ENABLE") } else { Seq ()
     }
 

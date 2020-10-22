@@ -36,25 +36,25 @@ class OptionsPassingTest extends AnyFlatSpec with ChiselScalatestTester with Mat
     }
 
     val testDir = new File("test_run_dir" +
-            File.separator +
-            sanitizeFileName(s"Testers2 should write vcd output when passing in a WriteVcdAnnotation"))
+      File.separator +
+      sanitizeFileName(s"Testers2 should write vcd output when passing in a WriteVcdAnnotation"))
 
     val vcdFileOpt = testDir.listFiles.find { f =>
       f.getPath.endsWith(".vcd")
     }
 
-    vcdFileOpt.isDefined should be (true)
+    vcdFileOpt.isDefined should be(true)
     vcdFileOpt.get.delete()
   }
 
   it should "allow specifying configuration options using CLI style flags" in {
     val targetDirName = "test_run_dir/overridden_dir"
     val targetDir = new File(targetDirName)
-    if(targetDir.exists()) {
+    if (targetDir.exists()) {
       targetDir.delete()
     }
     test(new MultiIOModule() {}).withFlags(Array("--target-dir", targetDirName)) { c =>
-      targetDir.exists() should be (true)
+      targetDir.exists() should be(true)
     }
   }
 
@@ -67,16 +67,16 @@ class OptionsPassingTest extends AnyFlatSpec with ChiselScalatestTester with Mat
       OutputAnnotationFileAnnotation(fileBaseName)
     )
     val targetDir = new File(targetDirName)
-    if(targetDir.exists()) {
+    if (targetDir.exists()) {
       targetDir.delete()
     }
     test(new MultiIOModule() {})
       .withAnnotations(annotations)
       .withFlags(Array("--target-dir", targetDirName)) { c =>
-      targetDir.exists() should be (true)
-      val firrtlFile = new File(targetDir + File.separator + s"$fileBaseName.lo.fir")
-      firrtlFile.exists() should be (true)
-    }
+        targetDir.exists() should be(true)
+        val firrtlFile = new File(targetDir + File.separator + s"$fileBaseName.lo.fir")
+        firrtlFile.exists() should be(true)
+      }
   }
 
   it should "allow turning on verbose mode" in {
@@ -89,26 +89,111 @@ class OptionsPassingTest extends AnyFlatSpec with ChiselScalatestTester with Mat
 
     val output = outputStream.toString
 
-    output.contains("Symbol table:") should be (true)
-    output.contains("clock/prev") should be (true)
+    output.contains("Symbol table:") should be(true)
+    output.contains("clock/prev") should be(true)
   }
 
-  it should "allow specifying coverage for Verilator" in {
-    val coverageName = "test_run_dir/Testers2_should_allow_specifying_coverage_for_Verilator/logs/coverage.dat"
+  it should "allow specifying toggle coverage for Verilator" in {
+    val coverageName = "test_run_dir/Testers2_should_allow_specifying_toggle_coverage_for_Verilator/logs/coverage.dat"
     val coverage = new File(coverageName)
-    test(new Module {
-      val io = IO(new Bundle {
-        val a = Input(UInt(8.W))
-        val b = Output(UInt(8.W))
-      })
-      io.b := io.a
-    }).withAnnotations(Seq(VerilatorBackendAnnotation, ToggleCoverageAnnotation, LineCoverageAnnotation)) { c =>
-      c.io.a.poke(1.U)
-      c.io.b.expect(1.U)
-      c.clock.step()
-      c.io.a.poke(42.U)
-      c.io.b.expect(42.U)
+    val outputStream = new ByteArrayOutputStream()
+    Console.withOut(new PrintStream(outputStream)) {
+      test(new Module {
+        val io = IO(new Bundle {
+          val a = Input(UInt(8.W))
+          val b = Output(UInt(8.W))
+        })
+        io.b := io.a
+      }).withAnnotations(Seq(VerilatorBackendAnnotation, ToggleCoverageAnnotation)) { c =>
+        c.io.a.poke(1.U)
+        c.io.b.expect(1.U)
+        c.clock.step()
+        c.io.a.poke(42.U)
+        c.io.b.expect(42.U)
+      }
     }
-    coverage.exists() should be (true)
+    val output = outputStream.toString
+    coverage.exists() should be(true)
+    output.contains("--coverage-toggle") should be(true)
+    output.contains("--coverage-line") should be(false)
+    output.contains("--coverage-user") should be(false)
+  }
+
+  it should "allow specifying line coverage for Verilator" in {
+    val coverageName = "test_run_dir/Testers2_should_allow_specifying_line_coverage_for_Verilator/logs/coverage.dat"
+    val coverage = new File(coverageName)
+    val outputStream = new ByteArrayOutputStream()
+    Console.withOut(new PrintStream(outputStream)) {
+      test(new Module {
+        val io = IO(new Bundle {
+          val a = Input(UInt(8.W))
+          val b = Output(UInt(8.W))
+        })
+        io.b := io.a
+      }).withAnnotations(Seq(VerilatorBackendAnnotation, LineCoverageAnnotation)) { c =>
+        c.io.a.poke(1.U)
+        c.io.b.expect(1.U)
+        c.clock.step()
+        c.io.a.poke(42.U)
+        c.io.b.expect(42.U)
+      }
+    }
+    val output = outputStream.toString
+    coverage.exists() should be(true)
+    output.contains("--coverage-toggle") should be(false)
+    output.contains("--coverage-line") should be(true)
+    output.contains("--coverage-user") should be(false)
+  }
+
+  it should "allow specifying structural coverage for Verilator" in {
+    val coverageName = "test_run_dir/Testers2_should_allow_specifying_structural_coverage_for_Verilator/logs/coverage.dat"
+    val coverage = new File(coverageName)
+    val outputStream = new ByteArrayOutputStream()
+    Console.withOut(new PrintStream(outputStream)) {
+      test(new Module {
+        val io = IO(new Bundle {
+          val a = Input(UInt(8.W))
+          val b = Output(UInt(8.W))
+        })
+        io.b := io.a
+      }).withAnnotations(Seq(VerilatorBackendAnnotation, StructuralCoverageAnnotation)) { c =>
+        c.io.a.poke(1.U)
+        c.io.b.expect(1.U)
+        c.clock.step()
+        c.io.a.poke(42.U)
+        c.io.b.expect(42.U)
+      }
+    }
+    val output = outputStream.toString
+    coverage.exists() should be(true)
+    output.contains("--coverage-toggle") should be(true)
+    output.contains("--coverage-line") should be(true)
+    output.contains("--coverage-user") should be(false)
+  }
+
+  it should "allow specifying user coverage for Verilator" in {
+    val coverageName = "test_run_dir/Testers2_should_allow_specifying_user_coverage_for_Verilator/logs/coverage.dat"
+    val coverage = new File(coverageName)
+    val outputStream = new ByteArrayOutputStream()
+    Console.withOut(new PrintStream(outputStream)) {
+      test(new Module {
+        val io = IO(new Bundle {
+          val a = Input(UInt(8.W))
+          val b = Output(UInt(8.W))
+        })
+        io.b := io.a
+      }).withAnnotations(Seq(VerilatorBackendAnnotation, UserCoverageAnnotation)) { c =>
+        c.io.a.poke(1.U)
+        c.io.b.expect(1.U)
+        c.clock.step()
+        c.io.a.poke(42.U)
+        c.io.b.expect(42.U)
+      }
+    }
+    val output = outputStream.toString
+    coverage.exists() should be(true)
+    output.contains("--coverage-toggle") should be(false)
+    output.contains("--coverage-line") should be(false)
+    output.contains("--coverage-user") should be(true)
   }
 }
