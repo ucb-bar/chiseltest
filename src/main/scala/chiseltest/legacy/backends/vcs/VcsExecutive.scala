@@ -5,7 +5,7 @@ import java.io.{File, FileWriter}
 import chisel3._
 import chisel3.experimental.DataMirror
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
-import chiseltest.internal.{BackendInstance, LineCoverageAnnotation, ToggleCoverageAnnotation}
+import chiseltest.internal._
 import chiseltest.backends.BackendExecutive
 import firrtl.annotations.{DeletedAnnotation, ReferenceTarget}
 import firrtl.stage.CompilerAnnotation
@@ -95,13 +95,26 @@ object VcsExecutive extends BackendExecutive {
     val moreVcsCFlags = compiledAnnotations
       .collectFirst { case VcsCFlags(flagSeq) => flagSeq }
       .getOrElse(Seq())
-    val lineCoverageFlag = if(compiledAnnotations.contains(LineCoverageAnnotation)) {Seq("-cm line")} else { Seq() }
-    val toggleCoverageFlag = if(compiledAnnotations.contains(ToggleCoverageAnnotation)) {Seq("-cm tgl")} else { Seq() }
+    val coverageFlags = if(compiledAnnotations.contains(StructuralCoverageAnnotation)) {Seq (
+      s"-cm line+tgl+branch+cond${if(compiledAnnotations.contains(UserCoverageAnnotation)) {"+assert"}}"
+    )} else if (compiledAnnotations.intersect(Seq(LineCoverageAnnotation, ToggleCoverageAnnotation, BranchCoverageAnnotation, ConditionalCoverageAnnotation, UserCoverageAnnotation)).nonEmpty) { Seq(
+      s"-cm ${
+        if(compiledAnnotations.contains(LineCoverageAnnotation)) {"+line"}
+      }${
+        if(compiledAnnotations.contains(ToggleCoverageAnnotation)) {"+tgl"}
+      }${
+        if(compiledAnnotations.contains(BranchCoverageAnnotation)) {"+branch"}
+      }${
+        if(compiledAnnotations.contains(ConditionalCoverageAnnotation)) {"+cond"}
+      }${
+        if(compiledAnnotations.contains(UserCoverageAnnotation)) {"+assert"}
+      }"
+    )} else {Seq.empty}
     val editCommands = compiledAnnotations.collectFirst {
       case CommandEditsFile(fileName) => fileName
     }.getOrElse("")
 
-    val vcsFlags = moreVcsCFlags ++ lineCoverageFlag ++ toggleCoverageFlag
+    val vcsFlags = moreVcsCFlags ++ coverageFlags
 
     assert(
       VerilogToVcs(
