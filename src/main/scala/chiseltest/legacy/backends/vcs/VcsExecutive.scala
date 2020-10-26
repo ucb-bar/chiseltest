@@ -95,14 +95,14 @@ object VcsExecutive extends BackendExecutive {
     val moreVcsCFlags = compiledAnnotations
       .collectFirst { case VcsCFlags(flagSeq) => flagSeq }
       .getOrElse(Seq())
-    val coverageFlags = Seq((compiledAnnotations collect Map(
-        LineCoverageAnnotation -> List("line"),
-        ToggleCoverageAnnotation -> List("tgl"),
-        BranchCoverageAnnotation -> List("branch"),
-        ConditionalCoverageAnnotation -> List("cond"),
-        UserCoverageAnnotation -> List("assert"),
-        StructuralCoverageAnnotation -> List("line", "tgl", "branch", "cond"))
-      ).flatten
+    val coverageFlags = Seq((compiledAnnotations collect {
+      case LineCoverageAnnotation => List("line")
+      case ToggleCoverageAnnotation => List("tgl")
+      case BranchCoverageAnnotation => List("branch")
+      case ConditionalCoverageAnnotation => List("cond")
+      case UserCoverageAnnotation => List("assert")
+      case StructuralCoverageAnnotation => List("line", "tgl", "branch", "cond")
+    }).flatten
       .distinct
       .mkString("+")
     ).map(item => if (item.isEmpty) {item} else {"-cm " + item})

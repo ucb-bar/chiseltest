@@ -77,12 +77,12 @@ object VerilatorExecutive extends BackendExecutive {
       .collectFirst { case VerilatorCFlags(f) => f }
       .getOrElse(Seq.empty)
     val writeVcdFlag = if(compiledAnnotations.contains(WriteVcdAnnotation)) { Seq("--trace") } else { Seq() }
-    val coverageFlags = Seq((compiledAnnotations collect Map(
-      LineCoverageAnnotation -> List("--coverage-line"),
-      ToggleCoverageAnnotation -> List("--coverage-toggle"),
-      UserCoverageAnnotation -> List("--coverage-user"),
-      StructuralCoverageAnnotation -> List("--coverage-line", "--coverage-toggle"))
-      ).flatten
+    val coverageFlags = Seq((compiledAnnotations collect {
+      case LineCoverageAnnotation => List("--coverage-line")
+      case ToggleCoverageAnnotation => List("--coverage-toggle")
+      case UserCoverageAnnotation => List("--coverage-user")
+      case StructuralCoverageAnnotation => List("--coverage-line", "--coverage-toggle")
+      }).flatten
       .distinct
       .mkString(" ")
     )
