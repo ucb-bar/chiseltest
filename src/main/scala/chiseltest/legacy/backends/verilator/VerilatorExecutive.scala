@@ -82,9 +82,7 @@ object VerilatorExecutive extends BackendExecutive {
       case ToggleCoverageAnnotation => List("--coverage-toggle")
       case UserCoverageAnnotation => List("--coverage-user")
       case StructuralCoverageAnnotation => List("--coverage-line", "--coverage-toggle")
-      }).flatten
-      .distinct
-      .mkString(" ")
+      }).flatten.distinct.mkString(" ")
     )
 
     val commandEditsFile = compiledAnnotations

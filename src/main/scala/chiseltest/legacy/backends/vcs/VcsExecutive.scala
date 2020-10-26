@@ -95,17 +95,17 @@ object VcsExecutive extends BackendExecutive {
     val moreVcsCFlags = compiledAnnotations
       .collectFirst { case VcsCFlags(flagSeq) => flagSeq }
       .getOrElse(Seq())
-    val coverageFlags = Seq((compiledAnnotations collect {
+    val coverageFlags = (compiledAnnotations collect {
       case LineCoverageAnnotation => List("line")
       case ToggleCoverageAnnotation => List("tgl")
       case BranchCoverageAnnotation => List("branch")
       case ConditionalCoverageAnnotation => List("cond")
       case UserCoverageAnnotation => List("assert")
       case StructuralCoverageAnnotation => List("line", "tgl", "branch", "cond")
-    }).flatten
-      .distinct
-      .mkString("+")
-    ).map(item => if (item.isEmpty) {item} else {"-cm " + item})
+    }).flatten.distinct match {
+      case Nil => Seq()
+      case flags => Seq("-cm " + flags.mkString("+"))
+    }
     val editCommands = compiledAnnotations.collectFirst {
       case CommandEditsFile(fileName) => fileName
     }.getOrElse("")
