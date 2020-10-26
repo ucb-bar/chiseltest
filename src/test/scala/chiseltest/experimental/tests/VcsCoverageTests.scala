@@ -19,19 +19,7 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
 
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {
-        val io = IO(new Bundle {
-          val a = Input(UInt(8.W))
-          val b = Output(UInt(8.W))
-        })
-        io.b := io.a
-      }).withAnnotations(Seq(VcsBackendAnnotation, LineCoverageAnnotation)) { c =>
-        c.io.a.poke(1.U)
-        c.io.b.expect(1.U)
-        c.clock.step()
-        c.io.a.poke(42.U)
-        c.io.b.expect(42.U)
-      }
+      test(new MultiIOModule {}).withAnnotations(Seq(VcsBackendAnnotation, LineCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     output.contains("-cm line") should be(true)
@@ -42,19 +30,7 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
 
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {
-        val io = IO(new Bundle {
-          val a = Input(UInt(8.W))
-          val b = Output(UInt(8.W))
-        })
-        io.b := io.a
-      }).withAnnotations(Seq(VcsBackendAnnotation, ToggleCoverageAnnotation)) { c =>
-        c.io.a.poke(1.U)
-        c.io.b.expect(1.U)
-        c.clock.step()
-        c.io.a.poke(42.U)
-        c.io.b.expect(42.U)
-      }
+      test(new MultiIOModule {}).withAnnotations(Seq(VcsBackendAnnotation, ToggleCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     output.contains("-cm tgl") should be(true)
@@ -65,19 +41,7 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
 
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {
-        val io = IO(new Bundle {
-          val a = Input(UInt(8.W))
-          val b = Output(UInt(8.W))
-        })
-        io.b := io.a
-      }).withAnnotations(Seq(VcsBackendAnnotation, BranchCoverageAnnotation)) { c =>
-        c.io.a.poke(1.U)
-        c.io.b.expect(1.U)
-        c.clock.step()
-        c.io.a.poke(42.U)
-        c.io.b.expect(42.U)
-      }
+      test(new MultiIOModule {}).withAnnotations(Seq(VcsBackendAnnotation, BranchCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     output.contains("-cm branch") should be(true)
@@ -88,19 +52,7 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
 
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {
-        val io = IO(new Bundle {
-          val a = Input(UInt(8.W))
-          val b = Output(UInt(8.W))
-        })
-        io.b := io.a
-      }).withAnnotations(Seq(VcsBackendAnnotation, ConditionalCoverageAnnotation)) { c =>
-        c.io.a.poke(1.U)
-        c.io.b.expect(1.U)
-        c.clock.step()
-        c.io.a.poke(42.U)
-        c.io.b.expect(42.U)
-      }
+      test(new MultiIOModule() {}).withAnnotations(Seq(VcsBackendAnnotation, ConditionalCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     output.contains("-cm cond") should be(true)
@@ -111,19 +63,7 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
 
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {
-        val io = IO(new Bundle {
-          val a = Input(UInt(8.W))
-          val b = Output(UInt(8.W))
-        })
-        io.b := io.a
-      }).withAnnotations(Seq(VcsBackendAnnotation, StructuralCoverageAnnotation)) { c =>
-        c.io.a.poke(1.U)
-        c.io.b.expect(1.U)
-        c.clock.step()
-        c.io.a.poke(42.U)
-        c.io.b.expect(42.U)
-      }
+      test(new MultiIOModule {}).withAnnotations(Seq(VcsBackendAnnotation, StructuralCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     output.contains("-cm line+tgl+branch+cond") should be(true)
@@ -134,19 +74,7 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
 
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {
-        val io = IO(new Bundle {
-          val a = Input(UInt(8.W))
-          val b = Output(UInt(8.W))
-        })
-        io.b := io.a
-      }).withAnnotations(Seq(VcsBackendAnnotation, UserCoverageAnnotation)) { c =>
-        c.io.a.poke(1.U)
-        c.io.b.expect(1.U)
-        c.clock.step()
-        c.io.a.poke(42.U)
-        c.io.b.expect(42.U)
-      }
+      test(new MultiIOModule {}).withAnnotations(Seq(VcsBackendAnnotation, UserCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     output.contains("-cm assert") should be(true)
@@ -157,19 +85,7 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
 
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {
-        val io = IO(new Bundle {
-          val a = Input(UInt(8.W))
-          val b = Output(UInt(8.W))
-        })
-        io.b := io.a
-      }).withAnnotations(Seq(VcsBackendAnnotation, UserCoverageAnnotation, StructuralCoverageAnnotation)) { c =>
-        c.io.a.poke(1.U)
-        c.io.b.expect(1.U)
-        c.clock.step()
-        c.io.a.poke(42.U)
-        c.io.b.expect(42.U)
-      }
+      test(new MultiIOModule {}).withAnnotations(Seq(VcsBackendAnnotation, UserCoverageAnnotation, StructuralCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     output.contains("-cm line+tgl+branch+cond+assert") should be(true)

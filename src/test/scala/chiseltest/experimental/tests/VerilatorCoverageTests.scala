@@ -19,19 +19,7 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
     val coverage = new File(coverageName)
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {
-        val io = IO(new Bundle {
-          val a = Input(UInt(8.W))
-          val b = Output(UInt(8.W))
-        })
-        io.b := io.a
-      }).withAnnotations(Seq(VerilatorBackendAnnotation, ToggleCoverageAnnotation)) { c =>
-        c.io.a.poke(1.U)
-        c.io.b.expect(1.U)
-        c.clock.step()
-        c.io.a.poke(42.U)
-        c.io.b.expect(42.U)
-      }
+      test(new MultiIOModule {}).withAnnotations(Seq(VerilatorBackendAnnotation, ToggleCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     coverage.exists() should be(true)
@@ -45,19 +33,7 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
     val coverage = new File(coverageName)
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {
-        val io = IO(new Bundle {
-          val a = Input(UInt(8.W))
-          val b = Output(UInt(8.W))
-        })
-        io.b := io.a
-      }).withAnnotations(Seq(VerilatorBackendAnnotation, LineCoverageAnnotation)) { c =>
-        c.io.a.poke(1.U)
-        c.io.b.expect(1.U)
-        c.clock.step()
-        c.io.a.poke(42.U)
-        c.io.b.expect(42.U)
-      }
+      test(new MultiIOModule {}).withAnnotations(Seq(VerilatorBackendAnnotation, LineCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     coverage.exists() should be(true)
@@ -71,19 +47,7 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
     val coverage = new File(coverageName)
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {
-        val io = IO(new Bundle {
-          val a = Input(UInt(8.W))
-          val b = Output(UInt(8.W))
-        })
-        io.b := io.a
-      }).withAnnotations(Seq(VerilatorBackendAnnotation, StructuralCoverageAnnotation)) { c =>
-        c.io.a.poke(1.U)
-        c.io.b.expect(1.U)
-        c.clock.step()
-        c.io.a.poke(42.U)
-        c.io.b.expect(42.U)
-      }
+      test(new MultiIOModule {}).withAnnotations(Seq(VerilatorBackendAnnotation, StructuralCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     coverage.exists() should be(true)
@@ -97,19 +61,7 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
     val coverage = new File(coverageName)
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {
-        val io = IO(new Bundle {
-          val a = Input(UInt(8.W))
-          val b = Output(UInt(8.W))
-        })
-        io.b := io.a
-      }).withAnnotations(Seq(VerilatorBackendAnnotation, UserCoverageAnnotation)) { c =>
-        c.io.a.poke(1.U)
-        c.io.b.expect(1.U)
-        c.clock.step()
-        c.io.a.poke(42.U)
-        c.io.b.expect(42.U)
-      }
+      test(new MultiIOModule {}).withAnnotations(Seq(VerilatorBackendAnnotation, UserCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     coverage.exists() should be(true)
@@ -123,19 +75,7 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
     val coverage = new File(coverageName)
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {
-        val io = IO(new Bundle {
-          val a = Input(UInt(8.W))
-          val b = Output(UInt(8.W))
-        })
-        io.b := io.a
-      }).withAnnotations(Seq(VerilatorBackendAnnotation, UserCoverageAnnotation, StructuralCoverageAnnotation)) { c =>
-        c.io.a.poke(1.U)
-        c.io.b.expect(1.U)
-        c.clock.step()
-        c.io.a.poke(42.U)
-        c.io.b.expect(42.U)
-      }
+      test(new MultiIOModule {}).withAnnotations(Seq(VerilatorBackendAnnotation, UserCoverageAnnotation, StructuralCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     coverage.exists() should be(true)

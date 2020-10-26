@@ -95,26 +95,17 @@ object VcsExecutive extends BackendExecutive {
     val moreVcsCFlags = compiledAnnotations
       .collectFirst { case VcsCFlags(flagSeq) => flagSeq }
       .getOrElse(Seq())
-    val coverageFlags = if (compiledAnnotations.contains(StructuralCoverageAnnotation)) {
-      Seq("-cm " + Seq(
-        "line",
-        "tgl",
-        "branch",
-        "cond",
-        if (compiledAnnotations.contains(UserCoverageAnnotation)) {"assert"} else {""})
-      .filter(item => item != "")
-      .mkString("+"))
-    } else if (compiledAnnotations.intersect(Seq(LineCoverageAnnotation, ToggleCoverageAnnotation,
-      BranchCoverageAnnotation, ConditionalCoverageAnnotation, UserCoverageAnnotation)).nonEmpty) {
-      Seq("-cm " + Seq(
-        if (compiledAnnotations.contains(LineCoverageAnnotation)) {"line"} else {""},
-        if (compiledAnnotations.contains(ToggleCoverageAnnotation)) {"tgl"} else {""},
-        if (compiledAnnotations.contains(BranchCoverageAnnotation)) {"branch"} else {""},
-        if (compiledAnnotations.contains(ConditionalCoverageAnnotation)) {"cond"} else {""},
-        if (compiledAnnotations.contains(UserCoverageAnnotation)) {"assert"} else {""})
-      .filter(item => item != "")
-      .mkString("+"))
-    } else {Seq.empty}
+    val coverageFlags = Seq((compiledAnnotations collect Map(
+        LineCoverageAnnotation -> List("line"),
+        ToggleCoverageAnnotation -> List("tgl"),
+        BranchCoverageAnnotation -> List("branch"),
+        ConditionalCoverageAnnotation -> List("cond"),
+        UserCoverageAnnotation -> List("assert"),
+        StructuralCoverageAnnotation -> List("line", "tgl", "branch", "cond"))
+      ).flatten
+      .distinct
+      .mkString("+")
+    ).map(item => if (item.isEmpty) {item} else {"-cm " + item})
     val editCommands = compiledAnnotations.collectFirst {
       case CommandEditsFile(fileName) => fileName
     }.getOrElse("")
