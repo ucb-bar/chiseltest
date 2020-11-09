@@ -8,8 +8,16 @@ import chisel3._
 import treadle.HasTreadleSuite
 import firrtl.stage.{CompilerAnnotation, RunFirrtlTransformAnnotation}
 import firrtl.{
-  AnnotationSeq, ExecutionOptionsManager, FirrtlEmitter, LowFirrtlCompiler, MinimumVerilogCompiler,
-  NoneCompiler, SystemVerilogCompiler, VerilogCompiler, VerilogEmitter}
+  AnnotationSeq,
+  ExecutionOptionsManager,
+  FirrtlEmitter,
+  LowFirrtlCompiler,
+  MinimumVerilogCompiler,
+  NoneCompiler,
+  SystemVerilogCompiler,
+  VerilogCompiler,
+  VerilogEmitter
+}
 
 package object TestOptionBuilder {
   implicit class ChiselScalatestOptionBuilder[T <: MultiIOModule](x: ChiselScalatestTester#TestBuilder[T]) {
@@ -29,8 +37,8 @@ package object TestOptionBuilder {
         case CompilerAnnotation(compiler) if compiler.isInstanceOf[VerilogCompiler]        => VerilatorBackendAnnotation
         case CompilerAnnotation(compiler) if compiler.isInstanceOf[MinimumVerilogCompiler] => VerilatorBackendAnnotation
         case CompilerAnnotation(compiler) if compiler.isInstanceOf[SystemVerilogCompiler]  => VerilatorBackendAnnotation
-        case RunFirrtlTransformAnnotation(_: FirrtlEmitter)                                => TreadleBackendAnnotation
-        case RunFirrtlTransformAnnotation(_: VerilogEmitter)                               => VerilatorBackendAnnotation
+        case RunFirrtlTransformAnnotation(_: FirrtlEmitter) => TreadleBackendAnnotation
+        case RunFirrtlTransformAnnotation(_: VerilogEmitter) => VerilatorBackendAnnotation
         case anno => anno
       }
 

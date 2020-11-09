@@ -2,6 +2,7 @@
 
 import mill._
 import mill.scalalib._
+import mill.scalalib.scalafmt._
 import mill.scalalib.publish._
 
 object chiseltest extends mill.Cross[chiseltestCrossModule]("2.11.12", "2.12.10")
@@ -16,7 +17,7 @@ def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
   ivy"$org::$dep:$version"
 }
 
-class chiseltestCrossModule(val crossScalaVersion: String) extends CrossSbtModule with PublishModule {
+class chiseltestCrossModule(val crossScalaVersion: String) extends CrossSbtModule with PublishModule with ScalafmtModule {
   def chisel3Module: Option[PublishModule] = None
 
   def chisel3IvyDeps = if (chisel3Module.isEmpty) Agg(
@@ -67,7 +68,7 @@ class chiseltestCrossModule(val crossScalaVersion: String) extends CrossSbtModul
     ) ++ chisel3IvyDeps ++ treadleIvyDeps
   }
 
-  object test extends Tests {
+  object test extends Tests with ScalafmtModule {
     override def ivyDeps = T {
       Agg(
         ivy"org.scalatest::scalatest:3.0.8",

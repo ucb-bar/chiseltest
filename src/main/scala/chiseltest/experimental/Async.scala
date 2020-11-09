@@ -23,9 +23,9 @@ import treadle.{ScalaBlackBox, ScalaBlackBoxFactory}
   * @param resetValue reset value for this 1 bit register
   */
 class AsyncResetReg(resetValue: Int = 0) extends ExtModule(Map("RESET_VALUE" -> IntParam(resetValue))) {
-  val d: UInt = IO(Input(UInt(1.W)))
-  val q: UInt = IO(Output(UInt(1.W)))
-  val en: Bool = IO(Input(Bool()))
+  val d:   UInt = IO(Input(UInt(1.W)))
+  val q:   UInt = IO(Output(UInt(1.W)))
+  val en:  Bool = IO(Input(Bool()))
   val clk: Clock = IO(Input(Clock()))
   val rst: Bool = IO(Input(Bool()))
 }
@@ -48,10 +48,10 @@ class AsyncResetRegScalaImpl(instanceName: String) extends ScalaBlackBox {
 
   override def inputChanged(name: String, value: BigInt): Unit = {
     name match {
-      case "d"     => nextValue = value
+      case "d"  => nextValue = value
       case "en" => enable = value > BigInt(0)
-      case "rst"     =>
-        if(value > BigInt(0)) {
+      case "rst" =>
+        if (value > BigInt(0)) {
           currentValue = resetValue
         }
       case _ =>
@@ -60,7 +60,7 @@ class AsyncResetRegScalaImpl(instanceName: String) extends ScalaBlackBox {
   }
 
   override def clockChange(transition: Transition, clockName: String): Unit = {
-    if(transition == PositiveEdge && enable) {
+    if (transition == PositiveEdge && enable) {
       currentValue = nextValue
     }
   }
