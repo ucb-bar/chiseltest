@@ -4,7 +4,7 @@ import java.io.{File, FileWriter}
 
 import chiseltest.backends.BackendExecutive
 import chiseltest.internal._
-import chisel3.{MultiIOModule, assert}
+import chisel3.{assert, MultiIOModule}
 import chisel3.experimental.DataMirror
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
 import firrtl.annotations.ReferenceTarget
@@ -31,7 +31,7 @@ object VerilatorExecutive extends BackendExecutive {
   }
 
   def start[T <: MultiIOModule](
-    dutGen: () => T,
+    dutGen:        () => T,
     annotationSeq: AnnotationSeq
   ): BackendInstance[T] = {
 
@@ -71,28 +71,30 @@ object VerilatorExecutive extends BackendExecutive {
     cppHarnessWriter.append(emittedStuff)
     cppHarnessWriter.close()
 
-    val moreVerilatorFlags = compiledAnnotations
-      .collectFirst { case VerilatorFlags(f) => f }
+    val moreVerilatorFlags = compiledAnnotations.collectFirst { case VerilatorFlags(f) => f }
       .getOrElse(Seq.empty)
-    val moreVerilatorCFlags = compiledAnnotations
-      .collectFirst { case VerilatorCFlags(f) => f }
+    val moreVerilatorCFlags = compiledAnnotations.collectFirst { case VerilatorCFlags(f) => f }
       .getOrElse(Seq.empty)
-    val writeVcdFlag = if(compiledAnnotations.contains(WriteVcdAnnotation)) { Seq("--trace") } else { Seq() }
-    val coverageFlags = Seq((compiledAnnotations collect {
-      case LineCoverageAnnotation => List("--coverage-line")
-      case ToggleCoverageAnnotation => List("--coverage-toggle")
-      case UserCoverageAnnotation => List("--coverage-user")
+    val writeVcdFlag = if (compiledAnnotations.contains(WriteVcdAnnotation)) { Seq("--trace") }
+    else { Seq() }
+    val coverageFlags = Seq((compiledAnnotations.collect {
+      case LineCoverageAnnotation       => List("--coverage-line")
+      case ToggleCoverageAnnotation     => List("--coverage-toggle")
+      case UserCoverageAnnotation       => List("--coverage-user")
       case StructuralCoverageAnnotation => List("--coverage-line", "--coverage-toggle")
-      }).flatten.distinct.mkString(" ")
-    )
+    }).flatten.distinct.mkString(" "))
 
-    val commandEditsFile = compiledAnnotations
-      .collectFirst { case CommandEditsFile(f) => f }
+    val commandEditsFile = compiledAnnotations.collectFirst { case CommandEditsFile(f) => f }
       .getOrElse("")
 
-    val coverageFlag = if(compiledAnnotations.intersect(Seq(LineCoverageAnnotation, ToggleCoverageAnnotation, UserCoverageAnnotation)).nonEmpty) {
-      Seq("-DSP_COVERAGE_ENABLE") } else { Seq ()
-    }
+    val coverageFlag =
+      if (
+        compiledAnnotations
+          .intersect(Seq(LineCoverageAnnotation, ToggleCoverageAnnotation, UserCoverageAnnotation))
+          .nonEmpty
+      ) {
+        Seq("-DSP_COVERAGE_ENABLE")
+      } else { Seq() }
 
     val verilatorFlags = moreVerilatorFlags ++ writeVcdFlag ++ coverageFlags
     val verilatorCFlags = moreVerilatorCFlags ++ coverageFlag
