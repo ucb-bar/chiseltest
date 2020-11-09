@@ -3,16 +3,17 @@
 import scala.language.implicitConversions
 import chiseltest.internal._
 import chisel3._
-import chisel3.experimental.{DataMirror, Direction, FixedPoint, Interval, EnumType}
+import chisel3.experimental.{DataMirror, Direction, EnumType, FixedPoint, Interval}
 import chisel3.experimental.BundleLiterals._
 import chisel3.util._
 
 /** Basic interfaces and implicit conversions for testers2
   */
 package object chiseltest {
-  import chisel3.internal.firrtl.{LitArg, ULit, SLit}
+  import chisel3.internal.firrtl.{LitArg, SLit, ULit}
 
   implicit class testableRecord[T <: Record](x: T) {
+
     /** Poke the given signal with a [[Record.litValue()]]
       * Literals of this Record can be instantiated with
       * {{{
@@ -20,40 +21,44 @@ package object chiseltest {
       * }}}
       * `pokePartial` will only poke [[Input]] signals of `x`,
       * and elements of `x` which contain no literal will be ignored.
-      * */
+      */
     def pokePartial(value: T): Unit = {
       require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
-      x.elements
-        .filter {
-          case (k, v) => DataMirror.directionOf(v) != ActualDirection.Output && {
+      x.elements.filter {
+        case (k, v) =>
+          DataMirror.directionOf(v) != ActualDirection.Output && {
             value.elements(k) match {
-              case _: Record => true
-              case data: Data => data.isLit()
+              case _:    Record => true
+              case data: Data   => data.isLit()
             }
           }
-        }
-        .foreach { case (k, v) => v match {
-          case record: Record => record.pokePartial(value.elements(k).asInstanceOf[Record])
-          case data: Data => data.poke(value.elements(k))
-        }}
+      }.foreach {
+        case (k, v) =>
+          v match {
+            case record: Record => record.pokePartial(value.elements(k).asInstanceOf[Record])
+            case data:   Data   => data.poke(value.elements(k))
+          }
+      }
     }
 
     /** Check the given signal with a [[Record.litValue()]];
       * elements of `x` which contain no literal will be ignored.
-      * */
+      */
     def expectPartial(value: T): Unit = {
       require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
-      x.elements
-        .filter {
-          case (k, v) => value.elements(k) match {
-              case _: Record => true
-              case d: Data => d.isLit()
-            }
-        }
-        .foreach { case (k, v) => v match {
-          case record: Record => record.expectPartial(value.elements(k).asInstanceOf[Record])
-          case data: Data => data.expect(value.elements(k))
-        }}
+      x.elements.filter {
+        case (k, v) =>
+          value.elements(k) match {
+            case _: Record => true
+            case d: Data   => d.isLit()
+          }
+      }.foreach {
+        case (k, v) =>
+          v match {
+            case record: Record => record.expectPartial(value.elements(k).asInstanceOf[Record])
+            case data:   Data   => data.expect(value.elements(k))
+          }
+      }
     }
   }
 
@@ -93,11 +98,13 @@ package object chiseltest {
     def poke(value: T): Unit = (x, value) match {
       case (x: Bool, value: Bool) => pokeBits(x, value.litValue)
       // TODO can't happen because of type parameterization
-      case (x: Bool, value: Bits) => throw new LiteralTypeException(s"can only poke signals of type Bool with Bool value")
+      case (x: Bool, value: Bits) =>
+        throw new LiteralTypeException(s"can only poke signals of type Bool with Bool value")
       case (x: Bits, value: UInt) => pokeBits(x, value.litValue)
       case (x: SInt, value: SInt) => pokeBits(x, value.litValue)
       // TODO can't happen because of type parameterization
-      case (x: Bits, value: SInt) => throw new LiteralTypeException(s"can only poke SInt value into signals of type SInt")
+      case (x: Bits, value: SInt) =>
+        throw new LiteralTypeException(s"can only poke SInt value into signals of type SInt")
       case (x: FixedPoint, value: FixedPoint) => {
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
         pokeBits(x, value.litValue)
@@ -107,8 +114,9 @@ package object chiseltest {
         pokeBits(x, value.litValue)
       case (x: Record, value: Record) => {
         require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
-        (x.elements zip value.elements) foreach { case ((_, x), (_, value)) =>
-          x.poke(value)
+        (x.elements.zip(value.elements)).foreach {
+          case ((_, x), (_, value)) =>
+            x.poke(value)
         }
       }
       case (x: EnumType, value: EnumType) => {
@@ -120,11 +128,12 @@ package object chiseltest {
     }
 
     protected def peekWithStale(stale: Boolean): T = x match {
-      case (x: Bool) => Context().backend.peekBits(x, stale) match {
-        case x: BigInt if x == 0 => false.B.asInstanceOf[T]
-        case x: BigInt if x == 1 => true.B.asInstanceOf[T]
-        case x => throw new LiteralTypeException(s"peeked Bool with value $x not 0 or 1")
-      }
+      case (x: Bool) =>
+        Context().backend.peekBits(x, stale) match {
+          case x: BigInt if x == 0 => false.B.asInstanceOf[T]
+          case x: BigInt if x == 1 => true.B.asInstanceOf[T]
+          case x => throw new LiteralTypeException(s"peeked Bool with value $x not 0 or 1")
+        }
       case (x: UInt) => Context().backend.peekBits(x, stale).asUInt(DataMirror.widthOf(x)).asInstanceOf[T]
       case (x: SInt) => Context().backend.peekBits(x, stale).asSInt(DataMirror.widthOf(x)).asInstanceOf[T]
       case (x: FixedPoint) => {
@@ -134,8 +143,9 @@ package object chiseltest {
       case x: Interval =>
         Context().backend.peekBits(x, stale).I(x.binaryPoint).asInstanceOf[T]
       case (x: Record) => {
-        val elementValueFns = x.elements.map { case (name: String, elt: Data) =>
-          (y: Record) => (y.elements(name), elt.peekWithStale(stale))
+        val elementValueFns = x.elements.map {
+          case (name: String, elt: Data) =>
+            (y: Record) => (y.elements(name), elt.peekWithStale(stale))
         }.toSeq
         chiselTypeOf(x).Lit(elementValueFns: _*).asInstanceOf[T]
       }
@@ -151,11 +161,13 @@ package object chiseltest {
       case (x: Bool, value: Bool) =>
         Context().backend.expectBits(x, value.litValue, message, Some(BitsDecoders.boolBitsToString), stale)
       // TODO can't happen because of type parameterization
-      case (x: Bool, value: Bits) => throw new LiteralTypeException(s"cannot expect non-Bool value $value from Bool IO $x")
+      case (x: Bool, value: Bits) =>
+        throw new LiteralTypeException(s"cannot expect non-Bool value $value from Bool IO $x")
       case (x: Bits, value: UInt) => Context().backend.expectBits(x, value.litValue, message, None, stale)
       case (x: SInt, value: SInt) => Context().backend.expectBits(x, value.litValue, message, None, stale)
       // TODO can't happen because of type parameterization
-      case (x: Bits, value: SInt) => throw new LiteralTypeException(s"cannot expect non-SInt value $value from SInt IO $x")
+      case (x: Bits, value: SInt) =>
+        throw new LiteralTypeException(s"cannot expect non-SInt value $value from SInt IO $x")
       case (x: FixedPoint, value: FixedPoint) => {
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
         Context().backend.expectBits(x, value.litValue, message, Some(BitsDecoders.fixedToString(x.binaryPoint)), stale)
@@ -165,8 +177,9 @@ package object chiseltest {
         Context().backend.expectBits(x, value.litValue, message, Some(BitsDecoders.fixedToString(x.binaryPoint)), stale)
       case (x: Record, value: Record) => {
         require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
-        (x.elements zip value.elements) foreach { case ((_, x), (_, value)) =>
-          x.expectWithStale(value, message, stale)
+        (x.elements.zip(value.elements)).foreach {
+          case ((_, x), (_, value)) =>
+            x.expectWithStale(value, message, stale)
         }
       }
       case (x: EnumType, value: EnumType) => {
@@ -187,14 +200,14 @@ package object chiseltest {
     def getSourceClock(): Clock = {
       Context().backend.getSourceClocks(x).toList match {
         case clock :: Nil => clock
-        case clocks => throw new ClockResolutionException(s"number of source clocks for $x is not one: $clocks")
+        case clocks       => throw new ClockResolutionException(s"number of source clocks for $x is not one: $clocks")
       }
     }
 
     def getSinkClock(): Clock = {
       Context().backend.getSinkClocks(x).toList match {
         case clock :: Nil => clock
-        case clocks => throw new ClockResolutionException(s"number of sink clocks for $x is not one: $clocks")
+        case clocks       => throw new ClockResolutionException(s"number of sink clocks for $x is not one: $clocks")
       }
     }
   }
@@ -213,9 +226,7 @@ package object chiseltest {
 
   // TODO: call-by-name doesn't work with varargs, is there a better way to do this?
   def parallel(run1: => Unit, run2: => Unit): Unit = {
-    fork { run1 }
-      .fork { run2 }
-      .join
+    fork { run1 }.fork { run2 }.join
   }
 
   def timescope(contents: => Unit): Unit = {

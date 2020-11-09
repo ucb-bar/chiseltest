@@ -73,15 +73,15 @@ class $dutApiClassName: public sim_api_t<VerilatorDataWrapper*> {
         sim_data.signals.clear();
 
 """)
-    inputs.toList foreach {
+    inputs.toList.foreach {
       case (node, name) =>
         // replaceFirst used here in case port name contains the dutName
-        pushBack("inputs", name replaceFirst (dutName, "dut"), node.getWidth)
+        pushBack("inputs", name.replaceFirst(dutName, "dut"), node.getWidth)
     }
-    outputs.toList foreach {
+    outputs.toList.foreach {
       case (node, name) =>
         // replaceFirst used here in case port name contains the dutName
-        pushBack("outputs", name replaceFirst (dutName, "dut"), node.getWidth)
+        pushBack("outputs", name.replaceFirst(dutName, "dut"), node.getWidth)
     }
     pushBack("signals", "dut->reset", 1)
     codeBuffer.append(

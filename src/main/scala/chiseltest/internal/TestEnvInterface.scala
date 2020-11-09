@@ -67,30 +67,39 @@ trait TestEnvInterface {
   /** Expect a specific value on a wire, calling testerFail if the expectation isn't met.
     * Failures queued until the next checkpoint.
     */
-  def testerExpect(expected: BigInt, actual: BigInt, signal: String,
-                   msg: Option[String], decode: Option[BigInt => String]): Unit = {
+  def testerExpect(
+    expected: BigInt,
+    actual:   BigInt,
+    signal:   String,
+    msg:      Option[String],
+    decode:   Option[BigInt => String]
+  ): Unit = {
     if (expected != actual) {
       val appendMsg = msg match {
         case Some(_) => s": $msg"
-        case _ => ""
+        case _       => ""
       }
 
       val trace = new Throwable
       val expectStackDepth = trace.getStackTrace.indexWhere(ste =>
-        ste.getClassName == "chiseltest.package$testableData" && ste.getMethodName == "expect")
-      require(expectStackDepth != -1,
-        s"Failed to find expect in stack trace:\r\n${trace.getStackTrace.mkString("\r\n")}")
+        ste.getClassName == "chiseltest.package$testableData" && ste.getMethodName == "expect"
+      )
+      require(
+        expectStackDepth != -1,
+        s"Failed to find expect in stack trace:\r\n${trace.getStackTrace.mkString("\r\n")}"
+      )
 
       val trimmedTrace = trace.getStackTrace.drop(expectStackDepth + 2)
       val detailedTrace = topFileName.map(getExpectDetailedTrace(trimmedTrace.toSeq, _)).getOrElse("")
 
       val (actualStr, expectedStr) = decode match {
         case Some(decode) =>
-          (s"${decode(actual)} ($actual, ${bigintToHex(actual)})",
-              s"${decode(expected)} ($expected, ${bigintToHex(expected)})")
+          (
+            s"${decode(actual)} ($actual, ${bigintToHex(actual)})",
+            s"${decode(expected)} ($expected, ${bigintToHex(expected)})"
+          )
         case None =>
-          (s"$actual (${bigintToHex(actual)})",
-              s"$expected (${bigintToHex(expected)})")
+          (s"$actual (${bigintToHex(actual)})", s"$expected (${bigintToHex(expected)})")
       }
 
       val message = s"$signal=$actualStr did not equal expected=$expectedStr$appendMsg$detailedTrace"
