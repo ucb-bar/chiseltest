@@ -8,10 +8,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ucbbar/chisel3-tools
-      options: --user github --entrypoint /bin/bash
-    env:
-      CONTAINER_HOME: /home/github
-
     steps:
       - name: Checkout
         uses: actions/checkout@v2
