@@ -21,4 +21,4 @@ jobs:
         uses: coursier/cache-action@v5
       - name: test
         id: test
-        run: +test
+        run: sbt +test
