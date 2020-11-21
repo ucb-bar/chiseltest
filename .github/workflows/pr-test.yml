@@ -13,12 +13,32 @@ jobs:
       CONTAINER_HOME: /home/github
 
     steps:
+      - name: id
+        run: |
+          whoami
+          printenv
+          git --version
+          pwd
       - name: Checkout
         uses: actions/checkout@v2
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
       - name: Cache Scala
         uses: coursier/cache-action@v5
+      - name: id2
+        run: |
+          whoami
+          ls ~/.sbt
+          printenv
+          git --version
+          pwd
       - name: test
         id: test
         run: sbt +test
+      - name: id3
+        run: |
+          whoami
+          ls ~/.sbt
+          printenv
+          git --version
+          pwd
