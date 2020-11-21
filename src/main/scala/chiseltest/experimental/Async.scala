@@ -14,8 +14,7 @@ import treadle.{ScalaBlackBox, ScalaBlackBoxFactory}
   * Async treadle greybox is in here to make tests using AsyncResetReg easier
   */
 
-/**
-  * This is a black box example that only works with treadle as it does not
+/** This is a black box example that only works with treadle as it does not
   * define the necessary verilog for verilator/VCS
   *
   * Should be API compatible with rocket-chip's AsyncResetReg
@@ -30,8 +29,7 @@ class AsyncResetReg(resetValue: Int = 0) extends ExtModule(Map("RESET_VALUE" -> 
   val rst: Bool = IO(Input(Bool()))
 }
 
-/**
-  * This is the scala implementation of the AsyncResetReg black box.
+/** This is the scala implementation of the AsyncResetReg black box.
   * @param instanceName full path name for this instance
   */
 class AsyncResetRegScalaImpl(instanceName: String) extends ScalaBlackBox {
@@ -84,8 +82,7 @@ class AsyncResetRegScalaImpl(instanceName: String) extends ScalaBlackBox {
   }
 }
 
-/**
-  * This generates the black box instance that Treadle will use
+/** This generates the black box instance that Treadle will use
   */
 class AsyncResetBlackBoxFactory extends ScalaBlackBoxFactory {
   override def createInstance(instanceName: String, blackBoxName: String): Option[ScalaBlackBox] = {

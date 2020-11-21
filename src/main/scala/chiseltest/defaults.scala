@@ -17,8 +17,8 @@ package object defaults {
     * @return                a backend for the dut type
     */
   def createDefaultTester[T <: MultiIOModule](dutGen: () => T, annotationSeq: AnnotationSeq): BackendInstance[T] = {
-    val backend = annotationSeq.collectFirst {
-      case x: BackendAnnotation => x
+    val backend = annotationSeq.collectFirst { case x: BackendAnnotation =>
+      x
     }.getOrElse(TreadleBackendAnnotation)
 
     backend.executive.start(dutGen, annotationSeq)

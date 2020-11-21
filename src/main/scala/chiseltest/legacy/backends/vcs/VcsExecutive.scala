@@ -37,8 +37,8 @@ object VcsExecutive extends BackendExecutive {
     // Force a cleanup: long SBT runs tend to fail with memory issues
     System.gc()
 
-    val targetDir = annotationSeq.collectFirst {
-      case firrtl.options.TargetDirAnnotation(t) => t
+    val targetDir = annotationSeq.collectFirst { case firrtl.options.TargetDirAnnotation(t) =>
+      t
     }.get
     val targetDirFile = new File(targetDir)
 
@@ -75,14 +75,13 @@ object VcsExecutive extends BackendExecutive {
 
     val portNames = DataMirror
       .modulePorts(dut)
-      .flatMap {
-        case (name, data) =>
-          getDataNames(name, data).toList.map {
-            case (p, "reset") => (p, "reset")
-            case (p, "clock") => (p, "clock")
-            case (p, n)       => (p, s"${circuit.name}.$n")
-            //          case (p, n) => (p, s"$n")
-          }
+      .flatMap { case (name, data) =>
+        getDataNames(name, data).toList.map {
+          case (p, "reset") => (p, "reset")
+          case (p, "clock") => (p, "clock")
+          case (p, n)       => (p, s"${circuit.name}.$n")
+          //          case (p, n) => (p, s"$n")
+        }
       }
       .toMap
 
@@ -101,8 +100,8 @@ object VcsExecutive extends BackendExecutive {
       case Nil   => Seq()
       case flags => Seq("-cm " + flags.mkString("+"))
     }
-    val editCommands = compiledAnnotations.collectFirst {
-      case CommandEditsFile(fileName) => fileName
+    val editCommands = compiledAnnotations.collectFirst { case CommandEditsFile(fileName) =>
+      fileName
     }.getOrElse("")
 
     val vcsFlags = moreVcsCFlags ++ coverageFlags
@@ -119,8 +118,8 @@ object VcsExecutive extends BackendExecutive {
     )
 
     val command = compiledAnnotations
-      .collectFirst[Seq[String]] {
-        case TestCommandOverride(f) => f.split(" +")
+      .collectFirst[Seq[String]] { case TestCommandOverride(f) =>
+        f.split(" +")
       }
       .getOrElse { Seq(new File(targetDir, circuit.name).toString) }
 

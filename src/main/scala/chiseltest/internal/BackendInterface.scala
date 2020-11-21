@@ -58,8 +58,7 @@ trait BackendInterface {
     stale:   Boolean
   ): Unit
 
-  /**
-    * Sets the timeout of the clock: the number of cycles the clock can advance without
+  /** Sets the timeout of the clock: the number of cycles the clock can advance without
     * some non-nop poke operation.
     * Setting cycles=0 disables the timeout.
     * Setting cycles=1 means every cycle must have some non-nop poke operation.

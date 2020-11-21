@@ -18,8 +18,7 @@ trait TestEnvInterface {
 
   def topFileName: Option[String]
 
-  /**
-    * Will add a TargetDirAnnotation with defaultDir with "test_run_dir" path prefix to the annotations
+  /** Will add a TargetDirAnnotation with defaultDir with "test_run_dir" path prefix to the annotations
     * if there is not a TargetDirAnnotation already present
     *
     * @param defaultDir     a default directory

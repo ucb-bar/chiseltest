@@ -24,20 +24,18 @@ package object chiseltest {
       */
     def pokePartial(value: T): Unit = {
       require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
-      x.elements.filter {
-        case (k, v) =>
-          DataMirror.directionOf(v) != ActualDirection.Output && {
-            value.elements(k) match {
-              case _:    Record => true
-              case data: Data   => data.isLit()
-            }
+      x.elements.filter { case (k, v) =>
+        DataMirror.directionOf(v) != ActualDirection.Output && {
+          value.elements(k) match {
+            case _:    Record => true
+            case data: Data   => data.isLit()
           }
-      }.foreach {
-        case (k, v) =>
-          v match {
-            case record: Record => record.pokePartial(value.elements(k).asInstanceOf[Record])
-            case data:   Data   => data.poke(value.elements(k))
-          }
+        }
+      }.foreach { case (k, v) =>
+        v match {
+          case record: Record => record.pokePartial(value.elements(k).asInstanceOf[Record])
+          case data:   Data   => data.poke(value.elements(k))
+        }
       }
     }
 
@@ -46,18 +44,16 @@ package object chiseltest {
       */
     def expectPartial(value: T): Unit = {
       require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
-      x.elements.filter {
-        case (k, v) =>
-          value.elements(k) match {
-            case _: Record => true
-            case d: Data   => d.isLit()
-          }
-      }.foreach {
-        case (k, v) =>
-          v match {
-            case record: Record => record.expectPartial(value.elements(k).asInstanceOf[Record])
-            case data:   Data   => data.expect(value.elements(k))
-          }
+      x.elements.filter { case (k, v) =>
+        value.elements(k) match {
+          case _: Record => true
+          case d: Data   => d.isLit()
+        }
+      }.foreach { case (k, v) =>
+        v match {
+          case record: Record => record.expectPartial(value.elements(k).asInstanceOf[Record])
+          case data:   Data   => data.expect(value.elements(k))
+        }
       }
     }
   }
@@ -114,9 +110,8 @@ package object chiseltest {
         pokeBits(x, value.litValue)
       case (x: Record, value: Record) => {
         require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
-        (x.elements.zip(value.elements)).foreach {
-          case ((_, x), (_, value)) =>
-            x.poke(value)
+        (x.elements.zip(value.elements)).foreach { case ((_, x), (_, value)) =>
+          x.poke(value)
         }
       }
       case (x: EnumType, value: EnumType) => {
@@ -143,9 +138,8 @@ package object chiseltest {
       case x: Interval =>
         Context().backend.peekBits(x, stale).I(x.binaryPoint).asInstanceOf[T]
       case (x: Record) => {
-        val elementValueFns = x.elements.map {
-          case (name: String, elt: Data) =>
-            (y: Record) => (y.elements(name), elt.peekWithStale(stale))
+        val elementValueFns = x.elements.map { case (name: String, elt: Data) =>
+          (y: Record) => (y.elements(name), elt.peekWithStale(stale))
         }.toSeq
         chiselTypeOf(x).Lit(elementValueFns: _*).asInstanceOf[T]
       }
@@ -177,9 +171,8 @@ package object chiseltest {
         Context().backend.expectBits(x, value.litValue, message, Some(BitsDecoders.fixedToString(x.binaryPoint)), stale)
       case (x: Record, value: Record) => {
         require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
-        (x.elements.zip(value.elements)).foreach {
-          case ((_, x), (_, value)) =>
-            x.expectWithStale(value, message, stale)
+        (x.elements.zip(value.elements)).foreach { case ((_, x), (_, value)) =>
+          x.expectWithStale(value, message, stale)
         }
       }
       case (x: EnumType, value: EnumType) => {

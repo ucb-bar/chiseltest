@@ -54,7 +54,7 @@ publishArtifact in Test := false
 pomIncludeRepository := { x => false }
 
 pomExtra := (
-<url>http://chisel.eecs.berkeley.edu/</url>
+  <url>http://chisel.eecs.berkeley.edu/</url>
   <licenses>
     <license>
       <name>apache_v2</name>
@@ -78,10 +78,9 @@ publishTo := {
   val v = version.value
   val nexus = "https://oss.sonatype.org/"
   if (v.trim.endsWith("SNAPSHOT")) {
-    Some("snapshots" at nexus + "content/repositories/snapshots")
-  }
-  else {
-    Some("releases" at nexus + "service/local/staging/deploy/maven2")
+    Some("snapshots".at(nexus + "content/repositories/snapshots"))
+  } else {
+    Some("releases".at(nexus + "service/local/staging/deploy/maven2"))
   }
 }
 
@@ -92,7 +91,8 @@ val defaultVersions = Seq(
 )
 
 libraryDependencies ++= defaultVersions.map { case (dep, ver) =>
-  "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", ver) }
+  "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", ver)
+}
 
 scalacOptions ++= scalacOptionsVersion(scalaVersion.value)
 scalacOptions ++= Seq("-deprecation", "-feature", "-language:reflectiveCalls")

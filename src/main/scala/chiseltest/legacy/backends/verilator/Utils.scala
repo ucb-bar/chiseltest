@@ -26,9 +26,8 @@ private[chiseltest] object getDataNames {
     case v: Vec[_]  => v.zipWithIndex.flatMap { case (e, i) => apply(s"${name}_$i", e) }
   }
   def apply(dut: MultiIOModule, separator: String = "."): Seq[(Element, String)] =
-    dut.getPorts.flatMap {
-      case chisel3.internal.firrtl.Port(data, _) =>
-        apply(data.pathName.replace(".", separator), data)
+    dut.getPorts.flatMap { case chisel3.internal.firrtl.Port(data, _) =>
+      apply(data.pathName.replace(".", separator), data)
     }
 
 }

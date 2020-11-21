@@ -108,20 +108,19 @@ class TreadleBackend[T <: MultiIOModule](
 
     contents()
 
-    closeTimescope(createdTimescope).foreach {
-      case (data, valueOption) =>
-        valueOption match {
-          case Some(value) =>
-            if (tester.peek(dataNames(data)) != value) {
-              idleCycles.clear()
-            }
-            tester.poke(dataNames(data), value)
-            debugLog(s"${resolveName(data)} <- (revert) $value")
-          case None =>
+    closeTimescope(createdTimescope).foreach { case (data, valueOption) =>
+      valueOption match {
+        case Some(value) =>
+          if (tester.peek(dataNames(data)) != value) {
             idleCycles.clear()
-            tester.poke(dataNames(data), 0) // TODO: randomize or 4-state sim
-            debugLog(s"${resolveName(data)} <- (revert) DC")
-        }
+          }
+          tester.poke(dataNames(data), value)
+          debugLog(s"${resolveName(data)} <- (revert) $value")
+        case None =>
+          idleCycles.clear()
+          tester.poke(dataNames(data), 0) // TODO: randomize or 4-state sim
+          debugLog(s"${resolveName(data)} <- (revert) DC")
+      }
     }
   }
 
@@ -176,20 +175,18 @@ class TreadleBackend[T <: MultiIOModule](
         steppedClocks.foreach { clock =>
           clockCounter.put(dut.clock, getClockCycle(clock) + 1) // TODO: ignores cycles before a clock was stepped on
         }
-        lastClockValue.foreach {
-          case (clock, _) =>
-            lastClockValue.put(clock, getClock(clock))
+        lastClockValue.foreach { case (clock, _) =>
+          lastClockValue.put(clock, getClock(clock))
         }
 
         runThreads(steppedClocks.toSet)
         Context().env.checkpoint()
 
-        idleLimits.foreach {
-          case (clock, limit) =>
-            idleCycles.put(clock, idleCycles.getOrElse(clock, -1) + 1)
-            if (idleCycles(clock) >= limit) {
-              throw new TimeoutException(s"timeout on $clock at $limit idle cycles")
-            }
+        idleLimits.foreach { case (clock, limit) =>
+          idleCycles.put(clock, idleCycles.getOrElse(clock, -1) + 1)
+          if (idleCycles(clock) >= limit) {
+            throw new TimeoutException(s"timeout on $clock at $limit idle cycles")
+          }
         }
 
         tester.step(1)

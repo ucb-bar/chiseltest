@@ -52,11 +52,10 @@ trait BackendExecutive {
       }
       componentToName(p.sink) -> mappedSources
     }
-    val mapPairs = filterPathsByName.map {
-      case (sink, sources) => // convert to Data
-        nameToData(sink) -> sources.map { source =>
-          nameToData(source)
-        }.toSet
+    val mapPairs = filterPathsByName.map { case (sink, sources) => // convert to Data
+      nameToData(sink) -> sources.map { source =>
+        nameToData(source)
+      }.toSet
     }
     mapPairs.toMap
   }
