@@ -4,7 +4,7 @@ import firrtl.AnnotationSeq
 import treadle.{TreadleCircuitStateAnnotation, TreadleTester}
 import treadle.stage.phases.PrepareAst
 
-object TreadleBackend {
+object TreadleBackend extends SimulatorBackend {
   def compileDut(annotations: AnnotationSeq) = {
     val treadleAnnotations = (new PrepareAst).transform(annotations)
     (treadleAnnotations :+ SimulatorInterfaceAnnotation(

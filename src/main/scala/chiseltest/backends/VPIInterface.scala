@@ -65,7 +65,7 @@ class VPIInterface(topPorts: Seq[Port], topName: String, commands: Seq[String])
 
   def finish(): Unit = {
     mwhile(!sendCmd(SIM_CMD.FIN)) {}
-    println("Exit Code: %d".format(Await.result(exitValue, Duration.Inf)))
+    logger.info("Exit Code: %d".format(Await.result(exitValue, Duration.Inf)))
     dumpLogs()
     inChannel.close()
     outChannel.close()
@@ -349,7 +349,7 @@ class VPIInterface(topPorts: Seq[Port], topName: String, commands: Seq[String])
   }
 
   private def start(): Unit = {
-    println(s"""STARTING ${commands.mkString(" ")}""")
+    logger.warn(s"""STARTING ${commands.mkString(" ")}""")
     mwhile(!recvOutputs) {}
   }
 
