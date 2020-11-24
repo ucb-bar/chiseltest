@@ -3,7 +3,7 @@ package chiseltest.legacy.backends.verilator
 import java.io.{File, FileWriter}
 
 import chiseltest.backends.BackendExecutive
-import chiseltest.internal.{BackendInstance, WriteVcdAnnotation}
+import chiseltest.internal._
 import chisel3.{MultiIOModule, assert}
 import chisel3.experimental.DataMirror
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
@@ -67,7 +67,7 @@ object VerilatorExecutive extends BackendExecutive {
     val cppHarnessWriter = new FileWriter(cppHarnessFile)
     val vcdFile = new File(targetDir, s"${circuit.name}.vcd")
     val emittedStuff =
-      VerilatorCppHarnessGenerator.codeGen(dut, vcdFile.toString)
+      VerilatorCppHarnessGenerator.codeGen(dut, vcdFile.toString, targetDir)
     cppHarnessWriter.append(emittedStuff)
     cppHarnessWriter.close()
 
@@ -78,18 +78,32 @@ object VerilatorExecutive extends BackendExecutive {
       .collectFirst { case VerilatorCFlags(f) => f }
       .getOrElse(Seq.empty)
     val writeVcdFlag = if(compiledAnnotations.contains(WriteVcdAnnotation)) { Seq("--trace") } else { Seq() }
+    val coverageFlags = Seq((compiledAnnotations collect {
+      case LineCoverageAnnotation => List("--coverage-line")
+      case ToggleCoverageAnnotation => List("--coverage-toggle")
+      case UserCoverageAnnotation => List("--coverage-user")
+      case StructuralCoverageAnnotation => List("--coverage-line", "--coverage-toggle")
+      }).flatten.distinct.mkString(" ")
+    )
+
     val commandEditsFile = compiledAnnotations
       .collectFirst { case CommandEditsFile(f) => f }
       .getOrElse("")
 
-    val verilatorFlags = moreVerilatorFlags ++ writeVcdFlag
+    val coverageFlag = if(compiledAnnotations.intersect(Seq(LineCoverageAnnotation, ToggleCoverageAnnotation, UserCoverageAnnotation)).nonEmpty) {
+      Seq("-DSP_COVERAGE_ENABLE") } else { Seq ()
+    }
+
+    val verilatorFlags = moreVerilatorFlags ++ writeVcdFlag ++ coverageFlags
+    val verilatorCFlags = moreVerilatorCFlags ++ coverageFlag
+
     assert(
       verilogToVerilator(
         circuit.name,
         new File(targetDir),
         cppHarnessFile,
         moreVerilatorFlags = verilatorFlags,
-        moreVerilatorCFlags = moreVerilatorCFlags,
+        moreVerilatorCFlags = verilatorCFlags,
         editCommands = commandEditsFile
       ).! == 0,
       s"verilator command failed on circuit ${circuit.name} in work dir $targetDir"

@@ -9,6 +9,7 @@ import chisel3.stage.ChiselOutputFileAnnotation
 import chiseltest._
 import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.experimental.sanitizeFileName
+import chiseltest.internal._
 import firrtl.options.OutputAnnotationFileAnnotation
 import firrtl.stage.OutputFileAnnotation
 import org.scalatest._
@@ -35,25 +36,25 @@ class OptionsPassingTest extends AnyFlatSpec with ChiselScalatestTester with Mat
     }
 
     val testDir = new File("test_run_dir" +
-            File.separator +
-            sanitizeFileName(s"Testers2 should write vcd output when passing in a WriteVcdAnnotation"))
+      File.separator +
+      sanitizeFileName(s"Testers2 should write vcd output when passing in a WriteVcdAnnotation"))
 
     val vcdFileOpt = testDir.listFiles.find { f =>
       f.getPath.endsWith(".vcd")
     }
 
-    vcdFileOpt.isDefined should be (true)
+    vcdFileOpt.isDefined should be(true)
     vcdFileOpt.get.delete()
   }
 
   it should "allow specifying configuration options using CLI style flags" in {
     val targetDirName = "test_run_dir/overridden_dir"
     val targetDir = new File(targetDirName)
-    if(targetDir.exists()) {
+    if (targetDir.exists()) {
       targetDir.delete()
     }
     test(new MultiIOModule() {}).withFlags(Array("--target-dir", targetDirName)) { c =>
-      targetDir.exists() should be (true)
+      targetDir.exists() should be(true)
     }
   }
 
@@ -69,16 +70,16 @@ class OptionsPassingTest extends AnyFlatSpec with ChiselScalatestTester with Mat
       OutputAnnotationFileAnnotation(fileBaseName)
     )
     val targetDir = new File(targetDirName)
-    if(targetDir.exists()) {
+    if (targetDir.exists()) {
       targetDir.delete()
     }
     test(new MultiIOModule() {})
       .withAnnotations(annotations)
       .withFlags(Array("--target-dir", targetDirName)) { c =>
-      targetDir.exists() should be (true)
-      val firrtlFile = new File(targetDir + File.separator + s"$fileBaseName.lo.fir")
-      firrtlFile.exists() should be (true)
-    }
+        targetDir.exists() should be(true)
+        val firrtlFile = new File(targetDir + File.separator + s"$fileBaseName.lo.fir")
+        firrtlFile.exists() should be(true)
+      }
   }
 
   it should "allow turning on verbose mode" in {
@@ -91,7 +92,7 @@ class OptionsPassingTest extends AnyFlatSpec with ChiselScalatestTester with Mat
 
     val output = outputStream.toString
 
-    output.contains("Symbol table:") should be (true)
-    output.contains("clock/prev") should be (true)
+    output.contains("Symbol table:") should be(true)
+    output.contains("clock/prev") should be(true)
   }
 }

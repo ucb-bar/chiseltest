@@ -5,7 +5,7 @@ import java.io.{File, FileWriter}
 import chisel3._
 import chisel3.experimental.DataMirror
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
-import chiseltest.internal.BackendInstance
+import chiseltest.internal._
 import chiseltest.backends.BackendExecutive
 import firrtl.annotations.{DeletedAnnotation, ReferenceTarget}
 import firrtl.stage.RunFirrtlTransformAnnotation
@@ -95,16 +95,29 @@ object VcsExecutive extends BackendExecutive {
     val moreVcsCFlags = compiledAnnotations
       .collectFirst { case VcsCFlags(flagSeq) => flagSeq }
       .getOrElse(Seq())
+    val coverageFlags = (compiledAnnotations collect {
+      case LineCoverageAnnotation => List("line")
+      case ToggleCoverageAnnotation => List("tgl")
+      case BranchCoverageAnnotation => List("branch")
+      case ConditionalCoverageAnnotation => List("cond")
+      case UserCoverageAnnotation => List("assert")
+      case StructuralCoverageAnnotation => List("line", "tgl", "branch", "cond")
+    }).flatten.distinct match {
+      case Nil => Seq()
+      case flags => Seq("-cm " + flags.mkString("+"))
+    }
     val editCommands = compiledAnnotations.collectFirst {
       case CommandEditsFile(fileName) => fileName
     }.getOrElse("")
+
+    val vcsFlags = moreVcsCFlags ++ coverageFlags
 
     assert(
       VerilogToVcs(
         circuit.name,
         targetDirFile,
         new File(vcsHarnessFileName),
-        moreVcsFlags,
+        vcsFlags,
         moreVcsCFlags,
         editCommands
       ).! == 0

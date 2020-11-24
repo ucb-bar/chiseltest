@@ -7,7 +7,7 @@ import scala.sys.process._
   * Generates the Module specific verilator harness cpp file for verilator compilation
   */
 object VerilatorCppHarnessGenerator {
-  def codeGen(dut: MultiIOModule, vcdFilePath: String): String = {
+  def codeGen(dut: MultiIOModule, vcdFilePath: String, targetDir: String): String = {
     val codeBuffer = new StringBuilder
 
     def pushBack(vector: String, pathName: String, width: BigInt) {
@@ -165,8 +165,10 @@ int main(int argc, char **argv, char **env) {
     for (it = args.begin() ; it != args.end() ; it++) {
         if (it->find("+waveform=") == 0) vcdfile = it->c_str()+10;
     }
-#if VM_TRACE
+#if VM_TRACE || VM_COVERAGE
     Verilated::traceEverOn(true);
+#endif
+#if VM_TRACE
     VL_PRINTF(\"Enabling waves..\");
     VerilatedVcdC* tfp = new VerilatedVcdC;
     top->trace(tfp, 99);
@@ -183,6 +185,11 @@ int main(int argc, char **argv, char **env) {
 #if VM_TRACE
     if (tfp) tfp->close();
     delete tfp;
+#endif
+#if VM_COVERAGE
+    VL_PRINTF(\"Writing Coverage..\");
+    Verilated::mkdir("$targetDir/logs");
+    VerilatedCov::write("$targetDir/logs/coverage.dat");
 #endif
     delete top;
     exit(0);
