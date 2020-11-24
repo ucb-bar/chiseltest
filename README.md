@@ -92,6 +92,7 @@ See the test cases for examples:
     ```scala
     import chisel3.experimental.BundleLiterals._
     ```
+- [AlutTest](src/test/scala/chiseltest/tests/AluTest.scala) shows an example of re-using the same test for different data
 - [ShiftRegisterTest](src/test/scala/chiseltest/tests/ShiftRegisterTest.scala) shows an example of using fork/join to define a test helper function, where multiple invocations of it are pipelined using `fork`.
 - [VerilatorBasicTests](src/test/scala/chiseltest/experimental/tests/VerilatorBasicTests.scala) shows an example using Verilator as the simulator.
   - Note: the simulator is selected by passing an annotation into the `test` function, which requires experimental imports:
