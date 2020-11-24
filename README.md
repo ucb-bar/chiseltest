@@ -5,7 +5,7 @@ This is **alpha software** that is currently under development, and interfaces m
 However, it is very much in a usable state, so if you're fine living on the bleeding edge, give it a try. 
 
 ## Overview
-ChiselTest is a test harness for [Chisel](https://github.com/freechipsproject/chisel3)-based RTL designs, currently supporting directed testing (all test stimulus manually specified - no constrained random and coverage-driven flows).
+ChiselTest is a test harness for [Chisel](https://github.com/chipsalliance/chisel3)-based RTL designs, currently supporting directed testing (all test stimulus manually specified - no constrained random and coverage-driven flows).
 ChiselTest emphasizes tests that are lightweight (minimizes boilerplate code), easy to read and write (understandability), and compose (for better test code reuse).
 
 The core primitives are similar to nonsynthesizable Verilog: input pin assignment (`poke`), pin value assertion (`expect`), and time advance (`step`). Threading concurrency is also supported with the use of `fork` and `join`, and concurrent accesses to wires are checked to prevent race conditions.
