@@ -16,11 +16,6 @@ class CompileDut extends Phase {
   override def invalidates(a: Phase) = false
 
   override def transform(annotations: AnnotationSeq): AnnotationSeq = {
-    Viewer[ChiselTestOptions].view(annotations).backend.get match {
-      case "treadle"   => TreadleBackend.compileDut(annotations)
-      case "verilator" => VerilatorBackend.compileDut(annotations)
-      case "vcs"       => VcsBackend.compileDut(annotations)
-    }
+    Viewer[ChiselTestOptions].view(annotations).backend.map(_.compileDut(annotations)).get
   }
-
 }

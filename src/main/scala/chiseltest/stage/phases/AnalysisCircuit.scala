@@ -2,6 +2,7 @@ package chiseltest.stage.phases
 
 import chisel3.experimental.DataMirror
 import chisel3.{Data, Element, Record, Vec}
+import chiseltest.backends.TreadleBackend
 import chiseltest.stage.ChiselTestOptions
 import firrtl.AnnotationSeq
 import firrtl.annotations.{NoTargetAnnotation, ReferenceTarget}
@@ -56,7 +57,7 @@ class AnalysisCircuit extends Phase {
             case (p, n) =>
               (
                 p,
-                if (backend == "treadle")
+                if (backend == TreadleBackend)
                   n
                 else
                   s"$topName.$n"
@@ -79,7 +80,7 @@ class AnalysisCircuit extends Phase {
         case "reset" => "reset"
         case "clock" => "clock"
         case _ =>
-          if (backend == "treadle")
+          if (backend == TreadleBackend)
             component.name
           else
             s"${component.module}.${component.name}"

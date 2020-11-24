@@ -7,7 +7,7 @@ import firrtl.AnnotationSeq
 import firrtl.ir.{Circuit, GroundType, Input, IntWidth, Output, Port}
 import firrtl.options.Viewer
 
-object VcsBackend {
+object VcsBackend extends SimulatorBackend {
 
   import scala.sys.process._
 

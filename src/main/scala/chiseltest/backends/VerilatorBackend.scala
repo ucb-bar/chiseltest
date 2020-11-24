@@ -7,7 +7,7 @@ import firrtl.AnnotationSeq
 import firrtl.ir._
 import firrtl.options.Viewer
 
-object VerilatorBackend {
+object VerilatorBackend extends SimulatorBackend {
 
   import scala.sys.process._
 
@@ -25,7 +25,7 @@ object VerilatorBackend {
     val dutName = circuit.main
     val dutApiClassName = dutName + "_api_t"
     val dutVerilatorClassName = "V" + dutName
-    val verilatorVersion = "verilator --version".!!.split(' ').last.stripLineEnd
+    val verilatorVersion = "verilator --version".!!(processLogger()).split(' ').last.stripLineEnd
     val verilatorRunFlushCallback = if (verilatorVersion >= "v4.038") {
       "Verilated::runFlushCallbacks();\nVerilated::runExitCallbacks();\n"
     } else {
@@ -249,13 +249,17 @@ object VerilatorBackend {
       "--exe",
       cppHarnessFile
     ) ++ blackBoxVerilogListFlag ++ writeVcdFlag ++ coverageFlags ++ userSimulatorFlags.getOrElse(Seq.empty)
-    val generatedCommand = s"cd $targetDir && verilator --cc $topName.v ${verilatorFlags.mkString(" ")}"
+    val compileToCppCommand = s"cd $targetDir && verilator --cc $topName.v ${verilatorFlags.mkString(" ")}"
+    val compileToBinCommand = s"make -C $targetDir -j -f V$topName.mk V$topName"
+    logger.warn(s"compiling verilog to c++: $compileToCppCommand")
     assert(
-      Seq("bash", "-c", generatedCommand).! == 0,
-      s"verilator command failed on circuit $topName in work dir $targetDir: \n$generatedCommand"
+      Seq("bash", "-c", compileToCppCommand).!(processLogger()) == 0,
+      s"verilator command failed on circuit $topName in work dir $targetDir: \n$compileToCppCommand"
     )
+    logger.warn(s"compiling c++ to binary: $compileToBinCommand")
+
     assert(
-      Seq("make", "-C", targetDir, "-j", "-f", s"V$topName.mk", s"V$topName").! == 0,
+      Seq("bash", "-c", compileToBinCommand).!(processLogger()) == 0,
       s"Compilation of verilator generated code failed for circuit $topName in work dir $targetDir"
     )
   }

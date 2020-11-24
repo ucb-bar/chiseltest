@@ -2,13 +2,13 @@ package chiseltest.stage
 
 import chisel3.{Data, MultiIOModule}
 import chiseltest.ChiselTestException
-import chiseltest.backends.SimulatorInterface
+import chiseltest.backends.{SimulatorBackend, SimulatorInterface}
 import firrtl.ir.Port
 
 class ChiselTestOptions private[stage] (
   val circuit:               Option[firrtl.ir.Circuit] = None,
   val topName:               Option[String] = None,
-  val backend:               Option[String] = None,
+  val backend:               Option[SimulatorBackend] = None,
   val simulatorCFlags:       Option[Seq[String]] = None,
   val simulatorFlags:        Option[Seq[String]] = None,
   val targetDir:             Option[String] = None,
@@ -26,7 +26,7 @@ class ChiselTestOptions private[stage] (
   private[stage] def copy(
     circuit:               Option[firrtl.ir.Circuit] = circuit,
     topName:               Option[String] = topName,
-    backend:               Option[String] = backend,
+    backend:               Option[SimulatorBackend] = backend,
     simulatorCFlags:       Option[Seq[String]] = simulatorCFlags,
     simulatorFlags:        Option[Seq[String]] = simulatorFlags,
     targetDir:             Option[String] = targetDir,

@@ -2,7 +2,7 @@ package chiseltest
 
 import chisel3.MultiIOModule
 import chisel3.stage.DesignAnnotation
-import chiseltest.backends.SimulatorInterfaceAnnotation
+import chiseltest.backends.{SimulatorInterfaceAnnotation, TreadleBackend, VcsBackend, VerilatorBackend}
 import chiseltest.stage.CoverageAnnotations
 import chiseltest.stage.phases.{ExportedSingalsAnnotation, TopCombinationalPathAnnotation}
 import firrtl.AnnotationSeq
@@ -17,10 +17,10 @@ package object stage {
     override def view(options: AnnotationSeq): ChiselTestOptions = options
       .foldLeft(new ChiselTestOptions()) { (options, annos) =>
         annos match {
-          case TreadleBackendAnnotation => options.copy(backend = Some("treadle"))
+          case TreadleBackendAnnotation => options.copy(backend = Some(TreadleBackend))
           case VerilatorBackendAnnotation =>
-            options.copy(backend = Some("verilator"))
-          case VcsBackendAnnotation => options.copy(backend = Some("vcs"))
+            options.copy(backend = Some(VerilatorBackend))
+          case VcsBackendAnnotation => options.copy(backend = Some(VcsBackend))
           case WriteVcdAnnotation   => options.copy(waveForm = Some("vcd"))
           case coverage: CoverageAnnotations =>
             options.copy(coverageAnnotations = options.coverageAnnotations ++ Set(coverage))
