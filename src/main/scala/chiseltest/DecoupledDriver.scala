@@ -20,28 +20,35 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
   }
 
   protected def getSourceClock: Clock = {
-    ClockResolutionUtils.getClock(DecoupledDriver.decoupledSourceKey, x,
-      x.ready.getSourceClock)  // TODO: validate against bits/valid sink clocks
+    ClockResolutionUtils.getClock(
+      DecoupledDriver.decoupledSourceKey,
+      x,
+      x.ready.getSourceClock
+    ) // TODO: validate against bits/valid sink clocks
   }
 
   def enqueueNow(data: T): Unit = timescope {
     // TODO: check for init
     x.bits.poke(data)
     x.valid.poke(true.B)
-    fork.withRegion(Monitor) {
-      x.ready.expect(true.B)
-    }.joinAndStep(getSourceClock)
+    fork
+      .withRegion(Monitor) {
+        x.ready.expect(true.B)
+      }
+      .joinAndStep(getSourceClock)
   }
 
   def enqueue(data: T): Unit = timescope {
     // TODO: check for init
     x.bits.poke(data)
     x.valid.poke(true.B)
-    fork.withRegion(Monitor) {
-      while (x.ready.peek().litToBoolean == false) {
-        getSourceClock.step(1)
+    fork
+      .withRegion(Monitor) {
+        while (x.ready.peek().litToBoolean == false) {
+          getSourceClock.step(1)
+        }
       }
-    }.joinAndStep(getSourceClock)
+      .joinAndStep(getSourceClock)
   }
 
   def enqueueSeq(data: Seq[T]): Unit = timescope {
@@ -63,8 +70,11 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
   }
 
   protected def getSinkClock: Clock = {
-    ClockResolutionUtils.getClock(DecoupledDriver.decoupledSinkKey, x,
-      x.valid.getSourceClock)  // TODO: validate against bits/valid sink clocks
+    ClockResolutionUtils.getClock(
+      DecoupledDriver.decoupledSinkKey,
+      x,
+      x.valid.getSourceClock
+    ) // TODO: validate against bits/valid sink clocks
   }
 
   // NOTE: this doesn't happen in the Monitor phase, unlike public functions
@@ -77,20 +87,24 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
   def expectDequeue(data: T): Unit = timescope {
     // TODO: check for init
     x.ready.poke(true.B)
-    fork.withRegion(Monitor) {
-      waitForValid()
-      x.valid.expect(true.B)
-      x.bits.expect(data)
-    }.joinAndStep(getSinkClock)
+    fork
+      .withRegion(Monitor) {
+        waitForValid()
+        x.valid.expect(true.B)
+        x.bits.expect(data)
+      }
+      .joinAndStep(getSinkClock)
   }
 
   def expectDequeueNow(data: T): Unit = timescope {
     // TODO: check for init
     x.ready.poke(true.B)
-    fork.withRegion(Monitor) {
-      x.valid.expect(true.B)
-      x.bits.expect(data)
-    }.joinAndStep(getSinkClock)
+    fork
+      .withRegion(Monitor) {
+        x.valid.expect(true.B)
+        x.bits.expect(data)
+      }
+      .joinAndStep(getSinkClock)
   }
 
   def expectDequeueSeq(data: Seq[T]): Unit = timescope {

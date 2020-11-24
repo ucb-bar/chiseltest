@@ -5,18 +5,15 @@ import scala.sys.process._
 
 object VerilogToVcs extends EditableBuildCSimulatorCommand {
   val prefix = "vcs-command-edit"
-  override def composeCommand(topModule: String,
-                              dir: java.io.File,
-                              flags: Seq[String],
-                              cFlags: Seq[String]): String = {
-    Seq("cd", dir.toString, "&&", "vcs") ++ flags mkString " "
+  override def composeCommand(topModule: String, dir: java.io.File, flags: Seq[String], cFlags: Seq[String]): String = {
+    (Seq("cd", dir.toString, "&&", "vcs") ++ flags).mkString(" ")
 
   }
 
   def composeFlags(
-    topModule: String,
-    dir: java.io.File,
-    moreVcsFlags: Seq[String] = Seq.empty[String],
+    topModule:     String,
+    dir:           java.io.File,
+    moreVcsFlags:  Seq[String] = Seq.empty[String],
     moreVcsCFlags: Seq[String] = Seq.empty[String]
   ): (Seq[String], Seq[String]) = {
 
@@ -41,7 +38,7 @@ object VerilogToVcs extends EditableBuildCSimulatorCommand {
       "-LDFLAGS",
       "-lstdc++",
       "-CFLAGS",
-      "\"%s\"".format(ccFlags mkString " ")
+      "\"%s\"".format(ccFlags.mkString(" "))
     ) ++
       moreVcsFlags
 
@@ -50,10 +47,10 @@ object VerilogToVcs extends EditableBuildCSimulatorCommand {
 
   def constructCSimulatorCommand(
     topModule: String,
-    dir: java.io.File,
-    harness: java.io.File,
-    iFlags: Seq[String] = Seq.empty[String],
-    iCFlags: Seq[String] = Seq.empty[String]
+    dir:       java.io.File,
+    harness:   java.io.File,
+    iFlags:    Seq[String] = Seq.empty[String],
+    iCFlags:   Seq[String] = Seq.empty[String]
   ): String = {
 
     val (cFlags, cCFlags) = composeFlags(
@@ -72,12 +69,14 @@ object VerilogToVcs extends EditableBuildCSimulatorCommand {
     composeCommand(topModule, dir, cFlags, cCFlags)
   }
 
-  def apply(topModule: String,
-            dir: java.io.File,
-            vcsHarness: java.io.File,
-            moreVcsFlags: Seq[String] = Seq.empty[String],
-            moreVcsCFlags: Seq[String] = Seq.empty[String],
-            editCommands: String = ""): ProcessBuilder = {
+  def apply(
+    topModule:     String,
+    dir:           java.io.File,
+    vcsHarness:    java.io.File,
+    moreVcsFlags:  Seq[String] = Seq.empty[String],
+    moreVcsCFlags: Seq[String] = Seq.empty[String],
+    editCommands:  String = ""
+  ): ProcessBuilder = {
 
     val finalCommand = editCSimulatorCommand(
       constructCSimulatorCommand(

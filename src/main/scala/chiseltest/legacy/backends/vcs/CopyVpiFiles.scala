@@ -15,7 +15,7 @@ object CopyVpiFiles {
     val vpiCppFilePath = Paths.get(destinationDirPath + "/vpi.cpp")
     val vpiTabFilePath = Paths.get(destinationDirPath + "/vpi.tab")
 
-    for(fileName <- Seq(simApiHFilePath, vpiHFilePath, vpiCppFilePath, vpiTabFilePath)) {
+    for (fileName <- Seq(simApiHFilePath, vpiHFilePath, vpiCppFilePath, vpiTabFilePath)) {
       try {
         Files.createFile(fileName)
       } catch {

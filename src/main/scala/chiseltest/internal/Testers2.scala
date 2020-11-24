@@ -19,13 +19,13 @@ import scala.util.DynamicVariable
 //TODO: there should be a formal mapping from testers2 options form to backend specific forms
 @deprecated("Use annotation based options instead. See: .withAnnotations", "chisel-testers2 20190604")
 case class TesterOptions(
-  name: String,
-  writeVcd: Boolean
-) {
+  name:     String,
+  writeVcd: Boolean) {
   def toAnnotations: AnnotationSeq = {
     Seq(
       Some(TopNameAnnotation(name)),
-      if(writeVcd) { Some(WriteVcdAnnotation) } else None
+      if (writeVcd) { Some(WriteVcdAnnotation) }
+      else None
     ).flatten
   }
 }
@@ -106,8 +106,6 @@ case object UserCoverageAnnotation extends TestOptionObject {
   )
 }
 
-
-
 trait BackendAnnotation extends TestOptionObject {
   self: Object =>
   def executive: BackendExecutive
@@ -150,8 +148,7 @@ case object VcsBackendAnnotation extends BackendAnnotation {
 }
 
 object Context {
-  class Instance(val backend: BackendInterface, val env: TestEnvInterface) {
-  }
+  class Instance(val backend: BackendInterface, val env: TestEnvInterface) {}
 
   private var context = new DynamicVariable[Option[Instance]](None)
 

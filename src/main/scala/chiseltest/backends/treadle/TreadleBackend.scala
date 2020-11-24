@@ -3,7 +3,7 @@
 package chiseltest.backends.treadle
 
 import chiseltest.internal._
-import chiseltest.{Region, TimeoutException, ClockResolutionException}
+import chiseltest.{ClockResolutionException, Region, TimeoutException}
 import chisel3._
 import treadle.TreadleTester
 
@@ -11,22 +11,22 @@ import scala.collection.mutable
 
 // TODO: is Seq[CombinationalPath] the right API here? It's unclear where name -> Data resolution should go
 class TreadleBackend[T <: MultiIOModule](
-  val dut: T,
-  val dataNames: Map[Data, String],
+  val dut:                T,
+  val dataNames:          Map[Data, String],
   val combinationalPaths: Map[Data, Set[Data]],
-  tester: TreadleTester
-)
-extends BackendInstance[T] with ThreadedBackend[T] {
+  tester:                 TreadleTester)
+    extends BackendInstance[T]
+    with ThreadedBackend[T] {
 
   //
   // Debug utility functions
   //
-  val verbose: Boolean = false  // hard-coded debug flag
+  val verbose: Boolean = false // hard-coded debug flag
   def debugLog(str: => String) {
     if (verbose) println(str)
   }
 
-  protected def resolveName(signal: Data): String = {  // TODO: unify w/ dataNames?
+  protected def resolveName(signal: Data): String = { // TODO: unify w/ dataNames?
     dataNames.getOrElse(signal, signal.toString)
   }
 
@@ -79,15 +79,20 @@ extends BackendInstance[T] with ThreadedBackend[T] {
     a
   }
 
-  override def expectBits(signal: Data, value: BigInt, message: Option[String], decode: Option[BigInt => String],
-                          stale: Boolean): Unit = {
+  override def expectBits(
+    signal:  Data,
+    value:   BigInt,
+    message: Option[String],
+    decode:  Option[BigInt => String],
+    stale:   Boolean
+  ): Unit = {
     require(!stale, "Stale peek not yet implemented")
 
     debugLog(s"${resolveName(signal)} ?> $value")
     Context().env.testerExpect(value, peekBits(signal, stale), resolveName(signal), message, decode)
   }
 
-  protected val clockCounter : mutable.HashMap[Clock, Int] = mutable.HashMap()
+  protected val clockCounter: mutable.HashMap[Clock, Int] = mutable.HashMap()
   protected def getClockCycle(clk: Clock): Int = {
     clockCounter.getOrElse(clk, 0)
   }
@@ -103,19 +108,20 @@ extends BackendInstance[T] with ThreadedBackend[T] {
 
     contents()
 
-    closeTimescope(createdTimescope).foreach { case (data, valueOption) =>
-      valueOption match {
-        case Some(value) =>
-          if (tester.peek(dataNames(data)) != value) {
+    closeTimescope(createdTimescope).foreach {
+      case (data, valueOption) =>
+        valueOption match {
+          case Some(value) =>
+            if (tester.peek(dataNames(data)) != value) {
+              idleCycles.clear()
+            }
+            tester.poke(dataNames(data), value)
+            debugLog(s"${resolveName(data)} <- (revert) $value")
+          case None =>
             idleCycles.clear()
-          }
-          tester.poke(dataNames(data), value)
-          debugLog(s"${resolveName(data)} <- (revert) $value")
-        case None =>
-          idleCycles.clear()
-          tester.poke(dataNames(data), 0)  // TODO: randomize or 4-state sim
-          debugLog(s"${resolveName(data)} <- (revert) DC")
-      }
+            tester.poke(dataNames(data), 0) // TODO: randomize or 4-state sim
+            debugLog(s"${resolveName(data)} <- (revert) DC")
+        }
     }
   }
 
@@ -137,13 +143,20 @@ extends BackendInstance[T] with ThreadedBackend[T] {
 
   override def run(testFn: T => Unit): Unit = {
     rootTimescope = Some(new RootTimescope)
-    val mainThread = new TesterThread( () => {
+    val mainThread = new TesterThread(
+      () => {
         tester.poke("reset", 1)
         tester.step(1)
         tester.poke("reset", 0)
 
         testFn(dut)
-      }, TimeRegion(0, Region.default), rootTimescope.get, 0, Region.default, None)
+      },
+      TimeRegion(0, Region.default),
+      rootTimescope.get,
+      0,
+      Region.default,
+      None
+    )
     mainThread.thread.start()
     require(allThreads.isEmpty)
     allThreads += mainThread
@@ -160,21 +173,23 @@ extends BackendInstance[T] with ThreadedBackend[T] {
         val steppedClocks = Seq(dut.clock) ++ lastClockValue.collect {
           case (clock, lastValue) if getClock(clock) != lastValue && getClock(clock) => clock
         }
-        steppedClocks foreach { clock =>
+        steppedClocks.foreach { clock =>
           clockCounter.put(dut.clock, getClockCycle(clock) + 1) // TODO: ignores cycles before a clock was stepped on
         }
-        lastClockValue foreach { case (clock, _) =>
-          lastClockValue.put(clock, getClock(clock))
+        lastClockValue.foreach {
+          case (clock, _) =>
+            lastClockValue.put(clock, getClock(clock))
         }
 
         runThreads(steppedClocks.toSet)
         Context().env.checkpoint()
 
-        idleLimits foreach { case (clock, limit) =>
-          idleCycles.put(clock, idleCycles.getOrElse(clock, -1) + 1)
-          if (idleCycles(clock) >= limit) {
-            throw new TimeoutException(s"timeout on $clock at $limit idle cycles")
-          }
+        idleLimits.foreach {
+          case (clock, limit) =>
+            idleCycles.put(clock, idleCycles.getOrElse(clock, -1) + 1)
+            if (idleCycles(clock) >= limit) {
+              throw new TimeoutException(s"timeout on $clock at $limit idle cycles")
+            }
         }
 
         tester.step(1)
@@ -189,7 +204,7 @@ extends BackendInstance[T] with ThreadedBackend[T] {
         }
       }
 
-      tester.report()  // needed to dump VCDs
+      tester.report() // needed to dump VCDs
     }
   }
 }
