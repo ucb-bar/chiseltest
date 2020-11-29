@@ -7,8 +7,9 @@ import chisel3._
 import chisel3.experimental._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class ElementTest extends AnyFlatSpec with ChiselScalatestTester {
+class ElementTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2 with Element types"
 
   // TODO: automatically detect overflow conditions and error out
@@ -126,6 +127,40 @@ class ElementTest extends AnyFlatSpec with ChiselScalatestTester {
       // Overflow test with decimal component
       c.io.expect(31.75.F(2.BP), 31.75.F(2.BP), -0.5.F(2.BP))
       c.io.expect(31.75.F(2.BP), 0.25.F(2.BP), -32.F(2.BP))
+    }
+  }
+
+  it should "peek on FixedPoint currently" in {
+    import chisel3.experimental.FixedPoint
+    test(new Module {
+      val io = IO(new Bundle {
+        val in1 = Input(FixedPoint(67.W, 2.BP))
+        val in2 = Input(FixedPoint(67.W, 2.BP))
+        val out = Output(FixedPoint(67.W, 2.BP))
+      })
+      io.out := io.in1 + io.in2
+
+      def expect(in1Val: FixedPoint, in2Val: FixedPoint, outVal: FixedPoint) {
+        io.in1.poke(in1Val)
+        io.in2.poke(in2Val)
+        io.out.expect(outVal)
+        io.out.peek().litToBigDecimal should be (outVal.litToBigDecimal)
+      }
+    }) { c =>
+      c.expect(BigDecimal(Long.MaxValue).F(2.BP), 0.F(2.BP), BigDecimal(Long.MaxValue).F(2.BP))
+      c.expect(0.F(2.BP), BigDecimal(Long.MaxValue).F(2.BP), BigDecimal(Long.MaxValue).F(2.BP))
+      c.expect(BigDecimal(Long.MinValue).F(2.BP), 0.F(2.BP), BigDecimal(Long.MinValue).F(2.BP))
+      c.expect(0.F(2.BP), BigDecimal(Long.MinValue).F(2.BP), BigDecimal(Long.MinValue).F(2.BP))
+      c.expect(
+        BigDecimal(Long.MaxValue).F(2.BP),
+        BigDecimal(Long.MaxValue).F(2.BP),
+        (BigDecimal(Long.MaxValue) * 2).F(2.BP)
+      )
+      c.expect(
+        BigDecimal(Long.MinValue).F(2.BP),
+        BigDecimal(Long.MinValue).F(2.BP),
+        (BigDecimal(Long.MinValue) * 2).F(2.BP)
+      )
     }
   }
 
