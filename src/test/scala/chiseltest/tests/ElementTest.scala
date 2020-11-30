@@ -5,6 +5,7 @@ package chiseltest.tests
 import org.scalatest._
 import chisel3._
 import chisel3.experimental._
+import chisel3.experimental.BundleLiterals._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -130,37 +131,28 @@ class ElementTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
     }
   }
 
-  it should "peek on FixedPoint currently" in {
-    import chisel3.experimental.FixedPoint
-    test(new Module {
-      val io = IO(new Bundle {
-        val in1 = Input(FixedPoint(67.W, 2.BP))
-        val in2 = Input(FixedPoint(67.W, 2.BP))
-        val out = Output(FixedPoint(67.W, 2.BP))
-      })
-      io.out := io.in1 + io.in2
+  it should "peek on FixedPoint correctly" in {
+    test(new PassthroughModule(new Bundle() {
+      val d1 = FixedPoint(64.W, 0.BP)
+      val d2 = FixedPoint(66.W, 2.BP)
+    })) { c =>
+      c.in.d1.poke(BigDecimal(Long.MaxValue).F(0.BP))
+      c.out.d1.peek().litToBigDecimal should be (BigDecimal(Long.MaxValue))
 
-      def expect(in1Val: FixedPoint, in2Val: FixedPoint, outVal: FixedPoint) {
-        io.in1.poke(in1Val)
-        io.in2.poke(in2Val)
-        io.out.expect(outVal)
-        io.out.peek().litToBigDecimal should be (outVal.litToBigDecimal)
-      }
-    }) { c =>
-      c.expect(BigDecimal(Long.MaxValue).F(2.BP), 0.F(2.BP), BigDecimal(Long.MaxValue).F(2.BP))
-      c.expect(0.F(2.BP), BigDecimal(Long.MaxValue).F(2.BP), BigDecimal(Long.MaxValue).F(2.BP))
-      c.expect(BigDecimal(Long.MinValue).F(2.BP), 0.F(2.BP), BigDecimal(Long.MinValue).F(2.BP))
-      c.expect(0.F(2.BP), BigDecimal(Long.MinValue).F(2.BP), BigDecimal(Long.MinValue).F(2.BP))
-      c.expect(
-        BigDecimal(Long.MaxValue).F(2.BP),
-        BigDecimal(Long.MaxValue).F(2.BP),
-        (BigDecimal(Long.MaxValue) * 2).F(2.BP)
-      )
-      c.expect(
-        BigDecimal(Long.MinValue).F(2.BP),
-        BigDecimal(Long.MinValue).F(2.BP),
-        (BigDecimal(Long.MinValue) * 2).F(2.BP)
-      )
+      c.in.d1.poke(BigDecimal(Long.MinValue).F(0.BP))
+      c.out.d1.peek().litToBigDecimal should be (BigDecimal(Long.MinValue))
+
+      c.in.d1.poke(0.F(0.BP))
+      c.out.d1.peek().litToBigDecimal should be (BigDecimal(0))
+
+      c.in.d2.poke(BigDecimal(Long.MaxValue).F(2.BP))
+      c.out.d2.peek().litToBigDecimal should be (BigDecimal(Long.MaxValue))
+
+      c.in.d2.poke(BigDecimal(Long.MinValue).F(2.BP))
+      c.out.d2.peek().litToBigDecimal should be (BigDecimal(Long.MinValue))
+
+      c.in.d2.poke(0.F(2.BP))
+      c.out.d2.peek().litToBigDecimal should be (BigDecimal(0))
     }
   }
 
