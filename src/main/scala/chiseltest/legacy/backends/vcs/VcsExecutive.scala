@@ -122,7 +122,7 @@ object VcsExecutive extends BackendExecutive {
       .collectFirst[Seq[String]] {
         case TestCommandOverride(f) => f.split(" +")
       }
-      .getOrElse { Seq(new File(targetDir, circuit.name).toString) }
+      .getOrElse { Seq(new File(targetDir, circuit.name).toString) } ++ coverageFlags
 
     val paths = compiledAnnotations.collect { case c: CombinationalPath => c }
 
