@@ -4,7 +4,7 @@ package chiseltest.legacy.backends.verilator
 
 import chiseltest.internal.{BackendInstance, Context, ThreadedBackend}
 import chiseltest.legacy.backends.verilator.Utils.unsignedBigIntToSigned
-import chiseltest.{Region, TimeoutException, ClockResolutionException}
+import chiseltest.{ClockResolutionException, Region, TimeoutException}
 import chisel3.experimental.{DataMirror, FixedPoint, Interval}
 import chisel3.internal.firrtl.KnownWidth
 import chisel3.{SInt, _}
@@ -22,11 +22,11 @@ import scala.math.BigInt
   */
 // TODO: is Seq[CombinationalPath] the right API here? It's unclear where name -> Data resolution should go
 class VerilatorBackend[T <: MultiIOModule](
-  val dut: T,
-  val dataNames: Map[Data, String],
+  val dut:                T,
+  val dataNames:          Map[Data, String],
   val combinationalPaths: Map[Data, Set[Data]],
-  command: Seq[String]
-) extends BackendInstance[T]
+  command:                Seq[String])
+    extends BackendInstance[T]
     with ThreadedBackend[T] {
 
   private[chiseltest] val simApiInterface = new SimApiInterface(dut, command)
@@ -111,11 +111,13 @@ class VerilatorBackend[T <: MultiIOModule](
     }
   }
 
-  override def expectBits(signal: Data,
-                          value: BigInt,
-                          message: Option[String],
-                          decode: Option[BigInt => String],
-                          stale: Boolean): Unit = {
+  override def expectBits(
+    signal:  Data,
+    value:   BigInt,
+    message: Option[String],
+    decode:  Option[BigInt => String],
+    stale:   Boolean
+  ): Unit = {
     require(!stale, "Stale peek not yet implemented")
 
     debugLog(s"${resolveName(signal)} ?> $value")
@@ -209,14 +211,13 @@ class VerilatorBackend[T <: MultiIOModule](
         // TODO: remove multiple invocations of getClock
         // Unblock threads waiting on dependent clock
         val steppedClocks = Seq(dut.clock) ++ lastClockValue.collect {
-          case (clock, lastValue)
-              if getClock(clock) != lastValue && getClock(clock) =>
+          case (clock, lastValue) if getClock(clock) != lastValue && getClock(clock) =>
             clock
         }
-        steppedClocks foreach { clock =>
+        steppedClocks.foreach { clock =>
           clockCounter.put(dut.clock, getClockCycle(clock) + 1) // TODO: ignores cycles before a clock was stepped on
         }
-        lastClockValue foreach {
+        lastClockValue.foreach {
           case (clock, _) =>
             lastClockValue.put(clock, getClock(clock))
         }
@@ -224,7 +225,7 @@ class VerilatorBackend[T <: MultiIOModule](
         runThreads(steppedClocks.toSet)
         Context().env.checkpoint()
 
-        idleLimits foreach {
+        idleLimits.foreach {
           case (clock, limit) =>
             idleCycles.put(clock, idleCycles.getOrElse(clock, -1) + 1)
             if (idleCycles(clock) >= limit) {

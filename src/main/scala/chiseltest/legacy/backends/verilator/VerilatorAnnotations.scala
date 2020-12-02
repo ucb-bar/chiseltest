@@ -34,8 +34,7 @@ case object VerilatorFlags extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[String](
       longOption = "t-verilator-flags",
-      toAnnotationSeq = (flags: String) =>
-        Seq(VerilatorFlags(flags.split(" +"))),
+      toAnnotationSeq = (flags: String) => Seq(VerilatorFlags(flags.split(" +"))),
       helpText = "additional flags to pass to the verilator program"
     )
   )
@@ -53,8 +52,7 @@ case object VerilatorCFlags extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[String](
       longOption = "t-verilator-flags",
-      toAnnotationSeq = (flags: String) =>
-        Seq(VerilatorCFlags(flags.split(" +"))),
+      toAnnotationSeq = (flags: String) => Seq(VerilatorCFlags(flags.split(" +"))),
       helpText = "additional flags to pass to the c++ compiler"
     )
   )

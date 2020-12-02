@@ -20,8 +20,11 @@ class ValidDriver[T <: Data](x: ValidIO[T]) {
   }
 
   protected def getSourceClock: Clock = {
-    ClockResolutionUtils.getClock(ValidDriver.validSourceKey, x,
-      x.valid.getSourceClock())  // TODO: validate against bits/valid sink clocks
+    ClockResolutionUtils.getClock(
+      ValidDriver.validSourceKey,
+      x,
+      x.valid.getSourceClock()
+    ) // TODO: validate against bits/valid sink clocks
   }
 
   def enqueueNow(data: T): Unit = timescope {
@@ -49,8 +52,11 @@ class ValidDriver[T <: Data](x: ValidIO[T]) {
   }
 
   protected def getSinkClock: Clock = {
-    ClockResolutionUtils.getClock(ValidDriver.validSinkKey, x,
-      x.valid.getSourceClock())  // TODO: validate against bits/valid sink clocks
+    ClockResolutionUtils.getClock(
+      ValidDriver.validSinkKey,
+      x,
+      x.valid.getSourceClock()
+    ) // TODO: validate against bits/valid sink clocks
   }
 
   // NOTE: this doesn't happen in the Monitor phase, unlike public functions
@@ -62,19 +68,23 @@ class ValidDriver[T <: Data](x: ValidIO[T]) {
 
   def expectDequeue(data: T): Unit = timescope {
     // TODO: check for init
-    fork.withRegion(Monitor) {
-      waitForValid()
-      x.valid.expect(true.B)
-      x.bits.expect(data)
-    }.joinAndStep(getSinkClock)
+    fork
+      .withRegion(Monitor) {
+        waitForValid()
+        x.valid.expect(true.B)
+        x.bits.expect(data)
+      }
+      .joinAndStep(getSinkClock)
   }
 
   def expectDequeueNow(data: T): Unit = timescope {
     // TODO: check for init
-    fork.withRegion(Monitor) {
-      x.valid.expect(true.B)
-      x.bits.expect(data)
-    }.joinAndStep(getSinkClock)
+    fork
+      .withRegion(Monitor) {
+        x.valid.expect(true.B)
+        x.bits.expect(data)
+      }
+      .joinAndStep(getSinkClock)
   }
 
   def expectDequeueSeq(data: Seq[T]): Unit = timescope {
@@ -104,4 +114,3 @@ object ValidDriver {
   protected val validSourceKey = new Object()
   protected val validSinkKey = new Object()
 }
-

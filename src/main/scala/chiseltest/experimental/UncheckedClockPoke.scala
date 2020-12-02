@@ -8,6 +8,7 @@ import chisel3._
 import chisel3.experimental.{DataMirror, Direction}
 
 package object UncheckedClockPoke {
+
   /** This provides a quick and dirty way to poke clocks. Inter-thread dependency is NOT checked,
     * so it is up to you to understand the thread ordering semantics to use this correctly.
     * Note that thread ordering IS deterministic, so you will NOT get a nondeterministic test.

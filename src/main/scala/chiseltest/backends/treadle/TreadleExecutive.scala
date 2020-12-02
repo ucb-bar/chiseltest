@@ -36,9 +36,13 @@ object TreadleExecutive extends BackendExecutive {
 
     val circuit = annotationSeq.collect { case x: ChiselCircuitAnnotation => x }.head.circuit
     val dut = getTopModule(circuit).asInstanceOf[T]
-    val portNames = DataMirror.modulePorts(dut).flatMap { case (name, data) =>
-      getDataNames(name, data).toList
-    }.toMap
+    val portNames = DataMirror
+      .modulePorts(dut)
+      .flatMap {
+        case (name, data) =>
+          getDataNames(name, data).toList
+      }
+      .toMap
 
     // This generates the firrtl circuit needed by the TreadleTesterPhase
     annotationSeq = (new ChiselStage).run(annotationSeq ++ Seq(RunFirrtlTransformAnnotation(new LowFirrtlEmitter)))
@@ -49,7 +53,7 @@ object TreadleExecutive extends BackendExecutive {
     val treadleTester = annotationSeq.collectFirst { case TreadleTesterAnnotation(t) => t }.getOrElse(
       throw new Exception(
         s"TreadleTesterPhase could not build a treadle tester from these annotations" +
-        annotationSeq.mkString("Annotations:\n", "\n  ", "")
+          annotationSeq.mkString("Annotations:\n", "\n  ", "")
       )
     )
 

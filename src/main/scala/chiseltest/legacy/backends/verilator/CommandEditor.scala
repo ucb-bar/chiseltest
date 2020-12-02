@@ -61,11 +61,10 @@ class CommandEditor(val editCommands: Seq[String], messagePrefix: String) {
 
 object CommandEditor {
   val RegexPrefixPattern: Regex = """s(.).*""".r
-  val Verbose: Regex = """verbose.*""".r
+  val Verbose:            Regex = """verbose.*""".r
   val DefaultPrefix = "command-editor"
 
-  def apply(fileOrEditor: String,
-            messagePrefix: String = DefaultPrefix): CommandEditor = {
+  def apply(fileOrEditor: String, messagePrefix: String = DefaultPrefix): CommandEditor = {
     val editCommands = fileOrEditor match {
       case "" =>
         Seq.empty
