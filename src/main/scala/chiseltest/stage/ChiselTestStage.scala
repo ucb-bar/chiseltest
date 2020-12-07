@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package chiseltest.stage
 
 import chisel3.stage._

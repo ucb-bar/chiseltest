@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package chiseltest.stage.phases
 
 import chisel3.experimental.DataMirror
