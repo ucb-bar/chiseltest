@@ -105,7 +105,7 @@ object VcsExecutive extends BackendExecutive {
       case CommandEditsFile(fileName) => fileName
     }.getOrElse("")
 
-    val vcsFlags = moreVcsCFlags ++ coverageFlags
+    val vcsFlags = moreVcsFlags ++ coverageFlags
 
     assert(
       VerilogToVcs(
