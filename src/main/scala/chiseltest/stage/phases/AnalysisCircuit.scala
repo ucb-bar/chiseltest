@@ -8,16 +8,16 @@ import chiseltest.backends.TreadleBackend
 import chiseltest.stage.ChiselTestOptions
 import firrtl.AnnotationSeq
 import firrtl.annotations.{NoTargetAnnotation, ReferenceTarget}
-import firrtl.options.{Dependency, Phase, PreservesAll, Viewer}
+import firrtl.options.{Dependency, Phase, Viewer}
 import firrtl.transforms.CombinationalPath
 
 case class ExportedSingalsAnnotation(ports: Map[Data, String]) extends NoTargetAnnotation
 
 case class TopCombinationalPathAnnotation(paths: Map[Data, Set[Data]]) extends NoTargetAnnotation
 
-/** This is the analysis phase for tester2 executor.
-  *
-  * @todo inline to firrtl transform and gather annoation here, rather than analyse transform here.
+/** This Phase:
+  * 1. export top io signal name map to [[ExportedSingalsAnnotation]].
+  * 2. export top io combinational path to [[TopCombinationalPathAnnotation]].
   */
 class AnalysisCircuit extends Phase {
   override def prerequisites: Seq[Dependency[Phase]] = Seq(Dependency[MaybeChiselStage])

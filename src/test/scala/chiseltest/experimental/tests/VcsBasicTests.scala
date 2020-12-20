@@ -8,8 +8,6 @@ import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-import scala.collection.Seq
-
 class VcsBasicTests extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2 with Vcs"
 
