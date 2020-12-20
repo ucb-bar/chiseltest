@@ -6,6 +6,9 @@ import chiseltest.stage._
 import firrtl.AnnotationSeq
 import firrtl.options.{Dependency, Phase, TargetDirAnnotation}
 
+import java.io.File
+import scala.reflect.io.Directory
+
 /** add default [[TargetDirAnnotation]] and [[BackendAnnotation]]. */
 class AddDefaults extends Phase {
   override def prerequisites: Seq[Dependency[Phase]] = Seq(Dependency[Checks])
@@ -29,6 +32,7 @@ class AddDefaults extends Phase {
         case t: TargetDirAnnotation => t
       }.getOrElse(TargetDirAnnotation(s"test_run_dir" + java.io.File.separator + name)).directory).getAbsolutePath
     )
+    new Directory(new File(targetDirAnnotation.directory)).deleteRecursively()
 
     val backendAnnotation = annotations.collect {
       case t: BackendAnnotation => t
