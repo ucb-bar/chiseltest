@@ -3,9 +3,12 @@
 package chiseltest.backends
 
 import chisel3._
+import chisel3.experimental.{DataMirror, FixedPoint, Interval}
+import chisel3.internal.firrtl.KnownWidth
 import chiseltest.TestApplicationException
 import firrtl.ir.{GroundType, IntWidth, Port}
 import logger.LazyLogging
+import treadle.utils.BitMasks
 
 import java.io.File
 import java.nio.channels.FileChannel
@@ -13,8 +16,9 @@ import scala.collection.immutable.ListMap
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future, blocking}
+import scala.concurrent.{blocking, Await, ExecutionContext, Future}
 import scala.language.implicitConversions
+import scala.math.BigInt
 import scala.sys.process.{Process, ProcessLogger}
 
 /** [[SimulatorInterface]] for VPI backend, including [[VcsBackend]] and [[VerilatorBackend]].
@@ -81,6 +85,36 @@ class VPIInterface(topPorts: Seq[Port], topName: String, commands: Seq[String])
     inChannel.close()
     outChannel.close()
     cmdChannel.close()
+  }
+
+  override def resolveResult(data: Data, interfaceResult: BigInt): BigInt = {
+    def unsignedBigIntToSigned(unsigned: BigInt, width: Int): BigInt = {
+      val bitMasks = BitMasks.getBitMasksBigs(width)
+      if (unsigned < 0) {
+        unsigned
+      } else {
+        if (bitMasks.isMsbSet(unsigned)) {
+          (unsigned & bitMasks.allBitsMask) - bitMasks.nextPowerOfTwo
+        } else {
+          unsigned & bitMasks.allBitsMask
+        }
+      }
+    }
+
+    // @todo don't use [[DataMirror]] anymore. consume information from firrtl.
+    // Since VPI don't know what datatype is, it should be resolved.
+    data match {
+      case s: SInt =>
+        val width = DataMirror.widthOf(s).asInstanceOf[KnownWidth].value
+        unsignedBigIntToSigned(interfaceResult, width)
+      case f: FixedPoint =>
+        val width = DataMirror.widthOf(f).asInstanceOf[KnownWidth].value
+        unsignedBigIntToSigned(interfaceResult, width)
+      case i: Interval =>
+        val width = DataMirror.widthOf(i).asInstanceOf[KnownWidth].value
+        unsignedBigIntToSigned(interfaceResult, width)
+      case _ => interfaceResult
+    }
   }
 
   // VPI interface implementations.

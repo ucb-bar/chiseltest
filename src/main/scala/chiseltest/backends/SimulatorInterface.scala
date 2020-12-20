@@ -2,6 +2,7 @@
 
 package chiseltest.backends
 
+import chisel3.Data
 import firrtl.annotations.NoTargetAnnotation
 import logger.LazyLogging
 
@@ -40,4 +41,6 @@ trait SimulatorInterface extends LazyLogging {
   private[chiseltest] def finish(): Unit = {
     logger.debug(s"Simulation end at $startTime")
   }
+
+  private[chiseltest] def resolveResult(data: Data, interfaceResult: BigInt): BigInt = interfaceResult
 }

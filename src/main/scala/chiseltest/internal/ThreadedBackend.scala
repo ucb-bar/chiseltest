@@ -8,7 +8,14 @@ import chisel3.experimental.{DataMirror, FixedPoint, Interval}
 import chisel3.internal.firrtl.KnownWidth
 import chiseltest.backends.{TreadleInterface, VPIInterface}
 import chiseltest.stage.ChiselTestOptions
-import chiseltest.{ClockResolutionException, FailedExpectException, Region, TemporalParadox, ThreadOrderDependentException, TimeoutException}
+import chiseltest.{
+  ClockResolutionException,
+  FailedExpectException,
+  Region,
+  TemporalParadox,
+  ThreadOrderDependentException,
+  TimeoutException
+}
 import firrtl.AnnotationSeq
 import firrtl.options.Viewer
 import logger.LazyLogging
@@ -934,41 +941,7 @@ class ThreadedBackend(annotations: AnnotationSeq) extends LazyLogging {
         BigInt(0)
     }
 
-    simulatorInterface match {
-      case _: TreadleInterface =>
-        interfaceResult
-
-      case _: VPIInterface =>
-        def unsignedBigIntToSigned(unsigned: BigInt, width: Int): BigInt = {
-          val bitMasks = BitMasks.getBitMasksBigs(width)
-          if (unsigned < 0) {
-            unsigned
-          } else {
-            if (bitMasks.isMsbSet(unsigned)) {
-              (unsigned & bitMasks.allBitsMask) - bitMasks.nextPowerOfTwo
-            } else {
-              unsigned & bitMasks.allBitsMask
-            }
-          }
-        }
-
-        /** @todo don't use [[DataMirror]] anymore.
-          *       consume information from firrtl.
-          */
-        /* Since VPI don't know what datatype is, it should be resolved. */
-        signal match {
-          case s: SInt =>
-            val width = DataMirror.widthOf(s).asInstanceOf[KnownWidth].value
-            unsignedBigIntToSigned(interfaceResult, width)
-          case f: FixedPoint =>
-            val width = DataMirror.widthOf(f).asInstanceOf[KnownWidth].value
-            unsignedBigIntToSigned(interfaceResult, width)
-          case i: Interval =>
-            val width = DataMirror.widthOf(i).asInstanceOf[KnownWidth].value
-            unsignedBigIntToSigned(interfaceResult, width)
-          case _ => interfaceResult
-        }
-    }
+    simulatorInterface.resolveResult(signal, interfaceResult)
   }
 
   def doTimescope(contents: () => Unit): Unit = {
