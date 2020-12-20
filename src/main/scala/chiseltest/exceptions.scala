@@ -17,3 +17,5 @@ class TimeoutException(message: String) extends ChiselTestException(message)
 
 // when interfacing with the testdriver before stepping the clock after moving to an earlier region
 class TemporalParadox(message: String) extends ChiselTestException(message)
+
+case class TestApplicationException(exitVal: Int, lastMessage: String) extends RuntimeException(lastMessage)

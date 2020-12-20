@@ -57,6 +57,14 @@ class ThreadedBackend(annotations: AnnotationSeq) extends BackendInterface with 
   var currentTimestep: Int = 0 // current simulator timestep, in number of base clock cycles
   protected val testMap = mutable.HashMap[Any, Any]()
 
+  // @todo make user be able to set his with his own init logic,
+  //       for example reset, local last state or etc.
+  protected def resetFunc() = {
+    simulatorInterface.poke("reset", 1)
+    simulatorInterface.step(1)
+    simulatorInterface.poke("reset", 0)
+  }
+
   protected def resolveName(signal: Data): String = dataNames.getOrElse(signal, signal.toString)
   protected def bigintToHex(x: BigInt): String = {
     if (x < 0) {
@@ -86,13 +94,8 @@ class ThreadedBackend(annotations: AnnotationSeq) extends BackendInterface with 
     rootTimescope = Some(new RootTimescope)
     val mainThread = new TesterThread(
       () => {
-
-        /** @todo make user be able to set his with his own init logic,
-          *       for example reset, local last state or etc.
-          */
-        simulatorInterface.poke("reset", 1)
-        simulatorInterface.step(1)
-        simulatorInterface.poke("reset", 0)
+        simulatorInterface.start()
+        resetFunc()
         testFunction(dut)
       },
       TimeRegion(0, Region.default),
@@ -152,7 +155,7 @@ class ThreadedBackend(annotations: AnnotationSeq) extends BackendInterface with 
         }
       }
 
-      simulatorInterface.finish() // Do this to close down the communication
+      simulatorInterface.finish()
     }
   }
 

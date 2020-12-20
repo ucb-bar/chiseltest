@@ -2,31 +2,42 @@
 
 package chiseltest.backends
 
-import firrtl.AnnotationSeq
+import firrtl.annotations.NoTargetAnnotation
+import logger.LazyLogging
 
-/** API to Simulator. */
-trait SimulatorInterface {
+/** annotation to store [[SimulatorInterface]], which will be used in [[chiseltest.internal.ThreadedBackend]]. */
+case class SimulatorInterfaceAnnotation(interface: SimulatorInterface) extends NoTargetAnnotation
+
+/** Standard API which should be implemented by a [[SimulatorInterface]], */
+trait SimulatorInterface extends LazyLogging {
 
   /** start time of this test. */
-  final val startTime: Long = System.nanoTime()
+  final private[chiseltest] lazy val startTime: Long = System.nanoTime()
+
+  /** start time of this test. */
+  final private[chiseltest] lazy val endTime: Long = elapsedNanoSeconds()
 
   /** how many nano seconds has elapsed since this test start. */
-  def elapsedNanoSeconds(): Long = System.nanoTime() - startTime
-
-  def annotations: AnnotationSeq
+  final private[chiseltest] def elapsedNanoSeconds(): Long = System.nanoTime() - startTime
 
   /** poke a signal name with a [[BigInt]]. */
-  def poke(signal: String, value: BigInt): Unit
+  private[chiseltest] def poke(signal: String, value: BigInt): Unit
 
-  /** peek a signal name, return a BigInt if found. */
-  def peek(signal: String): Option[BigInt]
+  /** peek a signal name, return BigInt if found.
+    * If signal is not found in circuit, return [[None]].
+    */
+  private[chiseltest] def peek(signal: String): Option[BigInt]
 
-  /** step the main clock. */
-  def step(n: Int): Unit
+  /** Ask Simulator to step to next n delta cycle. */
+  private[chiseltest] def step(n: Int): Unit
+
+  /** start simulator. */
+  private[chiseltest] def start(): Unit = {
+    logger.debug(s"Simulation start at $startTime")
+  }
 
   /** end simulator. */
-  def finish(): Unit
-
-  /** interface to get current clock. */
-  def cycleCount: BigInt
+  private[chiseltest] def finish(): Unit = {
+    logger.debug(s"Simulation end at $startTime")
+  }
 }

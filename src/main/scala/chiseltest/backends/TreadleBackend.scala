@@ -3,11 +3,14 @@
 package chiseltest.backends
 
 import firrtl.AnnotationSeq
-import treadle.{TreadleCircuitStateAnnotation, TreadleTester}
 import treadle.stage.phases.PrepareAst
+import treadle.{TreadleCircuitStateAnnotation, TreadleTester}
 
+/** [[SimulatorBackend]] for Treadle.
+  * Interface should be [[TreadleInterface]].
+  */
 object TreadleBackend extends SimulatorBackend {
-  def compileDut(annotations: AnnotationSeq) = {
+  def compileDut(annotations: AnnotationSeq): AnnotationSeq = {
     val treadleAnnotations = (new PrepareAst).transform(annotations)
     (treadleAnnotations :+ SimulatorInterfaceAnnotation(
       new TreadleInterface(new TreadleTester(treadleAnnotations))

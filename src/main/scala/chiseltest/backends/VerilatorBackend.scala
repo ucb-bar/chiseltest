@@ -2,27 +2,30 @@
 
 package chiseltest.backends
 
-import java.io.{File, FileWriter}
-
 import chiseltest.stage._
 import firrtl.AnnotationSeq
 import firrtl.ir._
 import firrtl.options.Viewer
 
+import java.io.{File, FileWriter}
+
+/** [[SimulatorBackend]] for Verilator backend.
+  * Interface should be [[VPIInterface]].
+  */
 object VerilatorBackend extends SimulatorBackend {
 
   import scala.sys.process._
 
-  private def pushBack(vector: String, pathName: String, width: BigInt) = width match {
-    case i if i == 0  => ""
-    case i if i <= 8  => s"        sim_data.$vector.push_back(new VerilatorCData(&($pathName)));"
-    case i if i <= 16 => s"        sim_data.$vector.push_back(new VerilatorSData(&($pathName)));"
-    case i if i <= 32 => s"        sim_data.$vector.push_back(new VerilatorIData(&($pathName)));"
-    case i if i <= 64 => s"        sim_data.$vector.push_back(new VerilatorQData(&($pathName)));"
-    case _            => s"        sim_data.$vector.push_back(new VerilatorWData($pathName, ${(width - 1) / 32 + 1}));"
-  }
-
+  /** Verilator use CPP as harness, this function generate this harness based on [[Circuit]] */
   private def generateVerilatorCppHarness(targetDir: String, circuit: Circuit, topPorts: Seq[Port]) = {
+    def pushBack(vector: String, pathName: String, width: BigInt) = width match {
+      case i if i == 0  => ""
+      case i if i <= 8  => s"        sim_data.$vector.push_back(new VerilatorCData(&($pathName)));"
+      case i if i <= 16 => s"        sim_data.$vector.push_back(new VerilatorSData(&($pathName)));"
+      case i if i <= 32 => s"        sim_data.$vector.push_back(new VerilatorIData(&($pathName)));"
+      case i if i <= 64 => s"        sim_data.$vector.push_back(new VerilatorQData(&($pathName)));"
+      case _            => s"        sim_data.$vector.push_back(new VerilatorWData($pathName, ${(width - 1) / 32 + 1}));"
+    }
     val vcdFile = new File(targetDir, s"${circuit.main}.vcd")
     val dutName = circuit.main
     val dutApiClassName = dutName + "_api_t"
@@ -56,7 +59,7 @@ object VerilatorBackend extends SimulatorBackend {
          |        sim_data.outputs.clear();
          |        sim_data.signals.clear();
          |
-         |${(topPorts.map {
+         |${topPorts.map {
         case Port(_, name, direction, tpe) =>
           pushBack(
             direction match {
@@ -66,7 +69,7 @@ object VerilatorBackend extends SimulatorBackend {
             s"dut->$name",
             tpe.asInstanceOf[GroundType].width.asInstanceOf[IntWidth].width
           )
-      }).mkString("\n")}
+      }.mkString("\n")}
          |
          |${pushBack("signals", "dut->reset", 1)}
          |        ${s"""sim_data.signal_map["$dutName.reset"] = 0;"""}
@@ -188,6 +191,7 @@ object VerilatorBackend extends SimulatorBackend {
     cppHarnessFile.getAbsoluteFile.toString
   }
 
+  /** Compile Verilog to executable. */
   private def compileVerilatorDut(
     targetDir:           String,
     circuit:             Circuit,
@@ -196,13 +200,13 @@ object VerilatorBackend extends SimulatorBackend {
     userSimulatorCFlags: Option[Seq[String]],
     coverageAnnotations: Set[CoverageAnnotations],
     cppHarnessFile:      String
-  ) = {
+  ): Unit = {
     val topName = circuit.main
     val writeVcdFlag: Seq[String] = waveForm match {
       case Some("vcd") => Seq("--trace")
       case _           => Seq.empty
     }
-    val coverageFlags: Seq[String] = (coverageAnnotations.collect {
+    val coverageFlags: Seq[String] = coverageAnnotations.collect {
       case LineCoverageAnnotation       => Set("--coverage-line")
       case ToggleCoverageAnnotation     => Set("--coverage-toggle")
       case UserCoverageAnnotation       => Set("--coverage-user")
@@ -210,7 +214,7 @@ object VerilatorBackend extends SimulatorBackend {
       /* unsupported coverages by verilator. */
       case BranchCoverageAnnotation      => Set.empty[String]
       case ConditionalCoverageAnnotation => Set.empty[String]
-    }).flatten.toSeq
+    }.flatten.toSeq
     val coverageCFlags =
       if (
         coverageAnnotations
@@ -266,7 +270,7 @@ object VerilatorBackend extends SimulatorBackend {
     )
   }
 
-  def compileDut(annotations: AnnotationSeq) = {
+  def compileDut(annotations: AnnotationSeq): AnnotationSeq = {
     val options = Viewer[ChiselTestOptions].view(annotations)
     compileVerilatorDut(
       options.targetDir.get,

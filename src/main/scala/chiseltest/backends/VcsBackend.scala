@@ -2,23 +2,27 @@
 
 package chiseltest.backends
 
-import java.io.{File, FileWriter}
-
 import chiseltest.stage._
 import firrtl.AnnotationSeq
-import firrtl.ir.{Circuit, GroundType, Input, IntWidth, Output, Port}
+import firrtl.ir._
 import firrtl.options.Viewer
 
+import java.io.{File, FileWriter}
+
+/** [[SimulatorBackend]] for Synopsys VCS backend.
+  * Interface should be [[VPIInterface]].
+  */
 object VcsBackend extends SimulatorBackend {
 
   import scala.sys.process._
 
+  /** VCS use Verilog as harness, this function generate this harness based on [[Circuit]] */
   private def generateVcsVerilogHarness(
     targetDir: String,
     waveForm:  Option[String],
     circuit:   Circuit,
     topPorts:  Seq[Port]
-  ) = {
+  ): String = {
     def generateHarnessIO(port: Port) = port match {
       case Port(_, name, direction, tpe) =>
         s"  ${direction match {
@@ -66,13 +70,14 @@ object VcsBackend extends SimulatorBackend {
          |endmodule
          |""".stripMargin
     val verilogHarnessFileName = s"${circuit.main}-harness.v"
-    val verilogHarnessFile = new File(targetDir, verilogHarnessFileName)
-    val verilogHarnessWriter = new FileWriter(verilogHarnessFile)
+    val verilogHarnessFile:   File = new File(targetDir, verilogHarnessFileName)
+    val verilogHarnessWriter: FileWriter = new FileWriter(verilogHarnessFile)
     verilogHarnessWriter.append(emittedStuff)
     verilogHarnessWriter.close()
     verilogHarnessFile.getAbsoluteFile.toString
   }
 
+  /** Compile Verilog to executable linked to VCS own library. */
   private def compileVcsDut(
     targetDir:           String,
     circuit:             Circuit,
@@ -80,22 +85,22 @@ object VcsBackend extends SimulatorBackend {
     userSimulatorCFlags: Option[Seq[String]],
     coverageAnnotations: Set[CoverageAnnotations],
     verilogHarnessFile:  String
-  ) = {
+  ): Unit = {
     val topName = circuit.main
-    val blackBoxVerilogListFile = new File(targetDir, firrtl.transforms.BlackBoxSourceHelper.defaultFileListName)
+    val blackBoxVerilogListFile: File = new File(targetDir, firrtl.transforms.BlackBoxSourceHelper.defaultFileListName)
     val blackBoxVerilogListFlag = if (blackBoxVerilogListFile.exists()) {
       Seq("-f", blackBoxVerilogListFile.getAbsolutePath)
     } else {
       Seq.empty[String]
     }
-    val coverageFlags: Seq[String] = (coverageAnnotations.collect {
+    val coverageFlags: Seq[String] = coverageAnnotations.collect {
       case LineCoverageAnnotation        => Set("line")
       case ToggleCoverageAnnotation      => Set("tgl")
       case BranchCoverageAnnotation      => Set("branch")
       case ConditionalCoverageAnnotation => Set("cond")
       case UserCoverageAnnotation        => Set("assert")
       case StructuralCoverageAnnotation  => Set("line", "tgl", "branch", "cond")
-    }).flatten.toSeq match {
+    }.flatten.toSeq match {
       case Nil   => Seq.empty
       case flags => Seq("-cm " + flags.mkString("+"))
     }
@@ -137,7 +142,7 @@ object VcsBackend extends SimulatorBackend {
     )
   }
 
-  def compileDut(annotations: AnnotationSeq) = {
+  def compileDut(annotations: AnnotationSeq): AnnotationSeq = {
     val options = Viewer[ChiselTestOptions].view(annotations)
     compileVcsDut(
       options.targetDir.get,
