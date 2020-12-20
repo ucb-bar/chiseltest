@@ -138,8 +138,9 @@ case class TestFunctionAnnotation[T <: chisel3.RawModule](func: T => Unit)
     extends NoTargetAnnotation
     with ChiselTestOption
 
-/** @todo find a way to point to a test function in shell.
-  *       may be reflection?
+/** Annotation to store user test functions will be extracted and executed in [[chiseltest.stage.phases.Simulate]]
+  *
+  * @todo find a way to point to a test function in shell. may be reflection?
   */
 object TestFunctionAnnotation extends HasShellOptions {
   override val options = Seq(
