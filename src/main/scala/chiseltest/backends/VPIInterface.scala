@@ -2,26 +2,29 @@
 
 package chiseltest.backends
 
-import java.io.File
-import java.nio.channels.FileChannel
-
 import chisel3._
+import chiseltest.TestApplicationException
 import firrtl.ir.{GroundType, IntWidth, Port}
 import logger.LazyLogging
 
+import java.io.File
+import java.nio.channels.FileChannel
 import scala.collection.immutable.ListMap
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration._
-import scala.concurrent.{blocking, Await, ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future, blocking}
 import scala.language.implicitConversions
 import scala.sys.process.{Process, ProcessLogger}
 
+/** [[SimulatorInterface]] for VPI backend, including [[VcsBackend]] and [[VerilatorBackend]].
+  * @param topPorts Ports in the top of circuit.
+  * @param topName name of dut.
+  * @param commands command to start simulator executable.
+  */
 class VPIInterface(topPorts: Seq[Port], topName: String, commands: Seq[String])
     extends SimulatorInterface
     with LazyLogging {
-  def cycleCount: BigInt = _currentClock
-
   def poke(signal: String, value: BigInt): Unit = {
     if (inputsNameToChunkSizeMap contains signal) {
       _pokeMap(signal) = value
@@ -65,16 +68,22 @@ class VPIInterface(topPorts: Seq[Port], topName: String, commands: Seq[String])
     (0 until n).foreach(_ => takeStep())
   }
 
-  def finish(): Unit = {
+  override def start(): Unit = {
+    logger.trace(s"""STARTING ${commands.mkString(" ")}""")
+    mwhile(!recvOutputs) {}
+    super.start()
+  }
+
+  override def finish(): Unit = {
     mwhile(!sendCmd(SIM_CMD.FIN)) {}
-    logger.info("Exit Code: %d".format(Await.result(exitValue, Duration.Inf)))
+    logger.debug(s"Simulation end at $startTime, Exit Code: ${Await.result(exitValue, Duration.Inf)}")
     dumpLogs()
     inChannel.close()
     outChannel.close()
     cmdChannel.close()
   }
 
-  /* VPI interface implementations. */
+  // VPI interface implementations.
   val (inputsNameToChunkSizeMap, outputsNameToChunkSizeMap) = {
     val (inputs, outputs) = topPorts.partition(_.direction == firrtl.ir.Input)
 
@@ -117,8 +126,18 @@ class VPIInterface(topPorts: Seq[Port], topName: String, commands: Seq[String])
   private val _logs = mutable.ArrayBuffer[String]()
   private var _currentClock = 0
 
+  object VPIProcess {
+    def apply(cmd: Seq[String], logs: ArrayBuffer[String]): Process = {
+      require(new java.io.File(cmd.head).exists, s"${cmd.head} doesn't exist")
+      val processBuilder = Process(cmd.mkString(" "))
+      // This makes everything written to stderr get added as lines to logs
+      val processLogger = ProcessLogger(println, logs += _) // don't log stdout
+      processBuilder.run(processLogger)
+    }
+  }
+
   /** initialize simulator process */
-  private[chiseltest] val process = TesterProcess(commands, _logs)
+  private[chiseltest] val process = VPIProcess(commands, _logs)
 
   // Set up a Future to wait for (and signal) the test process exit.
 
@@ -246,7 +265,7 @@ class VPIInterface(topPorts: Seq[Port], topName: String, commands: Seq[String])
       else {
         outChannel.consume()
         Some(
-          ((0 until chunk).foldLeft(BigInt(0)))((res, i) => res | (int(outChannel(i)) << (64 * i)))
+          (0 until chunk).foldLeft(BigInt(0))((res, i) => res | (int(outChannel(i)) << (64 * i)))
         )
       }
     outChannel.release()
@@ -258,10 +277,9 @@ class VPIInterface(topPorts: Seq[Port], topName: String, commands: Seq[String])
     outChannel.acquire()
     val valid = outChannel.valid
     if (valid) {
-      (outputsNameToChunkSizeMap.toList.foldLeft(0)) {
+      outputsNameToChunkSizeMap.toList.foldLeft(0) {
         case (off, (out, chunk)) =>
-          _peekMap(out) =
-            ((0 until chunk).foldLeft(BigInt(0)))((res, i) => res | (int(outChannel(off + i)) << (64 * i)))
+          _peekMap(out) = (0 until chunk).foldLeft(BigInt(0))((res, i) => res | (int(outChannel(off + i)) << (64 * i)))
           off + chunk
       }
       outChannel.consume()
@@ -274,7 +292,7 @@ class VPIInterface(topPorts: Seq[Port], topName: String, commands: Seq[String])
     inChannel.acquire()
     val ready = inChannel.ready
     if (ready) {
-      (inputsNameToChunkSizeMap.toList.foldLeft(0)) {
+      inputsNameToChunkSizeMap.toList.foldLeft(0) {
         case (off, (in, chunk)) =>
           val value = _pokeMap.getOrElse(in, BigInt(0))
           (0 until chunk).foreach(i => inChannel(off + i) = (value >> (64 * i)).toLong)
@@ -350,80 +368,59 @@ class VPIInterface(topPorts: Seq[Port], topName: String, commands: Seq[String])
     }
   }
 
-  private def start(): Unit = {
-    logger.warn(s"""STARTING ${commands.mkString(" ")}""")
-    mwhile(!recvOutputs) {}
-  }
-
-  // Once everything has been prepared, we can start the communications.
-  start()
-}
-
-private[chiseltest] class Channel(name: String) {
-  private lazy val file = new java.io.RandomAccessFile(name, "rw")
-  private lazy val channel = file.getChannel
-  @volatile private lazy val buffer = {
-    val size = channel.size
-    assert(size > 16, "channel.size is bogus: %d".format(size))
-    channel.map(FileChannel.MapMode.READ_WRITE, 0, size)
-  }
-
-  implicit def intToByte(i: Int): Byte = i.toByte
-
-  val channel_data_offset_64bw = 4 // Offset from start of channel buffer to actual user data in 64bit words.
-  def acquire(): Unit = {
-    buffer.put(0, 1)
-    buffer.put(2, 0)
-    while ((buffer.get(1)) == 1 && (buffer.get(2)) == 0) {}
-  }
-
-  def release(): Unit = {
-    buffer.put(0, 0)
-  }
-
-  def ready: Boolean = (buffer.get(3)) == 0
-
-  def valid: Boolean = (buffer.get(3)) == 1
-
-  def produce(): Unit = {
-    buffer.put(3, 1)
-  }
-
-  def consume(): Unit = {
-    buffer.put(3, 0)
-  }
-
-  def update(idx: Int, data: Long) {
-    buffer.putLong(8 * idx + channel_data_offset_64bw, data)
-  }
-
-  def update(base: Int, data: String) {
-    data.zipWithIndex.foreach {
-      case (c, i) => buffer.put(base + i + channel_data_offset_64bw, c)
+  private class Channel(name: String) {
+    private lazy val file = new java.io.RandomAccessFile(name, "rw")
+    private lazy val channel = file.getChannel
+    @volatile private lazy val buffer = {
+      val size = channel.size
+      assert(size > 16, "channel.size is bogus: %d".format(size))
+      channel.map(FileChannel.MapMode.READ_WRITE, 0, size)
     }
-    buffer.put(base + data.length + channel_data_offset_64bw, 0)
+
+    implicit def intToByte(i: Int): Byte = i.toByte
+
+    val channel_data_offset_64bw = 4 // Offset from start of channel buffer to actual user data in 64bit words.
+    def acquire(): Unit = {
+      buffer.put(0, 1)
+      buffer.put(2, 0)
+      while (buffer.get(1) == 1 && buffer.get(2) == 0) {}
+    }
+
+    def release(): Unit = {
+      buffer.put(0, 0)
+    }
+
+    def ready: Boolean = buffer.get(3) == 0
+
+    def valid: Boolean = buffer.get(3) == 1
+
+    def produce(): Unit = {
+      buffer.put(3, 1)
+    }
+
+    def consume(): Unit = {
+      buffer.put(3, 0)
+    }
+
+    def update(idx: Int, data: Long) {
+      buffer.putLong(8 * idx + channel_data_offset_64bw, data)
+    }
+
+    def update(base: Int, data: String) {
+      data.zipWithIndex.foreach {
+        case (c, i) => buffer.put(base + i + channel_data_offset_64bw, c)
+      }
+      buffer.put(base + data.length + channel_data_offset_64bw, 0)
+    }
+
+    def apply(idx: Int): Long =
+      buffer.getLong(8 * idx + channel_data_offset_64bw)
+
+    def close(): Unit = {
+      file.close()
+    }
+
+    buffer.order(java.nio.ByteOrder.nativeOrder)
+    new File(name).delete
   }
-
-  def apply(idx: Int): Long =
-    buffer.getLong(8 * idx + channel_data_offset_64bw)
-
-  def close(): Unit = {
-    file.close()
-  }
-
-  buffer.order(java.nio.ByteOrder.nativeOrder)
-  new File(name).delete
 }
-
-private[chiseltest] object TesterProcess {
-  def apply(cmd: Seq[String], logs: ArrayBuffer[String]): Process = {
-    require(new java.io.File(cmd.head).exists, s"${cmd.head} doesn't exist")
-    val processBuilder = Process(cmd.mkString(" "))
-    // This makes everything written to stderr get added as lines to logs
-    val processLogger = ProcessLogger(println, logs += _) // don't log stdout
-    processBuilder.run(processLogger)
-  }
-}
-
-private[chiseltest] case class TestApplicationException(exitVal: Int, lastMessage: String)
-    extends RuntimeException(lastMessage)

@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import scala.language.implicitConversions
-import chiseltest.internal._
 import chisel3._
-import chisel3.experimental.{DataMirror, Direction, EnumType, FixedPoint, Interval}
 import chisel3.experimental.BundleLiterals._
+import chisel3.experimental.{DataMirror, Direction, EnumType, FixedPoint, Interval}
 import chisel3.util._
+import chiseltest.internal._
 
-/** Basic interfaces and implicit conversions for testers2
-  */
+import scala.language.implicitConversions
+
+/** Basic interfaces and implicit conversions for ChiselTests */
 package object chiseltest {
-  import chisel3.internal.firrtl.{LitArg, SLit, ULit}
 
   implicit class testableRecord[T <: Record](x: T) {
 
@@ -232,6 +231,9 @@ package object chiseltest {
   def timescope(contents: => Unit): Unit = {
     Context().doTimescope(() => contents)
   }
+
+  /** get current elapsedTime in nano second. */
+  def elapsedNanoSeconds: Long = Context().simulatorInterface.elapsedNanoSeconds()
 
   object TestInstance {
     def setVar(key: Any, value: Any): Unit = {
