@@ -8,8 +8,6 @@ import firrtl.ir.{Param, Type}
 import treadle.executable.{PositiveEdge, Transition}
 import treadle.{ScalaBlackBox, ScalaBlackBoxFactory}
 
-import scala.collection.mutable
-
 /** Temporary and bleeding edge features with no guarantee of forwards compatibility
   * This isn't in its own package object because that contributes to name mangling
   *
@@ -71,7 +69,7 @@ class AsyncResetRegScalaImpl(instanceName: String) extends ScalaBlackBox {
     Seq.empty
   }
 
-  override def getDependencies: Seq[(String, Set[String])] = Seq(
+  override def getDependencies: Seq[(String, collection.immutable.Set[String])] = Seq(
     "d" -> Set("q"),
     "q" -> Set("rst", "clk")
   )
