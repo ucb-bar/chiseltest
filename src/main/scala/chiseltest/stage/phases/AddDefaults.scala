@@ -27,17 +27,15 @@ class AddDefaults extends Phase {
         s"test_run_dir" + java.io.File.separator + name + java.io.File.separator + System.currentTimeMillis
     }.get).getAbsolutePath)
 
-    val backendAnnotation = annotations.collect {
-      case t: BackendAnnotation => t
-    }
-
     /** If not specify backend, use treadle by default. */
-    val backend = if (backendAnnotation.isEmpty) Seq(TreadleBackendAnnotation) else backendAnnotation
+    val backendAnnotation = annotations.collectFirst {
+      case t: BackendAnnotation => t
+    }.getOrElse(TreadleBackendAnnotation)
 
     annotations.filter {
       case _: TargetDirAnnotation => false
       case _: BackendAnnotation   => false
       case _ => true
-    } ++ backend :+ targetDirAnnotation
+    } :+ backendAnnotation :+ targetDirAnnotation
   }
 }
