@@ -8,6 +8,8 @@ import firrtl.ir.{Param, Type}
 import treadle.executable.{PositiveEdge, Transition}
 import treadle.{ScalaBlackBox, ScalaBlackBoxFactory}
 
+import scala.collection.mutable
+
 /** Temporary and bleeding edge features with no guarantee of forwards compatibility
   * This isn't in its own package object because that contributes to name mangling
   *
