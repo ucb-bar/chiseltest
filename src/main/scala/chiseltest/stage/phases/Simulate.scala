@@ -18,7 +18,7 @@ class Simulate extends Phase {
 
   def transform(annotations: AnnotationSeq): AnnotationSeq =
     new ThreadedBackend(annotations).run.filterNot {
-      case _: ExportedSingalsAnnotation      => true
+      case _: ExportedSignalsAnnotation      => true
       case _: TopCombinationalPathAnnotation => true
       case _ => false
     }

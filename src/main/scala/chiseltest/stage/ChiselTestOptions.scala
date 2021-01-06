@@ -22,7 +22,7 @@ import firrtl.ir.Port
   * @param testFunction extract function to test dut from [[TestFunctionAnnotation]]
   * @param simulatorInterface extract [[SimulatorInterface]] for a specific backend from [[chiseltest.backends.SimulatorInterfaceAnnotation]]
   * @param topPorts extract all ports name of top from [[treadle.TreadleCircuitStateAnnotation]] or [[firrtl.stage.FirrtlCircuitAnnotation]]
-  * @param topPortsNameMap extract a HashMap: Data -> String from [[chiseltest.stage.phases.ExportedSingalsAnnotation]]
+  * @param topPortsNameMap extract a HashMap: Data -> String from [[chiseltest.stage.phases.ExportedSignalsAnnotation]]
   *                        @todo Shoulde be refactored to [[firrtl.annotations.Target]] for better namespace consistency.
   * @param topCombinationalPaths extract combinational path on the top Ports in Data -> Data from [[chiseltest.stage.phases.TopCombinationalPathAnnotation]]
   * @param coverageAnnotations extract [[LineCoverageAnnotation]] [[ToggleCoverageAnnotation]] [[BranchCoverageAnnotation]] [[ConditionalCoverageAnnotation]] [[StructuralCoverageAnnotation]] [[UserCoverageAnnotation]]

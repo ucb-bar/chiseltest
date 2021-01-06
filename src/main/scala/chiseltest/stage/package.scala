@@ -6,7 +6,7 @@ import chisel3.MultiIOModule
 import chisel3.stage.DesignAnnotation
 import chiseltest.backends.{SimulatorInterfaceAnnotation, TreadleBackend, VcsBackend, VerilatorBackend}
 import chiseltest.stage.CoverageAnnotations
-import chiseltest.stage.phases.{ExportedSingalsAnnotation, TopCombinationalPathAnnotation}
+import chiseltest.stage.phases.{ExportedSignalsAnnotation, TopCombinationalPathAnnotation}
 import firrtl.AnnotationSeq
 import firrtl.ir.{Circuit, Module}
 import firrtl.options.{OptionsView, TargetDirAnnotation}
@@ -54,7 +54,7 @@ package object stage {
             options.copy(testFunction = Some(a.func))
           case SimulatorInterfaceAnnotation(simulatorInterface) =>
             options.copy(simulatorInterface = Some(simulatorInterface))
-          case ExportedSingalsAnnotation(topPortsNameMap) =>
+          case ExportedSignalsAnnotation(topPortsNameMap) =>
             options.copy(topPortsNameMap = Some(topPortsNameMap))
           case TopCombinationalPathAnnotation(topCombinationalPath) =>
             options.copy(topCombinationalPaths = Some(topCombinationalPath))

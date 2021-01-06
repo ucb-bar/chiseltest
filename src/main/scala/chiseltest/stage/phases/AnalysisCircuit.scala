@@ -11,13 +11,16 @@ import firrtl.annotations.{NoTargetAnnotation, ReferenceTarget}
 import firrtl.options.{Dependency, Phase, Viewer}
 import firrtl.transforms.CombinationalPath
 
-case class ExportedSingalsAnnotation(ports: Map[Data, String]) extends NoTargetAnnotation
+case class ExportedSignalsAnnotation(ports: Map[Data, String]) extends NoTargetAnnotation
 
 case class TopCombinationalPathAnnotation(paths: Map[Data, Set[Data]]) extends NoTargetAnnotation
 
 /** This Phase:
-  * 1. export top io signal name map to [[ExportedSingalsAnnotation]].
+  * 1. export top io signal name map to [[ExportedSignalsAnnotation]].
+  *    It creates a Map between [[chisel3.Data]] to [[String]], used by peek/poke API.
+  *    @todo This should be refactored to [[firrtl.annotations.ReferenceTarget]] -> [[String]] map.
   * 2. export top io combinational path to [[TopCombinationalPathAnnotation]].
+  *    It generates combinational paths for threading conflict detection.
   */
 class AnalysisCircuit extends Phase {
   override def prerequisites: Seq[Dependency[Phase]] = Seq(Dependency[MaybeChiselStage])
@@ -109,7 +112,7 @@ class AnalysisCircuit extends Phase {
   override def transform(annotations: AnnotationSeq): AnnotationSeq = {
     annotations ++ Seq(
       TopCombinationalPathAnnotation(topCombinationalPaths(annotations)),
-      ExportedSingalsAnnotation(exportedSignalMap(annotations))
+      ExportedSignalsAnnotation(exportedSignalMap(annotations))
     )
   }
 }
