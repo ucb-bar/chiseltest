@@ -21,18 +21,11 @@ class AddDefaults extends Phase {
 
   override def transform(annotations: AnnotationSeq): AnnotationSeq = {
 
-    /** Get TargetDirAnnotation and convert it to absolute path to make simulators happier. */
-    val targetDirAnnotation = TargetDirAnnotation(
-      new java.io.File(annotations.collectFirst {
-        /* https://github.com/freechipsproject/firrtl/issues/1929 */
-        case TargetDirAnnotation(".") =>
-          annotations.collectFirst {
-            case TestNameAnnotation(name) => TargetDirAnnotation(s"test_run_dir" + java.io.File.separator + name)
-          }.get
-        case t: TargetDirAnnotation => t
-      }.getOrElse(TargetDirAnnotation(s"test_run_dir" + java.io.File.separator + name)).directory).getAbsolutePath
-    )
-    new Directory(new File(targetDirAnnotation.directory)).deleteRecursively()
+    /** Add [[TargetDirAnnotation]] by [[TestNameAnnotation]] */
+    val targetDirAnnotation = TargetDirAnnotation(new java.io.File(annotations.collectFirst {
+      case TestNameAnnotation(name) =>
+        s"test_run_dir" + java.io.File.separator + name + java.io.File.separator + System.currentTimeMillis
+    }.get).getAbsolutePath)
 
     val backendAnnotation = annotations.collect {
       case t: BackendAnnotation => t

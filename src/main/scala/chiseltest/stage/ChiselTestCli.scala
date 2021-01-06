@@ -11,6 +11,7 @@ trait ChiselTestCli {
     TreadleBackendAnnotation,
     VerilatorBackendAnnotation,
     VcsBackendAnnotation,
-    WriteVcdAnnotation
+    WriteVcdAnnotation,
+    TestNameAnnotation
   ).foreach(_.addOptions(parser))
 }

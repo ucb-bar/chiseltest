@@ -9,7 +9,7 @@ import chisel3.stage.ChiselOutputFileAnnotation
 import chiseltest._
 import chiseltest.experimental.sanitizeFileName
 import chiseltest.internal._
-import firrtl.options.OutputAnnotationFileAnnotation
+import firrtl.options.{OutputAnnotationFileAnnotation, TargetDirAnnotation}
 import firrtl.stage.OutputFileAnnotation
 import org.scalatest._
 import treadle.{VerboseAnnotation, WriteVcdAnnotation}
@@ -20,7 +20,7 @@ class OptionsPassingTest extends AnyFlatSpec with ChiselScalatestTester with Mat
   behavior of "Testers2"
 
   it should "write vcd output when passing in a WriteVcdAnnotation" in {
-    test(new Module {
+    val testDir = new File(test(new Module {
       val io = IO(new Bundle {
         val a = Input(UInt(8.W))
         val b = Output(UInt(8.W))
@@ -32,11 +32,9 @@ class OptionsPassingTest extends AnyFlatSpec with ChiselScalatestTester with Mat
       c.clock.step()
       c.io.a.poke(42.U)
       c.io.b.expect(42.U)
-    }
-
-    val testDir = new File("test_run_dir" +
-      File.separator +
-      sanitizeFileName(s"Testers2 should write vcd output when passing in a WriteVcdAnnotation"))
+    }.collectFirst{
+      case TargetDirAnnotation(dir) => dir
+    }.get)
 
     val vcdFileOpt = testDir.listFiles.find { f =>
       f.getPath.endsWith(".vcd")
@@ -47,14 +45,9 @@ class OptionsPassingTest extends AnyFlatSpec with ChiselScalatestTester with Mat
   }
 
   it should "allow specifying configuration options using CLI style flags" in {
-    val targetDirName = "test_run_dir/overridden_dir"
-    val targetDir = new File(targetDirName)
-    if (targetDir.exists()) {
-      targetDir.delete()
-    }
-    test(new MultiIOModule() {}).withFlags(Array("--target-dir", targetDirName)) { c =>
-      targetDir.exists() should be(true)
-    }
+    test(new MultiIOModule() {}).withFlags(Array("--t-name", "overrideName")) { _ =>}.collectFirst{
+      case TargetDirAnnotation(dir) => dir
+    }.get.contains("overrideName")
   }
 
   // This is failing on github CI, not worth figuring this out right now just for the sake

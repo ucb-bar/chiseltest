@@ -124,6 +124,16 @@ case object VcsBackendAnnotation extends BackendAnnotation {
   )
 }
 
+case object TestNameAnnotation extends NoTargetAnnotation with ChiselTestOption with HasShellOptions {
+  val options: Seq[ShellOption[String]] = Seq(
+    new ShellOption[String](
+      longOption = "t-name",
+      toAnnotationSeq = name => Seq(TestNameAnnotation(name)),
+      helpText = "set test name"
+    )
+  )
+}
+
 case class TestNameAnnotation(name: String) extends NoTargetAnnotation with ChiselTestOption
 
 case class TestCommandAnnotation(commands: Seq[String]) extends NoTargetAnnotation with ChiselTestOption

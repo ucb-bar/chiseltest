@@ -25,15 +25,13 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin { this: TestS
     def withFlags(newFlags: Array[String]): ChiselScalatestTester#TestBuilder[T] =
       new TestBuilder[T](dutGen, annotationSeq, flags ++ newFlags)
 
-    /** @todo convert exception from stage to scalatest. */
-    def apply(testFn: T => Unit): Unit = try {
+    def apply(testFn: T => Unit): AnnotationSeq = try {
       (new ChiselTestStage).execute(
-        flags,
-        Seq(
-          TestNameAnnotation(sanitizeFileName(scalaTestContext.value.get.name)),
+        Array("--t-name", sanitizeFileName(scalaTestContext.value.get.name)) ++ flags,
+        annotationSeq ++ Seq(
           TestFunctionAnnotation(testFn),
           new ChiselGeneratorAnnotation(dutGen)
-        ) ++ annotationSeq
+        )
       )
     } catch {
       case se: StageError =>
