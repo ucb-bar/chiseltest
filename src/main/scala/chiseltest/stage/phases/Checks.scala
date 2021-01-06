@@ -22,11 +22,12 @@ class Checks extends Phase {
     if (annotations.collectFirst { case TestFunctionAnnotation(t) => t }.isEmpty)
       throw new OptionsException(s"no test function provided.")
 
-    val backendAnnotation = annotations.collect {
-      case t: BackendAnnotation => t
-    }
-
-    if (backendAnnotation.size > 1)
+    if (
+      annotations.count {
+        case _: BackendAnnotation => true
+        case _ => false
+      } > 1
+    )
       throw new OptionsException(s"Only one backend is allowed.")
 
     annotations
