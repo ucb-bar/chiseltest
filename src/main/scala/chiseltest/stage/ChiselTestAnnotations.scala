@@ -2,6 +2,7 @@
 
 package chiseltest.stage
 
+import chiseltest.backends.{SimulatorInterfaceAnnotation, VPIInterface}
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
 
@@ -136,6 +137,10 @@ case object TestNameAnnotation extends NoTargetAnnotation with ChiselTestOption 
 
 case class TestNameAnnotation(name: String) extends NoTargetAnnotation with ChiselTestOption
 
+/** Annotation to store test commands in VPIInterface.
+  * If user defined this, [[chiseltest.backends.SimulatorBackend.compileDut]]
+  * will directly return a [[VPIInterface]] with the correspond command.
+  */
 case class TestCommandAnnotation(commands: Seq[String]) extends NoTargetAnnotation with ChiselTestOption
 
 case class CppHarnessFileAnnotation(file: String) extends NoTargetAnnotation with ChiselTestOption

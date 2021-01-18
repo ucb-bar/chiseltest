@@ -12,7 +12,7 @@ import java.io.{File, FileWriter}
 /** [[SimulatorBackend]] for Verilator backend.
   * Interface should be [[VPIInterface]].
   */
-object VerilatorBackend extends SimulatorBackend {
+object VerilatorBackend extends SubprocessSimulatorBackend {
 
   import scala.sys.process._
 
@@ -200,7 +200,7 @@ object VerilatorBackend extends SimulatorBackend {
     userSimulatorCFlags: Option[Seq[String]],
     coverageAnnotations: Set[CoverageAnnotations],
     cppHarnessFile:      String
-  ): Unit = {
+  ): Seq[String] = {
     val topName = circuit.main
     val writeVcdFlag: Seq[String] = waveForm match {
       case Some("vcd") => Seq("--trace")
@@ -268,28 +268,31 @@ object VerilatorBackend extends SimulatorBackend {
       Seq("bash", "-c", compileToBinCommand).!(processLogger()) == 0,
       s"Compilation of verilator generated code failed for circuit $topName in work dir $targetDir"
     )
+
+    Seq(new File(targetDir, s"V${circuit.main}").toString)
   }
 
   def compileDut(annotations: AnnotationSeq): AnnotationSeq = {
     val options = Viewer[ChiselTestOptions].view(annotations)
-    compileVerilatorDut(
-      options.targetDir.get,
-      options.circuit.get,
-      options.waveForm,
-      options.simulatorFlags,
-      options.simulatorCFlags,
-      options.coverageAnnotations,
-      generateVerilatorCppHarness(
-        options.targetDir.get,
-        options.circuit.get,
-        options.topPorts.get
-      )
-    )
     annotations :+ SimulatorInterfaceAnnotation(
       new VPIInterface(
         options.topPorts.get,
         options.topName.get,
-        Seq(new File(options.targetDir.get, s"V${options.circuit.get.main}").toString)
+        options.commands.getOrElse(
+          compileVerilatorDut(
+            options.targetDir.get,
+            options.circuit.get,
+            options.waveForm,
+            options.simulatorFlags,
+            options.simulatorCFlags,
+            options.coverageAnnotations,
+            generateVerilatorCppHarness(
+              options.targetDir.get,
+              options.circuit.get,
+              options.topPorts.get
+            )
+          )
+        )
       )
     )
   }

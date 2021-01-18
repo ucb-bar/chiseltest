@@ -5,18 +5,18 @@ package chiseltest.backends
 import chisel3._
 import chisel3.experimental.{DataMirror, FixedPoint, Interval}
 import chisel3.internal.firrtl.KnownWidth
-import chiseltest.TestApplicationException
+import chiseltest.{SignalNotFoundException, TestApplicationException}
 import firrtl.ir.{GroundType, IntWidth, Port}
 import logger.LazyLogging
 import treadle.utils.BitMasks
-
 import java.io.File
 import java.nio.channels.FileChannel
+
 import scala.collection.immutable.ListMap
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration._
-import scala.concurrent.{blocking, Await, ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future, blocking}
 import scala.language.implicitConversions
 import scala.math.BigInt
 import scala.sys.process.{Process, ProcessLogger}
@@ -28,6 +28,7 @@ import scala.sys.process.{Process, ProcessLogger}
   */
 class VPIInterface(topPorts: Seq[Port], topName: String, commands: Seq[String])
     extends SimulatorInterface
+    with RecordSimulatorTime
     with LazyLogging {
   def poke(signal: String, value: BigInt): Unit = {
     if (inputsNameToChunkSizeMap contains signal) {
@@ -39,15 +40,16 @@ class VPIInterface(topPorts: Seq[Port], topName: String, commands: Seq[String])
         poke(id, _chunks.getOrElseUpdate(signal, getChunk(id)), value)
         isStale = true
       } else {
-        logger.info(s"Can't find $signal in the emulator...")
+        logger.error(s"Can't find $signal in the emulator...")
+        throw new SignalNotFoundException(signal)
       }
     }
   }
 
-  def peek(signal: String): Option[BigInt] = {
+  def peek(signal: String): BigInt = {
     if (isStale) update()
     if (outputsNameToChunkSizeMap.contains(signal)) {
-      _peekMap.get(signal)
+      _peekMap(signal)
     } else if (inputsNameToChunkSizeMap.contains(signal)) {
       // Added this in case peek is called on input before poke. Did not seem to be a problem in testers
       if (!_pokeMap.contains(signal)) {
@@ -55,14 +57,14 @@ class VPIInterface(topPorts: Seq[Port], topName: String, commands: Seq[String])
         isStale = true
         update()
       }
-      _pokeMap.get(signal)
+      _pokeMap(signal)
     } else {
       val id = _signalMap.getOrElseUpdate(signal, getId(signal))
       if (id >= 0) {
-        Some(peek(id, _chunks.getOrElse(signal, getChunk(id))))
+        peek(id, _chunks.getOrElse(signal, getChunk(id)))
       } else {
-        logger.info(s"Can't find $signal in the emulator...")
-        None
+        logger.error(s"Can't find $signal in the simulator...")
+        throw new SignalNotFoundException(signal)
       }
     }
   }
@@ -73,21 +75,20 @@ class VPIInterface(topPorts: Seq[Port], topName: String, commands: Seq[String])
   }
 
   override def start(): Unit = {
-    logger.trace(s"""STARTING ${commands.mkString(" ")}""")
+    logger.trace(s"""STARTING ${commands.mkString(" ")} at $startTime""")
     mwhile(!recvOutputs) {}
-    super.start()
   }
 
   override def finish(): Unit = {
     mwhile(!sendCmd(SIM_CMD.FIN)) {}
-    logger.debug(s"Simulation end at $startTime, Exit Code: ${Await.result(exitValue, Duration.Inf)}")
+    logger.debug(s"Simulation end at $endTime, Exit Code: ${Await.result(exitValue, Duration.Inf)}")
     dumpLogs()
     inChannel.close()
     outChannel.close()
     cmdChannel.close()
   }
 
-  override def resolveResult(data: Data, interfaceResult: BigInt): BigInt = {
+  override def resolvePeek(data: Data, interfaceResult: BigInt): BigInt = {
     def unsignedBigIntToSigned(unsigned: BigInt, width: Int): BigInt = {
       val bitMasks = BitMasks.getBitMasksBigs(width)
       if (unsigned < 0) {

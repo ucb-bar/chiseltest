@@ -29,42 +29,36 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
 
   it should "allow specifying toggle coverage for Verilator" in {
     val output = coverageTest(Seq(VerilatorBackendAnnotation, ToggleCoverageAnnotation))
-    // @todo wait for Chisel and FIRRTL update with F1961
-    // output.contains("--coverage-toggle") should be(true)
-    // output.contains("--coverage-line") should be(false)
-    // output.contains("--coverage-user") should be(false)
+    output.contains("--coverage-toggle") should be(true)
+    output.contains("--coverage-line") should be(false)
+    output.contains("--coverage-user") should be(false)
   }
 
   it should "allow specifying line coverage for Verilator" in {
     val output = coverageTest(Seq(VerilatorBackendAnnotation, LineCoverageAnnotation))
-
-    // @todo wait for Chisel and FIRRTL update with F1961
-    // output.contains("--coverage-toggle") should be(false)
-    // output.contains("--coverage-line") should be(true)
-    // output.contains("--coverage-user") should be(false)
+    output.contains("--coverage-toggle") should be(false)
+    output.contains("--coverage-line") should be(true)
+    output.contains("--coverage-user") should be(false)
   }
 
   it should "allow specifying structural coverage for Verilator" in {
     val output = coverageTest(Seq(VerilatorBackendAnnotation, StructuralCoverageAnnotation))
-    // @todo wait for Chisel and FIRRTL update with F1961
-    // output.contains("--coverage-toggle") should be(true)
-    // output.contains("--coverage-line") should be(true)
-    // output.contains("--coverage-user") should be(false)
+    output.contains("--coverage-toggle") should be(true)
+    output.contains("--coverage-line") should be(true)
+    output.contains("--coverage-user") should be(false)
   }
 
   it should "allow specifying user coverage for Verilator" in {
     val output = coverageTest(Seq(VerilatorBackendAnnotation, UserCoverageAnnotation))
-    // @todo wait for Chisel and FIRRTL update with F1961
-    // output.contains("--coverage-toggle") should be(false)
-    // output.contains("--coverage-line") should be(false)
-    // output.contains("--coverage-user") should be(true)
+    output.contains("--coverage-toggle") should be(false)
+    output.contains("--coverage-line") should be(false)
+    output.contains("--coverage-user") should be(true)
   }
 
   it should "allow stacking coverage for Verilator" in {
     val output = coverageTest(Seq(VerilatorBackendAnnotation, UserCoverageAnnotation, StructuralCoverageAnnotation))
-    // @todo wait for Chisel and FIRRTL update with F1961
-    // output.contains("--coverage-toggle") should be(true)
-    // output.contains("--coverage-line") should be(true)
-    // output.contains("--coverage-user") should be(true)
+    output.contains("--coverage-toggle") should be(true)
+    output.contains("--coverage-line") should be(true)
+    output.contains("--coverage-user") should be(true)
   }
 }

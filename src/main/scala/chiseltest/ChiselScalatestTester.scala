@@ -36,15 +36,7 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin { this: TestS
     } catch {
       case se: StageError =>
         se.getCause match {
-          case exception: FailedExpectException =>
-            val scalatestException = new TestFailedException(
-              exception,
-              exception.stackTraceElements.indexWhere(ste =>
-                ste.getClassName == "chiseltest.package$testableData" && ste.getMethodName == "expect"
-              ) + 1
-            )
-            scalatestException.setStackTrace(exception.stackTraceElements.toArray)
-            throw scalatestException
+          case exception: FailedExpectException => exception.throwScalaTestTestFailedException
           case exception => throw exception
         }
     }

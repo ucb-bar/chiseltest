@@ -12,7 +12,7 @@ import java.io.{File, FileWriter}
 /** [[SimulatorBackend]] for Synopsys VCS backend.
   * Interface should be [[VPIInterface]].
   */
-object VcsBackend extends SimulatorBackend {
+object VcsBackend extends SubprocessSimulatorBackend {
 
   import scala.sys.process._
 
@@ -77,7 +77,10 @@ object VcsBackend extends SimulatorBackend {
     verilogHarnessFile.getAbsoluteFile.toString
   }
 
-  /** Compile Verilog to executable linked to VCS own library. */
+  /** Compile Verilog to executable linked to VCS own library.
+    *
+    * @return command to execute compiled dut.
+    */
   private def compileVcsDut(
     targetDir:           String,
     circuit:             Circuit,
@@ -85,7 +88,7 @@ object VcsBackend extends SimulatorBackend {
     userSimulatorCFlags: Option[Seq[String]],
     coverageAnnotations: Set[CoverageAnnotations],
     verilogHarnessFile:  String
-  ): Unit = {
+  ): Seq[String] = {
     val topName = circuit.main
     val blackBoxVerilogListFile: File = new File(targetDir, firrtl.transforms.BlackBoxSourceHelper.defaultFileListName)
     val blackBoxVerilogListFlag = if (blackBoxVerilogListFile.exists()) {
@@ -140,31 +143,34 @@ object VcsBackend extends SimulatorBackend {
       Seq("bash", "-c", generatedCommand).! == 0,
       s"vcs failed on circuit $topName in work dir $targetDir: \n$generatedCommand"
     )
+
+    Seq(
+      new File(targetDir, topName).toString,
+      "-k",
+      targetDir + File.separator + "ucli.key"
+    )
   }
 
   def compileDut(annotations: AnnotationSeq): AnnotationSeq = {
     val options = Viewer[ChiselTestOptions].view(annotations)
-    compileVcsDut(
-      options.targetDir.get,
-      options.circuit.get,
-      options.simulatorFlags,
-      options.simulatorCFlags,
-      options.coverageAnnotations,
-      generateVcsVerilogHarness(
-        options.targetDir.get,
-        options.waveForm,
-        options.circuit.get,
-        options.topPorts.get
-      )
-    )
     annotations :+ SimulatorInterfaceAnnotation(
       new VPIInterface(
         options.topPorts.get,
         options.topName.get,
-        Seq(
-          new File(options.targetDir.get, options.topName.get).toString,
-          "-k",
-          options.targetDir.get + File.separator + "ucli.key"
+        options.commands.getOrElse(
+            compileVcsDut(
+            options.targetDir.get,
+            options.circuit.get,
+            options.simulatorFlags,
+            options.simulatorCFlags,
+            options.coverageAnnotations,
+            generateVcsVerilogHarness(
+              options.targetDir.get,
+              options.waveForm,
+              options.circuit.get,
+              options.topPorts.get
+            )
+          )
         )
       )
     )

@@ -80,6 +80,13 @@ class AnalysisCircuit extends Phase {
     val nameToData = exportedSignalMap(annos).map(_.swap)
     val backend = options.backend.get
 
+    /** convert target to simulator internal symbol table.
+      * TODO: refactor this.
+      *       replace all [[Data]] usage to [[Target]].
+      *       use Aspect to annotate IO automatically.(keep recording name during FIRRTL transform)
+      *       Use LookupIR API in FIRRTL to map from Target to IR.
+      *       Simulator backend implement its own API to convert IR to its own name table.
+      */
     def componentToName(component: ReferenceTarget): String = {
       component.name match {
         case "reset" => "reset"

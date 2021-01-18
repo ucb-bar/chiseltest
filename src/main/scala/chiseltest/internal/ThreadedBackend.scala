@@ -181,12 +181,10 @@ class ThreadedBackend(annotations: AnnotationSeq) extends LazyLogging {
     signal:  Data,
     value:   BigInt,
     message: Option[String],
-    decode:  Option[BigInt => String],
-    stale:   Boolean
+    decode:  Option[BigInt => String]
   ): Unit = {
-    require(!stale, "Stale peek not yet implemented")
     logger.debug(s"${resolveName(signal)} ?> $value")
-    val actual = peekBits(signal, stale)
+    val actual = peekBits(signal)
     if (value != actual) {
       val appendMsg = message match {
         case Some(_) => s": $message"
@@ -199,12 +197,11 @@ class ThreadedBackend(annotations: AnnotationSeq) extends LazyLogging {
           (s"$actual (${bigintToHex(actual)})", s"$value (${bigintToHex(value)})")
       }
       val trace = new Throwable
-      val fullStackTraces = (trace.getStackTrace ++ getParentTraceElements).filterNot(ste =>
+      val failedExpectException = new FailedExpectException(s"$signal=$actualStr did not equal expected=$expectedStr$appendMsg")
+      failedExpectException.setStackTrace((trace.getStackTrace ++ getParentTraceElements).filterNot(ste =>
         ste.getClassName.startsWith("chiseltest.internal.")
-      )
-      exceptExceptions.append(
-        new FailedExpectException(s"$signal=$actualStr did not equal expected=$expectedStr$appendMsg", fullStackTraces)
-      )
+      ))
+      exceptExceptions.append(failedExpectException)
     }
   }
 
@@ -882,11 +879,7 @@ class ThreadedBackend(annotations: AnnotationSeq) extends LazyLogging {
     processThread(currentThread.get)
   }
 
-  def getClock(clk: Clock): Boolean =
-    simulatorInterface.peek(dataNames(clk)) match {
-      case Some(x) if x == BigInt(1) => true
-      case _                         => false
-    }
+  def getClock(clk: Clock): Boolean = simulatorInterface.peek(dataNames(clk)) == BigInt(1)
 
   /** Writes a value to a clock.
     */
@@ -900,7 +893,7 @@ class ThreadedBackend(annotations: AnnotationSeq) extends LazyLogging {
     */
   def peekClock(signal: Clock): Boolean = {
     doPeek(signal, new Throwable)
-    val a = simulatorInterface.peek(dataNames(signal)).getOrElse(BigInt(0))
+    val a = simulatorInterface.peek(dataNames(signal))
     logger.debug(s"${resolveName(signal)} -> $a")
     a > 0
   }
@@ -911,37 +904,20 @@ class ThreadedBackend(annotations: AnnotationSeq) extends LazyLogging {
   def pokeBits(signal: Data, value: BigInt): Unit = {
     doPoke(signal, value, new Throwable)
     val dataName = dataNames(signal)
-    simulatorInterface.peek(dataName) match {
-      case Some(peekValue) =>
-        if (peekValue != value) {
-          idleCycles.clear()
-        }
-        simulatorInterface.poke(dataNames(signal), value)
-        logger.debug(s"${resolveName(signal)} <- $value")
-      case None =>
-        logger.debug(s"${resolveName(signal)} is eliminated by firrtl, ignore it. ")
+    if (simulatorInterface.peek(dataName) != value) {
+      idleCycles.clear()
     }
+    simulatorInterface.poke(dataNames(signal), value)
+    logger.debug(s"${resolveName(signal)} <- $value")
   }
 
-  /** Returns the current value on a wire.
-    * If stale is true, returns the current combinational value (after previous pokes have taken effect).
-    * If stale is false, returns the value at the beginning of the current cycle.
-    */
-  def peekBits(signal: Data, stale: Boolean): BigInt = {
-    require(!stale, "Stale peek not yet implemented")
-
+  /** Returns the current value on a wire. */
+  def peekBits(signal: Data): BigInt = {
     doPeek(signal, new Throwable)
     val dataName = dataNames(signal)
-    val interfaceResult = simulatorInterface.peek(dataName) match {
-      case Some(peekValue) =>
-        logger.debug(s"${resolveName(signal)} -> $peekValue")
-        peekValue
-      case None =>
-        logger.debug(s"${resolveName(signal)} is eliminated by firrtl, default 0.")
-        BigInt(0)
-    }
-
-    simulatorInterface.resolveResult(signal, interfaceResult)
+    val peekValue = simulatorInterface.peek(dataName)
+    logger.debug(s"${resolveName(signal)} -> $peekValue")
+    simulatorInterface.resolvePeek(signal, peekValue)
   }
 
   def doTimescope(contents: () => Unit): Unit = {
@@ -953,7 +929,7 @@ class ThreadedBackend(annotations: AnnotationSeq) extends LazyLogging {
       case (data, valueOption) =>
         valueOption match {
           case Some(value) =>
-            if (simulatorInterface.peek(dataNames(data)).get != value) {
+            if (simulatorInterface.peek(dataNames(data)) != value) {
               idleCycles.clear()
             }
             simulatorInterface.poke(dataNames(data), value)

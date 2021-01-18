@@ -2,13 +2,32 @@
 
 package chiseltest
 
+import org.scalatest.exceptions.TestFailedException
+
 class ChiselTestException(message: String, cause: Throwable = null) extends Exception(message, cause)
 class NotLiteralException(message: String) extends ChiselTestException(message)
 class LiteralTypeException(message: String) extends ChiselTestException(message)
 class UnpokeableException(message: String) extends ChiselTestException(message)
 class UnsupportedOperationException(message: String) extends ChiselTestException(message)
-class FailedExpectException(val message: String, val stackTraceElements: Seq[StackTraceElement])
-    extends ChiselTestException(message)
+class SignalNotFoundException(signal: String) extends ChiselTestException(
+  s"""$signal is not found in simulator,
+     |Maybe FIRRTL constant propagation remove this signal or there is a internal error inside simulator.
+     |You can try to add `dontTouch` to the signal and change to another simulator backend.
+     |""".stripMargin )
+class FailedExpectException(val message: String)
+    extends ChiselTestException(message) { exception =>
+  def throwScalaTestTestFailedException: Nothing = {
+    val scalatestException = new TestFailedException(
+      exception,
+      exception.getStackTrace.indexWhere(ste =>
+        ste.getClassName == "chiseltest.package$testableData" && ste.getMethodName == "expect"
+      ) + 2
+    )
+    scalatestException.setStackTrace(exception.getStackTrace)
+    throw scalatestException
+  }
+
+}
 
 class ClockResolutionException(message: String) extends ChiselTestException(message)
 
