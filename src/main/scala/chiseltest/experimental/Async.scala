@@ -69,7 +69,7 @@ class AsyncResetRegScalaImpl(instanceName: String) extends ScalaBlackBox {
     Seq.empty
   }
 
-  override def getDependencies: Seq[(String, collection.Set[String])] = Seq(
+  override def getDependencies: Seq[(String, collection.immutable.Set[String])] = Seq(
     "d" -> Set("q"),
     "q" -> Set("rst", "clk")
   )

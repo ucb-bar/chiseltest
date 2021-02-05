@@ -137,8 +137,8 @@ package object chiseltest {
       case (x: UInt) => Context().backend.peekBits(x, stale).asUInt(DataMirror.widthOf(x)).asInstanceOf[T]
       case (x: SInt) => Context().backend.peekBits(x, stale).asSInt(DataMirror.widthOf(x)).asInstanceOf[T]
       case (x: FixedPoint) => {
-        val multiplier = math.pow(2, x.binaryPoint.get)
-        (Context().backend.peekBits(x, stale).toDouble / multiplier).F(x.binaryPoint).asInstanceOf[T]
+        val multiplier = BigDecimal(2).pow(x.binaryPoint.get)
+        (BigDecimal(Context().backend.peekBits(x, stale)) / multiplier).F(x.binaryPoint).asInstanceOf[T]
       }
       case x: Interval =>
         Context().backend.peekBits(x, stale).I(x.binaryPoint).asInstanceOf[T]
