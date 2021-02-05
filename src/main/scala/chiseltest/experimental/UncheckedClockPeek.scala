@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiseltest.experimental
 
@@ -6,10 +6,12 @@ import chiseltest.internal.Context
 import chisel3._
 
 package object UncheckedClockPeek {
+
   /**
-   * This provides a way to peek clocks (input or output).
-   */
+    * This provides a way to peek clocks (input or output).
+    */
   implicit class PeekableClock(signal: Clock) {
+
     /** Peek the given clock signal. */
     def peekClock(): Boolean = Context().backend.peekClock(signal)
   }

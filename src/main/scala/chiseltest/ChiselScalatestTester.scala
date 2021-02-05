@@ -1,9 +1,9 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiseltest
 
 import chiseltest.internal._
-import chiseltest.experimental.{ChiselTestShell, sanitizeFileName}
+import chiseltest.experimental.{sanitizeFileName, ChiselTestShell}
 import chisel3.MultiIOModule
 import chiseltest.internal.WriteVcdAnnotation
 import firrtl.AnnotationSeq
@@ -14,7 +14,10 @@ import scala.util.DynamicVariable
 
 trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvInterface { this: TestSuite =>
 
-  class TestBuilder[T <: MultiIOModule](val dutGen: () => T, val annotationSeq: AnnotationSeq, val flags: Array[String]) {
+  class TestBuilder[T <: MultiIOModule](
+    val dutGen:        () => T,
+    val annotationSeq: AnnotationSeq,
+    val flags:         Array[String]) {
     def getTestName: String = {
       sanitizeFileName(scalaTestContext.value.get.name)
     }
@@ -22,16 +25,16 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     def apply(testFn: T => Unit): Unit = {
       val finalAnnos = addDefaultTargetDir(getTestName, (new ChiselTestShell).parse(flags) ++ annotationSeq) ++
         (if (scalaTestContext.value.get.configMap.contains("writeVcd")) {
-          Seq(WriteVcdAnnotation)
-        } else {
-          Seq.empty
-        })
+           Seq(WriteVcdAnnotation)
+         } else {
+           Seq.empty
+         })
 
       runTest(defaults.createDefaultTester(dutGen, finalAnnos))(testFn)
     }
 
     def run(testFn: T => Unit, annotations: AnnotationSeq): Unit = {
-        runTest(defaults.createDefaultTester(dutGen, annotations))(testFn)
+      runTest(defaults.createDefaultTester(dutGen, annotations))(testFn)
     }
 
     // TODO: in the future, allow reset and re-use of a compiled design to avoid recompilation cost per test
@@ -49,7 +52,7 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
   }
 
   // Stack trace data to help generate more informative (and localizable) failure messages
-  var topFileName: Option[String] = None  // best guess at the testdriver top filename
+  var topFileName: Option[String] = None // best guess at the testdriver top filename
 
   private def runTest[T <: MultiIOModule](tester: BackendInstance[T])(testFn: T => Unit) {
     // Try and get the user's top-level test filename

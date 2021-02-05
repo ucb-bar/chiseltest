@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiseltest
 
@@ -14,8 +14,8 @@ sealed class Region {
   }
 
   def isBefore(other: Region): Boolean = this.getPos < other.getPos
-  def isAfter(other: Region): Boolean = this.getPos > other.getPos
-  def isEqual(other: Region): Boolean = this.getPos == other.getPos
+  def isAfter(other:  Region): Boolean = this.getPos > other.getPos
+  def isEqual(other:  Region): Boolean = this.getPos == other.getPos
 }
 
 object Region {

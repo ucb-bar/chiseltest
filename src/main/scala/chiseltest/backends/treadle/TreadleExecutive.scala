@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiseltest.backends.treadle
 
@@ -8,7 +8,7 @@ import chisel3.experimental.DataMirror
 import chisel3.MultiIOModule
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
 import firrtl.annotations.ReferenceTarget
-import firrtl.stage.CompilerAnnotation
+import firrtl.stage.RunFirrtlTransformAnnotation
 import firrtl.transforms.{CheckCombLoops, CombinationalPath}
 import treadle.stage.TreadleTesterPhase
 import treadle.{TreadleCircuitStateAnnotation, TreadleFirrtlFormHint, TreadleTesterAnnotation}
@@ -36,20 +36,24 @@ object TreadleExecutive extends BackendExecutive {
 
     val circuit = annotationSeq.collect { case x: ChiselCircuitAnnotation => x }.head.circuit
     val dut = getTopModule(circuit).asInstanceOf[T]
-    val portNames = DataMirror.modulePorts(dut).flatMap { case (name, data) =>
-      getDataNames(name, data).toList
-    }.toMap
+    val portNames = DataMirror
+      .modulePorts(dut)
+      .flatMap {
+        case (name, data) =>
+          getDataNames(name, data).toList
+      }
+      .toMap
 
     // This generates the firrtl circuit needed by the TreadleTesterPhase
-    annotationSeq = (new ChiselStage).run(annotationSeq ++ Seq(CompilerAnnotation(new LowFirrtlCompiler)))
+    annotationSeq = (new ChiselStage).run(annotationSeq ++ Seq(RunFirrtlTransformAnnotation(new LowFirrtlEmitter)))
 
     // This generates a TreadleTesterAnnotation with a treadle tester instance
-    annotationSeq = (new TreadleTesterPhase).transform(annotationSeq :+ TreadleFirrtlFormHint(LowForm))
+    annotationSeq = (new TreadleTesterPhase).transform(annotationSeq)
 
     val treadleTester = annotationSeq.collectFirst { case TreadleTesterAnnotation(t) => t }.getOrElse(
       throw new Exception(
         s"TreadleTesterPhase could not build a treadle tester from these annotations" +
-        annotationSeq.mkString("Annotations:\n", "\n  ", "")
+          annotationSeq.mkString("Annotations:\n", "\n  ", "")
       )
     )
 

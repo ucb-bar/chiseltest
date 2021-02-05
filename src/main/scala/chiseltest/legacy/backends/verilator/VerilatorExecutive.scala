@@ -3,13 +3,14 @@ package chiseltest.legacy.backends.verilator
 import java.io.{File, FileWriter}
 
 import chiseltest.backends.BackendExecutive
-import chiseltest.internal.{BackendInstance, WriteVcdAnnotation}
-import chisel3.{MultiIOModule, assert}
+import chiseltest.internal._
+import chisel3.{assert, MultiIOModule}
 import chisel3.experimental.DataMirror
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
 import firrtl.annotations.ReferenceTarget
-import firrtl.stage.CompilerAnnotation
+import firrtl.stage.RunFirrtlTransformAnnotation
 import firrtl.transforms.CombinationalPath
+import firrtl.util.BackendCompilationUtilities
 
 object VerilatorExecutive extends BackendExecutive {
   import firrtl._
@@ -30,7 +31,7 @@ object VerilatorExecutive extends BackendExecutive {
   }
 
   def start[T <: MultiIOModule](
-    dutGen: () => T,
+    dutGen:        () => T,
     annotationSeq: AnnotationSeq
   ): BackendInstance[T] = {
 
@@ -38,7 +39,7 @@ object VerilatorExecutive extends BackendExecutive {
     System.gc()
 
     val targetDir = annotationSeq.collectFirst {
-      case TargetDirAnnotation(t) => t
+      case firrtl.options.TargetDirAnnotation(t) => t
     }.get
     val targetDirFile = new File(targetDir)
 
@@ -58,7 +59,7 @@ object VerilatorExecutive extends BackendExecutive {
     // - TestCommandOverride
     // - CombinationalPath
     val compiledAnnotations = (new ChiselStage).run(
-      elaboratedAnno :+ CompilerAnnotation(new VerilogCompiler())
+      elaboratedAnno :+ RunFirrtlTransformAnnotation(new VerilogEmitter)
     )
 
     val cppHarnessFileName = s"${circuit.name}-harness.cpp"
@@ -66,35 +67,51 @@ object VerilatorExecutive extends BackendExecutive {
     val cppHarnessWriter = new FileWriter(cppHarnessFile)
     val vcdFile = new File(targetDir, s"${circuit.name}.vcd")
     val emittedStuff =
-      VerilatorCppHarnessGenerator.codeGen(dut, vcdFile.toString)
+      VerilatorCppHarnessGenerator.codeGen(dut, vcdFile.toString, targetDir)
     cppHarnessWriter.append(emittedStuff)
     cppHarnessWriter.close()
 
-    val moreVerilatorFlags = compiledAnnotations
-      .collectFirst { case VerilatorFlags(f) => f }
+    val moreVerilatorFlags = compiledAnnotations.collectFirst { case VerilatorFlags(f) => f }
       .getOrElse(Seq.empty)
-    val moreVerilatorCFlags = compiledAnnotations
-      .collectFirst { case VerilatorCFlags(f) => f }
+    val moreVerilatorCFlags = compiledAnnotations.collectFirst { case VerilatorCFlags(f) => f }
       .getOrElse(Seq.empty)
-    val writeVcdFlag = if(compiledAnnotations.contains(WriteVcdAnnotation)) { Seq("--trace") } else { Seq() }
-    val commandEditsFile = compiledAnnotations
-      .collectFirst { case CommandEditsFile(f) => f }
+    val writeVcdFlag = if (compiledAnnotations.contains(WriteVcdAnnotation)) { Seq("--trace") }
+    else { Seq() }
+    val coverageFlags = Seq((compiledAnnotations.collect {
+      case LineCoverageAnnotation       => List("--coverage-line")
+      case ToggleCoverageAnnotation     => List("--coverage-toggle")
+      case UserCoverageAnnotation       => List("--coverage-user")
+      case StructuralCoverageAnnotation => List("--coverage-line", "--coverage-toggle")
+    }).flatten.distinct.mkString(" "))
+
+    val commandEditsFile = compiledAnnotations.collectFirst { case CommandEditsFile(f) => f }
       .getOrElse("")
 
-    val verilatorFlags = moreVerilatorFlags ++ writeVcdFlag
+    val coverageFlag =
+      if (
+        compiledAnnotations
+          .intersect(Seq(LineCoverageAnnotation, ToggleCoverageAnnotation, UserCoverageAnnotation))
+          .nonEmpty
+      ) {
+        Seq("-DSP_COVERAGE_ENABLE")
+      } else { Seq() }
+
+    val verilatorFlags = moreVerilatorFlags ++ writeVcdFlag ++ coverageFlags
+    val verilatorCFlags = moreVerilatorCFlags ++ coverageFlag
+
     assert(
       verilogToVerilator(
         circuit.name,
         new File(targetDir),
         cppHarnessFile,
         moreVerilatorFlags = verilatorFlags,
-        moreVerilatorCFlags = moreVerilatorCFlags,
+        moreVerilatorCFlags = verilatorCFlags,
         editCommands = commandEditsFile
       ).! == 0,
       s"verilator command failed on circuit ${circuit.name} in work dir $targetDir"
     )
     assert(
-      chisel3.Driver.cppToExe(circuit.name, targetDirFile).! == 0,
+      BackendCompilationUtilities.cppToExe(circuit.name, targetDirFile).! == 0,
       s"Compilation of verilator generated code failed for circuit ${circuit.name} in work dir $targetDir"
     )
 

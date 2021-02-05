@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiseltest
 
@@ -12,7 +12,7 @@ package chiseltest
   */
 package object experimental {
   type TesterOptions = chiseltest.internal.TesterOptions
-  val TesterOptions = chiseltest.internal.TesterOptions  // expose this internal object, whose "API" is unstable
+  val TesterOptions = chiseltest.internal.TesterOptions // expose this internal object, whose "API" is unstable
 
   /**
     * Simple file name sanitizer

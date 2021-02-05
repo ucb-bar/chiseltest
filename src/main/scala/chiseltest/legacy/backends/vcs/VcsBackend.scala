@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiseltest.legacy.backends.vcs
 
@@ -14,9 +14,8 @@ import chiseltest.legacy.backends.verilator.VerilatorBackend
   * @tparam T                   the dut's type
   */
 class VcsBackend[T <: MultiIOModule](
-  dut: T,
-  dataNames: Map[Data, String],
+  dut:                T,
+  dataNames:          Map[Data, String],
   combinationalPaths: Map[Data, Set[Data]],
-  command: Seq[String]
-) extends VerilatorBackend(dut, dataNames, combinationalPaths, command)
-
+  command:            Seq[String])
+    extends VerilatorBackend(dut, dataNames, combinationalPaths, command)

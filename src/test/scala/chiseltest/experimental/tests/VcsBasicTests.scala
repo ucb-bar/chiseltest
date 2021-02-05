@@ -1,4 +1,5 @@
-package chisel3.experimental.tests
+// SPDX-License-Identifier: Apache-2.0
+package chiseltest.experimental.tests
 
 import chisel3._
 import chiseltest._

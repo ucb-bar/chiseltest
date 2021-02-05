@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3
 
@@ -12,13 +12,13 @@ package object tester {
 
   val fork = chiseltest.fork
 
-  def parallel(run1: => Unit, run2: => Unit): Unit = chiseltest.parallel(run1, run2)
+  def parallel(run1:      => Unit, run2: => Unit): Unit = chiseltest.parallel(run1, run2)
   def timescope(contents: => Unit): Unit = chiseltest.timescope(contents)
 
   val TestInstance = chiseltest.TestInstance
   val ClockResolutionUtils = chiseltest.ClockResolutionUtils
   implicit def decoupledToDriver[T <: Data](x: ReadyValidIO[T]) = chiseltest.decoupledToDriver(x)
-  implicit def validToDriver[T <: Data](x: ValidIO[T]) = chiseltest.validToDriver(x)
+  implicit def validToDriver[T <: Data](x:     ValidIO[T]) = chiseltest.validToDriver(x)
 
   // Exceptions
   type NotLiteralException = chiseltest.NotLiteralException
@@ -57,17 +57,17 @@ package object tester {
     def sanitizeFileName(name: String): String = chiseltest.experimental.sanitizeFileName(name)
 
     object TestOptionBuilder {
-      implicit class ChiselScalatestOptionBuilder[T <: MultiIOModule](x: ChiselScalatestTester#TestBuilder[T]) extends
-          chiseltest.experimental.TestOptionBuilder.ChiselScalatestOptionBuilder[T](x)
+      implicit class ChiselScalatestOptionBuilder[T <: MultiIOModule](x: ChiselScalatestTester#TestBuilder[T])
+          extends chiseltest.experimental.TestOptionBuilder.ChiselScalatestOptionBuilder[T](x)
     }
 
     object UncheckedClockPeek {
-      implicit class PeekableClock(signal: Clock) extends
-          chiseltest.experimental.UncheckedClockPeek.PeekableClock(signal)
+      implicit class PeekableClock(signal: Clock)
+          extends chiseltest.experimental.UncheckedClockPeek.PeekableClock(signal)
     }
     object UncheckedClockPoke {
-      implicit class UncheckedPokeableClock(signal: Clock) extends
-          chiseltest.experimental.UncheckedClockPoke.UncheckedPokeableClock(signal)
+      implicit class UncheckedPokeableClock(signal: Clock)
+          extends chiseltest.experimental.UncheckedClockPoke.UncheckedPokeableClock(signal)
     }
 
     type AsyncResetReg = chiseltest.experimental.AsyncResetReg

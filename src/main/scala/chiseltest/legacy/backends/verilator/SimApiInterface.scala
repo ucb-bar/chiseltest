@@ -1,4 +1,5 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
+
 package chiseltest.legacy.backends.verilator
 
 import java.io.File
@@ -10,7 +11,7 @@ import logger.LazyLogging
 import scala.collection.immutable.ListMap
 import scala.collection.mutable
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future, blocking}
+import scala.concurrent.{blocking, Await, ExecutionContext, Future}
 import scala.language.implicitConversions
 
 /** Provides an interface layer to an external verilog simulation program through IPC channels
@@ -19,8 +20,7 @@ import scala.language.implicitConversions
   * @param dut  The device under test
   * @param cmd  The command to run as a Seq of strings
   */
-private[chiseltest] class SimApiInterface(dut: MultiIOModule, cmd: Seq[String])
-    extends LazyLogging {
+private[chiseltest] class SimApiInterface(dut: MultiIOModule, cmd: Seq[String]) extends LazyLogging {
   //
   // Construct maps for the input and output
   // Remove zero length fields during the process
@@ -44,16 +44,16 @@ private[chiseltest] class SimApiInterface(dut: MultiIOModule, cmd: Seq[String])
     }
 
     (
-      ListMap(inputs flatMap genChunk: _*),
-      ListMap(outputs flatMap genChunk: _*)
+      ListMap(inputs.flatMap(genChunk):  _*),
+      ListMap(outputs.flatMap(genChunk): _*)
     )
   }
   private object SIM_CMD extends Enumeration {
     val RESET, STEP, UPDATE, POKE, PEEK, FORCE, GETID, GETCHK, FIN = Value
   }
   implicit def cmdToId(cmd: SIM_CMD.Value): Int = cmd.id
-  implicit def int(x: Int): BigInt = (BigInt(x >>> 1) << 1) | BigInt(x & 1)
-  implicit def int(x: Long): BigInt = (BigInt(x >>> 1) << 1) | BigInt(x & 1)
+  implicit def int(x:       Int):           BigInt = (BigInt(x >>> 1) << 1) | BigInt(x & 1)
+  implicit def int(x:       Long):          BigInt = (BigInt(x >>> 1) << 1) | BigInt(x & 1)
 
   private var isStale = false
   private val _pokeMap = mutable.HashMap[String, BigInt]()
@@ -74,7 +74,7 @@ private[chiseltest] class SimApiInterface(dut: MultiIOModule, cmd: Seq[String])
     // Wait for the startup message
     // NOTE: There may be several messages before we see our startup message.
     val simStartupMessageStart = "sim start on "
-    while (!_logs.exists(_ startsWith simStartupMessageStart) && !exitValue.isCompleted) {
+    while (!_logs.exists(_.startsWith(simStartupMessageStart)) && !exitValue.isCompleted) {
       Thread.sleep(100)
     }
     // Remove the startup message (and any precursors).
@@ -179,7 +179,7 @@ private[chiseltest] class SimApiInterface(dut: MultiIOModule, cmd: Seq[String])
     inChannel.acquire()
     val ready = inChannel.ready
     if (ready) {
-      (0 until chunk) foreach (i => inChannel(i) = (value >> (64 * i)).toLong)
+      (0 until chunk).foreach(i => inChannel(i) = (value >> (64 * i)).toLong)
       inChannel.produce()
     }
     inChannel.release()
@@ -194,9 +194,7 @@ private[chiseltest] class SimApiInterface(dut: MultiIOModule, cmd: Seq[String])
       else {
         outChannel.consume()
         Some(
-          ((0 until chunk) foldLeft BigInt(0))(
-            (res, i) => res | (int(outChannel(i)) << (64 * i))
-          )
+          ((0 until chunk).foldLeft(BigInt(0)))((res, i) => res | (int(outChannel(i)) << (64 * i)))
         )
       }
     outChannel.release()
@@ -208,11 +206,10 @@ private[chiseltest] class SimApiInterface(dut: MultiIOModule, cmd: Seq[String])
     outChannel.acquire()
     val valid = outChannel.valid
     if (valid) {
-      (outputsNameToChunkSizeMap.toList foldLeft 0) {
+      (outputsNameToChunkSizeMap.toList.foldLeft(0)) {
         case (off, (out, chunk)) =>
-          _peekMap(out) = ((0 until chunk) foldLeft BigInt(0))(
-            (res, i) => res | (int(outChannel(off + i)) << (64 * i))
-          )
+          _peekMap(out) =
+            ((0 until chunk).foldLeft(BigInt(0)))((res, i) => res | (int(outChannel(off + i)) << (64 * i)))
           off + chunk
       }
       outChannel.consume()
@@ -225,12 +222,10 @@ private[chiseltest] class SimApiInterface(dut: MultiIOModule, cmd: Seq[String])
     inChannel.acquire()
     val ready = inChannel.ready
     if (ready) {
-      (inputsNameToChunkSizeMap.toList foldLeft 0) {
+      (inputsNameToChunkSizeMap.toList.foldLeft(0)) {
         case (off, (in, chunk)) =>
-          val value = _pokeMap getOrElse (in, BigInt(0))
-          (0 until chunk) foreach (
-            i => inChannel(off + i) = (value >> (64 * i)).toLong
-          )
+          val value = _pokeMap.getOrElse(in, BigInt(0))
+          (0 until chunk).foreach(i => inChannel(off + i) = (value >> (64 * i)).toLong)
           off + chunk
       }
       inChannel.produce()
@@ -303,7 +298,7 @@ private[chiseltest] class SimApiInterface(dut: MultiIOModule, cmd: Seq[String])
   }
 
   private def start(): Unit = {
-    println(s"""STARTING ${cmd mkString " "}""")
+    println(s"""STARTING ${cmd.mkString(" ")}""")
     mwhile(!recvOutputs) {}
 
     //TODO: Figure out what the behavior of the interface on start up is
@@ -318,12 +313,12 @@ private[chiseltest] class SimApiInterface(dut: MultiIOModule, cmd: Seq[String])
       _pokeMap(signal) = value
       isStale = true
     } else {
-      val id = _signalMap getOrElseUpdate (signal, getId(signal))
+      val id = _signalMap.getOrElseUpdate(signal, getId(signal))
       if (id >= 0) {
-        poke(id, _chunks getOrElseUpdate (signal, getChunk(id)), value)
+        poke(id, _chunks.getOrElseUpdate(signal, getChunk(id)), value)
         isStale = true
       } else {
-        logger info s"Can't find $signal in the emulator..."
+        logger.info(s"Can't find $signal in the emulator...")
       }
     }
   }
@@ -331,7 +326,7 @@ private[chiseltest] class SimApiInterface(dut: MultiIOModule, cmd: Seq[String])
   def peek(signal: String): Option[BigInt] = {
     if (isStale) update()
     if (outputsNameToChunkSizeMap.contains(signal)) {
-      _peekMap get signal
+      _peekMap.get(signal)
     } else if (inputsNameToChunkSizeMap.contains(signal)) {
       // Added this in case peek is called on input before poke. Did not seem to be a problem in testers
       if (!_pokeMap.contains(signal)) {
@@ -339,13 +334,13 @@ private[chiseltest] class SimApiInterface(dut: MultiIOModule, cmd: Seq[String])
         isStale = true
         update()
       }
-      _pokeMap get signal
+      _pokeMap.get(signal)
     } else {
-      val id = _signalMap getOrElseUpdate (signal, getId(signal))
+      val id = _signalMap.getOrElseUpdate(signal, getId(signal))
       if (id >= 0) {
-        Some(peek(id, _chunks getOrElse (signal, getChunk(id))))
+        Some(peek(id, _chunks.getOrElse(signal, getChunk(id))))
       } else {
-        logger info s"Can't find $signal in the emulator..."
+        logger.info(s"Can't find $signal in the emulator...")
         None
       }
     }
@@ -353,7 +348,7 @@ private[chiseltest] class SimApiInterface(dut: MultiIOModule, cmd: Seq[String])
 
   def step(n: Int) {
     update()
-    (0 until n) foreach (_ => takeStep())
+    (0 until n).foreach(_ => takeStep())
   }
 
   def reset(n: Int = 1) {
@@ -382,32 +377,32 @@ private[chiseltest] class Channel(name: String) {
   @volatile private lazy val buffer = {
     val size = channel.size
     assert(size > 16, "channel.size is bogus: %d".format(size))
-    channel map (FileChannel.MapMode.READ_WRITE, 0, size)
+    channel.map(FileChannel.MapMode.READ_WRITE, 0, size)
   }
   implicit def intToByte(i: Int): Byte = i.toByte
   val channel_data_offset_64bw = 4 // Offset from start of channel buffer to actual user data in 64bit words.
   def acquire(): Unit = {
-    buffer put (0, 1)
-    buffer put (2, 0)
-    while ((buffer get 1) == 1 && (buffer get 2) == 0) {}
+    buffer.put(0, 1)
+    buffer.put(2, 0)
+    while ((buffer.get(1)) == 1 && (buffer.get(2)) == 0) {}
   }
-  def release(): Unit = { buffer put (0, 0) }
-  def ready: Boolean = (buffer get 3) == 0
-  def valid: Boolean = (buffer get 3) == 1
-  def produce(): Unit = { buffer put (3, 1) }
-  def consume(): Unit = { buffer put (3, 0) }
+  def release(): Unit = { buffer.put(0, 0) }
+  def ready: Boolean = (buffer.get(3)) == 0
+  def valid: Boolean = (buffer.get(3)) == 1
+  def produce(): Unit = { buffer.put(3, 1) }
+  def consume(): Unit = { buffer.put(3, 0) }
   def update(idx: Int, data: Long) {
-    buffer putLong (8 * idx + channel_data_offset_64bw, data)
+    buffer.putLong(8 * idx + channel_data_offset_64bw, data)
   }
   def update(base: Int, data: String) {
-    data.zipWithIndex foreach {
-      case (c, i) => buffer put (base + i + channel_data_offset_64bw, c)
+    data.zipWithIndex.foreach {
+      case (c, i) => buffer.put(base + i + channel_data_offset_64bw, c)
     }
-    buffer put (base + data.length + channel_data_offset_64bw, 0)
+    buffer.put(base + data.length + channel_data_offset_64bw, 0)
   }
   def apply(idx: Int): Long =
-    buffer getLong (8 * idx + channel_data_offset_64bw)
+    buffer.getLong(8 * idx + channel_data_offset_64bw)
   def close(): Unit = { file.close() }
-  buffer order java.nio.ByteOrder.nativeOrder
+  buffer.order(java.nio.ByteOrder.nativeOrder)
   new File(name).delete
 }

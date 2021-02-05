@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package chiseltest
 
 import chiseltest.internal._
@@ -31,7 +33,7 @@ import utest.framework.Formatter
   *     }
   *   }
   * }}}
-  **/
+  */
 trait ChiselUtestTester extends TestSuite with TestEnvInterface {
   val topFileName: Option[String] = None
 
@@ -68,7 +70,13 @@ trait ChiselUtestTester extends TestSuite with TestEnvInterface {
     * @param dutGen A generator of a Chisel Module
     * @tparam T The DUT type, must be a subclass of MultiIOModule
     */
-  def testCircuit[T <: MultiIOModule](dutGen: => T, annotationSeq: AnnotationSeq = Seq.empty)(testFn: T => Unit)(implicit testPath: utest.framework.TestPath): Unit = {
+  def testCircuit[T <: MultiIOModule](
+    dutGen:        => T,
+    annotationSeq: AnnotationSeq = Seq.empty
+  )(testFn:        T => Unit
+  )(
+    implicit testPath: utest.framework.TestPath
+  ): Unit = {
     def testName = s"${testPath.value.reduce(_ + _)}"
 
     val newAnnos = addDefaultTargetDir(sanitizeFileName(testName), annotationSeq)

@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 def scalacOptionsVersion(scalaVersion: String): Seq[String] = {
   Seq() ++ {
@@ -29,7 +29,7 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
 organization := "edu.berkeley.cs"
 name := "chiseltest"
 
-version := "0.3-SNAPSHOT"
+version := "0.5-SNAPSHOT"
 
 scalaVersion := "2.12.10"
 
@@ -41,8 +41,7 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "org.scalatest" %% "scalatest" % "3.0.9",
-  "org.scalatest" %% "scalatest" % "3.2.0" % "test",
+  "org.scalatest" %% "scalatest" % "3.2.2",
   "com.lihaoyi" %% "utest" % "latest.integration"
 )
 
@@ -55,13 +54,13 @@ pomIncludeRepository := { x => false }
 
 pomExtra := (
 <url>http://chisel.eecs.berkeley.edu/</url>
-<licenses>
-  <license>
-    <name>BSD-style</name>
-    <url>http://www.opensource.org/licenses/bsd-license.php</url>
-    <distribution>repo</distribution>
-  </license>
-</licenses>
+  <licenses>
+    <license>
+      <name>apache_v2</name>
+      <url>https://opensource.org/licenses/Apache-2.0</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
 <scm>
   <url>https://github.com/ucb-bar/chisel-testers2.git</url>
   <connection>scm:git:github.com/ucb-bar/chisel-testers2.git</connection>
@@ -87,8 +86,8 @@ publishTo := {
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Seq(
-  "chisel3" -> "3.4-SNAPSHOT",
-  "treadle" -> "1.3-SNAPSHOT"
+  "chisel3" -> "3.5-SNAPSHOT",
+  "treadle" -> "1.5-SNAPSHOT"
 )
 
 libraryDependencies ++= defaultVersions.map { case (dep, ver) =>

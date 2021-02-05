@@ -5,7 +5,7 @@ This is **alpha software** that is currently under development, and interfaces m
 However, it is very much in a usable state, so if you're fine living on the bleeding edge, give it a try. 
 
 ## Overview
-ChiselTest is a test harness for [Chisel](https://github.com/freechipsproject/chisel3)-based RTL designs, currently supporting directed testing (all test stimulus manually specified - no constrained random and coverage-driven flows).
+ChiselTest is a test harness for [Chisel](https://github.com/chipsalliance/chisel3)-based RTL designs, currently supporting directed testing (all test stimulus manually specified - no constrained random and coverage-driven flows).
 ChiselTest emphasizes tests that are lightweight (minimizes boilerplate code), easy to read and write (understandability), and compose (for better test code reuse).
 
 The core primitives are similar to nonsynthesizable Verilog: input pin assignment (`poke`), pin value assertion (`expect`), and time advance (`step`). Threading concurrency is also supported with the use of `fork` and `join`, and concurrent accesses to wires are checked to prevent race conditions.
@@ -92,6 +92,7 @@ See the test cases for examples:
     ```scala
     import chisel3.experimental.BundleLiterals._
     ```
+- [AlutTest](src/test/scala/chiseltest/tests/AluTest.scala) shows an example of re-using the same test for different data
 - [ShiftRegisterTest](src/test/scala/chiseltest/tests/ShiftRegisterTest.scala) shows an example of using fork/join to define a test helper function, where multiple invocations of it are pipelined using `fork`.
 - [VerilatorBasicTests](src/test/scala/chiseltest/experimental/tests/VerilatorBasicTests.scala) shows an example using Verilator as the simulator.
   - Note: the simulator is selected by passing an annotation into the `test` function, which requires experimental imports:
@@ -108,6 +109,14 @@ See the test cases for examples:
 ## New Constructs
 - `fork` to spawn threads, and `join` to block (wait) on a thread.
   Pokes and peeks/expects to wires from threads are checked during runtime to ensure no collisions or unexpected behavior.
+  - `fork`ed threads provide a concurrency abstraction for writing testbenches only, without real parallelism.
+    The test infrastructure schedules threads one at a time, with threads running once per simulation cycle.
+  - Thread order is deterministic, and attempts to follow lexical order (as it would appear from the code text): `fork`ed (child) threads run immediately, then return to the spawning (parent) thread.
+    On future cycles, child threads run before their parent, in the order they were spawned.
+  - Only cross-thread operations that round-trip through the simulator (eg, peek-after-poke) are checked.
+    You can do cross-thread operations in Scala (eg, using shared variables) that aren't checked, but it is up to you to make sure they are correct and intuitive.
+    This is not recommended.
+    In the future, we may provide checked mechanisms for communicating between test threads.
 - Regions can be associated with a thread, with `fork.withRegion(...)`, which act as a synchronization barrier within simulator time steps.
   This can be used to create monitors that run after other main testdriver threads have been run, and can read wires those threads have poked.
 - `timescope` allows pokes to be scoped - that is, pokes inside the timescope block "disappear" and the wire reverts to its previous value at the end of the block.
