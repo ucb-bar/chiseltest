@@ -11,17 +11,17 @@ import org.scalatest.matchers.should.Matchers
 class BoreTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2"
 
-  class Constant extends MultiIOModule {
+  class Constant extends Module {
     val x = Reg(UInt(6.W))
     x := 42.U
   }
 
-  class Expect extends MultiIOModule {
+  class Expect extends Module {
     val y = IO(Output(UInt(6.W)))
     y := 0.U
   }
 
-  class Top extends MultiIOModule {
+  class Top extends Module {
     val y = IO(Output(UInt(6.W)))
     val constant = Module(new Constant)
     val expect = Module(new Expect)

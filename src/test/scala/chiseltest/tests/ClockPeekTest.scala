@@ -14,7 +14,7 @@ class ClockPeekTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Testers2 with clock peeking"
 
   it should "work as expected" in {
-    test(new MultiIOModule {
+    test(new Module {
       val inClock = IO(Input(Clock()))
       val outClock = IO(Output(Clock()))
       outClock := inClock

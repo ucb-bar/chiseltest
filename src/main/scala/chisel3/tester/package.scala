@@ -57,7 +57,7 @@ package object tester {
     def sanitizeFileName(name: String): String = chiseltest.experimental.sanitizeFileName(name)
 
     object TestOptionBuilder {
-      implicit class ChiselScalatestOptionBuilder[T <: MultiIOModule](x: ChiselScalatestTester#TestBuilder[T])
+      implicit class ChiselScalatestOptionBuilder[T <: Module](x: ChiselScalatestTester#TestBuilder[T])
           extends chiseltest.experimental.TestOptionBuilder.ChiselScalatestOptionBuilder[T](x)
     }
 

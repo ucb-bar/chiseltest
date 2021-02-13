@@ -36,7 +36,7 @@ case class ForkBuilder(name: Option[String], region: Option[Region], threads: Se
   * - runThreads: runs all threads waiting on a set of clocks
   * - scheduler: called from within a test thread, suspends the current thread and runs the next one
   */
-trait ThreadedBackend[T <: MultiIOModule] extends BackendInterface {
+trait ThreadedBackend[T <: Module] extends BackendInterface {
   def dut: T
 
   // State for deadlock detection timeout

@@ -4,7 +4,7 @@ package chiseltest
 
 import chiseltest.internal._
 import chiseltest.experimental.{sanitizeFileName, ChiselTestShell}
-import chisel3.MultiIOModule
+import chisel3.Module
 import chiseltest.internal.WriteVcdAnnotation
 import firrtl.AnnotationSeq
 import org.scalatest._
@@ -14,7 +14,7 @@ import scala.util.DynamicVariable
 
 trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvInterface { this: TestSuite =>
 
-  class TestBuilder[T <: MultiIOModule](
+  class TestBuilder[T <: Module](
     val dutGen:        () => T,
     val annotationSeq: AnnotationSeq,
     val flags:         Array[String]) {
@@ -54,7 +54,7 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
   // Stack trace data to help generate more informative (and localizable) failure messages
   var topFileName: Option[String] = None // best guess at the testdriver top filename
 
-  private def runTest[T <: MultiIOModule](tester: BackendInstance[T])(testFn: T => Unit) {
+  private def runTest[T <: Module](tester: BackendInstance[T])(testFn: T => Unit) {
     // Try and get the user's top-level test filename
     val internalFiles = Set("ChiselScalatestTester.scala", "BackendInterface.scala", "TestEnvInterface.scala")
     val topFileNameGuess = (new Throwable).getStackTrace.apply(2).getFileName
@@ -104,10 +104,10 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     * @note This API is experimental and forward compatibility is not yet guaranteed
     *
     * @param dutGen             A generator of a Chisel  Module
-    * @tparam T                 The DUT type, must be a subclass of MultiIOModule
+    * @tparam T                 The DUT type, must be a subclass of Module
     * @return
     */
-  def test[T <: MultiIOModule](dutGen: => T): TestBuilder[T] = {
+  def test[T <: Module](dutGen: => T): TestBuilder[T] = {
     new TestBuilder(() => dutGen, Seq.empty, Array.empty)
   }
 }
