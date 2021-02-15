@@ -10,7 +10,7 @@ import treadle.TreadleTester
 import scala.collection.mutable
 
 // TODO: is Seq[CombinationalPath] the right API here? It's unclear where name -> Data resolution should go
-class TreadleBackend[T <: MultiIOModule](
+class TreadleBackend[T <: Module](
   val dut:                T,
   val dataNames:          Map[Data, String],
   val combinationalPaths: Map[Data, Set[Data]],

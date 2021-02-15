@@ -29,7 +29,7 @@ object VcsExecutive extends BackendExecutive {
     }
   }
 
-  def start[T <: MultiIOModule](
+  def start[T <: Module](
     dutGen:        () => T,
     annotationSeq: AnnotationSeq
   ): BackendInstance[T] = {

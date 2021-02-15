@@ -11,7 +11,7 @@ import chiseltest.legacy.backends.verilator.getDataNames
   */
 object GenVcsVerilogHarness {
 
-  def getPorts(dut: MultiIOModule, separator: String = "."): (Seq[(Element, String)], Seq[(Element, String)]) = {
+  def getPorts(dut: Module, separator: String = "."): (Seq[(Element, String)], Seq[(Element, String)]) = {
     getDataNames(dut, separator).partition { case (e, _) => DataMirror.directionOf(e) == ActualDirection.Input }
   }
 
@@ -30,7 +30,7 @@ object GenVcsVerilogHarness {
     )
   }
 
-  def apply(dut: MultiIOModule, writer: Writer, vpdFilePath: String, isGateLevel: Boolean = false) {
+  def apply(dut: Module, writer: Writer, vpdFilePath: String, isGateLevel: Boolean = false) {
     val dutName = dut.name
     // getPorts() is going to return names prefixed with the dut name.
     // These don't correspond to code currently generated for verilog modules,

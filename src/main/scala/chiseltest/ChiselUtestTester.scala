@@ -5,7 +5,7 @@ package chiseltest
 import chiseltest.internal._
 import chiseltest.experimental.sanitizeFileName
 import utest.TestSuite
-import chisel3.MultiIOModule
+import chisel3.Module
 import firrtl.AnnotationSeq
 import utest.framework.Formatter
 
@@ -68,9 +68,9 @@ trait ChiselUtestTester extends TestSuite with TestEnvInterface {
     *
     * @note This API is experimental and forward compatibility is not yet guaranteed
     * @param dutGen A generator of a Chisel Module
-    * @tparam T The DUT type, must be a subclass of MultiIOModule
+    * @tparam T The DUT type, must be a subclass of Module
     */
-  def testCircuit[T <: MultiIOModule](
+  def testCircuit[T <: Module](
     dutGen:        => T,
     annotationSeq: AnnotationSeq = Seq.empty
   )(testFn:        T => Unit
