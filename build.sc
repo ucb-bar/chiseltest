@@ -5,7 +5,7 @@ import mill.scalalib._
 import mill.scalalib.scalafmt._
 import mill.scalalib.publish._
 
-object chiseltest extends mill.Cross[chiseltestCrossModule]("2.11.12", "2.12.10")
+object chiseltest extends mill.Cross[chiseltestCrossModule]("2.12.13")
 
 val defaultVersions = Map(
   "chisel3" -> "3.5-SNAPSHOT",
@@ -37,26 +37,16 @@ class chiseltestCrossModule(val crossScalaVersion: String) extends CrossSbtModul
 
   def publishVersion = "0.5-SNAPSHOT"
 
-  private def javacCrossOptions = majorVersion match {
-    case i if i < 12 => Seq("-source", "1.7", "-target", "1.7")
-    case _ => Seq("-source", "1.8", "-target", "1.8")
-  }
-
-  private def scalacCrossOptions = majorVersion match {
-    case i if i < 12 => Seq()
-    case _ => Seq("-Xsource:2.11")
-  }
-
   override def scalacOptions = T {
     super.scalacOptions() ++ Seq(
       "-deprecation",
       "-feature",
       "-language:reflectiveCalls" // required by SemanticDB compiler plugin
-    ) ++ scalacCrossOptions
+    )
   }
 
   override def javacOptions = T {
-    super.javacOptions() ++ javacCrossOptions
+    super.javacOptions() ++ Seq("-source", "1.8", "-target", "1.8")
   }
 
   override def moduleDeps = super.moduleDeps ++ chisel3Module ++ treadleModule
