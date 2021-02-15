@@ -4,7 +4,7 @@ package chiseltest
 
 import chiseltest.internal._
 import chiseltest.experimental.sanitizeFileName
-import chisel3.MultiIOModule
+import chisel3.Module
 
 import firrtl.AnnotationSeq
 
@@ -15,13 +15,13 @@ private class RawTester(testName: String) extends TestEnvInterface {
   // Provide test fixture data as part of 'global' context during test runs
   val topFileName = Some(testName)
 
-  private def runTest[T <: MultiIOModule](tester: BackendInstance[T])(testFn: T => Unit) {
+  private def runTest[T <: Module](tester: BackendInstance[T])(testFn: T => Unit) {
     batchedFailures.clear()
 
     Context.run(tester, this, testFn)
   }
 
-  def test[T <: MultiIOModule](dutGen: => T, annotationSeq: AnnotationSeq)(testFn: T => Unit) {
+  def test[T <: Module](dutGen: => T, annotationSeq: AnnotationSeq)(testFn: T => Unit) {
     val newAnnos = addDefaultTargetDir(sanitizeFileName(testName), annotationSeq)
     runTest(defaults.createDefaultTester(() => dutGen, newAnnos))(testFn)
   }
@@ -48,7 +48,7 @@ object RawTester {
     * @param testFn    The block of code that implements the test
     * @tparam T        The type of device, derived from dutGen
     */
-  def test[T <: MultiIOModule](dutGen: => T, annotationSeq: AnnotationSeq = Seq.empty)(testFn: T => Unit): Unit = {
+  def test[T <: Module](dutGen: => T, annotationSeq: AnnotationSeq = Seq.empty)(testFn: T => Unit): Unit = {
 
     val testName = s"chisel_test_${System.currentTimeMillis()}"
 

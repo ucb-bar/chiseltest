@@ -5,7 +5,7 @@ package chiseltest.backends
 import chiseltest.internal.BackendInstance
 import chisel3.experimental.BaseModule
 import chisel3.internal.firrtl.Circuit
-import chisel3.{Data, Element, MultiIOModule, Record, Vec}
+import chisel3.{Data, Element, Module, Record, Vec}
 import firrtl.AnnotationSeq
 import firrtl.annotations.ReferenceTarget
 import firrtl.transforms.CombinationalPath
@@ -60,5 +60,5 @@ trait BackendExecutive {
     mapPairs.toMap
   }
 
-  def start[T <: MultiIOModule](dutGen: () => T, annotationSeq: AnnotationSeq): BackendInstance[T]
+  def start[T <: Module](dutGen: () => T, annotationSeq: AnnotationSeq): BackendInstance[T]
 }

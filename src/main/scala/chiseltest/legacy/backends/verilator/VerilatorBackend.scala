@@ -21,7 +21,7 @@ import scala.math.BigInt
   * @tparam T                   the dut's type
   */
 // TODO: is Seq[CombinationalPath] the right API here? It's unclear where name -> Data resolution should go
-class VerilatorBackend[T <: MultiIOModule](
+class VerilatorBackend[T <: Module](
   val dut:                T,
   val dataNames:          Map[Data, String],
   val combinationalPaths: Map[Data, Set[Data]],

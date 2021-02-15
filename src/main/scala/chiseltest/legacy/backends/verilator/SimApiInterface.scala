@@ -20,7 +20,7 @@ import scala.language.implicitConversions
   * @param dut  The device under test
   * @param cmd  The command to run as a Seq of strings
   */
-private[chiseltest] class SimApiInterface(dut: MultiIOModule, cmd: Seq[String]) extends LazyLogging {
+private[chiseltest] class SimApiInterface(dut: Module, cmd: Seq[String]) extends LazyLogging {
   //
   // Construct maps for the input and output
   // Remove zero length fields during the process

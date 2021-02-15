@@ -11,7 +11,7 @@ import org.scalatest._
 import treadle.VerboseAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 
-class ValidQueueModule(typeGen: Data, val delay: Int) extends MultiIOModule {
+class ValidQueueModule(typeGen: Data, val delay: Int) extends Module {
   val in = IO(Flipped(Valid(typeGen)))
   val out = IO(Valid(typeGen))
 
@@ -72,7 +72,7 @@ class ValidQueueTest extends AnyFlatSpec with ChiselScalatestTester {
     val c = Bool()
   }
 
-  class TriQueueModule(typeGen: Data, delay: Int) extends MultiIOModule {
+  class TriQueueModule(typeGen: Data, delay: Int) extends Module {
     val in0  = IO(Flipped(Valid(typeGen)))
     val out0 = IO(Valid(typeGen))
     out0 := Pipe(in0, delay)

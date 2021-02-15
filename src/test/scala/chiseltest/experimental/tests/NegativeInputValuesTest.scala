@@ -8,7 +8,7 @@ import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.internal.VerilatorBackendAnnotation
 import org.scalatest.freespec.AnyFreeSpec
 
-class HasOddWidthSInt extends MultiIOModule {
+class HasOddWidthSInt extends Module {
   val in = IO(Input(SInt(15.W)))
   val out = IO(Output(Bool()))
 

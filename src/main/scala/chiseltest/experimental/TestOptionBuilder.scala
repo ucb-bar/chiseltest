@@ -20,7 +20,7 @@ import firrtl.{
 }
 
 package object TestOptionBuilder {
-  implicit class ChiselScalatestOptionBuilder[T <: MultiIOModule](x: ChiselScalatestTester#TestBuilder[T]) {
+  implicit class ChiselScalatestOptionBuilder[T <: Module](x: ChiselScalatestTester#TestBuilder[T]) {
     def withAnnotations(annotationSeq: AnnotationSeq): ChiselScalatestTester#TestBuilder[T] = {
       new x.outer.TestBuilder[T](x.dutGen, x.annotationSeq ++ annotationSeq, x.flags)
     }

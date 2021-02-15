@@ -1,12 +1,12 @@
 package chiseltest.legacy.backends.verilator
 
-import chisel3.MultiIOModule
+import chisel3.Module
 import scala.sys.process._
 
 /** Generates the Module specific verilator harness cpp file for verilator compilation
   */
 object VerilatorCppHarnessGenerator {
-  def codeGen(dut: MultiIOModule, vcdFilePath: String, targetDir: String): String = {
+  def codeGen(dut: Module, vcdFilePath: String, targetDir: String): String = {
     val codeBuffer = new StringBuilder
 
     def pushBack(vector: String, pathName: String, width: BigInt) {

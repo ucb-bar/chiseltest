@@ -53,7 +53,7 @@ class OptionsPassingTest extends AnyFlatSpec with ChiselScalatestTester with Mat
     if (targetDir.exists()) {
       targetDir.delete()
     }
-    test(new MultiIOModule() {}).withFlags(Array("--target-dir", targetDirName)) { c =>
+    test(new Module() {}).withFlags(Array("--target-dir", targetDirName)) { c =>
       targetDir.exists() should be(true)
     }
   }
@@ -73,7 +73,7 @@ class OptionsPassingTest extends AnyFlatSpec with ChiselScalatestTester with Mat
     if (targetDir.exists()) {
       targetDir.delete()
     }
-    test(new MultiIOModule() {})
+    test(new Module() {})
       .withAnnotations(annotations)
       .withFlags(Array("--target-dir", targetDirName)) { c =>
         targetDir.exists() should be(true)
@@ -85,7 +85,7 @@ class OptionsPassingTest extends AnyFlatSpec with ChiselScalatestTester with Mat
   it should "allow turning on verbose mode" in {
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new MultiIOModule {}).withAnnotations(Seq(VerboseAnnotation)) { c =>
+      test(new Module {}).withAnnotations(Seq(VerboseAnnotation)) { c =>
         c.clock.step(1)
       }
     }

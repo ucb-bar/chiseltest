@@ -19,7 +19,7 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
 
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new MultiIOModule {}).withAnnotations(Seq(VcsBackendAnnotation, LineCoverageAnnotation)) { c => }
+      test(new Module {}).withAnnotations(Seq(VcsBackendAnnotation, LineCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     output.contains("-cm line") should be(true)
@@ -30,7 +30,7 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
 
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new MultiIOModule {}).withAnnotations(Seq(VcsBackendAnnotation, ToggleCoverageAnnotation)) { c => }
+      test(new Module {}).withAnnotations(Seq(VcsBackendAnnotation, ToggleCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     output.contains("-cm tgl") should be(true)
@@ -41,7 +41,7 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
 
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new MultiIOModule {}).withAnnotations(Seq(VcsBackendAnnotation, BranchCoverageAnnotation)) { c => }
+      test(new Module {}).withAnnotations(Seq(VcsBackendAnnotation, BranchCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     output.contains("-cm branch") should be(true)
@@ -52,7 +52,7 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
 
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new MultiIOModule() {}).withAnnotations(Seq(VcsBackendAnnotation, ConditionalCoverageAnnotation)) { c => }
+      test(new Module() {}).withAnnotations(Seq(VcsBackendAnnotation, ConditionalCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     output.contains("-cm cond") should be(true)
@@ -63,7 +63,7 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
 
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new MultiIOModule {}).withAnnotations(Seq(VcsBackendAnnotation, StructuralCoverageAnnotation)) { c => }
+      test(new Module {}).withAnnotations(Seq(VcsBackendAnnotation, StructuralCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     output.contains("-cm line+tgl+branch+cond") should be(true)
@@ -74,7 +74,7 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
 
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new MultiIOModule {}).withAnnotations(Seq(VcsBackendAnnotation, UserCoverageAnnotation)) { c => }
+      test(new Module {}).withAnnotations(Seq(VcsBackendAnnotation, UserCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     output.contains("-cm assert") should be(true)
@@ -85,7 +85,7 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
 
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new MultiIOModule {}).withAnnotations(Seq(VcsBackendAnnotation, UserCoverageAnnotation, StructuralCoverageAnnotation)) { c => }
+      test(new Module {}).withAnnotations(Seq(VcsBackendAnnotation, UserCoverageAnnotation, StructuralCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     output.contains("-cm line+tgl+branch+cond+assert") should be(true)

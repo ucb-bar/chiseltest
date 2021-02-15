@@ -14,7 +14,7 @@ import org.scalatest.freespec.AnyFreeSpec
   * circuit that illustrates usage of async register
   * @param resetValue value on reset
   */
-class AsyncResetRegModule(resetValue: Int) extends MultiIOModule {
+class AsyncResetRegModule(resetValue: Int) extends Module {
   val io = IO(new Bundle {
     val in = Input(UInt(8.W))
     val out = Output(UInt(8.W))
@@ -27,7 +27,7 @@ class AsyncResetRegModule(resetValue: Int) extends MultiIOModule {
 
 }
 
-class AsyncResetFeedbackModule() extends MultiIOModule {
+class AsyncResetFeedbackModule() extends Module {
   val io = IO(new Bundle {
     val out = Output(Vec(2, UInt(1.W)))
   })

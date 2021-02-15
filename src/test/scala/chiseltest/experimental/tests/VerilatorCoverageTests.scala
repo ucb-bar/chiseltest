@@ -19,7 +19,7 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
     val coverage = new File(coverageName)
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new MultiIOModule {}).withAnnotations(Seq(VerilatorBackendAnnotation, ToggleCoverageAnnotation)) { c => }
+      test(new Module {}).withAnnotations(Seq(VerilatorBackendAnnotation, ToggleCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     coverage.exists() should be(true)
@@ -33,7 +33,7 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
     val coverage = new File(coverageName)
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new MultiIOModule {}).withAnnotations(Seq(VerilatorBackendAnnotation, LineCoverageAnnotation)) { c => }
+      test(new Module {}).withAnnotations(Seq(VerilatorBackendAnnotation, LineCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     coverage.exists() should be(true)
@@ -47,7 +47,7 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
     val coverage = new File(coverageName)
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new MultiIOModule {}).withAnnotations(Seq(VerilatorBackendAnnotation, StructuralCoverageAnnotation)) { c => }
+      test(new Module {}).withAnnotations(Seq(VerilatorBackendAnnotation, StructuralCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     coverage.exists() should be(true)
@@ -61,7 +61,7 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
     val coverage = new File(coverageName)
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new MultiIOModule {}).withAnnotations(Seq(VerilatorBackendAnnotation, UserCoverageAnnotation)) { c => }
+      test(new Module {}).withAnnotations(Seq(VerilatorBackendAnnotation, UserCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     coverage.exists() should be(true)
@@ -75,7 +75,7 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
     val coverage = new File(coverageName)
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new MultiIOModule {}).withAnnotations(Seq(VerilatorBackendAnnotation, UserCoverageAnnotation, StructuralCoverageAnnotation)) { c => }
+      test(new Module {}).withAnnotations(Seq(VerilatorBackendAnnotation, UserCoverageAnnotation, StructuralCoverageAnnotation)) { c => }
     }
     val output = outputStream.toString
     coverage.exists() should be(true)

@@ -6,7 +6,7 @@ import chisel3._
 import chiseltest._
 import org.scalatest.freespec.AnyFreeSpec
 
-class UsesVec extends MultiIOModule {
+class UsesVec extends Module {
   val in   = IO(Input(Vec(4, UInt(5.W))))
   val addr = IO(Input(UInt(8.W)))
   val out  = IO(Output(UInt(5.W)))

@@ -29,7 +29,7 @@ object VcsExecutive extends BackendExecutive {
     }
   }
 
-  def start[T <: MultiIOModule](
+  def start[T <: Module](
     dutGen:        () => T,
     annotationSeq: AnnotationSeq
   ): BackendInstance[T] = {
@@ -43,7 +43,8 @@ object VcsExecutive extends BackendExecutive {
     val targetDirFile = new File(targetDir)
 
     val generatorAnnotation = chisel3.stage.ChiselGeneratorAnnotation(dutGen)
-    val circuit = generatorAnnotation.elaborate.collect { case x: ChiselCircuitAnnotation => x }.head.circuit
+    val elaboratedAnno = (new chisel3.stage.phases.Elaborate).transform(annotationSeq :+ generatorAnnotation)
+    val circuit = elaboratedAnno.collect { case x: ChiselCircuitAnnotation => x }.head.circuit
     val dut = getTopModule(circuit).asInstanceOf[T]
 
     // Generate the verilog file and some or all of the following annotations
@@ -58,10 +59,7 @@ object VcsExecutive extends BackendExecutive {
 
     val compiledAnnotations = (new ChiselStage)
       .run(
-        annotationSeq ++ Seq(
-          generatorAnnotation,
-          RunFirrtlTransformAnnotation(new VerilogEmitter)
-        )
+        elaboratedAnno :+ RunFirrtlTransformAnnotation(new VerilogEmitter)
       )
       .filterNot(_.isInstanceOf[DeletedAnnotation])
 
@@ -104,7 +102,7 @@ object VcsExecutive extends BackendExecutive {
       fileName
     }.getOrElse("")
 
-    val vcsFlags = moreVcsCFlags ++ coverageFlags
+    val vcsFlags = moreVcsFlags ++ coverageFlags
 
     assert(
       VerilogToVcs(
