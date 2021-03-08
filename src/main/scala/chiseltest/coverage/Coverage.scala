@@ -2,13 +2,15 @@ package chiseltest.coverage
 
 import firrtl._
 
+import scala.util.matching.Regex
+
 object Coverage {
 
   type Lines = List[(String, List[Int])]
-  private val scalaInfoRegex = raw"\s*(.*\.scala) (\d+):(\d+)".r
+  private val chiselFileInfo: Regex = raw"\s*([^\.]+\.\w+) (\d+):(\d+)".r
 
   def parseFileInfo(i: ir.FileInfo): (String, Int) = i.unescaped match {
-    case scalaInfoRegex(filename, line, col) => (filename, line.toInt)
+    case chiselFileInfo(filename, line, col) => (filename, line.toInt)
   }
 
   def infosToLines(infos: Seq[ir.Info]): Lines = {
