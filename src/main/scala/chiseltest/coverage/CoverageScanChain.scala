@@ -125,6 +125,10 @@ object CoverageScanChainPass extends Transform with DependencyAPIMigration {
     val regRef = ir.Reference(register)
     val regWidth = prev.tpe.asInstanceOf[ir.UIntType].width.asInstanceOf[ir.IntWidth].width
     ctx.stmts.append(register)
+
+    // TODO: properly deal with synchronous reset (make a mux!)
+    // TODO: make counter saturatingc
+
     // we increment the counter when condition is true
     val covered = Utils.and(cover.en, cover.pred)
     val cond = ir.DoPrim(PrimOps.Pad, List(covered), List(regWidth), register.tpe)

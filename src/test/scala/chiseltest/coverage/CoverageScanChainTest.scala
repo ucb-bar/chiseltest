@@ -29,7 +29,7 @@ class CoverageScanChainTest extends AnyFlatSpec {
     val stage = new ChiselStage
 
     // "-ll", "trace"
-    val r = stage.execute(Array("-X", "verilog"), ChiselGeneratorAnnotation(() => gen) +: annos)
+    val r = stage.execute(Array("-X", "low"), ChiselGeneratorAnnotation(() => gen) +: annos)
     val src = r.collect {
       case EmittedFirrtlCircuitAnnotation(a) => a
       case EmittedFirrtlModuleAnnotation(a)  => a
