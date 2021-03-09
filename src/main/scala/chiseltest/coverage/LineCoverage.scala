@@ -34,6 +34,7 @@ object LineCoveragePass extends Transform with DependencyAPIMigration {
   val Prefix = "l"
 
   override def prerequisites: Seq[TransformDependency] = Forms.Checks
+  // TODO: we might actually want to run after deduplication...
   override def optionalPrerequisiteOf: Seq[TransformDependency] = Seq(Dependency[DedupModules])
   override def invalidates(a: Transform): Boolean = false
 
@@ -52,27 +53,10 @@ object LineCoveragePass extends Transform with DependencyAPIMigration {
     case mod: ir.Module =>
       val namespace = Namespace(mod)
       namespace.newName(Prefix)
-      val ctx = ModuleCtx(annos, namespace, c.module(mod.name), findClock(mod))
+      val ctx = ModuleCtx(annos, namespace, c.module(mod.name), Coverage.findClock(mod))
       val bodyInfo = onStmt(mod.body, ctx)
       val body = addCover(bodyInfo, ctx)
       mod.copy(body = body)
-  }
-
-  private def findClock(m: ir.Module): ir.Expression = {
-    val clockIO = m.ports.filter(_.tpe == ir.ClockType)
-    val clockInputs = clockIO.filter(_.direction == ir.Input)
-    assert(clockInputs.length == 1, s"This transformation only works if there is exactly one clock: $clockInputs")
-    ir.Reference(clockInputs.head)
-  }
-
-  // TODO: might be removed
-  private def findReset(m: ir.Module): ir.Expression = {
-    val inputs = m.ports.filter(_.direction == ir.Input)
-    val ofResetType = inputs.filter(p => p.tpe == ir.AsyncResetType || p.tpe == ir.ResetType)
-    val boolWithCorrectName = inputs.filter(p => p.tpe == ir.UIntType(ir.IntWidth(1)) && p.name == "reset")
-    val resetInputs = ofResetType ++ boolWithCorrectName
-    assert(resetInputs.length == 1, s"This transformation only works if there is exactly one reset: $resetInputs")
-    ir.Reference(resetInputs.head)
   }
 
   private def onStmt(s: ir.Statement, ctx: ModuleCtx): (ir.Statement, Boolean, Seq[ir.Info]) = s match {
