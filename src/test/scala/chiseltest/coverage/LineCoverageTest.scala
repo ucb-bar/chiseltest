@@ -14,7 +14,6 @@ class LineCoverageTest extends AnyFlatSpec {
 
   private val annos = Seq(RunFirrtlTransformAnnotation(Dependency(LineCoveragePass)))
 
-
   it should "add cover statements" in {
     val (result, rAnnos) = compile(new Test1Module())
     val l = result.split('\n').map(_.trim)
@@ -47,10 +46,31 @@ class LineCoverageTest extends AnyFlatSpec {
     }
   }
 
-  private def compile[M <: Module](gen: => M): (String, AnnotationSeq) = {
+  it should "work with deduplicated submodules" in {
+    val (result, rAnnos) = compile(new Test1Module(withSubmodules = true), "low")
+    // println(result)
+    val l = result.split('\n').map(_.trim)
+
+    // should only have two modules
+    assert(l.count(_.startsWith("module")) == 2)
+
+    // line coverage annotations are on a per module basis thus we expect 4 + 1 annotations
+    val a = rAnnos.collect{ case a: LineCoverageAnnotation => a }
+    assert(a.length == 4 + 1)
+
+    // check the annotation of the submodule
+    val subAs = a.filterNot(_.target.module == "Test1Module")
+    assert(subAs.size == 1)
+    assert(subAs.head.lines.size == 1)
+    assert(subAs.head.lines.head._1 == "Test1Module.scala")
+    val offset = 6
+    assert(subAs.head.lines.head._2 == Seq(39).map(_ + offset))
+  }
+
+  private def compile[M <: Module](gen: => M, target: String = "high"): (String, AnnotationSeq) = {
     val stage = new ChiselStage
 
-    val r = stage.execute(Array("-X", "high"), ChiselGeneratorAnnotation(() => gen) +: annos)
+    val r = stage.execute(Array("-X", target, "-ll", "warn"), ChiselGeneratorAnnotation(() => gen) +: annos)
     val src = r.collect {
         case EmittedFirrtlCircuitAnnotation(a) => a
         case EmittedFirrtlModuleAnnotation(a)  => a

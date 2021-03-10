@@ -6,6 +6,7 @@ import chiseltest.internal.TestOptionObject
 import firrtl._
 import firrtl.annotations.{Annotation, CircuitTarget, ModuleTarget, NoTargetAnnotation, ReferenceTarget, SingleTargetAnnotation}
 import firrtl.options.{Dependency, ShellOption}
+import firrtl.passes.{ExpandWhens, ExpandWhensAndCheck}
 import firrtl.stage.Forms
 import firrtl.stage.TransformManager.TransformDependency
 import firrtl.transforms.DedupModules
@@ -34,8 +35,10 @@ object LineCoveragePass extends Transform with DependencyAPIMigration {
   val Prefix = "l"
 
   override def prerequisites: Seq[TransformDependency] = Forms.Checks
-  // TODO: we might actually want to run after deduplication...
-  override def optionalPrerequisiteOf: Seq[TransformDependency] = Seq(Dependency[DedupModules])
+  // we can run after deduplication which should make things faster
+  override def optionalPrerequisites : Seq[TransformDependency] = Seq(Dependency[DedupModules])
+  // line coverage does not work anymore after whens have been expanded
+  override def optionalPrerequisiteOf: Seq[TransformDependency] = Seq(Dependency[ExpandWhensAndCheck], Dependency(ExpandWhens))
   override def invalidates(a: Transform): Boolean = false
 
   override protected def execute(state: CircuitState): CircuitState = {
