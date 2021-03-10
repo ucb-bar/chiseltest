@@ -10,6 +10,7 @@ import firrtl.stage.TransformManager.TransformDependency
 import firrtl.transforms.{DedupModules, EnsureNamedStatements}
 import firrtl.analyses.InstanceKeyGraph
 import firrtl.analyses.InstanceKeyGraph.InstanceKey
+import firrtl.passes.ResolveFlows
 
 import scala.collection.mutable
 
@@ -35,7 +36,10 @@ object CoverageScanChainPass extends Transform with DependencyAPIMigration {
   override def prerequisites: Seq[TransformDependency] = Forms.LowForm ++ Seq(Dependency(EnsureNamedStatements))
   // every automatic coverage pass needs to run before this!
   override def optionalPrerequisites = Seq(Dependency(LineCoveragePass))
-  override def invalidates(a: Transform): Boolean = false
+  override def invalidates(a: Transform): Boolean = a match {
+    case ResolveFlows => true // ir.Reference sets the flow to unknown
+    case _ => false
+  }
 
   override protected def execute(state: CircuitState): CircuitState = {
     // we first calculate an appropriate prefix for the scan chain IO
@@ -121,23 +125,67 @@ object CoverageScanChainPass extends Transform with DependencyAPIMigration {
     assert(cover.op == ir.Formal.Cover)
     // we replace the cover statement with a register of the same name (the name is now available!)
     val init = Utils.getGroundZero(prev.tpe.asInstanceOf[ir.UIntType])
-    val register = ir.DefRegister(cover.info, cover.name, prev.tpe, clock = cover.clk, reset = ctx.reset, init = init)
-    val regRef = ir.Reference(register)
-    val regWidth = prev.tpe.asInstanceOf[ir.UIntType].width.asInstanceOf[ir.IntWidth].width
-    ctx.stmts.append(register)
-
-    // TODO: properly deal with synchronous reset (make a mux!)
-    // TODO: make counter saturatingc
+    val regRef = ir.Reference(cover.name, prev.tpe, RegKind, UnknownFlow)
 
     // we increment the counter when condition is true
     val covered = Utils.and(cover.en, cover.pred)
-    val cond = ir.DoPrim(PrimOps.Pad, List(covered), List(regWidth), register.tpe)
-    val inc = ir.DoPrim(PrimOps.Add, List(regRef, cond), List(), register.tpe)
+    val inc = add(regRef, covered)
+    // we need to check for overflow
+    val willOverflow = reduceAnd(regRef)
     // we increment the counter when it is not being reset and the chain is not enabled
-    val update = ir.Connect(cover.info, regRef, Utils.mux(ctx.en, prev, inc))
-    ctx.stmts.append(update)
+    val update = Utils.mux(ctx.en, prev, Utils.mux(willOverflow, regRef, inc))
+
+    val (reg, con) = makeRegister(cover.info, cover.name, prev.tpe, cover.clk, ctx.reset, init, update)
+    ctx.stmts.append(reg, con)
+
     // the register might be shifted into the next reg in the chain
     regRef
+  }
+
+  private def reduceAnd(e: ir.Expression): ir.Expression = ir.DoPrim(PrimOps.Andr, List(e), List(), Utils.BoolType)
+
+  private def add(a: ir.Expression, b: ir.Expression): ir.Expression = {
+    val (aWidth, bWidth) = (getWidth(a.tpe), getWidth(b.tpe))
+    val resultWidth = Seq(aWidth, bWidth).max
+    val (aPad, bPad) = (pad(a, resultWidth), pad(b, resultWidth))
+    val res = ir.DoPrim(PrimOps.Add, List(aPad, bPad), List(), withWidth(a.tpe, resultWidth + 1))
+    ir.DoPrim(PrimOps.Bits, List(res), List(resultWidth -1, 0), withWidth(a.tpe, resultWidth))
+  }
+
+  private def pad(e: ir.Expression, to: BigInt): ir.Expression = {
+    val from = getWidth(e.tpe)
+    require(to >= from)
+    if(to == from) { e } else { ir.DoPrim(PrimOps.Pad, List(e), List(to), withWidth(e.tpe, to)) }
+  }
+
+  private def withWidth(tpe: ir.Type, width: BigInt): ir.Type = tpe match {
+    case ir.UIntType(_) => ir.UIntType(ir.IntWidth(width))
+    case ir.SIntType(_) => ir.SIntType(ir.IntWidth(width))
+    case other => throw new RuntimeException(s"Cannot change the width of $other!")
+  }
+
+  private def getWidth(tpe: ir.Type): BigInt = tpe match {
+    case ir.UIntType(ir.IntWidth(w)) => w
+    case ir.SIntType(ir.IntWidth(w)) => w
+    case ir.AsyncResetType => 1
+    case ir.ClockType => 1
+    case other => throw new RuntimeException(s"Cannot determine the width of $other!")
+  }
+
+  private def makeRegister(info: ir.Info, name: String, tpe: ir.Type, clock: ir.Expression, reset: ir.Expression, init: ir.Expression, next: ir.Expression): (ir.DefRegister, ir.Connect) = {
+    if(isAsyncReset(reset)) {
+      val reg = ir.DefRegister(info, name, tpe, clock, reset, init)
+      (reg, ir.Connect(info, ir.Reference(reg), next))
+    } else {
+      val ref = ir.Reference(name, tpe, RegKind, UnknownFlow)
+      val reg = ir.DefRegister(info, name, tpe, clock, Utils.False(), ref)
+      (reg, ir.Connect(info, ref, Utils.mux(reset, init, next)))
+    }
+  }
+
+  private def isAsyncReset(reset: ir.Expression): Boolean = reset.tpe match {
+    case ir.AsyncResetType => true
+    case _ => false
   }
 
   private case class InstanceCtx(prefixes: Map[String, String], en: ir.Expression, stmts: mutable.ArrayBuffer[ir.Statement])
