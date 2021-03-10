@@ -9,33 +9,6 @@ import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import firrtl.{AnnotationSeq, EmittedFirrtlCircuitAnnotation, EmittedFirrtlModuleAnnotation}
 import firrtl.stage.RunFirrtlTransformAnnotation
 
-class Test1Module extends Module {
-  val a = IO(Input(UInt(3.W)))
-  val b = IO(Output(UInt(3.W)))
-
-  b := 0.U // line 5
-
-  when(a === 4.U) {
-    b := 1.U
-  }
-
-  when(5.U < a) {
-    b := 2.U
-  }.otherwise {
-    b := 3.U
-  }
-
-  when(a === 0.U) {
-    chisel3.experimental.verification.cover(true.B, "user coverage")
-  }
-
-  when(a === 1.U) {
-    // empty
-  }
-}
-
-
-
 class LineCoverageTest extends AnyFlatSpec {
   behavior of "LineCoverage"
 
@@ -43,7 +16,7 @@ class LineCoverageTest extends AnyFlatSpec {
 
 
   it should "add cover statements" in {
-    val (result, rAnnos) = compile(new Test1Module)
+    val (result, rAnnos) = compile(new Test1Module())
     val l = result.split('\n').map(_.trim)
 
     // we expect four custom cover points
@@ -58,9 +31,9 @@ class LineCoverageTest extends AnyFlatSpec {
     assert(a.size == 4)
 
     // lines for each coverage point (relative to the "class Test1Module " line)
-    val offset = 11
+    val offset = 6
     val lines = Map(
-      "l_3" -> Seq(5, 7, 11, 17, 21),
+      "l_3" -> Seq(5, 7, 11, 17, 21, 26, 27),
       "l_0" -> Seq(8),
       "l_1" -> Seq(12),
       "l_2" -> Seq(14),
@@ -69,7 +42,7 @@ class LineCoverageTest extends AnyFlatSpec {
     // all annotations should only point to `LineCoverageTest.scala`
     a.foreach { l =>
       assert(l.lines.size == 1)
-      assert(l.lines.head._1 == "LineCoverageTest.scala")
+      assert(l.lines.head._1 == "Test1Module.scala")
       assert(l.lines.head._2 == lines(l.target.ref).map(_ + offset))
     }
   }
