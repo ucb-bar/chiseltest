@@ -53,7 +53,7 @@ object LineCoveragePass extends Transform with DependencyAPIMigration {
     case mod: ir.Module =>
       val namespace = Namespace(mod)
       namespace.newName(Prefix)
-      val ctx = ModuleCtx(annos, namespace, c.module(mod.name), Coverage.findClock(mod))
+      val ctx = ModuleCtx(annos, namespace, c.module(mod.name), Builder.findClock(mod))
       val bodyInfo = onStmt(mod.body, ctx)
       val body = addCover(bodyInfo, ctx)
       mod.copy(body = body)

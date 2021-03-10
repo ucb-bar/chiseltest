@@ -7,8 +7,7 @@ import firrtl.annotations.{Annotation, CircuitTarget, ModuleTarget, NoTargetAnno
 import firrtl.options.Dependency
 import firrtl.stage.Forms
 import firrtl.stage.TransformManager.TransformDependency
-import firrtl.transforms.{DedupModules, EnsureNamedStatements}
-import firrtl.analyses.InstanceKeyGraph
+import firrtl.transforms.EnsureNamedStatements
 import firrtl.analyses.InstanceKeyGraph.InstanceKey
 import firrtl.passes.ResolveFlows
 
@@ -85,7 +84,7 @@ object CoverageScanChainPass extends Transform with DependencyAPIMigration {
       // we first find and remove all cover statements and change the port definition of submodules
       val removedCovers = findCoversAndModifyInstancePorts(mod.body, ctx)
       if(ctx.covers.isEmpty && ctx.instances.isEmpty) { (mod, None) } else {
-        val reset = Coverage.findReset(mod)
+        val reset = Builder.findReset(mod)
         val scanChainPorts = getScanChainPorts(prefixes(mod.name), width)
         val portRefs = scanChainPorts.map(ir.Reference(_))
         portRefs match {
@@ -129,64 +128,19 @@ object CoverageScanChainPass extends Transform with DependencyAPIMigration {
 
     // we increment the counter when condition is true
     val covered = Utils.and(cover.en, cover.pred)
-    val inc = add(regRef, covered)
+    val inc = Builder.add(regRef, covered)
     // we need to check for overflow
-    val willOverflow = reduceAnd(regRef)
+    val willOverflow = Builder.reduceAnd(regRef)
     // we increment the counter when it is not being reset and the chain is not enabled
     val update = Utils.mux(ctx.en, prev, Utils.mux(willOverflow, regRef, inc))
 
-    val (reg, con) = makeRegister(cover.info, cover.name, prev.tpe, cover.clk, ctx.reset, init, update)
+    val (reg, con) = Builder.makeRegister(cover.info, cover.name, prev.tpe, cover.clk, ctx.reset, init, update)
     ctx.stmts.append(reg, con)
 
     // the register might be shifted into the next reg in the chain
     regRef
   }
 
-  private def reduceAnd(e: ir.Expression): ir.Expression = ir.DoPrim(PrimOps.Andr, List(e), List(), Utils.BoolType)
-
-  private def add(a: ir.Expression, b: ir.Expression): ir.Expression = {
-    val (aWidth, bWidth) = (getWidth(a.tpe), getWidth(b.tpe))
-    val resultWidth = Seq(aWidth, bWidth).max
-    val (aPad, bPad) = (pad(a, resultWidth), pad(b, resultWidth))
-    val res = ir.DoPrim(PrimOps.Add, List(aPad, bPad), List(), withWidth(a.tpe, resultWidth + 1))
-    ir.DoPrim(PrimOps.Bits, List(res), List(resultWidth -1, 0), withWidth(a.tpe, resultWidth))
-  }
-
-  private def pad(e: ir.Expression, to: BigInt): ir.Expression = {
-    val from = getWidth(e.tpe)
-    require(to >= from)
-    if(to == from) { e } else { ir.DoPrim(PrimOps.Pad, List(e), List(to), withWidth(e.tpe, to)) }
-  }
-
-  private def withWidth(tpe: ir.Type, width: BigInt): ir.Type = tpe match {
-    case ir.UIntType(_) => ir.UIntType(ir.IntWidth(width))
-    case ir.SIntType(_) => ir.SIntType(ir.IntWidth(width))
-    case other => throw new RuntimeException(s"Cannot change the width of $other!")
-  }
-
-  private def getWidth(tpe: ir.Type): BigInt = tpe match {
-    case ir.UIntType(ir.IntWidth(w)) => w
-    case ir.SIntType(ir.IntWidth(w)) => w
-    case ir.AsyncResetType => 1
-    case ir.ClockType => 1
-    case other => throw new RuntimeException(s"Cannot determine the width of $other!")
-  }
-
-  private def makeRegister(info: ir.Info, name: String, tpe: ir.Type, clock: ir.Expression, reset: ir.Expression, init: ir.Expression, next: ir.Expression): (ir.DefRegister, ir.Connect) = {
-    if(isAsyncReset(reset)) {
-      val reg = ir.DefRegister(info, name, tpe, clock, reset, init)
-      (reg, ir.Connect(info, ir.Reference(reg), next))
-    } else {
-      val ref = ir.Reference(name, tpe, RegKind, UnknownFlow)
-      val reg = ir.DefRegister(info, name, tpe, clock, Utils.False(), ref)
-      (reg, ir.Connect(info, ref, Utils.mux(reset, init, next)))
-    }
-  }
-
-  private def isAsyncReset(reset: ir.Expression): Boolean = reset.tpe match {
-    case ir.AsyncResetType => true
-    case _ => false
-  }
 
   private case class InstanceCtx(prefixes: Map[String, String], en: ir.Expression, stmts: mutable.ArrayBuffer[ir.Statement])
 

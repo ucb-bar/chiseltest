@@ -25,20 +25,4 @@ object Coverage {
     case f : ir.FileInfo => List(f)
     case _ => List()
   }
-
-  def findClock(m: ir.Module): ir.Expression = {
-    val clockIO = m.ports.filter(_.tpe == ir.ClockType)
-    val clockInputs = clockIO.filter(_.direction == ir.Input)
-    assert(clockInputs.length == 1, s"This transformation only works if there is exactly one clock: $clockInputs")
-    ir.Reference(clockInputs.head)
-  }
-
-  def findReset(m: ir.Module): ir.Expression = {
-    val inputs = m.ports.filter(_.direction == ir.Input)
-    val ofResetType = inputs.filter(p => p.tpe == ir.AsyncResetType || p.tpe == ir.ResetType)
-    val boolWithCorrectName = inputs.filter(p => p.tpe == ir.UIntType(ir.IntWidth(1)) && p.name == "reset")
-    val resetInputs = ofResetType ++ boolWithCorrectName
-    assert(resetInputs.length == 1, s"This transformation only works if there is exactly one reset: $resetInputs")
-    ir.Reference(resetInputs.head)
-  }
 }
