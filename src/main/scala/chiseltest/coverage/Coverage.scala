@@ -1,6 +1,7 @@
 package chiseltest.coverage
 
 import firrtl._
+import firrtl.annotations.NoTargetAnnotation
 import logger.LazyLogging
 
 import scala.util.matching.Regex
@@ -8,6 +9,9 @@ import scala.collection.mutable
 import java.nio.file._
 import scala.collection.JavaConverters._
 import scala.io.Source
+
+/** Coverage counts returned from the simulator interface. */
+case class TestCoverage(counts: List[(String, Long)]) extends NoTargetAnnotation
 
 object Coverage {
 

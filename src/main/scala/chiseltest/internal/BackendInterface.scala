@@ -4,6 +4,7 @@ package chiseltest.internal
 
 import chiseltest.Region
 import chisel3._
+import firrtl.AnnotationSeq
 
 import scala.collection.mutable
 
@@ -118,7 +119,9 @@ trait BackendInstance[T <: Module] extends BackendInterface {
     * Takes the test function, which takes the module used as the testing interface.
     * TesterContext setup is done externally.
     *
+    * @return coverage annotations
+    *
     * Internal API
     */
-  def run(testFn: T => Unit): Unit
+  def run(testFn: T => Unit): AnnotationSeq
 }

@@ -22,7 +22,7 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
       sanitizeFileName(scalaTestContext.value.get.name)
     }
 
-    def apply(testFn: T => Unit): Unit = {
+    def apply(testFn: T => Unit): AnnotationSeq = {
       val finalAnnos = addDefaultTargetDir(getTestName, (new ChiselTestShell).parse(flags) ++ annotationSeq) ++
         (if (scalaTestContext.value.get.configMap.contains("writeVcd")) {
            Seq(WriteVcdAnnotation)
@@ -54,7 +54,7 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
   // Stack trace data to help generate more informative (and localizable) failure messages
   var topFileName: Option[String] = None // best guess at the testdriver top filename
 
-  private def runTest[T <: Module](tester: BackendInstance[T])(testFn: T => Unit) {
+  private def runTest[T <: Module](tester: BackendInstance[T])(testFn: T => Unit): AnnotationSeq = {
     // Try and get the user's top-level test filename
     val internalFiles = Set("ChiselScalatestTester.scala", "BackendInterface.scala", "TestEnvInterface.scala")
     val topFileNameGuess = (new Throwable).getStackTrace.apply(2).getFileName

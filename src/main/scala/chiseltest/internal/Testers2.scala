@@ -152,7 +152,7 @@ object Context {
 
   private var context = new DynamicVariable[Option[Instance]](None)
 
-  def run[T <: Module](backend: BackendInstance[T], env: TestEnvInterface, testFn: T => Unit) {
+  def run[T <: Module](backend: BackendInstance[T], env: TestEnvInterface, testFn: T => Unit): AnnotationSeq = {
     require(context.value.isEmpty)
     context.withValue(Some(new Instance(backend, env))) {
       backend.run(testFn)
