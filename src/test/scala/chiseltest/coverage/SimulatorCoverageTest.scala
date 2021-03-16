@@ -5,7 +5,7 @@ package chiseltest.coverage
 
 import chisel3.tester.experimental.TestOptionBuilder.ChiselScalatestOptionBuilder
 import chiseltest._
-import chiseltest.internal.{BackendAnnotation, TreadleBackendAnnotation}
+import chiseltest.internal.{BackendAnnotation, TreadleBackendAnnotation, VerilatorBackendAnnotation}
 import firrtl.AnnotationSeq
 import logger.{LogLevel, LogLevelAnnotation}
 import org.scalatest.flatspec.AnyFlatSpec
@@ -13,8 +13,8 @@ import org.scalatest.flatspec.AnyFlatSpec
 /** Ensure that all simulators give the same coverage feedback when run with the same tests.
   * To implement this for a particular simulator, just override the `backend` annotation.
   * */
-abstract class SimulatorCoverageTest extends AnyFlatSpec with ChiselScalatestTester {
-  def backend: BackendAnnotation
+abstract class SimulatorCoverageTest(name: String, backend: BackendAnnotation) extends AnyFlatSpec with ChiselScalatestTester {
+  behavior of s"$name Coverage Collection"
   private def noAutoCov: AnnotationSeq = Seq(backend)
   private def trace: AnnotationSeq = Seq(LogLevelAnnotation(LogLevel.Trace))
 
@@ -32,7 +32,7 @@ abstract class SimulatorCoverageTest extends AnyFlatSpec with ChiselScalatestTes
   }
 
   it should "report count for all user cover points (with submodules)" in {
-    val r = test(new Test1Module(withSubmodules = true)).withAnnotations(noAutoCov ++ trace) { dut =>
+    val r = test(new Test1Module(withSubmodules = true)).withAnnotations(noAutoCov) { dut =>
       dut.clock.step()
     }
     val cov = getCoverage(r)
@@ -51,7 +51,5 @@ abstract class SimulatorCoverageTest extends AnyFlatSpec with ChiselScalatestTes
   }
 }
 
-class TreadleCoverageTest extends SimulatorCoverageTest {
-  behavior of "Treadle Coverage Collection"
-  override def backend = TreadleBackendAnnotation
-}
+class TreadleCoverageTest extends SimulatorCoverageTest("Treadle", TreadleBackendAnnotation) {}
+class VerilatorCoverageTest extends SimulatorCoverageTest("Verilator", VerilatorBackendAnnotation) {}
