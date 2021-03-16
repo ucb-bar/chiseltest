@@ -11,6 +11,7 @@ import chisel3.{SInt, _}
 import chiseltest.coverage.TestCoverage
 import firrtl.AnnotationSeq
 
+import java.nio.file.Paths
 import scala.collection.mutable
 import scala.math.BigInt
 
@@ -27,7 +28,8 @@ class VerilatorBackend[T <: Module](
   val dut:                T,
   val dataNames:          Map[Data, String],
   val combinationalPaths: Map[Data, Set[Data]],
-  command:                Seq[String])
+  command:                Seq[String],
+  targetDir:              String)
     extends BackendInstance[T]
     with ThreadedBackend[T] {
 
@@ -256,6 +258,7 @@ class VerilatorBackend[T <: Module](
   private def coverageAnnotations(): AnnotationSeq = {
     // TODO: provide info from coverage passes
     // TODO: extract coverage from Verilator: Seq(TestCoverage(tester.getCoverage()))
+    VerilatorCoverage.parse(Paths.get(targetDir, "logs", "coverage.dat"))
     Seq()
   }
 }

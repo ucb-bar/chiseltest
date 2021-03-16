@@ -126,6 +126,6 @@ object VcsExecutive extends BackendExecutive {
     val pathsAsData =
       combinationalPathsToData(dut, paths, portNames, componentToName)
 
-    new VcsBackend(dut, portNames, pathsAsData, command)
+    new VcsBackend(dut, portNames, pathsAsData, command, targetDir)
   }
 }

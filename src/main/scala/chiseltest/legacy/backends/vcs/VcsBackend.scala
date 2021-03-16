@@ -17,5 +17,6 @@ class VcsBackend[T <: Module](
   dut:                T,
   dataNames:          Map[Data, String],
   combinationalPaths: Map[Data, Set[Data]],
-  command:            Seq[String])
-    extends VerilatorBackend(dut, dataNames, combinationalPaths, command)
+  command:            Seq[String],
+  targetDir:          String)
+    extends VerilatorBackend(dut, dataNames, combinationalPaths, command, targetDir)
