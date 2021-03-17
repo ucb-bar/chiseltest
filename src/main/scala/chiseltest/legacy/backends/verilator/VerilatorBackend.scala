@@ -29,7 +29,8 @@ class VerilatorBackend[T <: Module](
   val dataNames:          Map[Data, String],
   val combinationalPaths: Map[Data, Set[Data]],
   command:                Seq[String],
-  targetDir:              String)
+  targetDir:              String,
+  coverageAnnotations:    AnnotationSeq)
     extends BackendInstance[T]
     with ThreadedBackend[T] {
 
@@ -256,9 +257,8 @@ class VerilatorBackend[T <: Module](
   /** Collects information from coverage passes and generates a annotation containing the map from
     * coverage point names to coverage counts. */
   private def coverageAnnotations(): AnnotationSeq = {
-    // TODO: provide info from coverage passes
-    // TODO: extract coverage from Verilator: Seq(TestCoverage(tester.getCoverage()))
-    VerilatorCoverage.parse(Paths.get(targetDir, "logs", "coverage.dat"))
-    Seq()
+    val coverageData = Paths.get(targetDir, "logs", "coverage.dat")
+    val coverage = VerilatorCoverage.loadCoverage(coverageAnnotations, coverageData)
+    TestCoverage(coverage) +: coverageAnnotations
   }
 }

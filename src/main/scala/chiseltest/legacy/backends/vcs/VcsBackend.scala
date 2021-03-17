@@ -4,6 +4,7 @@ package chiseltest.legacy.backends.vcs
 
 import chisel3._
 import chiseltest.legacy.backends.verilator.VerilatorBackend
+import firrtl.AnnotationSeq
 
 /** Supports Backend and Threaded traits for ex
   *
@@ -18,5 +19,6 @@ class VcsBackend[T <: Module](
   dataNames:          Map[Data, String],
   combinationalPaths: Map[Data, Set[Data]],
   command:            Seq[String],
-  targetDir:          String)
-    extends VerilatorBackend(dut, dataNames, combinationalPaths, command, targetDir)
+  targetDir:          String,
+  coverageAnnotations:AnnotationSeq)
+    extends VerilatorBackend(dut, dataNames, combinationalPaths, command, targetDir, coverageAnnotations)

@@ -59,7 +59,7 @@ object VerilatorExecutive extends BackendExecutive {
     // - TestCommandOverride
     // - CombinationalPath
     val compiledAnnotations = (new ChiselStage).run(
-      elaboratedAnno :+ RunFirrtlTransformAnnotation(new SystemVerilogEmitter)
+      elaboratedAnno ++: RunFirrtlTransformAnnotation(new SystemVerilogEmitter) +: VerilatorCoverage.CoveragePasses
     )
 
     val cppHarnessFileName = s"${circuit.name}-harness.cpp"
@@ -139,6 +139,8 @@ object VerilatorExecutive extends BackendExecutive {
     val pathsAsData =
       combinationalPathsToData(dut, paths, portNames, componentToName)
 
-    new VerilatorBackend(dut, portNames, pathsAsData, command, targetDir)
+    val coverageAnnotations = VerilatorCoverage.collectCoverageAnnotations(compiledAnnotations)
+
+    new VerilatorBackend(dut, portNames, pathsAsData, command, targetDir, coverageAnnotations)
   }
 }

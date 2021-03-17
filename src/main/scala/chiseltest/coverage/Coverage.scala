@@ -1,7 +1,7 @@
 package chiseltest.coverage
 
 import firrtl._
-import firrtl.annotations.NoTargetAnnotation
+import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import logger.LazyLogging
 
 import scala.util.matching.Regex
@@ -13,7 +13,17 @@ import scala.io.Source
 /** Coverage counts returned from the simulator interface. */
 case class TestCoverage(counts: List[(String, Long)]) extends NoTargetAnnotation
 
+trait CoverageInfo extends Annotation
+
 object Coverage {
+
+  def collectCoverageAnnotations(annos: AnnotationSeq): AnnotationSeq = {
+    annos.collect {
+      case a: CoverageInfo => a
+      case a: TestCoverage => a
+      case a: ModuleInstancesAnnotation => a
+    }
+  }
 
   type Lines = List[(String, List[Int])]
   private val chiselFileInfo: Regex = raw"\s*([^\.]+\.\w+) (\d+):(\d+)".r
