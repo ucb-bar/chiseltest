@@ -70,7 +70,7 @@ object VerilatorCoverage {
     val src = Source.fromFile(coverageData.toString)
     val entries = src.getLines().flatMap(parseLine).toList
     src.close()
-    entries
+    entries.sortBy(_.line)
   }
 
   // example lines:
