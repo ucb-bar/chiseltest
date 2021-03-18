@@ -7,21 +7,26 @@ import firrtl._
 import firrtl.annotations.{Annotation, CircuitTarget, ModuleTarget, NoTargetAnnotation, ReferenceTarget, SingleTargetAnnotation}
 import firrtl.options.{Dependency, ShellOption}
 import firrtl.passes.{ExpandWhens, ExpandWhensAndCheck}
-import firrtl.stage.Forms
+import firrtl.stage.{Forms, RunFirrtlTransformAnnotation}
 import firrtl.stage.TransformManager.TransformDependency
 import firrtl.transforms.DedupModules
 
 import scala.collection.mutable
 
-case object LineCoverage extends TestOptionObject {
-  val options: Seq[ShellOption[_]] = Seq(
-    new ShellOption[Unit](
-      longOption = "t-line-coverage",
-      toAnnotationSeq = _ => Seq(LineCoverage),
-      helpText = "instruments the circuit and generates a line coverage report at the end of the test"
-    )
-  )
+object LineCoverage {
+  def annotations: AnnotationSeq = Seq(RunFirrtlTransformAnnotation(Dependency(LineCoveragePass)))
 }
+
+
+//case object LineCoverage extends TestOptionObject {
+//  val options: Seq[ShellOption[_]] = Seq(
+//    new ShellOption[Unit](
+//      longOption = "t-line-coverage",
+//      toAnnotationSeq = _ => Seq(LineCoverage),
+//      helpText = "instruments the circuit and generates a line coverage report at the end of the test"
+//    )
+//  )
+//}
 
 trait CoverageReportGeneratorAnnotation extends NoTargetAnnotation
 

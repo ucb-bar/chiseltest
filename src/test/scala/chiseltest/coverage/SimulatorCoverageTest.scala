@@ -9,6 +9,7 @@ import chiseltest.internal.{BackendAnnotation, TreadleBackendAnnotation, Verilat
 import firrtl.AnnotationSeq
 import logger.{LogLevel, LogLevelAnnotation}
 import org.scalatest.flatspec.AnyFlatSpec
+import chisel3._
 
 /** Ensure that all simulators give the same coverage feedback when run with the same tests.
   * To implement this for a particular simulator, just override the `backend` annotation.
@@ -16,6 +17,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 abstract class SimulatorCoverageTest(name: String, backend: BackendAnnotation) extends AnyFlatSpec with ChiselScalatestTester {
   behavior of s"$name Coverage Collection"
   private def noAutoCov: AnnotationSeq = Seq(backend)
+  private def allAutoCov: AnnotationSeq = Seq(backend) ++ LineCoverage.annotations
   private def trace: AnnotationSeq = Seq(LogLevelAnnotation(LogLevel.Trace))
 
   it should "report count for all user cover points (no submodules)" in {
@@ -42,6 +44,23 @@ abstract class SimulatorCoverageTest(name: String, backend: BackendAnnotation) e
 
     // since we executed one step (+ the implicit reset) and all inputs are zero by default, we expect the count to be 3
     assert(cov("cover_0") == 3)
+  }
+
+  it should "generate the same coverage as other simulators" in {
+    val rand = new scala.util.Random(0)
+    val r = test(new Test1Module(withSubmodules = true)).withAnnotations(allAutoCov) { dut =>
+      (0 until 1000).foreach { _ =>
+        dut.a.poke(BigInt(3, rand).U)
+        dut.clock.step()
+      }
+    }
+    val cov = getCoverage(r)
+    val expected = Map(
+      "cover_0" -> 131, "l_1" -> 248, "l_0" -> 135, "l_3" -> 1002, "l_2" -> 754,
+      "c1.l_0" -> 1002, "c0.cover_0" -> 370,
+      "c0.l_0" -> 1002, "c1.cover_0" -> 366
+    )
+    assert(cov == expected)
   }
 
   private def getCoverage(annos: AnnotationSeq): Map[String, Long] = {
