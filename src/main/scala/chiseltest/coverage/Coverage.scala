@@ -25,6 +25,24 @@ object Coverage {
     }
   }
 
+  def collectTestCoverage(annos: AnnotationSeq): List[(String, Long)] = {
+    annos.collect{ case TestCoverage(e) => e } match {
+      case Seq(one) => one
+      case other => throw new RuntimeException(s"Expected exactly one TestCoverage annotation, not: $other")
+    }
+  }
+
+  def collectModuleInstances(annos: AnnotationSeq): List[(String, String)] = {
+    annos.collect{ case ModuleInstancesAnnotation(e) => e } match {
+      case Seq(one) => one
+      case other => throw new RuntimeException(s"Expected exactly one ModuleInstances annotation, not: $other")
+    }
+  }
+
+  def path(prefix: String, suffix: String): String = {
+    if(prefix.isEmpty) suffix else prefix + "." + suffix
+  }
+
   type Lines = List[(String, List[Int])]
   private val chiselFileInfo: Regex = raw"\s*([^\.]+\.\w+) (\d+):(\d+)".r
 

@@ -6,10 +6,45 @@ import firrtl.options.Dependency
 import org.scalatest.flatspec.AnyFlatSpec
 import chisel3._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
+import chiseltest._
+import chiseltest.experimental.TestOptionBuilder.ChiselScalatestOptionBuilder
 import firrtl.{AnnotationSeq, EmittedFirrtlCircuitAnnotation, EmittedFirrtlModuleAnnotation}
 import firrtl.stage.RunFirrtlTransformAnnotation
 
-class LineCoverageTest extends AnyFlatSpec {
+class LineCoverageTest extends AnyFlatSpec with ChiselScalatestTester {
+  it should "parse the results from the simulator" in {
+    val rand = new scala.util.Random(0)
+    val r = test(new Test1Module(withSubmodules = true)).withAnnotations(LineCoverage.annotations) { dut =>
+      (0 until 4).foreach { _ =>
+        dut.a.poke(BigInt(3, rand).U)
+        dut.clock.step()
+      }
+    }
+
+    val data = LineCoverage.processCoverage(r)
+    assert(data.files.size == 1)
+
+    val file = data.files.head
+    assert(file.name == "Test1Module.scala")
+
+    val offset = 6
+    val expected = List(
+      // Test1Module
+      (5,6), (7,6),
+      (8,0), // apparently `a` is never four
+      (11,6), (12,1), (14,5), (17,6),
+      (21,6), (26,6), (27,6), (30,6), (31,6), (32,6), (33,6),
+      // SubModule1 (instantiated twice!)
+      (39,12),
+    )
+
+    assert(file.lines == expected.map(e => (e._1 + offset, e._2)))
+  }
+}
+
+
+
+class LineCoverageInstrumentationTest extends AnyFlatSpec {
   behavior of "LineCoverage"
 
   private val annos = Seq(RunFirrtlTransformAnnotation(Dependency(LineCoveragePass)))

@@ -2,10 +2,9 @@
 
 package chiseltest.coverage
 
-import chiseltest.internal.TestOptionObject
 import firrtl._
-import firrtl.annotations.{Annotation, CircuitTarget, ModuleTarget, NoTargetAnnotation, ReferenceTarget, SingleTargetAnnotation}
-import firrtl.options.{Dependency, ShellOption}
+import firrtl.annotations.{Annotation, CircuitTarget, ModuleTarget, ReferenceTarget, SingleTargetAnnotation}
+import firrtl.options.Dependency
 import firrtl.passes.{ExpandWhens, ExpandWhensAndCheck}
 import firrtl.stage.{Forms, RunFirrtlTransformAnnotation}
 import firrtl.stage.TransformManager.TransformDependency
@@ -14,25 +13,44 @@ import firrtl.transforms.DedupModules
 import scala.collection.mutable
 
 object LineCoverage {
-  def annotations: AnnotationSeq = Seq(RunFirrtlTransformAnnotation(Dependency(LineCoveragePass)))
+  def annotations: AnnotationSeq = Seq(
+    RunFirrtlTransformAnnotation(Dependency(LineCoveragePass)),
+    RunFirrtlTransformAnnotation(Dependency(ModuleInstancesPass)),
+  )
+
+  def processCoverage(annos: AnnotationSeq): LineCoverageData = {
+    val cov = Coverage.collectTestCoverage(annos).toMap
+    val moduleToInst = Coverage.collectModuleInstances(annos).groupBy(_._2).mapValues(_.map(_._1))
+    val infos = annos.collect { case a: LineCoverageAnnotation => a }
+
+    val counts = infos.flatMap { case LineCoverageAnnotation(target, lines) =>
+      val insts = moduleToInst(target.module)
+      val counts = insts.map { i =>
+        val path = Coverage.path(i, target.ref)
+        cov(path)
+      }
+      val total = counts.sum
+
+      lines.flatMap { case (filename, ll) =>
+        ll.map { line =>
+          (filename, line) -> total
+        }
+      }
+    }
+
+    val files = counts.groupBy(_._1._1).map { case (filename, entries) =>
+      val lines = entries.map(e => (e._1._2, e._2)).sortBy(_._1).toList
+      LineCoverageInFile(filename, lines)
+    }.toList.sortBy(_.name)
+
+    LineCoverageData(files)
+  }
 }
 
+case class LineCoverageData(files: List[LineCoverageInFile])
+case class LineCoverageInFile(name: String, lines: List[(Int, Long)])
 
-//case object LineCoverage extends TestOptionObject {
-//  val options: Seq[ShellOption[_]] = Seq(
-//    new ShellOption[Unit](
-//      longOption = "t-line-coverage",
-//      toAnnotationSeq = _ => Seq(LineCoverage),
-//      helpText = "instruments the circuit and generates a line coverage report at the end of the test"
-//    )
-//  )
-//}
-
-trait CoverageReportGeneratorAnnotation extends NoTargetAnnotation
-
-case class LineCoverageReportGenerator() extends CoverageReportGeneratorAnnotation
-
-case class LineCoverageAnnotation(target: ReferenceTarget, lines: Coverage.Lines) extends SingleTargetAnnotation[ReferenceTarget] {
+case class LineCoverageAnnotation(target: ReferenceTarget, lines: Coverage.Lines) extends SingleTargetAnnotation[ReferenceTarget] with CoverageInfo {
   override def duplicate(n: ReferenceTarget) = copy(target = n)
 }
 
