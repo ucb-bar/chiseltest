@@ -5,10 +5,8 @@ package chiseltest.coverage
 import firrtl.options.Dependency
 import org.scalatest.flatspec.AnyFlatSpec
 import chisel3._
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chiseltest._
 import chiseltest.experimental.TestOptionBuilder.ChiselScalatestOptionBuilder
-import firrtl.{AnnotationSeq, EmittedFirrtlCircuitAnnotation, EmittedFirrtlModuleAnnotation}
 import firrtl.stage.RunFirrtlTransformAnnotation
 
 class LineCoverageTest extends AnyFlatSpec with ChiselScalatestTester {
@@ -44,13 +42,13 @@ class LineCoverageTest extends AnyFlatSpec with ChiselScalatestTester {
 
 
 
-class LineCoverageInstrumentationTest extends AnyFlatSpec {
+class LineCoverageInstrumentationTest extends AnyFlatSpec with CompilerTest {
   behavior of "LineCoverage"
 
-  private val annos = Seq(RunFirrtlTransformAnnotation(Dependency(LineCoveragePass)))
+  override protected val annos = Seq(RunFirrtlTransformAnnotation(Dependency(LineCoveragePass)))
 
   it should "add cover statements" in {
-    val (result, rAnnos) = compile(new Test1Module())
+    val (result, rAnnos) = compile(new Test1Module(), "high")
     val l = result.split('\n').map(_.trim)
 
     // we expect four custom cover points
@@ -100,17 +98,5 @@ class LineCoverageInstrumentationTest extends AnyFlatSpec {
     assert(subAs.head.lines.head._1 == "Test1Module.scala")
     val offset = 6
     assert(subAs.head.lines.head._2 == Seq(39).map(_ + offset))
-  }
-
-  private def compile[M <: Module](gen: => M, target: String = "high"): (String, AnnotationSeq) = {
-    val stage = new ChiselStage
-
-    val r = stage.execute(Array("-X", target, "-ll", "warn"), ChiselGeneratorAnnotation(() => gen) +: annos)
-    val src = r.collect {
-        case EmittedFirrtlCircuitAnnotation(a) => a
-        case EmittedFirrtlModuleAnnotation(a)  => a
-      }.map(_.value).mkString("")
-
-    (src, r)
   }
 }

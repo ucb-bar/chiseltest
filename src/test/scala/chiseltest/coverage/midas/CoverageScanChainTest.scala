@@ -2,18 +2,16 @@
 
 package chiseltest.coverage.midas
 
-import chisel3.Module
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
-import chiseltest.coverage.{LineCoveragePass, Test1Module}
+import chiseltest.coverage.{CompilerTest, LineCoveragePass, Test1Module}
 import firrtl._
 import firrtl.options.Dependency
 import firrtl.stage.RunFirrtlTransformAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 
-class CoverageScanChainTest extends AnyFlatSpec {
+class CoverageScanChainTest extends AnyFlatSpec with CompilerTest {
   behavior of "CoverageScanChain"
 
-  private val annos = Seq(
+  override protected val annos = Seq(
     RunFirrtlTransformAnnotation(Dependency(LineCoveragePass)),
     RunFirrtlTransformAnnotation(Dependency(CoverageScanChainPass))
   )
@@ -22,7 +20,7 @@ class CoverageScanChainTest extends AnyFlatSpec {
     val width = 30
     val widthAnno = CoverageScanChainOptions(width)
 
-    val (result, rAnnos) = compile(new Test1Module(withSubmodules = true), Seq(widthAnno))
+    val (result, rAnnos) = compile(new Test1Module(withSubmodules = true), "low", Seq(widthAnno))
     // println(result)
     val l = result.split('\n').map(_.trim)
 
@@ -46,20 +44,5 @@ class CoverageScanChainTest extends AnyFlatSpec {
       "Test1Module.c1.l_0", "Test1Module.c1.cover_0",
     )
     assert(chainInfo.covers == expectedCovers)
-  }
-
-  private def compile[M <: Module](gen: => M, a: AnnotationSeq = List()): (String, AnnotationSeq) = {
-    val stage = new ChiselStage
-
-    // "-ll", "trace"
-    val r = stage.execute(Array("-X", "low"), ChiselGeneratorAnnotation(() => gen) +: a ++: annos)
-    val src = r.collect {
-      case EmittedFirrtlCircuitAnnotation(a) => a
-      case EmittedFirrtlModuleAnnotation(a)  => a
-      case EmittedVerilogCircuitAnnotation(a) => a
-      case EmittedVerilogModuleAnnotation(a) => a
-    }.map(_.value).mkString("")
-
-    (src, r)
   }
 }
