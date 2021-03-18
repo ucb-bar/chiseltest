@@ -46,6 +46,23 @@ object LineCoverage {
 
     LineCoverageData(files)
   }
+
+  def textReport(code: CodeBase, file: LineCoverageInFile): Iterable[String] = {
+    val sourceLines = code.getSource(file.name).getOrElse {
+      throw new RuntimeException(s"Unable to find file ${file.name} in ${code}")
+    }
+    val counts: Map[Int, Long] = file.lines.toMap
+    val countDigits = file.lines.map(_._2.toString.length).max
+    val blank = " " * countDigits
+
+    sourceLines.zipWithIndex.map { case (line, ii) =>
+      val lineNo = ii + 1 // lines are 1-indexed
+      val count: String = counts.get(lineNo).map { c =>
+        c.toString.reverse.padTo(countDigits, ' ').reverse
+      }.getOrElse(blank)
+      count + " | " + line
+    }
+  }
 }
 
 case class LineCoverageData(files: List[LineCoverageInFile])

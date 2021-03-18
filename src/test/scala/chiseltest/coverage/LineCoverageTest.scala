@@ -7,17 +7,14 @@ import org.scalatest.flatspec.AnyFlatSpec
 import chisel3._
 import chiseltest._
 import chiseltest.experimental.TestOptionBuilder.ChiselScalatestOptionBuilder
+import firrtl.AnnotationSeq
 import firrtl.stage.RunFirrtlTransformAnnotation
+
+import java.nio.file.Paths
 
 class LineCoverageTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "parse the results from the simulator" in {
-    val rand = new scala.util.Random(0)
-    val r = test(new Test1Module(withSubmodules = true)).withAnnotations(LineCoverage.annotations) { dut =>
-      (0 until 4).foreach { _ =>
-        dut.a.poke(BigInt(3, rand).U)
-        dut.clock.step()
-      }
-    }
+    val r = runTest()
 
     val data = LineCoverage.processCoverage(r)
     assert(data.files.size == 1)
@@ -37,6 +34,24 @@ class LineCoverageTest extends AnyFlatSpec with ChiselScalatestTester {
     )
 
     assert(file.lines == expected.map(e => (e._1 + offset, e._2)))
+  }
+
+  it should "generate a textual report" in {
+    val data = LineCoverage.processCoverage(runTest())
+    val code = new CodeBase(Paths.get("src"))
+    val report = LineCoverage.textReport(code, data.files.head)
+    println(report.mkString("\n"))
+  }
+
+  private def runTest(): AnnotationSeq = {
+    val rand = new scala.util.Random(0)
+    val r = test(new Test1Module(withSubmodules = true)).withAnnotations(LineCoverage.annotations) { dut =>
+      (0 until 4).foreach { _ =>
+        dut.a.poke(BigInt(3, rand).U)
+        dut.clock.step()
+      }
+    }
+    r
   }
 }
 

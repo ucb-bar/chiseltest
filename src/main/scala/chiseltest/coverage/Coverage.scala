@@ -95,7 +95,7 @@ class CodeBase(root: Path) extends LazyLogging {
   }
 
   private val sourceCache = mutable.HashMap[Path, Vector[String]]()
-  private def getSource(key: String): Option[Vector[String]] = getFilePath(key).map { rel =>
+  def getSource(key: String): Option[Vector[String]] = getFilePath(key).map { rel =>
     sourceCache.getOrElseUpdate(rel, CodeBase.getLines(root, rel))
   }
 
