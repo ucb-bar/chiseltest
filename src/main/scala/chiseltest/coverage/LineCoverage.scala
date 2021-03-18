@@ -47,21 +47,35 @@ object LineCoverage {
     LineCoverageData(files)
   }
 
+  private val Count = "Cnt"
+  private val LineNr = "Line"
   def textReport(code: CodeBase, file: LineCoverageInFile): Iterable[String] = {
     val sourceLines = code.getSource(file.name).getOrElse {
       throw new RuntimeException(s"Unable to find file ${file.name} in ${code}")
     }
     val counts: Map[Int, Long] = file.lines.toMap
-    val countDigits = file.lines.map(_._2.toString.length).max
-    val blank = " " * countDigits
 
-    sourceLines.zipWithIndex.map { case (line, ii) =>
+    // we output a table with Line, Exec, Source
+    val lineNrWidth = (file.lines.map(_._1.toString.length) :+ LineNr.length).max
+    val countWidth = (file.lines.map(_._2.toString.length) :+ Count.length).max
+    val countBlank = " " * countWidth
+    val srcWidth = sourceLines.map(_.length).max
+
+    val header = pad(LineNr, lineNrWidth) + " | " + pad(Count, countWidth) + " | " + "Source"
+    val headerLine = "-" * (lineNrWidth + 3 + countWidth + 3 + srcWidth)
+
+    val body = sourceLines.zipWithIndex.map { case (line, ii) =>
       val lineNo = ii + 1 // lines are 1-indexed
-      val count: String = counts.get(lineNo).map { c =>
-        c.toString.reverse.padTo(countDigits, ' ').reverse
-      }.getOrElse(blank)
-      count + " | " + line
+      val lineNoStr = pad(lineNo.toString, lineNrWidth)
+      val countStr = counts.get(lineNo).map(c => pad(c.toString, countWidth)).getOrElse(countBlank)
+      lineNoStr + " | " + countStr + " | " + line
     }
+    Seq(header, headerLine) ++ body
+  }
+
+  private def pad(str: String, to: Int): String = {
+    assert(str.length <= to)
+    str.reverse.padTo(to, ' ').reverse
   }
 }
 

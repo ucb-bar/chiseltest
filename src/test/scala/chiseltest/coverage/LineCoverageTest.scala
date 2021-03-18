@@ -39,8 +39,18 @@ class LineCoverageTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "generate a textual report" in {
     val data = LineCoverage.processCoverage(runTest())
     val code = new CodeBase(Paths.get("src"))
-    val report = LineCoverage.textReport(code, data.files.head)
-    println(report.mkString("\n"))
+    val report = LineCoverage.textReport(code, data.files.head).toVector
+    val lines = report.map(_.trim)
+
+
+    // check some lines
+    val offset = 6 + 2 // the 2 accounts for the table headers
+    assert(lines(0 + offset).startsWith((1 + offset - 2) + " |     | class Test1Module("))
+    assert(lines(4 + offset).startsWith((5 + offset - 2) + " |   6 |   b := 0.U // line 5"))
+    assert(lines(7 + offset).startsWith((8 + offset - 2) + " |   0 |     b := 1.U"))
+
+    // this is how you would print the whole report
+    // println(report.mkString("\n"))
   }
 
   private def runTest(): AnnotationSeq = {
