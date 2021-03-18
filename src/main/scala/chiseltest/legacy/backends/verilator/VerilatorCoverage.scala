@@ -27,12 +27,12 @@ object VerilatorCoverage {
   val CoveragePasses = Seq(
     RunFirrtlTransformAnnotation(Dependency(ModuleInstancesPass)),
     RunFirrtlTransformAnnotation(Dependency(FindCoverPointsPass)),
-    RunFirrtlTransformAnnotation(Dependency(EnsureNamedStatements)), // without names, no cover points
+    RunFirrtlTransformAnnotation(Dependency(EnsureNamedStatements)) // without names, no cover points
   )
 
   // besides the common annotations, we also need to output of the FindCoverPointsPass
   def collectCoverageAnnotations(annos: AnnotationSeq): AnnotationSeq = {
-    Coverage.collectCoverageAnnotations(annos) ++ annos.collect{ case a: OrderedCoverPointsAnnotation => a }
+    Coverage.collectCoverageAnnotations(annos) ++ annos.collect { case a: OrderedCoverPointsAnnotation => a }
   }
 
   def loadCoverage(annos: AnnotationSeq, coverageData: Path): List[(String, Long)] = {
@@ -44,24 +44,32 @@ object VerilatorCoverage {
     // map from module name to an ordered list of cover points in said module
     val coverPoints = annos.collect { case a: OrderedCoverPointsAnnotation => a.target.module -> a.covers }.toMap
     // map from instance path name to the name of the module
-    val instToModule = annos.collect { case a:  ModuleInstancesAnnotation => a }.toList match {
+    val instToModule = annos.collect { case a: ModuleInstancesAnnotation => a }.toList match {
       case List(anno) => anno.instanceToModule.toMap
-      case other => throw new RuntimeException(s"Exactly one ModuleInstancesAnnotation is required! Found: $other")
+      case other      => throw new RuntimeException(s"Exactly one ModuleInstancesAnnotation is required! Found: $other")
     }
 
     // process the coverage entries on a per instance basis
-    es.groupBy(_.path).toList.flatMap { case (name, entries) =>
-      // we look up the cover points by first converting to the module name
-      val covers = coverPoints(instToModule(name))
-      processInstanceCoverage(name, covers, entries)
+    es.groupBy(_.path).toList.flatMap {
+      case (name, entries) =>
+        // we look up the cover points by first converting to the module name
+        val covers = coverPoints(instToModule(name))
+        processInstanceCoverage(name, covers, entries)
     }
   }
 
-  private def processInstanceCoverage(name: String, covers: List[String], entries: Seq[CoverageEntry]): Seq[(String, Long)] = {
-    assert(covers.size == entries.size,
-      f"[$name] Missing or too many entries! ${covers.size} cover statements vs. ${entries.size} coverage entries.")
-    covers.zip(entries).map { case (c, e) =>
-      (if(name.isEmpty) c else name + "." + c) -> e.count
+  private def processInstanceCoverage(
+    name:    String,
+    covers:  List[String],
+    entries: Seq[CoverageEntry]
+  ): Seq[(String, Long)] = {
+    assert(
+      covers.size == entries.size,
+      f"[$name] Missing or too many entries! ${covers.size} cover statements vs. ${entries.size} coverage entries."
+    )
+    covers.zip(entries).map {
+      case (c, e) =>
+        (if (name.isEmpty) c else name + "." + c) -> e.count
     }
   }
 
@@ -82,13 +90,13 @@ object VerilatorCoverage {
   // - CoverageEntry(Test1Module.sv,8,List(c0),0)
   // - CoverageEntry(Test1Module.sv,8,List(c1),0)
   private def parseLine(line: String): Option[CoverageEntry] = {
-    if(!line.startsWith("C '\u0001")) return None
+    if (!line.startsWith("C '\u0001")) return None
     line.split('\'').toList match {
       case List(_, dict, countStr) =>
         val entries = dict.drop(1).split('\u0001').map(_.split('\u0002').toList).map { case Seq(k, v) => k -> v }.toMap
         val count = countStr.trim.toLong
         val path = entries("h").split('.').toList.drop(2).mkString(".")
-        Some(CoverageEntry(file = entries("f"), line = entries("l").toInt, path=path, count=count))
+        Some(CoverageEntry(file = entries("f"), line = entries("l").toInt, path = path, count = count))
       case _ =>
         throw new RuntimeException(s"Unexpected coverage line format: $line")
     }
@@ -104,10 +112,13 @@ object VerilatorCoverage {
 object FindCoverPointsPass extends Transform with DependencyAPIMigration {
   override def prerequisites: Seq[TransformDependency] = Forms.LowForm
   // we needs to run *after* any transform that changes the hierarchy or renames cover points
-  override def optionalPrerequisites : Seq[TransformDependency] = Seq(Dependency[InlineInstances], Dependency(EnsureNamedStatements))
+  override def optionalPrerequisites: Seq[TransformDependency] =
+    Seq(Dependency[InlineInstances], Dependency(EnsureNamedStatements))
   // we need to run before the emitter
   override def optionalPrerequisiteOf: Seq[TransformDependency] = Seq(
-    Dependency[LowFirrtlEmitter], Dependency[VerilogEmitter], Dependency[SystemVerilogEmitter],
+    Dependency[LowFirrtlEmitter],
+    Dependency[VerilogEmitter],
+    Dependency[SystemVerilogEmitter]
   )
   override def invalidates(a: Transform): Boolean = false
 
@@ -118,21 +129,22 @@ object FindCoverPointsPass extends Transform with DependencyAPIMigration {
   }
 
   private def onModule(c: CircuitTarget, m: ir.DefModule): Option[OrderedCoverPointsAnnotation] = m match {
-    case _ : ir.ExtModule => None
-    case mod : ir.Module =>
+    case _:   ir.ExtModule => None
+    case mod: ir.Module =>
       val covs = mutable.ListBuffer[String]()
       mod.foreachStmt(onStmt(_, covs))
       Some(OrderedCoverPointsAnnotation(c.module(mod.name), covs.toList))
   }
 
   private def onStmt(s: ir.Statement, covs: mutable.ListBuffer[String]): Unit = s match {
-    case v : ir.Verification if v.op == ir.Formal.Cover =>
+    case v: ir.Verification if v.op == ir.Formal.Cover =>
       assert(v.name.nonEmpty)
       covs.append(v.name)
     case other => other.foreachStmt(onStmt(_, covs))
   }
 }
 
-case class OrderedCoverPointsAnnotation(target: ModuleTarget, covers: List[String]) extends SingleTargetAnnotation[ModuleTarget] {
+case class OrderedCoverPointsAnnotation(target: ModuleTarget, covers: List[String])
+    extends SingleTargetAnnotation[ModuleTarget] {
   override def duplicate(n: ModuleTarget) = copy(target = n)
 }

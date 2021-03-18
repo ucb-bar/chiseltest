@@ -11,15 +11,16 @@ import firrtl.passes.InlineInstances
 import firrtl.stage.Forms
 import firrtl.stage.TransformManager.TransformDependency
 
-
 /** Generates a list of instance paths for every module: [[ModuleInstancesAnnotation]] */
 object ModuleInstancesPass extends Transform with DependencyAPIMigration {
   override def prerequisites: Seq[TransformDependency] = Forms.LowForm
   // we needs to run *after* any transform that changes the hierarchy
-  override def optionalPrerequisites : Seq[TransformDependency] = Seq(Dependency[InlineInstances])
+  override def optionalPrerequisites: Seq[TransformDependency] = Seq(Dependency[InlineInstances])
   // we need to run before the emitter
   override def optionalPrerequisiteOf: Seq[TransformDependency] = Seq(
-    Dependency[LowFirrtlEmitter], Dependency[VerilogEmitter], Dependency[SystemVerilogEmitter],
+    Dependency[LowFirrtlEmitter],
+    Dependency[VerilogEmitter],
+    Dependency[SystemVerilogEmitter]
   )
   override def invalidates(a: Transform): Boolean = false
 
@@ -34,7 +35,11 @@ object ModuleInstancesPass extends Transform with DependencyAPIMigration {
   }
 
   /** expands the instance name to its complete path (module the main module) */
-  private def onInstance(prefix: String, inst: InstanceKey, children: Map[String, Seq[InstanceKey]]): Seq[InstanceKey] = {
+  private def onInstance(
+    prefix:   String,
+    inst:     InstanceKey,
+    children: Map[String, Seq[InstanceKey]]
+  ): Seq[InstanceKey] = {
     val ii = InstanceKey(prefix + inst.name, inst.module)
     val cc = children(ii.module).flatMap(onInstance(ii.name + ".", _, children))
     ii +: cc

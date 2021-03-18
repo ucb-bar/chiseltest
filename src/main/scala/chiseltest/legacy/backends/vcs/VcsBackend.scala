@@ -15,10 +15,10 @@ import firrtl.AnnotationSeq
   * @tparam T                   the dut's type
   */
 class VcsBackend[T <: Module](
-  dut:                T,
-  dataNames:          Map[Data, String],
-  combinationalPaths: Map[Data, Set[Data]],
-  command:            Seq[String],
-  targetDir:          String,
-  coverageAnnotations:AnnotationSeq)
+  dut:                 T,
+  dataNames:           Map[Data, String],
+  combinationalPaths:  Map[Data, Set[Data]],
+  command:             Seq[String],
+  targetDir:           String,
+  coverageAnnotations: AnnotationSeq)
     extends VerilatorBackend(dut, dataNames, combinationalPaths, command, targetDir, coverageAnnotations)

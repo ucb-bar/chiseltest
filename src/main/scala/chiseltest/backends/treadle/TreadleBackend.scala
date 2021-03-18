@@ -210,7 +210,8 @@ class TreadleBackend[T <: Module](
   }
 
   /** Collects information from coverage passes and generates a annotation containing the map from
-    * coverage point names to coverage counts. */
+    * coverage point names to coverage counts.
+    */
   private def coverageAnnotations(): AnnotationSeq = {
     TestCoverage(tester.getCoverage()) +: coverageAnnotations
   }
