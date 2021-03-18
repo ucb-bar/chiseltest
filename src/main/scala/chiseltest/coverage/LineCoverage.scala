@@ -2,6 +2,7 @@
 
 package chiseltest.coverage
 
+import chiseltest.coverage.midas.Builder
 import firrtl._
 import firrtl.annotations.{Annotation, CircuitTarget, ModuleTarget, ReferenceTarget, SingleTargetAnnotation}
 import firrtl.options.Dependency

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chiseltest.coverage
+package chiseltest.coverage.midas
 
 import firrtl._
 

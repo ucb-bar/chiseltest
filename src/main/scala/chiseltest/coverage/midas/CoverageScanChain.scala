@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chiseltest.coverage
+package chiseltest.coverage.midas
 
+import chiseltest.coverage.LineCoveragePass
 import firrtl._
-import firrtl.annotations.{Annotation, CircuitTarget, ModuleTarget, NoTargetAnnotation, SingleTargetAnnotation}
+import firrtl.analyses.InstanceKeyGraph.InstanceKey
+import firrtl.annotations._
 import firrtl.options.Dependency
+import firrtl.passes.ResolveFlows
 import firrtl.stage.Forms
 import firrtl.stage.TransformManager.TransformDependency
 import firrtl.transforms.EnsureNamedStatements
-import firrtl.analyses.InstanceKeyGraph.InstanceKey
-import firrtl.passes.ResolveFlows
 
 import scala.collection.mutable
 
