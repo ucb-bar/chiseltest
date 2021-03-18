@@ -5,7 +5,7 @@ package chiseltest.backends.treadle
 import chiseltest.internal._
 import chiseltest.{ClockResolutionException, Region, TimeoutException}
 import chisel3._
-import chiseltest.coverage.TestCoverage
+import chiseltest.coverage.{Coverage, TestCoverage}
 import treadle.TreadleTester
 import firrtl.AnnotationSeq
 
@@ -16,7 +16,8 @@ class TreadleBackend[T <: Module](
   val dut:                T,
   val dataNames:          Map[Data, String],
   val combinationalPaths: Map[Data, Set[Data]],
-  tester:                 TreadleTester)
+  tester:                 TreadleTester,
+  coverageAnnotations:    AnnotationSeq)
     extends BackendInstance[T]
     with ThreadedBackend[T] {
 
@@ -211,7 +212,6 @@ class TreadleBackend[T <: Module](
   /** Collects information from coverage passes and generates a annotation containing the map from
     * coverage point names to coverage counts. */
   private def coverageAnnotations(): AnnotationSeq = {
-    // TODO: provide info from coverage passes
-    Seq(TestCoverage(tester.getCoverage()))
+    TestCoverage(tester.getCoverage()) +: coverageAnnotations
   }
 }

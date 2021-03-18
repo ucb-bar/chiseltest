@@ -7,6 +7,7 @@ import chiseltest.internal._
 import chisel3.experimental.DataMirror
 import chisel3.Module
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
+import chiseltest.coverage.Coverage
 import firrtl.annotations.ReferenceTarget
 import firrtl.stage.RunFirrtlTransformAnnotation
 import firrtl.transforms.{CheckCombLoops, CombinationalPath}
@@ -28,13 +29,13 @@ object TreadleExecutive extends BackendExecutive {
     val generatorAnnotation = chisel3.stage.ChiselGeneratorAnnotation(dutGen)
 
     // This provides an opportunity to translate from top level generic flags to backend specific annos
-    var annotationSeq = (new OptionsAdapter).transform(testersAnnotationSeq)
+    val transformedOptions = (new OptionsAdapter).transform(testersAnnotationSeq)
 
     // This produces a chisel circuit annotation, a later pass will generate a firrtl circuit
     // Can't do both at once currently because generating the latter deletes the former
-    annotationSeq = (new chisel3.stage.phases.Elaborate).transform(annotationSeq :+ generatorAnnotation)
+    val elaborated = (new chisel3.stage.phases.Elaborate).transform(transformedOptions :+ generatorAnnotation)
 
-    val circuit = annotationSeq.collect { case x: ChiselCircuitAnnotation => x }.head.circuit
+    val circuit = elaborated.collect { case x: ChiselCircuitAnnotation => x }.head.circuit
     val dut = getTopModule(circuit).asInstanceOf[T]
     val portNames = DataMirror
       .modulePorts(dut)
@@ -44,10 +45,10 @@ object TreadleExecutive extends BackendExecutive {
       .toMap
 
     // This generates the firrtl circuit needed by the TreadleTesterPhase
-    annotationSeq = (new ChiselStage).run(annotationSeq ++ Seq(RunFirrtlTransformAnnotation(new LowFirrtlEmitter)))
+    val compiled = (new ChiselStage).run(elaborated ++ Seq(RunFirrtlTransformAnnotation(new LowFirrtlEmitter)))
 
     // This generates a TreadleTesterAnnotation with a treadle tester instance
-    annotationSeq = (new TreadleTesterPhase).transform(annotationSeq)
+    val annotationSeq = (new TreadleTesterPhase).transform(compiled)
 
     val treadleTester = annotationSeq.collectFirst { case TreadleTesterAnnotation(t) => t }.getOrElse(
       throw new Exception(
@@ -62,6 +63,8 @@ object TreadleExecutive extends BackendExecutive {
 
     val pathsAsData = combinationalPathsToData(dut, paths, portNames, componentToName)
 
-    new TreadleBackend(dut, portNames, pathsAsData, treadleTester)
+    val coverageAnnotations = Coverage.collectCoverageAnnotations(compiled)
+
+    new TreadleBackend(dut, portNames, pathsAsData, treadleTester, coverageAnnotations)
   }
 }
