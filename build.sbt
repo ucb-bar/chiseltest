@@ -26,6 +26,7 @@ publishMavenStyle := true
 publishArtifact in Test := false
 pomIncludeRepository := { x => false }
 
+// scm is set by sbt-ci-release
 pomExtra := (
 <url>http://chisel.eecs.berkeley.edu/</url>
   <licenses>
@@ -35,10 +36,6 @@ pomExtra := (
       <distribution>repo</distribution>
     </license>
   </licenses>
-<scm>
-  <url>https://github.com/ucb-bar/chisel-testers2.git</url>
-  <connection>scm:git:github.com/ucb-bar/chisel-testers2.git</connection>
-</scm>
 <developers>
   <developer>
     <id>ducky64</id>
@@ -51,10 +48,9 @@ publishTo := {
   val v = version.value
   val nexus = "https://oss.sonatype.org/"
   if (v.trim.endsWith("SNAPSHOT")) {
-    Some("snapshots" at nexus + "content/repositories/snapshots")
-  }
-  else {
-    Some("releases" at nexus + "service/local/staging/deploy/maven2")
+    Some("snapshots".at(nexus + "content/repositories/snapshots"))
+  } else {
+    Some("releases".at(nexus + "service/local/staging/deploy/maven2"))
   }
 }
 
