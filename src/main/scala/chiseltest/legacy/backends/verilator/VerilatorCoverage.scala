@@ -97,7 +97,10 @@ object VerilatorCoverage {
         val entries = dict.drop(1).split('\u0001').map(_.split('\u0002').toList).map { case Seq(k, v) => k -> v }.toMap
         val count = countStr.trim.toLong
         val path = entries("h").split('.').toList.drop(2).mkString(".")
-        Some(CoverageEntry(file = entries("f"), line = entries("l").toInt, path = path, count = count))
+        val kind = entries("page").split("/").head
+        val cov = CoverageEntry(file = entries("f"), line = entries("l").toInt, path = path, count = count)
+        // filter out non-user coverage
+        kind match { case "user" => Some(cov) case _ => None }
       case _ =>
         throw new RuntimeException(s"Unexpected coverage line format: $line")
     }
