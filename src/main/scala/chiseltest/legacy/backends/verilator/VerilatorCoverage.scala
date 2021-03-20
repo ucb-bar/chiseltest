@@ -100,7 +100,7 @@ object VerilatorCoverage {
         val kind = entries("page").split("/").head
         val cov = CoverageEntry(file = entries("f"), line = entries("l").toInt, path = path, count = count)
         // filter out non-user coverage
-        kind match { case "user" => Some(cov) case _ => None }
+        kind match { case "v_user" => Some(cov) case _ => None }
       case _ =>
         throw new RuntimeException(s"Unexpected coverage line format: $line")
     }
