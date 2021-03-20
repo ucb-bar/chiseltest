@@ -111,6 +111,10 @@ object VerilatorExecutive extends BackendExecutive {
       ).! == 0,
       s"verilator command failed on circuit ${circuit.name} in work dir $targetDir"
     )
+
+    // patch the coverage cpp provided with verilator
+    PatchCoverageCpp(targetDir)
+
     assert(
       BackendCompilationUtilities.cppToExe(circuit.name, targetDirFile).! == 0,
       s"Compilation of verilator generated code failed for circuit ${circuit.name} in work dir $targetDir"
