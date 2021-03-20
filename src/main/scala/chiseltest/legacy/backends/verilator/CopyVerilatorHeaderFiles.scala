@@ -4,8 +4,7 @@ import java.io.{File, IOException}
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import java.nio.file.{FileAlreadyExistsException, Files, Paths}
 
-/**
-  * Copies the necessary header files used for verilator compilation to the specified destination folder
+/** Copies the necessary header files used for verilator compilation to the specified destination folder
   */
 object CopyVerilatorHeaderFiles {
 

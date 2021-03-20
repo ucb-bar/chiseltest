@@ -8,8 +8,7 @@ import chisel3.Module
 
 import firrtl.AnnotationSeq
 
-/**
-  * Used to run simple tests that do not require a scalatest environment in order to run
+/** Used to run simple tests that do not require a scalatest environment in order to run
   * @param testName This will be used to generate a working directory in ./test_run_dir
   */
 private class RawTester(testName: String) extends TestEnvInterface {
@@ -28,14 +27,12 @@ private class RawTester(testName: String) extends TestEnvInterface {
   }
 }
 
-/**
-  * This is a simple tester that does not require that it be within the scope of a scalatest
+/** This is a simple tester that does not require that it be within the scope of a scalatest
   * in order to run. This form is suitable for running in the Jupyter notebook.
   */
 object RawTester {
 
-  /**
-    * Run one test
+  /** Run one test
     * General use looks like
     * {{{
     *   test(new PlusOne) { c =>
