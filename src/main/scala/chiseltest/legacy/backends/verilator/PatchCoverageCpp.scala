@@ -9,7 +9,7 @@ import java.nio.file.{Files, Path, Paths}
   * This is required in order to satisfy our generic TestCoverage interface for which
   * the simulator needs to return per instance coverage counts.
   * See: https://github.com/verilator/verilator/issues/2793
-  * */
+  */
 object PatchCoverageCpp {
   private val Needle1 = """VL_COVER_INSERT(count32p,  "filename",filenamep,  "lineno",lineno,  "column",column,"""
   private val Needle2 = """"hier",std::string(name())+hierp,  "page",pagep,  """
@@ -27,11 +27,16 @@ object PatchCoverageCpp {
   }
 
   private def replaceCoverage(cppFile: Path, lines: Array[String]): Unit = {
-    val line1 = lines.map(_.trim).zipWithIndex.find(_._1.startsWith(Needle1)).getOrElse {
-      error(s"Failed to find line `$Needle1` in $cppFile.")
-    }._2
+    val line1 = lines
+      .map(_.trim)
+      .zipWithIndex
+      .find(_._1.startsWith(Needle1))
+      .getOrElse {
+        error(s"Failed to find line `$Needle1` in $cppFile.")
+      }
+      ._2
     val line2 = line1 + 1
-    if(!lines(line2).trim.endsWith(Needle2 + OldSuffix)) {
+    if (!lines(line2).trim.endsWith(Needle2 + OldSuffix)) {
       error(s"Failed to find line `$Needle2$OldSuffix` in $cppFile.")
     }
 
@@ -42,7 +47,7 @@ object PatchCoverageCpp {
 
   private def loadFile(cppFile: Path): Array[String] = {
     // check to make sure that we can find the verilator generated cpp file
-    if(!Files.exists(cppFile)) {
+    if (!Files.exists(cppFile)) {
       error(s"Failed to find $cppFile")
     }
     FileUtils.getLines(cppFile.toFile).toArray
