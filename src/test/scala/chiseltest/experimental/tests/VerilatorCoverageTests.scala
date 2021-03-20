@@ -64,7 +64,6 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
     assert(!output.contains("--coverage-toggle"))
     assert(!output.contains("--coverage-line"))
     assert(output.contains("--coverage-user"))
-    assert(coverage.exists())
   }
 
   it should "allow stacking coverage for Verilator" in {
