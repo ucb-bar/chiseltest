@@ -113,7 +113,7 @@ object VerilatorExecutive extends BackendExecutive {
     )
 
     // patch the coverage cpp provided with verilator
-    PatchCoverageCpp(targetDir)
+    PatchCoverageCpp(targetDir, circuit.name)
 
     assert(
       BackendCompilationUtilities.cppToExe(circuit.name, targetDirFile).! == 0,
