@@ -65,7 +65,8 @@ object VerilatorCoverage {
   ): Seq[(String, Long)] = {
     assert(
       covers.size == entries.size,
-      f"[$name] Missing or too many entries! ${covers.size} cover statements vs. ${entries.size} coverage entries."
+      f"[$name] Missing or too many entries! ${covers.size} cover statements vs. ${entries.size} coverage entries.\n" +
+        covers.mkString(", ") + "\n" + entries.mkString(", ")
     )
     covers.zip(entries).map {
       case (c, e) =>
