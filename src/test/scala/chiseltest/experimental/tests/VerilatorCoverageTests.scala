@@ -25,7 +25,6 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
     coverage.exists() should be(true)
     output.contains("--coverage-toggle") should be(true)
     output.contains("--coverage-line") should be(false)
-    output.contains("--coverage-user") should be(false)
   }
 
   it should "allow specifying line coverage for Verilator" in {
@@ -39,7 +38,6 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
     coverage.exists() should be(true)
     output.contains("--coverage-toggle") should be(false)
     output.contains("--coverage-line") should be(true)
-    output.contains("--coverage-user") should be(false)
   }
 
   it should "allow specifying structural coverage for Verilator" in {
@@ -53,15 +51,14 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
     coverage.exists() should be(true)
     output.contains("--coverage-toggle") should be(true)
     output.contains("--coverage-line") should be(true)
-    output.contains("--coverage-user") should be(false)
   }
 
-  it should "allow specifying user coverage for Verilator" in {
+  it should "specify user coverage for Verilator by default" in {
     val coverageName = "test_run_dir/Testers2_should_allow_specifying_user_coverage_for_Verilator/logs/coverage.dat"
     val coverage = new File(coverageName)
     val outputStream = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {}).withAnnotations(Seq(VerilatorBackendAnnotation, UserCoverageAnnotation)) { c => }
+      test(new Module {}).withAnnotations(Seq(VerilatorBackendAnnotation)) { c => }
     }
     val output = outputStream.toString
     coverage.exists() should be(true)
