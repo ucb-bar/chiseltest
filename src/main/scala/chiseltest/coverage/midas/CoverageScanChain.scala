@@ -18,8 +18,7 @@ case class CoverageScanChainOptions(counterWidth: Int = 32) extends NoTargetAnno
   require(counterWidth > 0)
 }
 
-/**
-  * @param target the top-level module
+/** @param target the top-level module
   * @param prefix prefix for the scan chain ports
   * @param width  width of the scan chain data ports
   * @param covers cover points in the scan chain from front (last to be scanned out) to back (first to be scanned out)
@@ -213,10 +212,9 @@ object CoverageScanChainPass extends Transform with DependencyAPIMigration {
   }
 
   private def getScanChainPorts(prefix: String, width: BigInt): Seq[ir.Port] = {
-    PortSuffixes.zip(Seq(BigInt(1), width, width)).zip(Seq(true, true, false)).map {
-      case ((suffix, w), isInput) =>
-        val dir = if (isInput) ir.Input else ir.Output
-        ir.Port(ir.NoInfo, prefix + "_" + suffix, dir, ir.UIntType(ir.IntWidth(w)))
+    PortSuffixes.zip(Seq(BigInt(1), width, width)).zip(Seq(true, true, false)).map { case ((suffix, w), isInput) =>
+      val dir = if (isInput) ir.Input else ir.Output
+      ir.Port(ir.NoInfo, prefix + "_" + suffix, dir, ir.UIntType(ir.IntWidth(w)))
     }
   }
 

@@ -74,10 +74,9 @@ class CodeBase(root: Path) extends LazyLogging {
 
   def warnAboutDuplicates(): Unit = {
     if (duplicates.nonEmpty) {
-      val msgs = duplicates.flatMap {
-        case (key, values) =>
-          Seq(s"Multiple files map to key: $key") ++
-            values.map(v => s"  - $v")
+      val msgs = duplicates.flatMap { case (key, values) =>
+        Seq(s"Multiple files map to key: $key") ++
+          values.map(v => s"  - $v")
       }
 
       val msg = Seq(s"In code base: $root") ++ msgs

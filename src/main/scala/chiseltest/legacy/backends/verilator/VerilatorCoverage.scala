@@ -50,11 +50,10 @@ object VerilatorCoverage {
     }
 
     // process the coverage entries on a per instance basis
-    es.groupBy(_.path).toList.flatMap {
-      case (name, entries) =>
-        // we look up the cover points by first converting to the module name
-        val covers = coverPoints(instToModule(name))
-        processInstanceCoverage(name, covers, entries)
+    es.groupBy(_.path).toList.flatMap { case (name, entries) =>
+      // we look up the cover points by first converting to the module name
+      val covers = coverPoints(instToModule(name))
+      processInstanceCoverage(name, covers, entries)
     }
   }
 
@@ -68,9 +67,8 @@ object VerilatorCoverage {
       f"[$name] Missing or too many entries! ${covers.size} cover statements vs. ${entries.size} coverage entries.\n" +
         covers.mkString(", ") + "\n" + entries.mkString(", ")
     )
-    covers.zip(entries).map {
-      case (c, e) =>
-        (if (name.isEmpty) c else name + "." + c) -> e.count
+    covers.zip(entries).map { case (c, e) =>
+      (if (name.isEmpty) c else name + "." + c) -> e.count
     }
   }
 

@@ -24,29 +24,26 @@ object LineCoverage {
     val moduleToInst = Coverage.collectModuleInstances(annos).groupBy(_._2).mapValues(_.map(_._1))
     val infos = annos.collect { case a: LineCoverageAnnotation => a }
 
-    val counts = infos.flatMap {
-      case LineCoverageAnnotation(target, lines) =>
-        val insts = moduleToInst(target.module)
-        val counts = insts.map { i =>
-          val path = Coverage.path(i, target.ref)
-          cov(path)
-        }
-        val total = counts.sum
+    val counts = infos.flatMap { case LineCoverageAnnotation(target, lines) =>
+      val insts = moduleToInst(target.module)
+      val counts = insts.map { i =>
+        val path = Coverage.path(i, target.ref)
+        cov(path)
+      }
+      val total = counts.sum
 
-        lines.flatMap {
-          case (filename, ll) =>
-            ll.map { line =>
-              (filename, line) -> total
-            }
+      lines.flatMap { case (filename, ll) =>
+        ll.map { line =>
+          (filename, line) -> total
         }
+      }
     }
 
     val files = counts
       .groupBy(_._1._1)
-      .map {
-        case (filename, entries) =>
-          val lines = entries.map(e => (e._1._2, e._2)).sortBy(_._1).toList
-          LineCoverageInFile(filename, lines)
+      .map { case (filename, entries) =>
+        val lines = entries.map(e => (e._1._2, e._2)).sortBy(_._1).toList
+        LineCoverageInFile(filename, lines)
       }
       .toList
       .sortBy(_.name)
@@ -71,12 +68,11 @@ object LineCoverage {
     val header = pad(LineNr, lineNrWidth) + " | " + pad(Count, countWidth) + " | " + "Source"
     val headerLine = "-" * (lineNrWidth + 3 + countWidth + 3 + srcWidth)
 
-    val body = sourceLines.zipWithIndex.map {
-      case (line, ii) =>
-        val lineNo = ii + 1 // lines are 1-indexed
-        val lineNoStr = pad(lineNo.toString, lineNrWidth)
-        val countStr = counts.get(lineNo).map(c => pad(c.toString, countWidth)).getOrElse(countBlank)
-        lineNoStr + " | " + countStr + " | " + line
+    val body = sourceLines.zipWithIndex.map { case (line, ii) =>
+      val lineNo = ii + 1 // lines are 1-indexed
+      val lineNoStr = pad(lineNo.toString, lineNrWidth)
+      val countStr = counts.get(lineNo).map(c => pad(c.toString, countWidth)).getOrElse(countBlank)
+      lineNoStr + " | " + countStr + " | " + line
     }
     Seq(header, headerLine) ++ body
   }
