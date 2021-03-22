@@ -9,8 +9,7 @@ import chisel3.Module
 import firrtl.AnnotationSeq
 import utest.framework.Formatter
 
-/**
-  * Using utest as test framework
+/** Using utest as test framework
   * {{{
   *   // define test spec in trait
   *   trait HasTestChipSpec {
@@ -43,8 +42,7 @@ trait ChiselUtestTester extends TestSuite with TestEnvInterface {
     }
   }
 
-  /**
-    * Since [[utest.test]] collides with [[chisel3.tester.RawTester.test]], it is renamed to [[testCircuit]],
+  /** Since [[utest.test]] collides with [[chisel3.tester.RawTester.test]], it is renamed to [[testCircuit]],
     * Here is a example to constructs a unit test harness for the Chisel Module PlusOne generated as dutGen.
     * {{{
     *   testCircuit(new PlusOne) { c =>

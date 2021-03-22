@@ -38,9 +38,8 @@ object TreadleExecutive extends BackendExecutive {
     val dut = getTopModule(circuit).asInstanceOf[T]
     val portNames = DataMirror
       .modulePorts(dut)
-      .flatMap {
-        case (name, data) =>
-          getDataNames(name, data).toList
+      .flatMap { case (name, data) =>
+        getDataNames(name, data).toList
       }
       .toMap
 

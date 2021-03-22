@@ -3,8 +3,7 @@ package chiseltest.legacy.backends.verilator
 import chisel3.Module
 import scala.sys.process._
 
-/**
-  * Generates the Module specific verilator harness cpp file for verilator compilation
+/** Generates the Module specific verilator harness cpp file for verilator compilation
   */
 object VerilatorCppHarnessGenerator {
   def codeGen(dut: Module, vcdFilePath: String, targetDir: String): String = {
@@ -73,15 +72,13 @@ class $dutApiClassName: public sim_api_t<VerilatorDataWrapper*> {
         sim_data.signals.clear();
 
 """)
-    inputs.toList.foreach {
-      case (node, name) =>
-        // replaceFirst used here in case port name contains the dutName
-        pushBack("inputs", name.replaceFirst(dutName, "dut"), node.getWidth)
+    inputs.toList.foreach { case (node, name) =>
+      // replaceFirst used here in case port name contains the dutName
+      pushBack("inputs", name.replaceFirst(dutName, "dut"), node.getWidth)
     }
-    outputs.toList.foreach {
-      case (node, name) =>
-        // replaceFirst used here in case port name contains the dutName
-        pushBack("outputs", name.replaceFirst(dutName, "dut"), node.getWidth)
+    outputs.toList.foreach { case (node, name) =>
+      // replaceFirst used here in case port name contains the dutName
+      pushBack("outputs", name.replaceFirst(dutName, "dut"), node.getWidth)
     }
     pushBack("signals", "dut->reset", 1)
     codeBuffer.append(
