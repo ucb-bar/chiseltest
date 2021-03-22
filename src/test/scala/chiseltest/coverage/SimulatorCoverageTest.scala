@@ -63,6 +63,24 @@ abstract class SimulatorCoverageTest(name: String, backend: BackendAnnotation) e
     assert(cov == expected)
   }
 
+  it should "allow us to estimate pi" in {
+    val rand = new scala.util.Random(0)
+    val r = test(new PiEstimator).withAnnotations(noAutoCov) { dut =>
+      (0 until 1000).foreach { _ =>
+        dut.x.poke(BigInt(8, rand).S)
+        dut.y.poke(BigInt(8, rand).S)
+        dut.clock.step()
+      }
+    }
+
+    val cov = getCoverage(r)
+    val inCircle = cov("cover_0")
+    val inRectangle = cov("cover_1")
+    val pi = 4.0 * inCircle.toDouble / inRectangle.toDouble
+    val error = math.abs(pi - math.Pi)
+    assert(error < 0.0329)
+  }
+
   private def getCoverage(annos: AnnotationSeq): Map[String, Long] = {
     val coverage = annos.collect { case a: TestCoverage => a.counts }
     assert(coverage.size == 1, "Expecting exactly one coverage map!")
@@ -72,3 +90,15 @@ abstract class SimulatorCoverageTest(name: String, backend: BackendAnnotation) e
 
 class TreadleCoverageTest extends SimulatorCoverageTest("Treadle", TreadleBackendAnnotation) {}
 class VerilatorCoverageTest extends SimulatorCoverageTest("Verilator", VerilatorBackendAnnotation) {}
+
+private class PiEstimator extends Module {
+  val x = IO(Input(SInt(8.W)))
+  val y = IO(Input(SInt(8.W)))
+  val inCircle = IO(Output(Bool()))
+  val inRectangle = IO(Output(Bool()))
+  val radius = 100
+  inCircle := (x * x + y * y) <= (radius * radius).S
+  inRectangle := (x <= radius.S && x >= -radius.S) && (y <= radius.S && y >= -radius.S)
+  chisel3.experimental.verification.cover(inCircle)
+  chisel3.experimental.verification.cover(inRectangle)
+}
