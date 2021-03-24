@@ -5,6 +5,7 @@ import chiseltest.internal._
 import chisel3._
 import chisel3.experimental.{DataMirror, Direction, EnumType, FixedPoint, Interval}
 import chisel3.experimental.BundleLiterals._
+import chisel3.experimental.VecLiterals._
 import chisel3.util._
 
 /** Basic interfaces and implicit conversions for testers2
@@ -52,7 +53,53 @@ package object chiseltest {
       }.foreach { case (k, v) =>
         v match {
           case record: Record => record.expectPartial(value.elements(k).asInstanceOf[Record])
-          case data:   Data   => data.expect(value.elements(k))
+          case data: Data => data.expect(value.elements(k))
+        }
+      }
+    }
+  }
+
+  implicit class testableVec[T <: Vec[_]](x: T) {
+
+    /** Poke the given signal with a [[Vec.litValue()]]
+      * Literals of this Record can be instantiated with
+      * {{{
+      *   someVec.Lit(_.elements("foo") -> 4.U)
+      * }}}
+      * `pokePartial` will only poke [[Input]] signals of `x`,
+      * and elements of `x` which contain no literal will be ignored.
+      */
+    def pokePartial(value: T): Unit = {
+      require(DataMirror.checkTypeEquivalence(x, value), s"Vec type mismatch")
+      x.getElements.zipWithIndex.filter { case (v, index) =>
+        DataMirror.directionOf(v) != ActualDirection.Output && {
+          value.getElements(index) match {
+            case _: T => true
+            case data: Data => data.isLit()
+          }
+        }
+      }.foreach { case (v, index) =>
+        v match {
+          case vec: T => vec.pokePartial(value.getElements(index).asInstanceOf[T])
+          case data: Data => data.poke(value.getElements(index))
+        }
+      }
+    }
+
+    /** Check the given signal with a [[Vec.litValue()]];
+      * elements of `x` which contain no literal will be ignored.
+      */
+    def expectPartial(value: T): Unit = {
+      require(DataMirror.checkTypeEquivalence(x, value), s"Vec type mismatch")
+      x.getElements.zipWithIndex.filter { case (v, index) =>
+        value.getElements(index) match {
+          case _: T => true
+          case d: Data => d.isLit()
+        }
+      }.foreach { case (v, index) =>
+        v match {
+          case vec: T => vec.expectPartial(value.getElements(index).asInstanceOf[T])
+          case data: Data => data.expect(value.getElements(index))
         }
       }
     }
@@ -114,6 +161,12 @@ package object chiseltest {
           x.poke(value)
         }
       }
+      case (x: Vec[_], value: Vec[_]) => {
+        require(DataMirror.checkTypeEquivalence(x, value), s"Vec[_ type mismatch")
+        (x.getElements.zip(value.getElements)).foreach { case (x, value) =>
+          x.poke(value)
+        }
+      }
       case (x: EnumType, value: EnumType) => {
         require(DataMirror.checkTypeEquivalence(x, value), s"EnumType mismatch")
         pokeBits(x, value.litValue)
@@ -143,6 +196,11 @@ package object chiseltest {
         }.toSeq
         chiselTypeOf(x).Lit(elementValueFns: _*).asInstanceOf[T]
       }
+      case (x: Vec[_]) =>
+        val elementValueFns = x.getElements.zipWithIndex.map { case (elt: Data, index: Int) =>
+          elt.peekWithStale(stale)
+        }
+        Vec.Lit(elementValueFns: _*).asInstanceOf[T]
       case (x: EnumType) => {
         throw new NotImplementedError(s"peeking enums ($x) not yet supported, need programmatic enum construction")
       }
@@ -172,6 +230,12 @@ package object chiseltest {
       case (x: Record, value: Record) => {
         require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
         (x.elements.zip(value.elements)).foreach { case ((_, x), (_, value)) =>
+          x.expectWithStale(value, message, stale)
+        }
+      }
+      case (x: Vec[_], value: Vec[_]) => {
+        require(DataMirror.checkTypeEquivalence(x, value), s"Vec[_ type mismatch")
+        (x.getElements.zip(value.getElements)).foreach { case (x, value) =>
           x.expectWithStale(value, message, stale)
         }
       }
