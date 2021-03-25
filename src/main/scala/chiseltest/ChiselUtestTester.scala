@@ -74,7 +74,7 @@ trait ChiselUtestTester extends TestSuite with TestEnvInterface {
   )(testFn:        T => Unit
   )(
     implicit testPath: utest.framework.TestPath
-  ): Unit = {
+  ): TestResult = {
     def testName = s"${testPath.value.reduce(_ + _)}"
 
     val newAnnos = addDefaultTargetDir(sanitizeFileName(testName), annotationSeq)

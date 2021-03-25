@@ -7,6 +7,7 @@ import chiseltest.internal._
 import chisel3.experimental.DataMirror
 import chisel3.Module
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
+import chiseltest.coverage.Coverage
 import firrtl.annotations.ReferenceTarget
 import firrtl.stage.RunFirrtlTransformAnnotation
 import firrtl.transforms.{CheckCombLoops, CombinationalPath}
@@ -62,6 +63,8 @@ object TreadleExecutive extends BackendExecutive {
 
     val pathsAsData = combinationalPathsToData(dut, paths, portNames, componentToName)
 
-    new TreadleBackend(dut, portNames, pathsAsData, treadleTester)
+    val coverageAnnotations = Coverage.collectCoverageAnnotations(annotationSeq)
+
+    new TreadleBackend(dut, portNames, pathsAsData, treadleTester, coverageAnnotations)
   }
 }

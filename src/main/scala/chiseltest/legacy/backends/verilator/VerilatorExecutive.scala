@@ -59,7 +59,7 @@ object VerilatorExecutive extends BackendExecutive {
     // - TestCommandOverride
     // - CombinationalPath
     val compiledAnnotations = (new ChiselStage).run(
-      elaboratedAnno :+ RunFirrtlTransformAnnotation(new VerilogEmitter)
+      elaboratedAnno ++: RunFirrtlTransformAnnotation(new SystemVerilogEmitter) +: VerilatorCoverage.CoveragePasses
     )
 
     val cppHarnessFileName = s"${circuit.name}-harness.cpp"
@@ -78,11 +78,12 @@ object VerilatorExecutive extends BackendExecutive {
     val writeVcdFlag = if (compiledAnnotations.contains(WriteVcdAnnotation)) { Seq("--trace") }
     else { Seq() }
     val coverageFlags = Seq((compiledAnnotations.collect {
-      case LineCoverageAnnotation       => List("--coverage-line")
-      case ToggleCoverageAnnotation     => List("--coverage-toggle")
-      case UserCoverageAnnotation       => List("--coverage-user")
+      case LineCoverageAnnotation   => List("--coverage-line")
+      case ToggleCoverageAnnotation => List("--coverage-toggle")
+      // user coverage is enabled by default
+      //case UserCoverageAnnotation       => List("--coverage-user")
       case StructuralCoverageAnnotation => List("--coverage-line", "--coverage-toggle")
-    }).flatten.distinct.mkString(" "))
+    } :+ List("--coverage-user")).flatten.distinct.mkString(" "))
 
     val commandEditsFile = compiledAnnotations.collectFirst { case CommandEditsFile(f) => f }
       .getOrElse("")
@@ -110,6 +111,10 @@ object VerilatorExecutive extends BackendExecutive {
       ).! == 0,
       s"verilator command failed on circuit ${circuit.name} in work dir $targetDir"
     )
+
+    // patch the coverage cpp provided with verilator
+    PatchCoverageCpp(targetDir, circuit.name)
+
     assert(
       BackendCompilationUtilities.cppToExe(circuit.name, targetDirFile).! == 0,
       s"Compilation of verilator generated code failed for circuit ${circuit.name} in work dir $targetDir"
@@ -138,6 +143,8 @@ object VerilatorExecutive extends BackendExecutive {
     val pathsAsData =
       combinationalPathsToData(dut, paths, portNames, componentToName)
 
-    new VerilatorBackend(dut, portNames, pathsAsData, command)
+    val coverageAnnotations = VerilatorCoverage.collectCoverageAnnotations(compiledAnnotations)
+
+    new VerilatorBackend(dut, portNames, pathsAsData, command, targetDir, coverageAnnotations)
   }
 }

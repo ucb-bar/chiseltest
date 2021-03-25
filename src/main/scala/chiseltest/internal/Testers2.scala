@@ -3,6 +3,7 @@
 package chiseltest.internal
 
 import chisel3.Module
+import chiseltest.TestResult
 import chiseltest.backends.BackendExecutive
 import chiseltest.backends.treadle.TreadleExecutive
 import chiseltest.legacy.backends.vcs.VcsExecutive
@@ -152,11 +153,12 @@ object Context {
 
   private var context = new DynamicVariable[Option[Instance]](None)
 
-  def run[T <: Module](backend: BackendInstance[T], env: TestEnvInterface, testFn: T => Unit) {
+  def run[T <: Module](backend: BackendInstance[T], env: TestEnvInterface, testFn: T => Unit): TestResult = {
     require(context.value.isEmpty)
-    context.withValue(Some(new Instance(backend, env))) {
+    val annotations = context.withValue(Some(new Instance(backend, env))) {
       backend.run(testFn)
     }
+    new TestResult(annotations)
   }
 
   def apply(): Instance = context.value.get

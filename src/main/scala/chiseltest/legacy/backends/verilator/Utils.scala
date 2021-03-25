@@ -341,7 +341,7 @@ private[chiseltest] object verilogToVerilator extends EditableBuildCSimulatorCom
     flags:     Seq[String],
     cFlags:    Seq[String]
   ): String = {
-    (Seq("cd", dir.getAbsolutePath, "&&", "verilator", "--cc", s"$topModule.v") ++ flags).mkString(" ")
+    (Seq("cd", dir.getAbsolutePath, "&&", "verilator", "--cc", s"$topModule.sv") ++ flags).mkString(" ")
 
   }
 
