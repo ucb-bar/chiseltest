@@ -1,12 +1,12 @@
 package chiseltest.legacy.backends.vcs
 
 import java.io.{File, FileWriter}
-
 import chisel3._
 import chisel3.experimental.DataMirror
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
 import chiseltest.internal._
 import chiseltest.backends.BackendExecutive
+import chiseltest.coverage.Coverage
 import firrtl.annotations.{DeletedAnnotation, ReferenceTarget}
 import firrtl.stage.RunFirrtlTransformAnnotation
 import firrtl.transforms.CombinationalPath
@@ -126,6 +126,8 @@ object VcsExecutive extends BackendExecutive {
     val pathsAsData =
       combinationalPathsToData(dut, paths, portNames, componentToName)
 
-    new VcsBackend(dut, portNames, pathsAsData, command)
+    val coverageAnnotations = Coverage.collectCoverageAnnotations(compiledAnnotations)
+
+    new VcsBackend(dut, portNames, pathsAsData, command, targetDir, coverageAnnotations)
   }
 }

@@ -15,13 +15,13 @@ private class RawTester(testName: String) extends TestEnvInterface {
   // Provide test fixture data as part of 'global' context during test runs
   val topFileName = Some(testName)
 
-  private def runTest[T <: Module](tester: BackendInstance[T])(testFn: T => Unit) {
+  private def runTest[T <: Module](tester: BackendInstance[T])(testFn: T => Unit): TestResult = {
     batchedFailures.clear()
 
     Context.run(tester, this, testFn)
   }
 
-  def test[T <: Module](dutGen: => T, annotationSeq: AnnotationSeq)(testFn: T => Unit) {
+  def test[T <: Module](dutGen: => T, annotationSeq: AnnotationSeq)(testFn: T => Unit): TestResult = {
     val newAnnos = addDefaultTargetDir(sanitizeFileName(testName), annotationSeq)
     runTest(defaults.createDefaultTester(() => dutGen, newAnnos))(testFn)
   }
@@ -48,7 +48,7 @@ object RawTester {
     * @param testFn    The block of code that implements the test
     * @tparam T        The type of device, derived from dutGen
     */
-  def test[T <: Module](dutGen: => T, annotationSeq: AnnotationSeq = Seq.empty)(testFn: T => Unit): Unit = {
+  def test[T <: Module](dutGen: => T, annotationSeq: AnnotationSeq = Seq.empty)(testFn: T => Unit): TestResult = {
 
     val testName = s"chisel_test_${System.currentTimeMillis()}"
 

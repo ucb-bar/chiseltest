@@ -8,7 +8,10 @@ import chiseltest.{ClockResolutionException, Region, TimeoutException}
 import chisel3.experimental.{DataMirror, FixedPoint, Interval}
 import chisel3.internal.firrtl.KnownWidth
 import chisel3.{SInt, _}
+import chiseltest.coverage.TestCoverage
+import firrtl.AnnotationSeq
 
+import java.nio.file.Paths
 import scala.collection.mutable
 import scala.math.BigInt
 
@@ -25,7 +28,9 @@ class VerilatorBackend[T <: Module](
   val dut:                T,
   val dataNames:          Map[Data, String],
   val combinationalPaths: Map[Data, Set[Data]],
-  command:                Seq[String])
+  command:                Seq[String],
+  targetDir:              String,
+  coverageAnnotations:    AnnotationSeq)
     extends BackendInstance[T]
     with ThreadedBackend[T] {
 
@@ -180,7 +185,7 @@ class VerilatorBackend[T <: Module](
     }
   }
 
-  override def run(testFn: T => Unit): Unit = {
+  override def run(testFn: T => Unit): AnnotationSeq = {
     rootTimescope = Some(new RootTimescope)
     val mainThread = new TesterThread(
       () => {
@@ -246,5 +251,13 @@ class VerilatorBackend[T <: Module](
 
       simApiInterface.finish() // Do this to close down the communication
     }
+    generateTestCoverageAnnotation() +: coverageAnnotations
+  }
+
+  /** Generates an annotation containing the map from coverage point names to coverage counts. */
+  private def generateTestCoverageAnnotation(): TestCoverage = {
+    val coverageData = Paths.get(targetDir, "logs", "coverage.dat")
+    val coverage = VerilatorCoverage.loadCoverage(coverageAnnotations, coverageData)
+    TestCoverage(coverage)
   }
 }

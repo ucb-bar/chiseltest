@@ -5,7 +5,9 @@ package chiseltest.backends.treadle
 import chiseltest.internal._
 import chiseltest.{ClockResolutionException, Region, TimeoutException}
 import chisel3._
+import chiseltest.coverage.{Coverage, TestCoverage}
 import treadle.TreadleTester
+import firrtl.AnnotationSeq
 
 import scala.collection.mutable
 
@@ -14,7 +16,8 @@ class TreadleBackend[T <: Module](
   val dut:                T,
   val dataNames:          Map[Data, String],
   val combinationalPaths: Map[Data, Set[Data]],
-  tester:                 TreadleTester)
+  tester:                 TreadleTester,
+  coverageAnnotations:    AnnotationSeq)
     extends BackendInstance[T]
     with ThreadedBackend[T] {
 
@@ -140,7 +143,7 @@ class TreadleBackend[T <: Module](
     }
   }
 
-  override def run(testFn: T => Unit): Unit = {
+  override def run(testFn: T => Unit): AnnotationSeq = {
     rootTimescope = Some(new RootTimescope)
     val mainThread = new TesterThread(
       () => {
@@ -203,5 +206,11 @@ class TreadleBackend[T <: Module](
 
       tester.report() // needed to dump VCDs
     }
+    generateTestCoverageAnnotation() +: coverageAnnotations
+  }
+
+  /** Generates an annotation containing the map from coverage point names to coverage counts. */
+  private def generateTestCoverageAnnotation(): TestCoverage = {
+    TestCoverage(tester.getCoverage())
   }
 }
