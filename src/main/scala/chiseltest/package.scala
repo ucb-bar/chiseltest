@@ -162,7 +162,7 @@ package object chiseltest {
         }
       }
       case (x: Vec[_], value: Vec[_]) => {
-        require(DataMirror.checkTypeEquivalence(x, value), s"Vec[_ type mismatch")
+        require(DataMirror.checkTypeEquivalence(x, value), s"Vec type mismatch")
         (x.getElements.zip(value.getElements)).foreach { case (x, value) =>
           x.poke(value)
         }
@@ -197,7 +197,7 @@ package object chiseltest {
         chiselTypeOf(x).Lit(elementValueFns: _*).asInstanceOf[T]
       }
       case (x: Vec[_]) =>
-        val elementValueFns = x.getElements.zipWithIndex.map { case (elt: Data, index: Int) =>
+        val elementValueFns = x.getElements.map { case elt: Data =>
           elt.peekWithStale(stale)
         }
         Vec.Lit(elementValueFns: _*).asInstanceOf[T]
@@ -234,7 +234,7 @@ package object chiseltest {
         }
       }
       case (x: Vec[_], value: Vec[_]) => {
-        require(DataMirror.checkTypeEquivalence(x, value), s"Vec[_ type mismatch")
+        require(DataMirror.checkTypeEquivalence(x, value), s"Vec type mismatch")
         (x.getElements.zip(value.getElements)).foreach { case (x, value) =>
           x.expectWithStale(value, message, stale)
         }
