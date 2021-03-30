@@ -58,8 +58,12 @@ object VerilatorExecutive extends BackendExecutive {
     // - CommandEditsFile
     // - TestCommandOverride
     // - CombinationalPath
+    val covPasses = elaboratedAnno.collectFirst {
+      case LineCoverageAnnotation | ToggleCoverageAnnotation | UserCoverageAnnotation | StructuralCoverageAnnotation =>
+        VerilatorCoverage.CoveragePasses
+    }.toSeq.flatten
     val compiledAnnotations = (new ChiselStage).run(
-      elaboratedAnno ++: RunFirrtlTransformAnnotation(new SystemVerilogEmitter) +: VerilatorCoverage.CoveragePasses
+      elaboratedAnno ++: RunFirrtlTransformAnnotation(new SystemVerilogEmitter) +: covPasses
     )
 
     val cppHarnessFileName = s"${circuit.name}-harness.cpp"
@@ -77,23 +81,19 @@ object VerilatorExecutive extends BackendExecutive {
       .getOrElse(Seq.empty)
     val writeVcdFlag = if (compiledAnnotations.contains(WriteVcdAnnotation)) { Seq("--trace") }
     else { Seq() }
-    val coverageFlags = Seq((compiledAnnotations.collect {
+    val coverageFlags = compiledAnnotations.collect {
       case LineCoverageAnnotation   => List("--coverage-line")
       case ToggleCoverageAnnotation => List("--coverage-toggle")
       // user coverage is enabled by default
-      //case UserCoverageAnnotation       => List("--coverage-user")
+      case UserCoverageAnnotation       => List.empty[String]
       case StructuralCoverageAnnotation => List("--coverage-line", "--coverage-toggle")
-    } :+ List("--coverage-user")).flatten.distinct.mkString(" "))
+    }.flatMap(_ :+ "--coverage-user").distinct
 
     val commandEditsFile = compiledAnnotations.collectFirst { case CommandEditsFile(f) => f }
       .getOrElse("")
 
     val coverageFlag =
-      if (
-        compiledAnnotations
-          .intersect(Seq(LineCoverageAnnotation, ToggleCoverageAnnotation, UserCoverageAnnotation))
-          .nonEmpty
-      ) {
+      if (coverageFlags.nonEmpty) {
         Seq("-DSP_COVERAGE_ENABLE")
       } else { Seq() }
 
@@ -113,7 +113,8 @@ object VerilatorExecutive extends BackendExecutive {
     )
 
     // patch the coverage cpp provided with verilator
-    PatchCoverageCpp(targetDir, circuit.name)
+    if (coverageFlags.nonEmpty)
+      PatchCoverageCpp(targetDir, circuit.name)
 
     assert(
       BackendCompilationUtilities.cppToExe(circuit.name, targetDirFile).! == 0,

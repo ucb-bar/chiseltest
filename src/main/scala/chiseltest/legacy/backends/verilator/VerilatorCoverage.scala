@@ -32,12 +32,17 @@ object VerilatorCoverage {
 
   // besides the common annotations, we also need to output of the FindCoverPointsPass
   def collectCoverageAnnotations(annos: AnnotationSeq): AnnotationSeq = {
-    Coverage.collectCoverageAnnotations(annos) ++ annos.collect { case a: OrderedCoverPointsAnnotation => a }
+    val covAnnos = annos.collect { case a: OrderedCoverPointsAnnotation => a }
+    if(covAnnos.nonEmpty)
+      Coverage.collectCoverageAnnotations(annos) ++ covAnnos
+    else List.empty
   }
 
   def loadCoverage(annos: AnnotationSeq, coverageData: Path): List[(String, Long)] = {
-    val entries = parseCoverageData(coverageData)
-    verilatorCoverageToCoverageMap(entries, annos)
+    if (annos.nonEmpty) {
+      val entries = parseCoverageData(coverageData)
+      verilatorCoverageToCoverageMap(entries, annos)
+    } else List.empty
   }
 
   private def verilatorCoverageToCoverageMap(es: List[CoverageEntry], annos: AnnotationSeq): List[(String, Long)] = {
