@@ -15,7 +15,7 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "org.scalatest" %% "scalatest" % "3.2.6",
+  "org.scalatest" %% "scalatest" % "3.2.7",
   "com.lihaoyi" %% "utest" % "latest.integration"
 )
 
