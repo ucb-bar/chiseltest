@@ -9,6 +9,8 @@ import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.internal.VerilatorBackendAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 
+import scala.util.Random
+
 class BlackBoxAdderIO extends Bundle {
   val a = Input(UInt(8.W))
   val b = Input(UInt(8.W))
@@ -38,8 +40,17 @@ class VerilogBlackBoxTest extends AnyFlatSpec with ChiselScalatestTester {
   val annos = Seq(VerilatorBackendAnnotation)
 
   it should "support Verilog black boxes" in {
+    val rand = new Random()
+    val mask = (BigInt(1) << 8) - 1
     test(new BlackBoxAdderWrapper).withAnnotations(annos) { dut =>
-      dut.io.a.poke(1.U)
+      (0 until 1000).foreach { ii =>
+        val a = BigInt(8, rand)
+        val b = BigInt(8, rand)
+        val q = (a + b) & mask
+        dut.io.a.poke(a.U)
+        dut.io.b.poke(b.U)
+        dut.io.q.expect(q.U)
+      }
     }
   }
 }
