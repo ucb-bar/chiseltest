@@ -72,7 +72,6 @@ abstract class SimulatorCoverageTest(name: String, backend: BackendAnnotation) e
 }
 
 class TreadleCoverageTest extends SimulatorCoverageTest("Treadle", TreadleBackendAnnotation) {}
-class VerilatorCoverageTest extends SimulatorCoverageTest("Verilator", VerilatorBackendAnnotation) {}
 
 private class PiEstimator extends Module {
   val x = IO(Input(SInt(8.W)))

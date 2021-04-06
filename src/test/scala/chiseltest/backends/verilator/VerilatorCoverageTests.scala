@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chiseltest.experimental.tests
-
-import java.io.{ByteArrayOutputStream, File, PrintStream}
+package chiseltest.backends.verilator
 
 import chisel3._
 import chiseltest._
@@ -10,6 +8,8 @@ import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.internal._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+
+import java.io.{ByteArrayOutputStream, File, PrintStream}
 
 class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2"
