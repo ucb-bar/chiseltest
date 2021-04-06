@@ -39,10 +39,10 @@ jobs:
         # 4.028: Ubuntu 20.04, Fedora 32
         # 4.032: Fedora 33
         # 4.034: Chipyard
-        # 4.038: Ubuntu 20.10 (TODO: enable once fixed)
-        # 4.108: Fedora 34 (TODO: enable once fixed)
-        # 4.200: latest    (TODO: enable once fixed)
-        version: [4.028, 4.032, 4.034]
+        # 4.038: Ubuntu 20.10
+        # 4.108: Fedora 34
+        # 4.200: latest (unsupported atm)
+        version: ["4.028", "4.032", "4.034", "4.038", "4.108"]
 
     steps:
       - name: Checkout
