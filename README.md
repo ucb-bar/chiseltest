@@ -130,6 +130,14 @@ To dump VCDs (into the test_run_dir subfolder) using sbt:
 testOnly chiseltest.tests.BasicTest -- -DwriteVcd=1
 ```
 
+## Verilator Backend
+
+We currently support the following versions of the [verilator](https://www.veripool.org/wiki/verilator) simulator:
+- `v4.028`: [Ubuntu 20.04](https://packages.ubuntu.com/focal/verilator), [Fedora 32](https://src.fedoraproject.org/rpms/verilator)
+- `v4.032`: [Fedora 33](https://src.fedoraproject.org/rpms/verilator)
+- `v4.034`: [Chipyard](https://chipyard.readthedocs.io/en/latest/Chipyard-Basics/Initial-Repo-Setup.html#requirements)
+- `v4.038`: [Ubuntu 20.10](https://packages.ubuntu.com/groovy/verilator)
+- `v4.108`: [Fedora 34](https://src.fedoraproject.org/rpms/verilator)
 
 ## Stability
 These APIs may be considered stable and are unlikely to change significantly:
