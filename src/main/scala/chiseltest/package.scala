@@ -53,7 +53,7 @@ package object chiseltest {
       }.foreach { case (k, v) =>
         v match {
           case record: Record => record.expectPartial(value.elements(k).asInstanceOf[Record])
-          case data: Data => data.expect(value.elements(k))
+          case data:   Data   => data.expect(value.elements(k))
         }
       }
     }
@@ -74,13 +74,13 @@ package object chiseltest {
       x.getElements.zipWithIndex.filter { case (v, index) =>
         DataMirror.directionOf(v) != ActualDirection.Output && {
           value.getElements(index) match {
-            case _: T => true
+            case _:    T    => true
             case data: Data => data.isLit()
           }
         }
       }.foreach { case (v, index) =>
         v match {
-          case vec: T => vec.pokePartial(value.getElements(index).asInstanceOf[T])
+          case vec:  T    => vec.pokePartial(value.getElements(index).asInstanceOf[T])
           case data: Data => data.poke(value.getElements(index))
         }
       }
@@ -93,12 +93,12 @@ package object chiseltest {
       require(DataMirror.checkTypeEquivalence(x, value), s"Vec type mismatch")
       x.getElements.zipWithIndex.filter { case (v, index) =>
         value.getElements(index) match {
-          case _: T => true
+          case _: T    => true
           case d: Data => d.isLit()
         }
       }.foreach { case (v, index) =>
         v match {
-          case vec: T => vec.expectPartial(value.getElements(index).asInstanceOf[T])
+          case vec:  T    => vec.expectPartial(value.getElements(index).asInstanceOf[T])
           case data: Data => data.expect(value.getElements(index))
         }
       }
