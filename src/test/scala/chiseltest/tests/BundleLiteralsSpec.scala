@@ -73,4 +73,23 @@ class BundleLiteralsSpec extends AnyFlatSpec with ChiselScalatestTester with Mat
       c.out.expect(chiselTypeOf(c.in).Lit(_.a -> 0.U, _.b -> 1.U))
     }
   }
+
+  class ABundle extends Bundle { val a = Bool() }
+  class BBundle extends Bundle { val b = UInt(4.W) }
+  class BundleOfBundle extends Bundle {
+    val foo = new ABundle
+    val bar = new BBundle
+  }
+  it should "round-trip a Bundle of Vec literals" in {
+    val bundleOfBundle = new BundleOfBundle
+    val bundleOfBundleLit = bundleOfBundle.Lit(
+      _.foo -> (bundleOfBundle.foo).Lit(_.a -> true.B),
+      _.bar -> (bundleOfBundle.bar).Lit(_.b -> 0xa.U)
+    )
+    test(new PassthroughModule(bundleOfBundle)) { c =>
+      c.in.poke(bundleOfBundleLit)
+      c.in.poke(c.out.peek())
+      c.out.expect(bundleOfBundleLit)
+    }
+  }
 }
