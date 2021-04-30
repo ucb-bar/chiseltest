@@ -26,8 +26,8 @@ abstract class SimulatorCoverageTest(name: String, backend: BackendAnnotation) e
     // the cover point in the main module are not prefixed
     assert(cov.keys.toList == List("cover_0"))
 
-    // since we executed one step (+ the implicit reset) and all inputs are zero by default, we expect the count to be 3
-    assert(cov("cover_0") == 3)
+    // since we executed one step and all inputs are zero by default, we expect the count to be 3
+    assert(cov("cover_0") == 2)
   }
 
   it should "report count for all user cover points (with submodules)" in {
@@ -39,8 +39,8 @@ abstract class SimulatorCoverageTest(name: String, backend: BackendAnnotation) e
     // the cover point in the main module are not prefixed, but the one in the child module are
     assert(cov.keys.toList.sorted == List("c0.cover_0", "c1.cover_0", "cover_0"))
 
-    // since we executed one step (+ the implicit reset) and all inputs are zero by default, we expect the count to be 3
-    assert(cov("cover_0") == 3)
+    // since we executed one step and all inputs are zero by default, we expect the count to be 3
+    assert(cov("cover_0") == 2)
     assert(cov("c0.cover_0") == 0)
     assert(cov("c1.cover_0") == 0)
   }
