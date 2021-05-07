@@ -20,7 +20,7 @@ import scala.language.implicitConversions
   * @param dut  The device under test
   * @param cmd  The command to run as a Seq of strings
   */
-private[chiseltest] class SimApiInterface(dut: MultiIOModule, cmd: Seq[String]) extends LazyLogging {
+private[chiseltest] class SimApiInterface(dut: Module, cmd: Seq[String]) extends LazyLogging {
   //
   // Construct maps for the input and output
   // Remove zero length fields during the process
@@ -206,11 +206,9 @@ private[chiseltest] class SimApiInterface(dut: MultiIOModule, cmd: Seq[String]) 
     outChannel.acquire()
     val valid = outChannel.valid
     if (valid) {
-      (outputsNameToChunkSizeMap.toList.foldLeft(0)) {
-        case (off, (out, chunk)) =>
-          _peekMap(out) =
-            ((0 until chunk).foldLeft(BigInt(0)))((res, i) => res | (int(outChannel(off + i)) << (64 * i)))
-          off + chunk
+      (outputsNameToChunkSizeMap.toList.foldLeft(0)) { case (off, (out, chunk)) =>
+        _peekMap(out) = ((0 until chunk).foldLeft(BigInt(0)))((res, i) => res | (int(outChannel(off + i)) << (64 * i)))
+        off + chunk
       }
       outChannel.consume()
     }
@@ -222,11 +220,10 @@ private[chiseltest] class SimApiInterface(dut: MultiIOModule, cmd: Seq[String]) 
     inChannel.acquire()
     val ready = inChannel.ready
     if (ready) {
-      (inputsNameToChunkSizeMap.toList.foldLeft(0)) {
-        case (off, (in, chunk)) =>
-          val value = _pokeMap.getOrElse(in, BigInt(0))
-          (0 until chunk).foreach(i => inChannel(off + i) = (value >> (64 * i)).toLong)
-          off + chunk
+      (inputsNameToChunkSizeMap.toList.foldLeft(0)) { case (off, (in, chunk)) =>
+        val value = _pokeMap.getOrElse(in, BigInt(0))
+        (0 until chunk).foreach(i => inChannel(off + i) = (value >> (64 * i)).toLong)
+        off + chunk
       }
       inChannel.produce()
     }
@@ -395,8 +392,8 @@ private[chiseltest] class Channel(name: String) {
     buffer.putLong(8 * idx + channel_data_offset_64bw, data)
   }
   def update(base: Int, data: String) {
-    data.zipWithIndex.foreach {
-      case (c, i) => buffer.put(base + i + channel_data_offset_64bw, c)
+    data.zipWithIndex.foreach { case (c, i) =>
+      buffer.put(base + i + channel_data_offset_64bw, c)
     }
     buffer.put(base + data.length + channel_data_offset_64bw, 0)
   }

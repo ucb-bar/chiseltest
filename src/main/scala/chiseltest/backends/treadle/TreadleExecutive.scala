@@ -5,8 +5,9 @@ package chiseltest.backends.treadle
 import chiseltest.backends.BackendExecutive
 import chiseltest.internal._
 import chisel3.experimental.DataMirror
-import chisel3.MultiIOModule
+import chisel3.Module
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
+import chiseltest.coverage.Coverage
 import firrtl.annotations.ReferenceTarget
 import firrtl.stage.RunFirrtlTransformAnnotation
 import firrtl.transforms.{CheckCombLoops, CombinationalPath}
@@ -20,7 +21,7 @@ object TreadleExecutive extends BackendExecutive {
     component.name
   }
 
-  def start[T <: MultiIOModule](dutGen: () => T, testersAnnotationSeq: AnnotationSeq): BackendInstance[T] = {
+  def start[T <: Module](dutGen: () => T, testersAnnotationSeq: AnnotationSeq): BackendInstance[T] = {
 
     // Force a cleanup: long SBT runs tend to fail with memory issues
     System.gc()
@@ -38,9 +39,8 @@ object TreadleExecutive extends BackendExecutive {
     val dut = getTopModule(circuit).asInstanceOf[T]
     val portNames = DataMirror
       .modulePorts(dut)
-      .flatMap {
-        case (name, data) =>
-          getDataNames(name, data).toList
+      .flatMap { case (name, data) =>
+        getDataNames(name, data).toList
       }
       .toMap
 
@@ -63,6 +63,8 @@ object TreadleExecutive extends BackendExecutive {
 
     val pathsAsData = combinationalPathsToData(dut, paths, portNames, componentToName)
 
-    new TreadleBackend(dut, portNames, pathsAsData, treadleTester)
+    val coverageAnnotations = Coverage.collectCoverageAnnotations(annotationSeq)
+
+    new TreadleBackend(dut, portNames, pathsAsData, treadleTester, coverageAnnotations)
   }
 }

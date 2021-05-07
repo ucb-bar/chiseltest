@@ -4,38 +4,35 @@ package chiseltest
 
 import chiseltest.internal._
 import chiseltest.experimental.sanitizeFileName
-import chisel3.MultiIOModule
+import chisel3.Module
 
 import firrtl.AnnotationSeq
 
-/**
-  * Used to run simple tests that do not require a scalatest environment in order to run
+/** Used to run simple tests that do not require a scalatest environment in order to run
   * @param testName This will be used to generate a working directory in ./test_run_dir
   */
 private class RawTester(testName: String) extends TestEnvInterface {
   // Provide test fixture data as part of 'global' context during test runs
   val topFileName = Some(testName)
 
-  private def runTest[T <: MultiIOModule](tester: BackendInstance[T])(testFn: T => Unit) {
+  private def runTest[T <: Module](tester: BackendInstance[T])(testFn: T => Unit): TestResult = {
     batchedFailures.clear()
 
     Context.run(tester, this, testFn)
   }
 
-  def test[T <: MultiIOModule](dutGen: => T, annotationSeq: AnnotationSeq)(testFn: T => Unit) {
+  def test[T <: Module](dutGen: => T, annotationSeq: AnnotationSeq)(testFn: T => Unit): TestResult = {
     val newAnnos = addDefaultTargetDir(sanitizeFileName(testName), annotationSeq)
     runTest(defaults.createDefaultTester(() => dutGen, newAnnos))(testFn)
   }
 }
 
-/**
-  * This is a simple tester that does not require that it be within the scope of a scalatest
+/** This is a simple tester that does not require that it be within the scope of a scalatest
   * in order to run. This form is suitable for running in the Jupyter notebook.
   */
 object RawTester {
 
-  /**
-    * Run one test
+  /** Run one test
     * General use looks like
     * {{{
     *   test(new PlusOne) { c =>
@@ -51,7 +48,7 @@ object RawTester {
     * @param testFn    The block of code that implements the test
     * @tparam T        The type of device, derived from dutGen
     */
-  def test[T <: MultiIOModule](dutGen: => T, annotationSeq: AnnotationSeq = Seq.empty)(testFn: T => Unit): Unit = {
+  def test[T <: Module](dutGen: => T, annotationSeq: AnnotationSeq = Seq.empty)(testFn: T => Unit): TestResult = {
 
     val testName = s"chisel_test_${System.currentTimeMillis()}"
 

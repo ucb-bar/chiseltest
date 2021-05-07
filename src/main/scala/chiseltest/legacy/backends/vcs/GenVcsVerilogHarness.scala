@@ -6,12 +6,11 @@ import chisel3._
 import chisel3.experimental.DataMirror
 import chiseltest.legacy.backends.verilator.getDataNames
 
-/**
-  * Generates the Module specific verilator harness cpp file for verilator compilation
+/** Generates the Module specific verilator harness cpp file for verilator compilation
   */
 object GenVcsVerilogHarness {
 
-  def getPorts(dut: MultiIOModule, separator: String = "."): (Seq[(Element, String)], Seq[(Element, String)]) = {
+  def getPorts(dut: Module, separator: String = "."): (Seq[(Element, String)], Seq[(Element, String)]) = {
     getDataNames(dut, separator).partition { case (e, _) => DataMirror.directionOf(e) == ActualDirection.Input }
   }
 
@@ -30,7 +29,7 @@ object GenVcsVerilogHarness {
     )
   }
 
-  def apply(dut: MultiIOModule, writer: Writer, vpdFilePath: String, isGateLevel: Boolean = false) {
+  def apply(dut: Module, writer: Writer, vpdFilePath: String, isGateLevel: Boolean = false) {
     val dutName = dut.name
     // getPorts() is going to return names prefixed with the dut name.
     // These don't correspond to code currently generated for verilog modules,
@@ -52,17 +51,15 @@ object GenVcsVerilogHarness {
     writer.write("  reg clock = 1;\n")
     writer.write("  reg reset = 1;\n")
     val delay = if (isGateLevel) "#0.1" else ""
-    inputs.foreach {
-      case (node, name) =>
-        writer.write(s"  reg[${node.getWidth - 1}:0] $name = 0;\n")
-        writer.write(s"  wire[${node.getWidth - 1}:0] ${name}_delay;\n")
-        writer.write(s"  assign $delay ${name}_delay = $name;\n")
+    inputs.foreach { case (node, name) =>
+      writer.write(s"  reg[${node.getWidth - 1}:0] $name = 0;\n")
+      writer.write(s"  wire[${node.getWidth - 1}:0] ${name}_delay;\n")
+      writer.write(s"  assign $delay ${name}_delay = $name;\n")
     }
-    outputs.foreach {
-      case (node, name) =>
-        writer.write(s"  wire[${node.getWidth - 1}:0] ${name}_delay;\n")
-        writer.write(s"  wire[${node.getWidth - 1}:0] $name;\n")
-        writer.write(s"  assign $delay $name = ${name}_delay;\n")
+    outputs.foreach { case (node, name) =>
+      writer.write(s"  wire[${node.getWidth - 1}:0] ${name}_delay;\n")
+      writer.write(s"  wire[${node.getWidth - 1}:0] $name;\n")
+      writer.write(s"  assign $delay $name = ${name}_delay;\n")
     }
 
     writer.write("  always #`CLOCK_PERIOD clock = ~clock;\n")

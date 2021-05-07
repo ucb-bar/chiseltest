@@ -1,22 +1,21 @@
 // SPDX-License-Identifier: Apache-2.0
-package chiseltest.experimental.tests
+package chiseltest.backends.verilator
 
 import chisel3._
+import chisel3.util._
 import chiseltest._
 import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.experimental.UncheckedClockPoke._
-import chiseltest.internal.{TreadleBackendAnnotation, VerilatorBackendAnnotation}
-import chisel3.util._
-import org.scalatest._
+import chiseltest.internal.VerilatorBackendAnnotation
+import org.scalatest.flatspec.AnyFlatSpec
 import treadle.executable.ClockInfo
 import treadle.{ClockInfoAnnotation, WriteVcdAnnotation}
-import org.scalatest.flatspec.AnyFlatSpec
 
 class VerilatorClockPokeTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Testers2 with a clock input"
 
   it should "verilator-clock-poke" in {
-    test(new MultiIOModule {
+    test(new Module {
       val inClock = IO(Input(Clock()))
       val out = IO(Output(UInt(8.W)))
 
@@ -53,7 +52,7 @@ class VerilatorClockPokeTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "clock-as-bool-verilator-clock-poke" in {
-    test(new MultiIOModule {
+    test(new Module {
       val inClock = IO(Input(Bool()))
       val out = IO(Output(UInt(8.W)))
 
@@ -78,7 +77,7 @@ class VerilatorClockPokeTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "treadle-clock-poke" in {
-    test(new MultiIOModule {
+    test(new Module {
       val inClock = IO(Input(Clock()))
       val out = IO(Output(UInt(8.W)))
 

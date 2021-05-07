@@ -4,8 +4,7 @@ package chiseltest.legacy.backends.verilator
 
 import scala.util.matching.Regex
 
-/**
-  * This function applies a last chance method of making final alteration of the ivl/vcs command line.
+/** This function applies a last chance method of making final alteration of the ivl/vcs command line.
   * Alterations are made from a text file containing ed style regex substitutions
   * s/regex-pattern/substitution/ or more generally
   * s<<separator>>regex-pattern<<separator>>substitution<<separator>>

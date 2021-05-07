@@ -25,16 +25,15 @@ private[chiseltest] object getDataNames {
     case b: Record  => b.elements.toSeq.flatMap { case (n, e) => apply(s"${name}_$n", e) }
     case v: Vec[_]  => v.zipWithIndex.flatMap { case (e, i) => apply(s"${name}_$i", e) }
   }
-  def apply(dut: MultiIOModule, separator: String = "."): Seq[(Element, String)] =
-    dut.getPorts.flatMap {
-      case chisel3.internal.firrtl.Port(data, _) =>
-        apply(data.pathName.replace(".", separator), data)
+  def apply(dut: Module, separator: String = "."): Seq[(Element, String)] =
+    dut.getPorts.flatMap { case chisel3.internal.firrtl.Port(data, _) =>
+      apply(data.pathName.replace(".", separator), data)
     }
 
 }
 
 private[chiseltest] object getPorts {
-  def apply(dut: MultiIOModule, separator: String = "."): (Seq[(Element, String)], Seq[(Element, String)]) =
+  def apply(dut: Module, separator: String = "."): (Seq[(Element, String)], Seq[(Element, String)]) =
     getDataNames(dut, separator).partition { case (e, _) => DataMirror.directionOf(e) == ActualDirection.Input }
 }
 
@@ -342,7 +341,7 @@ private[chiseltest] object verilogToVerilator extends EditableBuildCSimulatorCom
     flags:     Seq[String],
     cFlags:    Seq[String]
   ): String = {
-    (Seq("cd", dir.getAbsolutePath, "&&", "verilator", "--cc", s"$topModule.v") ++ flags).mkString(" ")
+    (Seq("cd", dir.getAbsolutePath, "&&", "verilator", "--cc", s"$topModule.sv") ++ flags).mkString(" ")
 
   }
 

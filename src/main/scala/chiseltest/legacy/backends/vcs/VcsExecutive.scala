@@ -1,12 +1,12 @@
 package chiseltest.legacy.backends.vcs
 
 import java.io.{File, FileWriter}
-
 import chisel3._
 import chisel3.experimental.DataMirror
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
 import chiseltest.internal._
 import chiseltest.backends.BackendExecutive
+import chiseltest.coverage.Coverage
 import firrtl.annotations.{DeletedAnnotation, ReferenceTarget}
 import firrtl.stage.RunFirrtlTransformAnnotation
 import firrtl.transforms.CombinationalPath
@@ -29,7 +29,7 @@ object VcsExecutive extends BackendExecutive {
     }
   }
 
-  def start[T <: MultiIOModule](
+  def start[T <: Module](
     dutGen:        () => T,
     annotationSeq: AnnotationSeq
   ): BackendInstance[T] = {
@@ -37,13 +37,14 @@ object VcsExecutive extends BackendExecutive {
     // Force a cleanup: long SBT runs tend to fail with memory issues
     System.gc()
 
-    val targetDir = annotationSeq.collectFirst {
-      case firrtl.options.TargetDirAnnotation(t) => t
+    val targetDir = annotationSeq.collectFirst { case firrtl.options.TargetDirAnnotation(t) =>
+      t
     }.get
     val targetDirFile = new File(targetDir)
 
     val generatorAnnotation = chisel3.stage.ChiselGeneratorAnnotation(dutGen)
-    val circuit = generatorAnnotation.elaborate.collect { case x: ChiselCircuitAnnotation => x }.head.circuit
+    val elaboratedAnno = (new chisel3.stage.phases.Elaborate).transform(annotationSeq :+ generatorAnnotation)
+    val circuit = elaboratedAnno.collect { case x: ChiselCircuitAnnotation => x }.head.circuit
     val dut = getTopModule(circuit).asInstanceOf[T]
 
     // Generate the verilog file and some or all of the following annotations
@@ -58,10 +59,7 @@ object VcsExecutive extends BackendExecutive {
 
     val compiledAnnotations = (new ChiselStage)
       .run(
-        annotationSeq ++ Seq(
-          generatorAnnotation,
-          RunFirrtlTransformAnnotation(new VerilogEmitter)
-        )
+        elaboratedAnno :+ RunFirrtlTransformAnnotation(new VerilogEmitter)
       )
       .filterNot(_.isInstanceOf[DeletedAnnotation])
 
@@ -75,14 +73,13 @@ object VcsExecutive extends BackendExecutive {
 
     val portNames = DataMirror
       .modulePorts(dut)
-      .flatMap {
-        case (name, data) =>
-          getDataNames(name, data).toList.map {
-            case (p, "reset") => (p, "reset")
-            case (p, "clock") => (p, "clock")
-            case (p, n)       => (p, s"${circuit.name}.$n")
-            //          case (p, n) => (p, s"$n")
-          }
+      .flatMap { case (name, data) =>
+        getDataNames(name, data).toList.map {
+          case (p, "reset") => (p, "reset")
+          case (p, "clock") => (p, "clock")
+          case (p, n)       => (p, s"${circuit.name}.$n")
+          //          case (p, n) => (p, s"$n")
+        }
       }
       .toMap
 
@@ -101,11 +98,11 @@ object VcsExecutive extends BackendExecutive {
       case Nil   => Seq()
       case flags => Seq("-cm " + flags.mkString("+"))
     }
-    val editCommands = compiledAnnotations.collectFirst {
-      case CommandEditsFile(fileName) => fileName
+    val editCommands = compiledAnnotations.collectFirst { case CommandEditsFile(fileName) =>
+      fileName
     }.getOrElse("")
 
-    val vcsFlags = moreVcsCFlags ++ coverageFlags
+    val vcsFlags = moreVcsFlags ++ coverageFlags
 
     assert(
       VerilogToVcs(
@@ -119,8 +116,8 @@ object VcsExecutive extends BackendExecutive {
     )
 
     val command = compiledAnnotations
-      .collectFirst[Seq[String]] {
-        case TestCommandOverride(f) => f.split(" +")
+      .collectFirst[Seq[String]] { case TestCommandOverride(f) =>
+        f.split(" +")
       }
       .getOrElse { Seq(new File(targetDir, circuit.name).toString) } ++ coverageFlags
 
@@ -129,6 +126,8 @@ object VcsExecutive extends BackendExecutive {
     val pathsAsData =
       combinationalPathsToData(dut, paths, portNames, componentToName)
 
-    new VcsBackend(dut, portNames, pathsAsData, command)
+    val coverageAnnotations = Coverage.collectCoverageAnnotations(compiledAnnotations)
+
+    new VcsBackend(dut, portNames, pathsAsData, command, targetDir, coverageAnnotations)
   }
 }

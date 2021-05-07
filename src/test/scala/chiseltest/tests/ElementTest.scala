@@ -7,8 +7,9 @@ import chisel3._
 import chisel3.experimental._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class ElementTest extends AnyFlatSpec with ChiselScalatestTester {
+class ElementTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2 with Element types"
 
   // TODO: automatically detect overflow conditions and error out
@@ -126,6 +127,31 @@ class ElementTest extends AnyFlatSpec with ChiselScalatestTester {
       // Overflow test with decimal component
       c.io.expect(31.75.F(2.BP), 31.75.F(2.BP), -0.5.F(2.BP))
       c.io.expect(31.75.F(2.BP), 0.25.F(2.BP), -32.F(2.BP))
+    }
+  }
+
+  it should "peek on FixedPoint correctly" in {
+    test(new PassthroughModule(new Bundle() {
+      val d1 = FixedPoint(64.W, 0.BP)
+      val d2 = FixedPoint(66.W, 2.BP)
+    })) { c =>
+      c.in.d1.poke(BigDecimal(Long.MaxValue).F(0.BP))
+      c.out.d1.peek().litToBigDecimal should be (BigDecimal(Long.MaxValue))
+
+      c.in.d1.poke(BigDecimal(Long.MinValue).F(0.BP))
+      c.out.d1.peek().litToBigDecimal should be (BigDecimal(Long.MinValue))
+
+      c.in.d1.poke(0.F(0.BP))
+      c.out.d1.peek().litToBigDecimal should be (BigDecimal(0))
+
+      c.in.d2.poke(BigDecimal(Long.MaxValue).F(2.BP))
+      c.out.d2.peek().litToBigDecimal should be (BigDecimal(Long.MaxValue))
+
+      c.in.d2.poke(BigDecimal(Long.MinValue).F(2.BP))
+      c.out.d2.peek().litToBigDecimal should be (BigDecimal(Long.MinValue))
+
+      c.in.d2.poke(0.F(2.BP))
+      c.out.d2.peek().litToBigDecimal should be (BigDecimal(0))
     }
   }
 

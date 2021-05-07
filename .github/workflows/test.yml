@@ -1,0 +1,124 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - 0.3.x
+
+jobs:
+  test:
+    name: sbt test
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        scala: [2.12.13, 2.13.5]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Verilator
+        run: |
+          sudo apt-get install -y verilator
+          verilator --version
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8
+      - name: Test
+        run: sbt ++${{ matrix.scala }} test
+
+  verilator:
+    name: verilator regressions
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        # 4.028: Ubuntu 20.04, Fedora 32
+        # 4.032: Fedora 33
+        # 4.034: Chipyard
+        # 4.038: Ubuntu 20.10
+        # 4.108: Fedora 34
+        # 4.200: latest (unsupported atm)
+        version: ["4.028", "4.032", "4.034", "4.038", "4.108"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Verilator Build Dependencies
+        run: sudo apt-get install -y git make autoconf g++ flex bison libfl2 libfl-dev
+      - name: Cache Verilator ${{ matrix.version }}
+        uses: actions/cache@v2
+        id: cache-verilator
+        with:
+          path: verilator-${{ matrix.version }}
+          key: ${{ runner.os }}-verilator-${{ matrix.version }}
+      - name: Compile Verilator ${{ matrix.version }}
+        if: steps.cache-verilator.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/verilator/verilator/archive/refs/tags/v${{ matrix.version }}.zip
+          unzip v${{ matrix.version }}.zip
+          cd verilator-${{ matrix.version }}
+          autoconf
+          ./configure
+          make
+      - name: Install Verilator ${{ matrix.version }}
+        run: |
+          cd verilator-${{ matrix.version }}
+          sudo make install
+          verilator --version
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8
+      - name: Test
+        run: sbt "testOnly chiseltest.backends.verilator.**"
+
+  doc:
+    name: Documentation and Formatting
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+      - name: Documentation
+        id: doc
+        run: sbt doc
+      - name: Check Formatting
+        run: sbt scalafmtCheckAll
+
+  # Sentinel job to simplify how we specify which checks need to pass in branch
+  # protection and in Mergify
+  #
+  # When adding new jobs, please add them to `needs` below
+  all_tests_passed:
+    name: "all tests passed"
+    needs: [test, doc, verilator]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo Success!
+
+  # sbt ci-release publishes all cross versions so this job needs to be
+  # separate from a Scala versions build matrix to avoid duplicate publishing
+  publish:
+    needs: [all_tests_passed]
+    runs-on: ubuntu-20.04
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8
+      - name: Setup GPG (for Publish)
+        uses: olafurpg/setup-gpg@v3
+      - name: Publish
+        run: sbt ci-release
+        env:
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}

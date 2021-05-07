@@ -5,16 +5,19 @@ package chiseltest.backends.treadle
 import chiseltest.internal._
 import chiseltest.{ClockResolutionException, Region, TimeoutException}
 import chisel3._
+import chiseltest.coverage.{Coverage, TestCoverage}
 import treadle.TreadleTester
+import firrtl.AnnotationSeq
 
 import scala.collection.mutable
 
 // TODO: is Seq[CombinationalPath] the right API here? It's unclear where name -> Data resolution should go
-class TreadleBackend[T <: MultiIOModule](
+class TreadleBackend[T <: Module](
   val dut:                T,
   val dataNames:          Map[Data, String],
   val combinationalPaths: Map[Data, Set[Data]],
-  tester:                 TreadleTester)
+  tester:                 TreadleTester,
+  coverageAnnotations:    AnnotationSeq)
     extends BackendInstance[T]
     with ThreadedBackend[T] {
 
@@ -108,20 +111,19 @@ class TreadleBackend[T <: MultiIOModule](
 
     contents()
 
-    closeTimescope(createdTimescope).foreach {
-      case (data, valueOption) =>
-        valueOption match {
-          case Some(value) =>
-            if (tester.peek(dataNames(data)) != value) {
-              idleCycles.clear()
-            }
-            tester.poke(dataNames(data), value)
-            debugLog(s"${resolveName(data)} <- (revert) $value")
-          case None =>
+    closeTimescope(createdTimescope).foreach { case (data, valueOption) =>
+      valueOption match {
+        case Some(value) =>
+          if (tester.peek(dataNames(data)) != value) {
             idleCycles.clear()
-            tester.poke(dataNames(data), 0) // TODO: randomize or 4-state sim
-            debugLog(s"${resolveName(data)} <- (revert) DC")
-        }
+          }
+          tester.poke(dataNames(data), value)
+          debugLog(s"${resolveName(data)} <- (revert) $value")
+        case None =>
+          idleCycles.clear()
+          tester.poke(dataNames(data), 0) // TODO: randomize or 4-state sim
+          debugLog(s"${resolveName(data)} <- (revert) DC")
+      }
     }
   }
 
@@ -141,7 +143,7 @@ class TreadleBackend[T <: MultiIOModule](
     }
   }
 
-  override def run(testFn: T => Unit): Unit = {
+  override def run(testFn: T => Unit): AnnotationSeq = {
     rootTimescope = Some(new RootTimescope)
     val mainThread = new TesterThread(
       () => {
@@ -176,20 +178,18 @@ class TreadleBackend[T <: MultiIOModule](
         steppedClocks.foreach { clock =>
           clockCounter.put(dut.clock, getClockCycle(clock) + 1) // TODO: ignores cycles before a clock was stepped on
         }
-        lastClockValue.foreach {
-          case (clock, _) =>
-            lastClockValue.put(clock, getClock(clock))
+        lastClockValue.foreach { case (clock, _) =>
+          lastClockValue.put(clock, getClock(clock))
         }
 
         runThreads(steppedClocks.toSet)
         Context().env.checkpoint()
 
-        idleLimits.foreach {
-          case (clock, limit) =>
-            idleCycles.put(clock, idleCycles.getOrElse(clock, -1) + 1)
-            if (idleCycles(clock) >= limit) {
-              throw new TimeoutException(s"timeout on $clock at $limit idle cycles")
-            }
+        idleLimits.foreach { case (clock, limit) =>
+          idleCycles.put(clock, idleCycles.getOrElse(clock, -1) + 1)
+          if (idleCycles(clock) >= limit) {
+            throw new TimeoutException(s"timeout on $clock at $limit idle cycles")
+          }
         }
 
         tester.step(1)
@@ -206,5 +206,11 @@ class TreadleBackend[T <: MultiIOModule](
 
       tester.report() // needed to dump VCDs
     }
+    generateTestCoverageAnnotation() +: coverageAnnotations
+  }
+
+  /** Generates an annotation containing the map from coverage point names to coverage counts. */
+  private def generateTestCoverageAnnotation(): TestCoverage = {
+    TestCoverage(tester.getCoverage())
   }
 }
