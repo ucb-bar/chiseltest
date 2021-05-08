@@ -102,6 +102,8 @@ object VcsExecutive extends BackendExecutive {
       fileName
     }.getOrElse("")
 
+    // Pass coverageFlags to VCS compiler s.t. coverage is compiled into design
+    // * To enable coverage monitoring, the flags need to be passed to simulator as well
     val vcsFlags = moreVcsFlags ++ coverageFlags
 
     assert(
@@ -115,11 +117,13 @@ object VcsExecutive extends BackendExecutive {
       ).! == 0
     )
 
+    // Pass coverageFlags to VCS simulator to enable coverage monitoring
+    // * Requires coverage to be compiled into design (see above)
     val command = compiledAnnotations
       .collectFirst[Seq[String]] { case TestCommandOverride(f) =>
         f.split(" +")
       }
-      .getOrElse { Seq(new File(targetDir, circuit.name).toString) }
+      .getOrElse { Seq(new File(targetDir, circuit.name).toString) } ++ coverageFlags
 
     val paths = compiledAnnotations.collect { case c: CombinationalPath => c }
 
