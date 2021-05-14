@@ -101,13 +101,13 @@ object VerilatorExecutive extends BackendExecutive {
     val verilatorCFlags = moreVerilatorCFlags ++ coverageFlag
 
     val verilateRetCode = verilogToVerilator(
-        circuit.name,
-        targetDirFile,
-        cppHarnessFile,
-        moreVerilatorFlags = verilatorFlags,
-        moreVerilatorCFlags = verilatorCFlags,
-        editCommands = commandEditsFile
-      ).!
+      circuit.name,
+      targetDirFile,
+      cppHarnessFile,
+      moreVerilatorFlags = verilatorFlags,
+      moreVerilatorCFlags = verilatorCFlags,
+      editCommands = commandEditsFile
+    ).!
 
     assert(
       verilateRetCode == 0,

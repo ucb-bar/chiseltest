@@ -94,9 +94,7 @@ private[chiseltest] object bigIntToStr {
 trait EditableBuildCSimulatorCommand {
   val prefix: String // prefix to be used for error messages
 
-  /**
-    *
-    * @param dir - base target (source) directory
+  /** @param dir - base target (source) directory
     * @return path for generated object files
     */
   def objDir(dir: File): File = dir
@@ -418,9 +416,9 @@ private[chiseltest] object verilogToVerilator extends EditableBuildCSimulatorCom
     )
 
     val staleObjDri = objDir(dir)
-    if(staleObjDri.exists()) {
+    if (staleObjDri.exists()) {
       println(s"Deleting stale Verilator object directory: $staleObjDri")
-      if(!firrtl.FileUtils.deleteDirectoryHierarchy(staleObjDri)){
+      if (!firrtl.FileUtils.deleteDirectoryHierarchy(staleObjDri)) {
         throw BackendException(s"Deleting $staleObjDri failed!")
       }
     }
