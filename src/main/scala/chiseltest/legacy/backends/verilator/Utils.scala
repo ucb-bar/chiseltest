@@ -94,6 +94,13 @@ private[chiseltest] object bigIntToStr {
 trait EditableBuildCSimulatorCommand {
   val prefix: String // prefix to be used for error messages
 
+  /**
+    *
+    * @param dir - base target (source) directory
+    * @return path for generated object files
+    */
+  def objDir(dir: File): File = dir
+
   /** If we have a list of black box verilog implementations, return a sequence suitable for sourcing the file containing the list.
     *
     * @param dir - directory in which the file should exist
@@ -110,7 +117,7 @@ trait EditableBuildCSimulatorCommand {
 
   /** Compose user-supplied flags with the default flags.
     * @param topModule - the name of the module to be simulated
-    * @param dir - the directory in which to build the simulation
+    * @param dir - base target (source) directory
     * @param moreIvlFlags - general flags for the build process
     * @param moreIvlCFlags - C flags for the build process
     * @return tuple containing a sequence of the composed general flags and a sequence of the composed C flags
@@ -124,7 +131,7 @@ trait EditableBuildCSimulatorCommand {
 
   /** Given two sets of flags (non-CFlags and CFlags), return the composed command (prior to editting).
     * @param topModule - the name of the module to be simulated
-    * @param dir - the directory in which to build the simulation
+    * @param dir - base target (source) directory
     * @param flags - general flags for the build process
     * @param cFlags - C flags for the build process
     * @return a string (suitable for "bash -c") to build the simulator.
@@ -155,7 +162,7 @@ trait EditableBuildCSimulatorCommand {
   /** Construct a command to build a C-based simulator.
     *
     * @param topModule - the name of the module to be simulated
-    * @param dir - the directory in which to build the simulation
+    * @param dir - base target (source) directory
     * @param flags - user flags to be passed to the build process - these will be composed with the default flags for the builder
     * @param cFlags - user C flags to be passed to the build process - these will be composed with the default C flags for the builder
     * @return string representing the bash command to be executed
@@ -172,8 +179,8 @@ trait EditableBuildCSimulatorCommand {
 }
 
 private[chiseltest] object verilogToIVL extends EditableBuildCSimulatorCommand {
-  val prefix = "ivl-command-edit"
-  def composeCommand(
+  override val prefix = "ivl-command-edit"
+  override def composeCommand(
     topModule: String,
     dir:       java.io.File,
     flags:     Seq[String],
@@ -212,7 +219,7 @@ private[chiseltest] object verilogToIVL extends EditableBuildCSimulatorCommand {
     (ivlFlags, ivlCFlags)
   }
 
-  def constructCSimulatorCommand(
+  override def constructCSimulatorCommand(
     topModule: String,
     dir:       java.io.File,
     harness:   java.io.File,
@@ -296,7 +303,7 @@ private[chiseltest] object verilogToVCS extends EditableBuildCSimulatorCommand {
     (vcsFlags, ccFlags)
   }
 
-  def constructCSimulatorCommand(
+  override def constructCSimulatorCommand(
     topModule: String,
     dir:       java.io.File,
     harness:   java.io.File,
@@ -335,6 +342,9 @@ private[chiseltest] object verilogToVCS extends EditableBuildCSimulatorCommand {
 
 private[chiseltest] object verilogToVerilator extends EditableBuildCSimulatorCommand {
   val prefix = "verilator-command-edit"
+
+  override def objDir(dir: File): File = new File(dir, "verilated")
+
   override def composeCommand(
     topModule: String,
     dir:       java.io.File,
@@ -345,7 +355,7 @@ private[chiseltest] object verilogToVerilator extends EditableBuildCSimulatorCom
 
   }
 
-  def composeFlags(
+  override def composeFlags(
     topModule:           String,
     dir:                 File,
     moreVerilatorFlags:  Seq[String] = Seq.empty[String],
@@ -374,12 +384,12 @@ private[chiseltest] object verilogToVerilator extends EditableBuildCSimulatorCom
       "-CFLAGS",
       "\"%s\"".format(ccFlags.mkString(" ")),
       "-Mdir",
-      dir.getAbsolutePath
+      objDir(dir).getAbsolutePath
     ) ++ moreVerilatorFlags
     (verilatorFlags, ccFlags)
   }
 
-  def constructCSimulatorCommand(
+  override def constructCSimulatorCommand(
     topModule: String,
     dir:       java.io.File,
     harness:   java.io.File,
@@ -406,8 +416,16 @@ private[chiseltest] object verilogToVerilator extends EditableBuildCSimulatorCom
       constructCSimulatorCommand(topModule, dir, verilatorHarness, moreVerilatorFlags, moreVerilatorCFlags),
       editCommands
     )
-    println(s"$finalCommand")
 
+    val staleObjDri = objDir(dir)
+    if(staleObjDri.exists()) {
+      println(s"Deleting stale Verilator object directory: $staleObjDri")
+      if(!firrtl.FileUtils.deleteDirectoryHierarchy(staleObjDri)){
+        throw BackendException(s"Deleting $staleObjDri failed!")
+      }
+    }
+
+    println(s"$finalCommand")
     Seq("bash", "-c", finalCommand)
   }
 }
