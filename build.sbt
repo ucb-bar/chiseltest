@@ -71,7 +71,7 @@ libraryDependencies ++= Seq(
   "edu.berkeley.cs" %% "chisel3"       % defaultVersions("chisel3"),
   "edu.berkeley.cs" %% "treadle"       % defaultVersions("treadle"),
   "org.scalatest"   %% "scalatest"     % "3.2.8",
-  "com.lihaoyi"     %% "utest"         % "0.7.9",
+  "com.lihaoyi"     %% "utest"         % "0.7.10",
   "org.scala-lang"   % "scala-reflect" % scalaVersion.value,
   compilerPlugin("edu.berkeley.cs" % "chisel3-plugin"    % defaultVersions("chisel3") cross CrossVersion.full)
 ) ++ {
