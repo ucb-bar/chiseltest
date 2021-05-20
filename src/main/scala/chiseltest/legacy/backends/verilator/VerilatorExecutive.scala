@@ -254,31 +254,35 @@ object VerilatorExecutive extends BackendExecutive {
     val verilatorFlags = moreVerilatorFlags ++ writeVcdFlag ++ coverageFlags
     val verilatorCFlags = moreVerilatorCFlags ++ coverageFlag
 
+    val verilateRetCode = verilogToVerilator(
+      circuit.name,
+      targetDirFile,
+      cppHarnessFile,
+      moreVerilatorFlags = verilatorFlags,
+      moreVerilatorCFlags = verilatorCFlags,
+      editCommands = commandEditsFile
+    ).!
+
     assert(
-      verilogToVerilator(
-        circuit.name,
-        new File(targetDir),
-        cppHarnessFile,
-        moreVerilatorFlags = verilatorFlags,
-        moreVerilatorCFlags = verilatorCFlags,
-        editCommands = commandEditsFile
-      ).! == 0,
+      verilateRetCode == 0,
       s"verilator command failed on circuit ${circuit.name} in work dir $targetDir"
     )
 
+    val objDir = verilogToVerilator.objDir(targetDirFile)
+
     // patch the coverage cpp provided with verilator
-    PatchCoverageCpp(targetDir)
+    PatchCoverageCpp(objDir.toString())
 
     assert(
-      BackendCompilationUtilities.cppToExe(circuit.name, targetDirFile).! == 0,
-      s"Compilation of verilator generated code failed for circuit ${circuit.name} in work dir $targetDir"
+      BackendCompilationUtilities.cppToExe(circuit.name, objDir).! == 0,
+      s"Compilation of verilator generated code failed for circuit ${circuit.name} in work dir $objDir"
     )
 
     val command = compiledAnnotations
       .collectFirst[Seq[String]] { case TestCommandOverride(f) =>
         f.split(" +")
       }
-      .getOrElse { Seq(new File(targetDir, s"V${circuit.name}").toString) }
+      .getOrElse { Seq(new File(objDir, s"V${circuit.name}").toString) }
 
     val portNames = DataMirror
       .modulePorts(dut)
