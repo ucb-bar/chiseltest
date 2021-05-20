@@ -96,6 +96,18 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
       .joinAndStep(getSinkClock)
   }
 
+  /** Use to create back pressure on a Decoupled output
+    */
+  def notReady(): Unit = timescope {
+    x.ready.poke(false.B)
+  }
+
+  /** Use to create back pressure on a Decoupled output
+    */
+  def notValid(): Unit = timescope {
+    x.valid.poke(false.B)
+  }
+
   def expectDequeueNow(data: T): Unit = timescope {
     // TODO: check for init
     x.ready.poke(true.B)
