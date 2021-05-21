@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
-package chiseltest.experimental.tests
+package chiseltest.backends.verilator
 
 import chisel3._
-import chiseltest.tests.{PassthroughModule, StaticModule}
 import chiseltest._
 import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.experimental.sanitizeFileName
 import chiseltest.internal.{CachingAnnotation, VerilatorBackendAnnotation, WriteVcdAnnotation}
+import chiseltest.tests.{PassthroughModule, StaticModule}
 import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
