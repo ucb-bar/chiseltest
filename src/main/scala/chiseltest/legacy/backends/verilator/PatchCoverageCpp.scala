@@ -58,7 +58,8 @@ object PatchCoverageCpp {
   private def findLine(needle: String, filename: Path, lines: Iterable[String]): Int =
     findLineOption(needle, lines).getOrElse(error(s"Failed to find line `$needle` in $filename."))
 
-  private def doWrite(file: Path, lines: Array[String]): Unit = os.write.over(os.Path(file.toAbsolutePath), lines.mkString("\n"))
+  private def doWrite(file: Path, lines: Array[String]): Unit =
+    os.write.over(os.Path(file.toAbsolutePath), lines.mkString("\n"))
 
   private def error(msg: String): Nothing = {
     throw new RuntimeException(msg + "\n" + "Please file an issue and include the output of `verilator --version`")
