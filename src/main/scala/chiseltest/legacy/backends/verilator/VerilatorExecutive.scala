@@ -1,6 +1,6 @@
 package chiseltest.legacy.backends.verilator
 
-import java.io.{BufferedReader, File, FileReader, FileWriter}
+import java.io.File
 import java.security.MessageDigest
 import scala.util.Try
 
@@ -19,7 +19,6 @@ import firrtl.util.BackendCompilationUtilities
 
 import org.json4s._
 import org.json4s.jackson.Serialization
-import org.json4s.jackson.Serialization.{read, write}
 
 object VerilatorExecutive extends BackendExecutive {
 
@@ -42,7 +41,7 @@ object VerilatorExecutive extends BackendExecutive {
     dut:            T,
     circuit:        Circuit,
     elaboratedAnno: AnnotationSeq,
-    targetPath:     os.Path
+    targetDirPath:  os.Path
   ): Option[BackendInstance[T]] = elaboratedAnno.collectFirst { case CachingAnnotation =>
     val highFirrtlAnnos = (new ChiselStage).run(
       elaboratedAnno :+ RunFirrtlTransformAnnotation(new HighFirrtlEmitter)
@@ -68,7 +67,7 @@ object VerilatorExecutive extends BackendExecutive {
           .getBytes("UTF-8")
       )
 
-    val moduleHashFile = targetPath / "module.hash"
+    val moduleHashFile = targetDirPath / "module.hash"
 
     val moduleHashMatches =
       Try(os.read.bytes(moduleHashFile)).toOption.filter(_.equals(sortedModuleMessageDigest)).nonEmpty
@@ -95,7 +94,7 @@ object VerilatorExecutive extends BackendExecutive {
             .getBytes("UTF-8")
         )
 
-    val annoHashFile = targetPath / "anno.hash"
+    val annoHashFile = targetDirPath / "anno.hash"
 
     val annoHashMatches = Try(os.read.bytes(annoHashFile)).toOption.filter(_.equals(elaboratedAnnoHash)).nonEmpty
 
@@ -118,19 +117,19 @@ object VerilatorExecutive extends BackendExecutive {
 
       implicit val formats = DefaultFormats
 
-      val pathsJson = os.read.lines(targetPath / "paths.json").head
-      val paths = read[Seq[CombinationalPath]](pathsJson)
+      val pathsJson = os.read.lines(targetDirPath / "paths.json").head
+      val paths = Serialization.read[Seq[CombinationalPath]](pathsJson)
 
       val pathsAsData = combinationalPathsToData(dut, paths, portNames, componentToName)
 
-      val commandJson = os.read.lines(targetPath / "command.json").head
-      val command = read[Seq[String]](commandJson)
+      val commandJson = os.read.lines(targetDirPath / "command.json").head
+      val command = Serialization.read[Seq[String]](commandJson)
 
       val coverageAnnotations = AnnotationSeq(
-        JsonProtocol.deserialize((targetPath / "coverageAnnotations.json").toIO)
+        JsonProtocol.deserialize((targetDirPath / "coverageAnnotations.json").toIO)
       )
 
-      new VerilatorBackend(dut, portNames, pathsAsData, command, targetPath.toString(), coverageAnnotations)
+      new VerilatorBackend(dut, portNames, pathsAsData, command, targetDirPath.toString(), coverageAnnotations)
     }
 
   def cacheSim[T <: Module](
@@ -138,25 +137,19 @@ object VerilatorExecutive extends BackendExecutive {
     command:             Seq[String],
     coverageAnnotations: AnnotationSeq,
     elaboratedAnno:      AnnotationSeq,
-    targetDir:           String
+    targetDirPath:       os.Path
   ): Unit = {
     if (elaboratedAnno.contains(CachingAnnotation)) {
       implicit val formats = DefaultFormats
 
       // Cache paths as json as they depend on the compiledAnnotations
-      val pathsWriter = new FileWriter(new File(targetDir, "paths.json"))
-      pathsWriter.write(write(paths))
-      pathsWriter.close()
+      os.write.over(targetDirPath / "paths.json", Serialization.write(paths))
 
       // Cache command
-      val commandWriter = new FileWriter(new File(targetDir, "command.json"))
-      commandWriter.write(write(command))
-      commandWriter.close()
+      os.write.over(targetDirPath / "command.json", Serialization.write(command))
 
       // Cache coverage annotations
-      val coverageAnnotationsWriter = new FileWriter(new File(targetDir, "coverageAnnotations.json"))
-      coverageAnnotationsWriter.write(JsonProtocol.serialize(coverageAnnotations.toSeq))
-      coverageAnnotationsWriter.close()
+      os.write.over(targetDirPath / "coverageAnnotations.json", JsonProtocol.serialize(coverageAnnotations.toSeq))
     }
   }
 
@@ -200,12 +193,9 @@ object VerilatorExecutive extends BackendExecutive {
 
     val cppHarnessFileName = s"${circuit.name}-harness.cpp"
     val cppHarnessFile = new File(targetDir, cppHarnessFileName)
-    val cppHarnessWriter = new FileWriter(cppHarnessFile)
     val vcdFile = new File(targetDir, s"${circuit.name}.vcd")
-    val emittedStuff =
-      VerilatorCppHarnessGenerator.codeGen(dut, vcdFile.toString, targetDir)
-    cppHarnessWriter.append(emittedStuff)
-    cppHarnessWriter.close()
+    val emittedStuff = VerilatorCppHarnessGenerator.codeGen(dut, vcdFile.toString, targetDir)
+    os.write.over(targetDirPath / cppHarnessFileName, emittedStuff)
 
     val moreVerilatorFlags = compiledAnnotations.collectFirst { case VerilatorFlags(f) => f }
       .getOrElse(Seq.empty)
@@ -284,7 +274,7 @@ object VerilatorExecutive extends BackendExecutive {
 
     val coverageAnnotations = VerilatorCoverage.collectCoverageAnnotations(compiledAnnotations)
 
-    cacheSim(paths, command, coverageAnnotations, elaboratedAnno, targetDir)
+    cacheSim(paths, command, coverageAnnotations, elaboratedAnno, targetDirPath)
 
     new VerilatorBackend(dut, portNames, pathsAsData, command, targetDir, coverageAnnotations)
   }
