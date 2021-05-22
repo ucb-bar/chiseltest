@@ -30,7 +30,7 @@ jobs:
         run: sbt ++${{ matrix.scala }} test
 
   test-java-11:
-    name: sbt test
+    name: sbt test on Java 11
     runs-on: ubuntu-20.04
     strategy:
       matrix:
@@ -49,7 +49,6 @@ jobs:
           java-version: adopt@1.11
       - name: Test
         run: sbt ++${{ matrix.scala }} test
-
 
   verilator:
     name: verilator regressions
