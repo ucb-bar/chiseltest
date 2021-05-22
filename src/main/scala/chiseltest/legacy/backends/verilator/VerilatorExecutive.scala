@@ -1,6 +1,8 @@
 package chiseltest.legacy.backends.verilator
 
 import java.io.{BufferedReader, File, FileReader, FileWriter}
+import java.security.MessageDigest
+import scala.util.Try
 
 import chiseltest.backends.BackendExecutive
 import chiseltest.internal._
@@ -8,20 +10,18 @@ import chisel3.{assert, Module}
 import chisel3.experimental.DataMirror
 import chisel3.internal.firrtl.Circuit
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage}
+import firrtl.{AnnotationSeq, EmittedFirrtlCircuitAnnotation, HighFirrtlEmitter, SystemVerilogEmitter}
 import firrtl.annotations.{JsonProtocol, ReferenceTarget}
 import firrtl.ir.StructuralHash
 import firrtl.stage.RunFirrtlTransformAnnotation
 import firrtl.transforms.CombinationalPath
 import firrtl.util.BackendCompilationUtilities
-import java.security.MessageDigest
-import javax.xml.bind.DatatypeConverter
 
 import org.json4s._
 import org.json4s.jackson.Serialization
 import org.json4s.jackson.Serialization.{read, write}
 
 object VerilatorExecutive extends BackendExecutive {
-  import firrtl._
 
   /** Verilator wants to have module name prefix except for
     * default reset and clock
@@ -42,115 +42,96 @@ object VerilatorExecutive extends BackendExecutive {
     dut:            T,
     circuit:        Circuit,
     elaboratedAnno: AnnotationSeq,
-    targetDir:      String
-  ): Option[BackendInstance[T]] = {
-    if (elaboratedAnno.contains(CachingAnnotation)) {
-      val highFirrtlAnnos = (new ChiselStage).run(
-        elaboratedAnno :+ RunFirrtlTransformAnnotation(new HighFirrtlEmitter)
+    targetPath:     os.Path
+  ): Option[BackendInstance[T]] = elaboratedAnno.collectFirst { case CachingAnnotation =>
+    val highFirrtlAnnos = (new ChiselStage).run(
+      elaboratedAnno :+ RunFirrtlTransformAnnotation(new HighFirrtlEmitter)
+    )
+
+    val rawFirrtl = highFirrtlAnnos.collect { case EmittedFirrtlCircuitAnnotation(e) => e.value }
+      .map(l => firrtl.Parser.parse(l))
+      .head
+
+    val sortedModuleHashStrings = new firrtl.stage.transforms.Compiler(targets = firrtl.stage.Forms.HighForm)
+      .transform(firrtl.CircuitState(rawFirrtl, Seq()))
+      .circuit
+      .modules
+      .map(m => m.name -> StructuralHash.sha256WithSignificantPortNames(m))
+      .sortBy(_._1)
+      .map(_._2.hashCode().toString) // TODO: Replace .hashCode().toString with .str
+
+    val sortedModuleMessageDigest = MessageDigest
+      .getInstance("SHA-256")
+      .digest(
+        sortedModuleHashStrings
+          .toString()
+          .getBytes("UTF-8")
       )
 
-      val rawFirrtl = highFirrtlAnnos.collect { case EmittedFirrtlCircuitAnnotation(e) => e.value }
-        .map(l => firrtl.Parser.parse(l))
-        .head
+    val moduleHashFile = targetPath / "module.hash"
 
-      val sortedModuleHashStrings = new firrtl.stage.transforms.Compiler(targets = firrtl.stage.Forms.HighForm)
-        .transform(firrtl.CircuitState(rawFirrtl, Seq()))
-        .circuit
-        .modules
-        .map(m => m.name -> StructuralHash.sha256WithSignificantPortNames(m))
-        .sortBy(_._1)
-        .map(_._2.hashCode().toString) // TODO: Replace .hashCode().toString with .str
+    val moduleHashMatches =
+      Try(os.read.bytes(moduleHashFile)).toOption.filter(_.equals(sortedModuleMessageDigest)).nonEmpty
 
-      val sortedModuleMessageDigest = MessageDigest
+    os.write.over(moduleHashFile, sortedModuleMessageDigest)
+
+    // Hash the deterministic elements of elaboratedAnno for comparison, this should
+    // only catch if coverage or vcd flags change
+    val elaboratedAnnoString = elaboratedAnno.toSeq.filter {
+      case _: chisel3.stage.ChiselCircuitAnnotation | _: chisel3.stage.DesignAnnotation[_] |
+          _: firrtl.options.TargetDirAnnotation =>
+        false
+      case _ => true
+    }
+      .map(anno => anno.toString)
+    val firrtlInfoString = Seq(firrtl.BuildInfo.toString)
+    val systemVersionString = Seq(System.getProperty("java.version"), scala.util.Properties.versionNumberString)
+
+    val elaboratedAnnoHash =
+      MessageDigest
         .getInstance("SHA-256")
         .digest(
-          sortedModuleHashStrings
-            .toString()
+          (elaboratedAnnoString ++ firrtlInfoString ++ systemVersionString).toString
             .getBytes("UTF-8")
         )
 
-      val moduleHashHex = DatatypeConverter
-        .printHexBinary(sortedModuleMessageDigest)
+    val annoHashFile = targetPath / "anno.hash"
 
-      val moduleHashFile = new File(targetDir, "module.hash")
+    val annoHashMatches = Try(os.read.bytes(annoHashFile)).toOption.filter(_.equals(elaboratedAnnoHash)).nonEmpty
 
-      val oldModuleHashHex = if (moduleHashFile.exists()) {
-        new BufferedReader(new FileReader(moduleHashFile)).readLine()
-      } else {
-        " "
-      }
+    os.write.over(annoHashFile, elaboratedAnnoHash)
 
-      val moduleWriter = new FileWriter(moduleHashFile)
-      moduleWriter.write(moduleHashHex)
-      moduleWriter.close()
-
-      // Hash the deterministic elements of elaboratedAnno for comparison, this should
-      // only catch if coverage or vcd flags change
-      val elaboratedAnnoString = elaboratedAnno.toSeq.filter {
-        case _: chisel3.stage.ChiselCircuitAnnotation | _: chisel3.stage.DesignAnnotation[T] |
-            _: firrtl.options.TargetDirAnnotation =>
-          false
-        case _ => true
-      }
-        .map(anno => anno.toString)
-      val firrtlInfoString = Seq(firrtl.BuildInfo.toString)
-      val systemVersionString = Seq(System.getProperty("java.version"), scala.util.Properties.versionNumberString)
-
-      val elaboratedAnnoHashHex = DatatypeConverter
-        .printHexBinary(
-          MessageDigest
-            .getInstance("SHA-256")
-            .digest(
-              (elaboratedAnnoString ++ firrtlInfoString ++ systemVersionString).toString
-                .getBytes("UTF-8")
-            )
-        )
-
-      val annoHashFile = new File(targetDir, "anno.hash")
-
-      val oldElaboratedAnnoHashHex = if (annoHashFile.exists) {
-        new BufferedReader(new FileReader(annoHashFile)).readLine
-      } else {
-        " "
-      }
-
-      val elaboratedAnnoWriter = new FileWriter(annoHashFile)
-      elaboratedAnnoWriter.write(elaboratedAnnoHashHex)
-      elaboratedAnnoWriter.close()
-
-      if (moduleHashHex == oldModuleHashHex && elaboratedAnnoHashHex == oldElaboratedAnnoHashHex) { // Check if we have built a simulator with matching module and annotations
-        val portNames = DataMirror
-          .modulePorts(dut)
-          .flatMap { case (name, data) =>
-            getDataNames(name, data).toList.map {
-              case (p, "reset") => (p, "reset")
-              case (p, "clock") => (p, "clock")
-              case (p, n)       => (p, s"${circuit.name}.$n")
-              //          case (p, n) => (p, s"$n")
-            }
-          }
-          .toMap
-
-        implicit val formats = DefaultFormats
-
-        val pathsJson = new BufferedReader(new FileReader(new File(targetDir, "paths.json"))).readLine()
-        val paths = read[Seq[CombinationalPath]](pathsJson)
-
-        val pathsAsData =
-          combinationalPathsToData(dut, paths, portNames, componentToName)
-
-        val commandJson = new BufferedReader(new FileReader(new File(targetDir, "command.json"))).readLine()
-        val command = read[Seq[String]](commandJson)
-
-        val coverageAnnotations = AnnotationSeq(
-          JsonProtocol.deserialize(new File(targetDir, "coverageAnnotations.json"))
-        )
-
-        return Some(new VerilatorBackend(dut, portNames, pathsAsData, command, targetDir, coverageAnnotations))
-      }
-    }
-    None
+    moduleHashMatches && annoHashMatches // if we have built a simulator with matching module and annotations
   }
+    .filter(_ == true)
+    .collect { case _ =>
+      val portNames = DataMirror
+        .modulePorts(dut)
+        .flatMap { case (name, data) =>
+          getDataNames(name, data).toList.map {
+            case (p, "reset") => (p, "reset")
+            case (p, "clock") => (p, "clock")
+            case (p, n)       => (p, s"${circuit.name}.$n")
+          }
+        }
+        .toMap
+
+      implicit val formats = DefaultFormats
+
+      val pathsJson = os.read.lines(targetPath / "paths.json").head
+      val paths = read[Seq[CombinationalPath]](pathsJson)
+
+      val pathsAsData = combinationalPathsToData(dut, paths, portNames, componentToName)
+
+      val commandJson = os.read.lines(targetPath / "command.json").head
+      val command = read[Seq[String]](commandJson)
+
+      val coverageAnnotations = AnnotationSeq(
+        JsonProtocol.deserialize((targetPath / "coverageAnnotations.json").toIO)
+      )
+
+      new VerilatorBackend(dut, portNames, pathsAsData, command, targetPath.toString(), coverageAnnotations)
+    }
 
   def cacheSim[T <: Module](
     paths:               Seq[CombinationalPath],
@@ -191,13 +172,14 @@ object VerilatorExecutive extends BackendExecutive {
       t
     }.get
     val targetDirFile = new File(targetDir)
+    val targetDirPath = os.pwd / os.RelPath(targetDir)
 
     val generatorAnnotation = chisel3.stage.ChiselGeneratorAnnotation(dutGen)
     val elaboratedAnno = (new chisel3.stage.phases.Elaborate).transform(annotationSeq :+ generatorAnnotation)
     val circuit = elaboratedAnno.collect { case x: ChiselCircuitAnnotation => x }.head.circuit
     val dut = getTopModule(circuit).asInstanceOf[T]
 
-    getCachedSim(dut, circuit, elaboratedAnno, targetDir) match {
+    getCachedSim(dut, circuit, elaboratedAnno, targetDirPath) match {
       case Some(sim) => return sim
       case _         =>
     }
@@ -291,7 +273,6 @@ object VerilatorExecutive extends BackendExecutive {
           case (p, "reset") => (p, "reset")
           case (p, "clock") => (p, "clock")
           case (p, n)       => (p, s"${circuit.name}.$n")
-          //          case (p, n) => (p, s"$n")
         }
       }
       .toMap
