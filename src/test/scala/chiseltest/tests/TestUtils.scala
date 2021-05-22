@@ -66,11 +66,36 @@ class Alu(size: Int) extends Module {
   val result = Wire(UInt(size.W))
   result := 0.U
 
+  val addSubtractor = Module(new AddSubtractor(size))
+
+  addSubtractor.io.add := io.fn === 0.U
+  addSubtractor.io.a := io.a
+  addSubtractor.io.b := io.b
+
   switch(io.fn) {
-    is(0.U) { result := io.a + io.b }
-    is(1.U) { result := io.a - io.b }
+    is(0.U) { result := addSubtractor.io.result}
+    is(1.U) { result := addSubtractor.io.result }
     is(2.U) { result := io.a | io.b }
     is(3.U) { result := io.a & io.b }
   }
   io.result := result
+}
+
+/**
+  * FPGAs can have a single hardware resource that does both addition and subtraction.
+  * save resources by breaking addition and subtraction into a separate module.
+  * 
+  * This also allows us to test the multi-module scenario.
+  *
+  * @param size
+  */
+class AddSubtractor(size: Int) extends Module {
+  val io = IO(new Bundle {
+    val add = Input(Bool())
+    val a = Input(UInt(size.W))
+    val b = Input(UInt(size.W))
+    val result = Output(UInt(size.W))
+  })
+
+  io.result := Mux(io.add, io.a + io.b, io.a - io.b)
 }
