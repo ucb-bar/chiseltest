@@ -127,7 +127,9 @@ object VerilatorExecutive extends BackendExecutive {
           JsonProtocol.deserialize((targetDirPath / "coverageAnnotations.json").toIO)
         )
 
-        return Some(new VerilatorBackend(dut, portNames, pathsAsData, command, targetDirPath.toString(), coverageAnnotations))
+        return Some(
+          new VerilatorBackend(dut, portNames, pathsAsData, command, targetDirPath.toString(), coverageAnnotations)
+        )
       }
     }
     None
