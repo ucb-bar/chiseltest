@@ -419,7 +419,7 @@ private[chiseltest] object verilogToVerilator extends EditableBuildCSimulatorCom
     if (staleObjDri.exists()) {
       println(s"Deleting stale Verilator object directory: $staleObjDri")
       if (!firrtl.FileUtils.deleteDirectoryHierarchy(staleObjDri)) {
-        throw BackendException(s"Deleting $staleObjDri failed!")
+        throw new RuntimeException(s"Deleting $staleObjDri failed!")
       }
     }
 
