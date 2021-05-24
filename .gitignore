@@ -15,3 +15,4 @@
 # Visual Studio Code
 .bloop/
 .metals/
+.vscode/
