@@ -6,6 +6,13 @@ import scala.sys.process._
 /** Generates the Module specific verilator harness cpp file for verilator compilation
   */
 object VerilatorCppHarnessGenerator {
+  // example version string: Verilator 4.038 2020-07-11 rev v4.038
+  lazy val verilatorVersion: (Int, Int) = { // (major, minor)
+    val versionString = "verilator --version".!!.trim().split(' ')
+    assert(versionString.length > 1 && versionString.head == "Verilator", "Unknown verilator version string")
+    val Array(maj, min) = versionString(1).split('.').map(_.toInt)
+    (maj, min)
+  }
   def codeGen(dut: Module, vcdFilePath: String, targetDir: String): String = {
     val codeBuffer = new StringBuilder
 
@@ -40,10 +47,15 @@ object VerilatorCppHarnessGenerator {
     val dutName = dut.name
     val dutApiClassName = dutName + "_api_t"
     val dutVerilatorClassName = "V" + dutName
-    // example version string: Verilator 4.038 2020-07-11 rev v4.038
-    // this will probably break when Verilator hits version 10+, but hopefully we can drop compatibility by then
-    val verilatorVersion = "verilator --version".!!.split(' ')(1).stripLineEnd
-    val verilatorRunFlushCallback = if (verilatorVersion >= "4.038") {
+    val (verilatorMajor, verilatorMinor) = verilatorVersion
+
+    val coverageInit =
+      if (verilatorMajor >= 4 && verilatorMinor >= 202)
+        """|Verilated::defaultContextp()->coveragep()->forcePerInstance(true);
+           |""".stripMargin
+      else ""
+
+    val verilatorRunFlushCallback = if (verilatorMajor >= 4 && verilatorMinor >= 38) {
       "Verilated::runFlushCallbacks();\nVerilated::runExitCallbacks();\n"
     } else {
       "Verilated::flushCall();\n"
@@ -164,6 +176,9 @@ int main(int argc, char **argv, char **env) {
     for (it = args.begin() ; it != args.end() ; it++) {
         if (it->find("+waveform=") == 0) vcdfile = it->c_str()+10;
     }
+#if VM_COVERAGE
+    $coverageInit
+#endif
 #if VM_TRACE || VM_COVERAGE
     Verilated::traceEverOn(true);
 #endif
