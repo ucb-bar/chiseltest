@@ -61,7 +61,7 @@ jobs:
         # 4.038: Ubuntu 20.10
         # 4.108: Fedora 34
         # 4.200: latest (unsupported atm)
-        version: ["4.028", "4.032", "4.034", "4.038", "4.108"]
+        version: ["4.028", "4.032", "4.034", "4.038", "4.108", "4.202"]
 
     steps:
       - name: Checkout
