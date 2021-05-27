@@ -8,9 +8,13 @@ import scala.sys.process._
 object VerilatorCppHarnessGenerator {
   // example version string: Verilator 4.038 2020-07-11 rev v4.038
   lazy val verilatorVersion: (Int, Int) = { // (major, minor)
-    val versionString = "verilator --version".!!.trim().split(' ')
-    assert(versionString.length > 1 && versionString.head == "Verilator", "Unknown verilator version string")
-    val Array(maj, min) = versionString(1).split('.').map(_.toInt)
+    val versionSplitted = "verilator --version".!!.trim().split(' ')
+    assert(
+      versionSplitted.length > 1 && versionSplitted.head == "Verilator",
+      s"Unknown verilator version string: ${versionSplitted.mkString(" ")}"
+    )
+    val Array(maj, min) = versionSplitted(1).split('.').map(_.toInt)
+    println(s"Detected Verilator version $maj.$min")
     (maj, min)
   }
   def codeGen(dut: Module, vcdFilePath: String, targetDir: String): String = {

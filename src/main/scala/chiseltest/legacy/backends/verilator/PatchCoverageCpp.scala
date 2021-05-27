@@ -24,21 +24,14 @@ object PatchCoverageCpp {
   }
 
   private def replaceCoverage(cppFile: Path, lines: Array[String]): Unit = {
-    val (verilatorMajor, verilatorMinor) = VerilatorCppHarnessGenerator.verilatorVersion
-    require(verilatorMajor == 4)
+    // we add our code at the beginning of the coverage section
+    val coverageStart = findLine(CoverageStartNeedle, cppFile, lines)
+    lines(coverageStart) += "\n" + CustomCoverInsertCode + "\n"
 
-    if (verilatorMinor < 200) {
-      // we add our code at the beginning of the coverage section
-      val coverageStart = findLine(CoverageStartNeedle, cppFile, lines)
-      lines(coverageStart) += "\n" + CustomCoverInsertCode + "\n"
-
-      // then we replace the call
-      val call = findLine(CallNeedle, cppFile, lines)
-      val callLine = lines(call).replaceAllLiterally(CallNeedle, CallReplacement)
-      lines(call) = callLine
-    } else {
-      // ???
-    }
+    // then we replace the call
+    val call = findLine(CallNeedle, cppFile, lines)
+    val callLine = lines(call).replaceAllLiterally(CallNeedle, CallReplacement)
+    lines(call) = callLine
   }
 
   private def loadFiles(dir: String): Seq[(Path, Array[String])] = {

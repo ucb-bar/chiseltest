@@ -245,8 +245,14 @@ object VerilatorExecutive extends BackendExecutive {
 
     val objDir = verilogToVerilator.objDir(targetDirFile)
 
-    // patch the coverage cpp provided with verilator
-    PatchCoverageCpp(objDir.toString())
+    // patch the coverage cpp provided with verilator only if Verilator is older than 4.202
+    // Starting with Verilator 4.202, the whole patch coverage hack is no longer necessary
+    val (verilatorMajor, verilatorMinor) = VerilatorCppHarnessGenerator.verilatorVersion
+    require(verilatorMajor == 4, "Unsupported Verilator version")
+
+    if (verilatorMinor < 202) {
+      PatchCoverageCpp(objDir.toString())
+    }
 
     assert(
       BackendCompilationUtilities.cppToExe(circuit.name, objDir).! == 0,
