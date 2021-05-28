@@ -138,6 +138,7 @@ We currently support the following versions of the [verilator](https://www.verip
 - `v4.034`: [Chipyard](https://chipyard.readthedocs.io/en/latest/Chipyard-Basics/Initial-Repo-Setup.html#requirements)
 - `v4.038`: [Ubuntu 20.10](https://packages.ubuntu.com/groovy/verilator)
 - `v4.108`: [Fedora 34](https://src.fedoraproject.org/rpms/verilator)
+- `v4.202`
 
 ## Stability
 These APIs may be considered stable and are unlikely to change significantly:
