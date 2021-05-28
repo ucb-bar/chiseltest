@@ -71,7 +71,7 @@ object VerilatorExecutive extends BackendExecutive {
       val moduleHashFile = targetDirPath / "module.hash"
 
       val moduleHashMatches =
-        Try(os.read.bytes(moduleHashFile)).toOption.filter(_.equals(sortedModuleMessageDigest)).nonEmpty
+        Try(os.read.bytes(moduleHashFile)).toOption.filter(_.sameElements(sortedModuleMessageDigest)).nonEmpty
 
       os.write.over(moduleHashFile, sortedModuleMessageDigest)
 
@@ -97,7 +97,8 @@ object VerilatorExecutive extends BackendExecutive {
 
       val annoHashFile = targetDirPath / "anno.hash"
 
-      val annoHashMatches = Try(os.read.bytes(annoHashFile)).toOption.filter(_.equals(elaboratedAnnoHash)).nonEmpty
+      val annoHashMatches =
+        Try(os.read.bytes(annoHashFile)).toOption.filter(_.sameElements(elaboratedAnnoHash)).nonEmpty
 
       os.write.over(annoHashFile, elaboratedAnnoHash)
 
