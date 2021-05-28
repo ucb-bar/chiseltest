@@ -97,7 +97,8 @@ object VerilatorExecutive extends BackendExecutive {
 
       val annoHashFile = targetDirPath / "anno.hash"
 
-      val annoHashMatches = Try(os.read.bytes(annoHashFile)).toOption.filter(_.sameElements(elaboratedAnnoHash)).nonEmpty
+      val annoHashMatches =
+        Try(os.read.bytes(annoHashFile)).toOption.filter(_.sameElements(elaboratedAnnoHash)).nonEmpty
 
       os.write.over(annoHashFile, elaboratedAnnoHash)
 
