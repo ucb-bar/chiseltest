@@ -74,12 +74,6 @@ class chiseltestCrossModule(val crossScalaVersion: String) extends CrossSbtModul
         "utest.runner.Framework"
       )
     }
-
-    // a sbt-like testOnly command.
-    // for example, mill -i "chiseltest[2.12.12].test.testOnly" "chiseltest.tests.AsyncClockTest"
-    def testOnly(args: String*) = T.command {
-      super.runMain("org.scalatest.run", args: _*)
-    }
   }
 
   def pomSettings = T {
