@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package chiseltest.simulator
+import firrtl.stage.FirrtlCircuitAnnotation
 import firrtl.{AnnotationSeq, CircuitState}
-import treadle.TreadleTester
+import treadle.{TreadleTester, TreadleTesterAnnotation}
+import treadle.executable.StopException
+import treadle.stage.TreadleTesterPhase
 
 object TreadleSimulator extends Simulator {
   override def name: String = "treadle"
@@ -16,7 +19,21 @@ object TreadleSimulator extends Simulator {
    *
    * @param state LoFirrtl circuit + annotations
    */
-  override def createContext(state: CircuitState): SimulatorContext = ???
+  override def createContext(state: CircuitState): SimulatorContext = {
+    val treadleState = (new TreadleTesterPhase).transform(toAnnos(state))
+
+    val treadleTester = treadleState.collectFirst { case TreadleTesterAnnotation(t) => t }.getOrElse(
+      throw new Exception(
+        s"TreadleTesterPhase could not build a treadle tester from these annotations" +
+          treadleState.mkString("Annotations:\n", "\n  ", "")
+      )
+    )
+
+    new TreadleContext(treadleTester)
+  }
+
+  private def toAnnos(state: CircuitState): AnnotationSeq =
+     FirrtlCircuitAnnotation(state.circuit) +: state.annotations
 }
 
 class TreadleContext(tester: TreadleTester) extends SimulatorContext {
@@ -24,9 +41,20 @@ class TreadleContext(tester: TreadleTester) extends SimulatorContext {
 
   require(tester.clockInfoList.size == 1, "Currently only single clock circuits are supported!")
   private def defaultClock = tester.clockInfoList.head.name
-  override def step(clock: String, n: Int): Unit = {
+  override def step(clock: String, n: Int): Option[SimulatorResults] = {
     require(clock == defaultClock)
-    tester.step(n = n)
+    try {
+      tester.step(n = n)
+      None
+    } catch {
+      case s : StopException =>
+        val exitCode = 1 // TODO!
+        Some(TreadleResults(exitCode, waveformFile))
+    }
+  }
+
+  override def update(): Unit = {
+    tester.engine.evaluateCircuit()
   }
 
   override def peek(signal: String): BigInt = {
@@ -51,9 +79,10 @@ class TreadleContext(tester: TreadleTester) extends SimulatorContext {
 
   override def finish(): SimulatorResults = {
     tester.finish
-    val waveformFile = if(tester.engine.vcdFileName.isEmpty) None else Some(tester.engine.vcdFileName)
     TreadleResults(0, waveformFile)
   }
+
+  private def waveformFile = if(tester.engine.vcdFileName.isEmpty) None else Some(tester.engine.vcdFileName)
 }
 
 case class TreadleResults(exitCode: Int, waveformFile: Option[String]) extends SimulatorResults
