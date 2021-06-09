@@ -42,7 +42,7 @@ object VerilatorExecutive extends BackendExecutive {
     circuit:        Circuit,
     elaboratedAnno: AnnotationSeq,
     targetDirPath:  os.Path
-  ): Option[BackendInstance[T]] = {
+  ): (Option[BackendInstance[T]], Array[Byte]) = {
     if (elaboratedAnno.contains(CachingAnnotation)) {
       val highFirrtlAnnos = (new ChiselStage).run(
         elaboratedAnno :+ RunFirrtlTransformAnnotation(new HighFirrtlEmitter)
@@ -60,49 +60,32 @@ object VerilatorExecutive extends BackendExecutive {
         .sortBy(_._1)
         .map(_._2.hashCode().toString) // TODO: Replace .hashCode().toString with .str
 
-      val sortedModuleMessageDigest = MessageDigest
-        .getInstance("SHA-256")
-        .digest(
-          sortedModuleHashStrings
-            .toString()
-            .getBytes("UTF-8")
-        )
-
-      val moduleHashFile = targetDirPath / "module.hash"
-
-      val moduleHashMatches =
-        Try(os.read.bytes(moduleHashFile)).toOption.filter(_.sameElements(sortedModuleMessageDigest)).nonEmpty
-
-      os.write.over(moduleHashFile, sortedModuleMessageDigest)
-
       // Hash the deterministic elements of elaboratedAnno for comparison, this should
       // only catch if coverage or vcd flags change
       val elaboratedAnnoString = elaboratedAnno.toSeq.filter {
         case _: chisel3.stage.ChiselCircuitAnnotation | _: chisel3.stage.DesignAnnotation[_] |
             _: firrtl.options.TargetDirAnnotation =>
           false
-        case _ => true
-      }
-        .map(anno => anno.toString)
+        case _ =>
+          true
+      }.map(anno => anno.toString)
+
       val firrtlInfoString = Seq(firrtl.BuildInfo.toString)
       val systemVersionString = Seq(System.getProperty("java.version"), scala.util.Properties.versionNumberString)
 
-      val elaboratedAnnoHash =
+      val cachingHash =
         MessageDigest
           .getInstance("SHA-256")
           .digest(
-            (elaboratedAnnoString ++ firrtlInfoString ++ systemVersionString).toString
+            (sortedModuleHashStrings ++ elaboratedAnnoString ++ firrtlInfoString ++ systemVersionString)
+              .mkString("")
               .getBytes("UTF-8")
           )
 
-      val annoHashFile = targetDirPath / "anno.hash"
+      val prevHashMatches =
+        Try(os.read.bytes(targetDirPath / "caching.hash")).toOption.filter(_.sameElements(cachingHash)).nonEmpty
 
-      val annoHashMatches =
-        Try(os.read.bytes(annoHashFile)).toOption.filter(_.sameElements(elaboratedAnnoHash)).nonEmpty
-
-      os.write.over(annoHashFile, elaboratedAnnoHash)
-
-      if (moduleHashMatches && annoHashMatches) { // if we have built a simulator with matching module and annotations
+      if (prevHashMatches) { // if we have built a simulator with matching module and annotations
         val portNames = DataMirror
           .modulePorts(dut)
           .flatMap { case (name, data) =>
@@ -130,10 +113,12 @@ object VerilatorExecutive extends BackendExecutive {
 
         return Some(
           new VerilatorBackend(dut, portNames, pathsAsData, command, targetDirPath.toString(), coverageAnnotations)
-        )
+        ) -> cachingHash
+      } else {
+        return None -> cachingHash // enable caching for next time
       }
     }
-    None
+    None -> Array.empty // skip caching alltogether
   }
 
   def cacheSim[T <: Module](
@@ -141,7 +126,8 @@ object VerilatorExecutive extends BackendExecutive {
     command:             Seq[String],
     coverageAnnotations: AnnotationSeq,
     elaboratedAnno:      AnnotationSeq,
-    targetDirPath:       os.Path
+    targetDirPath:       os.Path,
+    cachingHash:         Array[Byte]
   ): Unit = {
     if (elaboratedAnno.contains(CachingAnnotation)) {
       implicit val formats = DefaultFormats
@@ -154,6 +140,8 @@ object VerilatorExecutive extends BackendExecutive {
 
       // Cache coverage annotations
       os.write.over(targetDirPath / "coverageAnnotations.json", JsonProtocol.serialize(coverageAnnotations.toSeq))
+
+      os.write.over(targetDirPath / "caching.hash", cachingHash)
     }
   }
 
@@ -176,9 +164,9 @@ object VerilatorExecutive extends BackendExecutive {
     val circuit = elaboratedAnno.collect { case x: ChiselCircuitAnnotation => x }.head.circuit
     val dut = getTopModule(circuit).asInstanceOf[T]
 
-    getCachedSim(dut, circuit, elaboratedAnno, targetDirPath) match {
-      case Some(sim) => return sim
-      case _         =>
+    val cachingHash = getCachedSim(dut, circuit, elaboratedAnno, targetDirPath) match {
+      case (Some(sim), hash) => return sim
+      case (None, hash)      => hash
     }
 
     // Create the header files that verilator needs
@@ -284,7 +272,7 @@ object VerilatorExecutive extends BackendExecutive {
 
     val coverageAnnotations = VerilatorCoverage.collectCoverageAnnotations(compiledAnnotations)
 
-    cacheSim(paths, command, coverageAnnotations, elaboratedAnno, targetDirPath)
+    cacheSim(paths, command, coverageAnnotations, elaboratedAnno, targetDirPath, cachingHash)
 
     new VerilatorBackend(dut, portNames, pathsAsData, command, targetDir, coverageAnnotations)
   }
