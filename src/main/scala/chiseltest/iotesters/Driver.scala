@@ -4,10 +4,9 @@ package chiseltest.iotesters
 
 
 
-import chisel3.{ChiselExecutionFailure => _, ChiselExecutionResult => _, ChiselExecutionSuccess => _, _}
+import chisel3.{ChiselExecutionFailure => _, ChiselExecutionSuccess => _, _}
 
 import java.io.File
-import chiseltest.iotesters.DriverCompatibility._
 import chiseltest.simulator.Simulator
 import firrtl.annotations.Annotation
 import logger.Logger
@@ -18,21 +17,17 @@ object Driver {
   private val backendVar = new DynamicVariable[Option[Simulator]](None)
   private[iotesters] def backend = backendVar.value
 
-  private val optionsManagerVar = new DynamicVariable[Option[TesterOptionsManager]](None)
-  def optionsManager = optionsManagerVar.value.getOrElse(new TesterOptionsManager)
-
   /**
    * This executes a test harness that extends peek-poke tester upon a device under test
    * with an optionsManager to control all the options of the toolchain components
    *
+   * @note passing an OptionsManager is not supported in the compatibility layer
    * @param dutGenerator    The device under test, a subclass of a Chisel3 module
-   * @param optionsManager  Use this to control options like which backend to use
    * @param testerGen       A peek poke tester with tests for the dut
    * @return                Returns true if all tests in testerGen pass
    */
   def execute[T <: Module](
     dutGenerator: () => T,
-    optionsManager: TesterOptionsManager,
     firrtlSourceOverride: Option[String] = None
   )
     (
@@ -109,84 +104,6 @@ object Driver {
     }
   }
 
-  /**
-   * Start up the interpreter repl with the given circuit
-   * To test a `class X extends Module {}`, add the following code to the end
-   * of the file that defines
-   *
-   * @example {{{
-   *           object XRepl {
-   *             def main(args: Array[String]) {
-   *               val optionsManager = new ReplOptionsManager
-   *               if(optionsManager.parse(args)) {
-   *                 iotesters.Driver.executeFirrtlRepl(() => new X, optionsManager)
-   *               }
-   *             }
-   * }}}
-   * running main will place users in the repl with the circuit X loaded into the repl
-   * @param dutGenerator   Module to run in interpreter
-   * @param optionsManager options
-   * @return
-   */
-  def executeFirrtlRepl[T <: Module](
-    dutGenerator: () => T,
-    optionsManager: ReplOptionsManager = new ReplOptionsManager): Boolean = {
-
-    if (optionsManager.topName.isEmpty) {
-      if (optionsManager.targetDirName == ".") {
-        optionsManager.setTargetDirName("test_run_dir")
-      }
-      val genClassName = dutGenerator.getClass.getName
-      val testerName = genClassName.split("""\$\$""").headOption.getOrElse("") + genClassName.hashCode.abs
-      optionsManager.setTargetDirName(s"${optionsManager.targetDirName}/$testerName")
-    }
-
-    optionsManager.chiselOptions = optionsManager.chiselOptions.copy(runFirrtlCompiler = false)
-    optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(compilerName = "low")
-
-    Logger.makeScope(optionsManager) {
-      val chiselResult: ChiselExecutionResult = DriverCompatibility.execute(optionsManager, dutGenerator)
-      chiselResult match {
-        case ChiselExecutionSuccess(_, emitted, _) =>
-          optionsManager.replConfig = optionsManager.replConfig.copy(firrtlSource = emitted)
-          FirrtlRepl.execute(optionsManager)
-          true
-        case ChiselExecutionFailure(message) =>
-          println("Failed to compile circuit")
-          false
-      }
-    }
-  }
-  /**
-   * Start up the interpreter repl with the given circuit
-   * To test a `class X extends Module {}`, add the following code to the end
-   * of the file that defines
-   * @example {{{
-   *           object XRepl {
-   *             def main(args: Array[String]) {
-   *               iotesters.Driver.executeFirrtlRepl(args, () => new X)
-   *             }
-   *           }
-   * }}}
-   * running main will place users in the repl with the circuit X loaded into the repl
-   *
-   * @param dutGenerator   Module to run in interpreter
-   * @param args           options from the command line
-   * @return
-   */
-  def executeFirrtlRepl[T <: Module](
-    args: Array[String],
-    dutGenerator: () => T
-  ): Boolean = {
-    val optionsManager = new ReplOptionsManager
-
-    if(optionsManager.parse(args)) {
-      executeFirrtlRepl(dutGenerator, optionsManager)
-    }
-    else {
-      false
-    }
-  }
   /**
    * This is just here as command line way to see what the options are
    * It will not successfully run
@@ -298,9 +215,3 @@ object Driver {
     }
   }
 }
-
-class ReplOptionsManager
-  extends InterpreterOptionsManager
-    with HasChiselExecutionOptions
-    with HasReplConfig
-
