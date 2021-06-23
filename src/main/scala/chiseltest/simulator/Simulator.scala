@@ -14,8 +14,6 @@ import firrtl.CircuitState
 trait SimulatorContext {
   def sim: Simulator
   def step(clock: String, n: Int): Option[SimulatorResults]
-  /** re-evaluate signals without advancing time */
-  def update(): Unit
   def peek(signal: String): BigInt
   def poke(signal: String, value: BigInt): Unit
   def peekMemory(memory: String, index: Long): BigInt

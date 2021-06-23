@@ -53,10 +53,6 @@ class TreadleContext(tester: TreadleTester) extends SimulatorContext {
     }
   }
 
-  override def update(): Unit = {
-    tester.engine.evaluateCircuit()
-  }
-
   override def peek(signal: String): BigInt = {
     tester.peek(signal)
   }
