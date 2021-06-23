@@ -139,8 +139,11 @@ object Driver {
     testerSeed: Long = System.currentTimeMillis())(
     testerGen: T => PeekPokeTester[T]): Boolean = {
 
-    // TODO: translate to argumetns
-    ???
+    val args = List(
+      "--backend-name", backendType,
+      "--test-seed", testerSeed.toString,
+    ) ++ (if(verbose) List("--is-verbose") else List())
+    execute(args.toArray, dutGen)(testerGen)
   }
 
   private def parseArgs(args: Array[String]): AnnotationSeq = {

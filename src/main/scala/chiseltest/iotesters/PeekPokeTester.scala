@@ -110,7 +110,11 @@ abstract class PeekPokeTester[T <: Module](val dut: T) {
 
   def peek(path: String) = backend.peek(path)
 
-  private def fullSignalName(e: InstanceId): String = s"${e.parentPathName}.${e.instanceName}"
+  private def fullSignalName(e: InstanceId): String = {
+    // convert instance name to (presumed..) low firrtl path
+    // TODO: find a better way to do this...
+    e.instanceName.split('.').mkString("_")
+  }
 
   def poke[T <: Element: Pokeable](signal: T, value: BigInt): Unit = {
     if (!signal.isLit) {
