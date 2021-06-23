@@ -5,17 +5,19 @@ package chiseltest.iotesters
 
 
 import chisel3.{ChiselExecutionFailure => _, ChiselExecutionSuccess => _, _}
-
-import java.io.File
-import chiseltest.simulator.Simulator
+import chiseltest.internal.{BackendAnnotation, TreadleBackendAnnotation}
+import chiseltest.simulator._
+import chiseltest.dut.Compiler
+import firrtl.AnnotationSeq
 import firrtl.annotations.Annotation
+import firrtl.options.TargetDirAnnotation
 import logger.Logger
 
 import scala.util.DynamicVariable
 
 object Driver {
-  private val backendVar = new DynamicVariable[Option[Simulator]](None)
-  private[iotesters] def backend = backendVar.value
+  private val testContext = new DynamicVariable[Option[IOTestersContext]](None)
+  private[iotesters] def ctx = testContext.value
 
   /**
    * This executes a test harness that extends peek-poke tester upon a device under test
@@ -26,61 +28,8 @@ object Driver {
    * @param testerGen       A peek poke tester with tests for the dut
    * @return                Returns true if all tests in testerGen pass
    */
-  def execute[T <: Module](
-    dutGenerator: () => T,
-    firrtlSourceOverride: Option[String] = None
-  )
-    (
-      testerGen: T => PeekPokeTester[T]
-    ): Boolean = {
-    optionsManagerVar.withValue(Some(optionsManager)) {
-      Logger.makeScope(optionsManager) {
-        if (optionsManager.topName.isEmpty) {
-          if (optionsManager.targetDirName == ".") {
-            optionsManager.setTargetDirName("test_run_dir")
-          }
-          val genClassName = testerGen.getClass.getName
-          val testerName = genClassName.split("""\$\$""").headOption.getOrElse("") + genClassName.hashCode.abs
-          optionsManager.setTargetDirName(s"${optionsManager.targetDirName}/$testerName")
-        }
-        val testerOptions = optionsManager.testerOptions
-
-        val (dut, backend) = testerOptions.backendName match {
-          case "firrtl" =>
-            setupFirrtlTerpBackend(dutGenerator, optionsManager, firrtlSourceOverride)
-          case "treadle" =>
-            setupTreadleBackend(dutGenerator, optionsManager)
-          case "verilator" =>
-            setupVerilatorBackend(dutGenerator, optionsManager, firrtlSourceOverride)
-          case "ivl" =>
-            setupIVLBackend(dutGenerator, optionsManager)
-          case "vcs" =>
-            setupVCSBackend(dutGenerator, optionsManager)
-          case "vsim" =>
-            setupVSIMBackend(dutGenerator, optionsManager)
-          case _ =>
-            throw new Exception(s"Unrecognized backend name ${testerOptions.backendName}")
-        }
-
-        backendVar.withValue(Some(backend)) {
-          try {
-            testerGen(dut).finish
-          } catch {
-            case e: Throwable =>
-              e.printStackTrace()
-              backend match {
-                case b: IVLBackend => TesterProcess.kill(b)
-                case b: VCSBackend => TesterProcess.kill(b)
-                case b: VSIMBackend => TesterProcess.kill(b)
-                case b: VerilatorBackend => TesterProcess.kill(b)
-                case _ =>
-              }
-              throw e
-          }
-        }
-      }
-    }
-  }
+  def execute[T <: Module](dutGenerator: () => T)(testerGen: T => PeekPokeTester[T]): Boolean =
+    execute(Array(), dutGenerator)(testerGen)
 
   /**
    * This executes the test with options provide from an array of string -- typically provided from the
@@ -94,14 +43,52 @@ object Driver {
   def execute[T <: Module](args: Array[String], dut: () => T)(
     testerGen: T => PeekPokeTester[T]
   ): Boolean = {
-    val optionsManager = new TesterOptionsManager
 
-    optionsManager.parse(args) match {
-      case true =>
-        execute(dut, optionsManager)(testerGen)
-      case _ =>
-        false
+    val annos = parseArgs(args)
+
+    val backendAnno = annos.collectFirst { case x: BackendAnnotation => x }.getOrElse(TreadleBackendAnnotation)
+    require(backendAnno == TreadleBackendAnnotation, "Only treadle is support atm")
+
+    // compile design
+    val (highFirrtl, module) = Compiler.elaborate(() => dut(), annos)
+
+    // attach a target directory to place the firrtl in
+    val highFirrtlWithTargetDir = defaultTargetDir(highFirrtl, getTesterName(testerGen))
+    val lowFirrtl = Compiler.toLowFirrtl(highFirrtlWithTargetDir)
+
+    // create simulator context
+    val sim = TreadleSimulator.createContext(lowFirrtl)
+    val localCtx = IOTestersContext(sim)
+
+    // run tests
+    val result = testContext.withValue(Some(localCtx)) {
+      Logger.makeScope(annos) {
+        testerGen(module).finish
+      }
     }
+
+    result
+  }
+
+  /** tries to replicate the target directory choosing from the original iotesters */
+  private def defaultTargetDir(state: firrtl.CircuitState, testerName: => String): firrtl.CircuitState = {
+    val annos = defaultTargetDir(state.annotations, testerName)
+    state.copy(annotations = annos)
+  }
+  private def defaultTargetDir(annos: AnnotationSeq, testerName: => String): AnnotationSeq = {
+    val (targetDirs, otherAnnos) = annos.partition(_.isInstanceOf[TargetDirAnnotation])
+    val testDir = targetDirs.collectFirst{ case TargetDirAnnotation(dir) => dir } match {
+      case Some(".") => "test_run_dir"
+      case None => "test_run_dir"
+      case Some(other) => other
+    }
+    val path = s"${testDir}/${testerName}"
+    TargetDirAnnotation(path) +: otherAnnos
+  }
+  /** derives the name of the PeekPoke tester class */
+  private def getTesterName[M <: Module](testerGen: M => PeekPokeTester[M]): String = {
+    val genClassName = testerGen.getClass.getName
+    genClassName.split("""\$\$""").headOption.getOrElse("") + genClassName.hashCode.abs
   }
 
   /**
@@ -152,53 +139,13 @@ object Driver {
     testerSeed: Long = System.currentTimeMillis())(
     testerGen: T => PeekPokeTester[T]): Boolean = {
 
-    val optionsManager = new TesterOptionsManager {
-      testerOptions = testerOptions.copy(backendName = backendType, isVerbose = verbose, testerSeed = testerSeed)
-    }
-
-    execute(dutGen, optionsManager)(testerGen)
+    // TODO: translate to argumetns
+    ???
   }
 
-  /**
-   * Runs the ClassicTester using the verilator backend without doing Verilator compilation and returns a Boolean indicating success or failure
-   * Requires the caller to supply path the already compile Verilator binary
-   */
-  def run[T <: Module](dutGen: () => T, cmd: Seq[String])
-    (testerGen: T => PeekPokeTester[T]): Boolean = {
-    val circuit = chisel3.stage.ChiselStage.elaborate(dutGen())
-    val dut = getTopModule(circuit).asInstanceOf[T]
-    backendVar.withValue(Some(new VerilatorBackend(dut, cmd))) {
-      try {
-        testerGen(dut).finish
-      } catch { case e: Throwable =>
-        e.printStackTrace()
-        backend match {
-          case Some(b: IVLBackend) =>
-            TesterProcess kill b
-          case Some(b: VCSBackend) =>
-            TesterProcess kill b
-          case Some(b: VSIMBackend) =>
-            TesterProcess kill b
-          case Some(b: VerilatorBackend) =>
-            TesterProcess kill b
-          case _ =>
-        }
-        throw e
-      }
-    }
-  }
-
-  def run[T <: Module](dutGen: () => T, binary: String, args: String*)
-    (testerGen: T => PeekPokeTester[T]): Boolean =
-    run(dutGen, binary +: args.toSeq)(testerGen)
-
-  def run[T <: Module](dutGen: () => T, binary: File, waveform: Option[File] = None)
-    (testerGen: T => PeekPokeTester[T]): Boolean = {
-    val args = waveform match {
-      case None => Nil
-      case Some(f) => Seq(s"+waveform=$f")
-    }
-    run(dutGen, binary.toString +: args.toSeq)(testerGen)
+  private def parseArgs(args: Array[String]): AnnotationSeq = {
+    println("WARN: TODO: implement argument parsing!")
+    List()
   }
 
   /** Filter a sequence of annotations, ensuring problematic potential duplicates are removed.
@@ -215,3 +162,5 @@ object Driver {
     }
   }
 }
+
+private case class IOTestersContext(backend: SimulatorContext, isVerbose: Boolean = false, base: Int = 16, seed: Long = 0)

@@ -34,16 +34,14 @@ object Pokeable {
 }
 
 abstract class PeekPokeTester[T <: Module](val dut: T) {
-
-  // implicit val logger = new TestErrorLog
-
   implicit def longToInt(x: Long) = x.toInt
-  // val optionsManager = Driver.optionsManager
 
-  // implicit val _verbose = optionsManager.testerOptions.isVerbose
-  // implicit val _base    = optionsManager.testerOptions.displayBase
-  implicit val _verbose = false
-  implicit val _base = 16
+  private val ctx = Driver.ctx.getOrElse(
+    throw new RuntimeException("PeekPokeTester needs to be instantiated by the Driver!")
+  )
+
+  implicit val _verbose = ctx.isVerbose
+  implicit val _base = ctx.base
 
   def println(msg: String = "") {
     //logger.info(msg)
@@ -52,7 +50,7 @@ abstract class PeekPokeTester[T <: Module](val dut: T) {
   /****************************/
   /*** Simulation Interface ***/
   /****************************/
-  val backend: SimulatorContext = ???
+  val backend: SimulatorContext = ctx.backend
 
   /********************************/
   /*** Classic Tester Interface ***/

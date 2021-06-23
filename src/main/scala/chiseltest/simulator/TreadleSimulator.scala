@@ -12,7 +12,7 @@ object TreadleSimulator extends Simulator {
   override def isAvailable: Boolean = true
   override def findVersions: Unit = {
     println("treadle is available")
-    println("version info is waiting for: https://github.com/chipsalliance/treadle/issues/333")
+    println(s"version: ${treadle.BuildInfo.version}")
   }
 
   /** start a new simulation
