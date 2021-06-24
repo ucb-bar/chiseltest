@@ -22,6 +22,8 @@ object TreadleSimulator extends Simulator {
   override def createContext(state: CircuitState): SimulatorContext = {
     val treadleState = (new TreadleTesterPhase).transform(toAnnos(state))
 
+    // TODO: translate VCD annotation!
+
     val treadleTester = treadleState.collectFirst { case TreadleTesterAnnotation(t) => t }.getOrElse(
       throw new Exception(
         s"TreadleTesterPhase could not build a treadle tester from these annotations" +

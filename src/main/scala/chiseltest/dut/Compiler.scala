@@ -38,6 +38,12 @@ object Compiler {
     val res = firrtlStage.execute(Array("-E", "low"), inAnnos)
     annosToState(res)
   }
+  def lowFirrtlToSystemVerilog(state: firrtl.CircuitState, annos: AnnotationSeq = List()): firrtl.CircuitState = {
+    requireTargetDir(state.annotations)
+    val inAnnos = annos ++: stateToAnnos(state)
+    val res = firrtlStage.execute(Array("--start-from", "low", "-E", "sverilog"), inAnnos)
+    annosToState(res)
+  }
   private val maybeAspects = new MaybeAspectPhase
   private val converter = new Convert
   private def stateToAnnos(state: firrtl.CircuitState): AnnotationSeq = {
@@ -53,9 +59,10 @@ object Compiler {
     case _=> false
   }
   private def firrtlStage = new FirrtlStage
-  private def requireTargetDir(annos: AnnotationSeq): Unit = {
+  def requireTargetDir(annos: AnnotationSeq): String = {
     val targetDirs = annos.collect { case TargetDirAnnotation(d) => d }.toSet
     require(targetDirs.nonEmpty, "Expected exactly one target directory, got none!")
     require(targetDirs.size == 1, s"Expected exactly one target directory, got multiple: $targetDirs")
+    targetDirs.head
   }
 }

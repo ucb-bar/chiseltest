@@ -2,7 +2,8 @@
 
 package chiseltest.simulator
 
-import firrtl.CircuitState
+import chiseltest.internal.WriteVcdAnnotation
+import firrtl.{AnnotationSeq, CircuitState}
 
 // TODO: more powerful step command
 // advance simulation time by N cycles and any number of clocks
@@ -43,4 +44,12 @@ trait Simulator {
    * @param state LoFirrtl circuit + annotations
    */
   def createContext(state: CircuitState): SimulatorContext
+}
+
+/** contains some common code that is used by the various simulator backends */
+private object Simulator {
+  def getWavformFormat(annos: AnnotationSeq): String = {
+    val vcd = annos.contains(WriteVcdAnnotation)
+    if(vcd) { "vcd" } else { "" }
+  }
 }
