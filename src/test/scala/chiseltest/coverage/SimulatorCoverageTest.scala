@@ -24,10 +24,10 @@ abstract class SimulatorCoverageTest(name: String, backend: BackendAnnotation) e
     val cov = getCoverage(r)
 
     // the cover point in the main module are not prefixed
-    assert(cov.keys.toList == List("cover_0"))
+    assert(cov.keys.toList == List("SIM"))
 
     // since we executed one step and all inputs are zero by default, we expect the count to be 3
-    assert(cov("cover_0") == 2)
+    assert(cov("SIM") == 2)
   }
 
   it should "report count for all user cover points (with submodules)" in {
@@ -37,12 +37,12 @@ abstract class SimulatorCoverageTest(name: String, backend: BackendAnnotation) e
     val cov = getCoverage(r)
 
     // the cover point in the main module are not prefixed, but the one in the child module are
-    assert(cov.keys.toList.sorted == List("c0.cover_0", "c1.cover_0", "cover_0"))
+    assert(cov.keys.toList.sorted == List("SIM", "c0.SIM", "c1.SIM"))
 
     // since we executed one step and all inputs are zero by default, we expect the count to be 3
-    assert(cov("cover_0") == 2)
-    assert(cov("c0.cover_0") == 0)
-    assert(cov("c1.cover_0") == 0)
+    assert(cov("SIM") == 2)
+    assert(cov("c0.SIM") == 0)
+    assert(cov("c1.SIM") == 0)
   }
 
   // this is an integration test that uses chisel3.experimental.verification.cover to estimate PI
@@ -57,8 +57,8 @@ abstract class SimulatorCoverageTest(name: String, backend: BackendAnnotation) e
     }
 
     val cov = getCoverage(r)
-    val inCircle = cov("cover_0")
-    val inRectangle = cov("cover_1")
+    val inCircle = cov("SIM")
+    val inRectangle = cov("SIM_1")
     val pi = 4.0 * inCircle.toDouble / inRectangle.toDouble
     val error = math.abs(pi - math.Pi)
     assert(error < 0.0329)
