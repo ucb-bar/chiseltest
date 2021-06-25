@@ -5,7 +5,7 @@ package chiseltest.iotesters
 
 
 import chisel3.{ChiselExecutionFailure => _, ChiselExecutionSuccess => _, _}
-import chiseltest.internal.{BackendAnnotation, TreadleBackendAnnotation}
+import chiseltest.internal.{BackendAnnotation, TreadleBackendAnnotation, VerilatorBackendAnnotation}
 import chiseltest.simulator._
 import chiseltest.dut.Compiler
 import firrtl.AnnotationSeq
@@ -13,6 +13,7 @@ import firrtl.annotations.Annotation
 import firrtl.options.TargetDirAnnotation
 import logger.Logger
 
+import scala.collection.mutable
 import scala.util.DynamicVariable
 
 object Driver {
@@ -47,7 +48,6 @@ object Driver {
     val annos = parseArgs(args)
 
     val backendAnno = annos.collectFirst { case x: BackendAnnotation => x }.getOrElse(TreadleBackendAnnotation)
-    require(backendAnno == TreadleBackendAnnotation, "Only treadle is support atm")
 
     // compile design
     val (highFirrtl, module) = Compiler.elaborate(() => dut(), annos)
@@ -57,7 +57,11 @@ object Driver {
     val lowFirrtl = Compiler.toLowFirrtl(highFirrtlWithTargetDir)
 
     // create simulator context
-    val sim = TreadleSimulator.createContext(lowFirrtl)
+    val simulator = backendAnno match {
+      case TreadleBackendAnnotation => TreadleSimulator
+      case VerilatorBackendAnnotation => VerilatorSimulator
+    }
+    val sim = simulator.createContext(lowFirrtl)
     val localCtx = IOTestersContext(sim)
 
     // run tests
@@ -146,9 +150,34 @@ object Driver {
     execute(args.toArray, dutGen)(testerGen)
   }
 
+  private def backendNameToAnnotation(name: String): Annotation = name match {
+    case "treadle" => TreadleBackendAnnotation
+    // we no longer support the firrtl interpreter
+    case "firrtl" => TreadleBackendAnnotation
+    case "verilator" => VerilatorBackendAnnotation
+    case other => throw new NotImplementedError(s"Unsupported backend: $other")
+  }
+
   private def parseArgs(args: Array[String]): AnnotationSeq = {
-    println("WARN: TODO: implement argument parsing!")
-    List()
+    var cmd = ""
+    val annos = mutable.ListBuffer[Annotation]()
+    args.foreach { a =>
+      if(a.startsWith("--")) a match {
+        case "--is-verbose" => println("TODO: support --is-verbose")
+        case other => cmd = other
+      } else {
+        require(cmd.nonEmpty, s"arguments should start with --! ${a}")
+        cmd match {
+          case "--backend-name" => annos.append(backendNameToAnnotation(a))
+          case "--test-seed" =>
+            val seed = a.toLong
+            println(s"TODO: support --test-seed $seed")
+          case other =>
+            throw new NotImplementedError(s"Unsupported argument: $other $a")
+        }
+      }
+    }
+    annos.toList
   }
 
   /** Filter a sequence of annotations, ensuring problematic potential duplicates are removed.
