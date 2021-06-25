@@ -1,8 +1,8 @@
 package chiseltest.simulator
 
 /** Generates the Module specific verilator harness cpp file for verilator compilation */
-object VerilatorCppHarnessGenerator {
-  def codeGen(dutName: String, inputs: Seq[(String, Int)], outputs: Seq[(String, Int)], vcdFilePath: String, targetDir: String, majorVersion: Int, minorVersion: Int): String = {
+private object VerilatorCppHarnessGenerator {
+  def codeGen(toplevel: TopmoduleInfo, vcdFilePath: String, targetDir: String, majorVersion: Int, minorVersion: Int): String = {
     val codeBuffer = new StringBuilder
 
     def pushBack(vector: String, pathName: String, width: BigInt) {
@@ -32,6 +32,7 @@ object VerilatorCppHarnessGenerator {
       }
     }
 
+    val dutName = toplevel.name
     val dutApiClassName = dutName + "_api_t"
     val dutVerilatorClassName = "V" + dutName
 
@@ -70,11 +71,11 @@ class $dutApiClassName: public sim_api_t<VerilatorDataWrapper*> {
         sim_data.signals.clear();
 
 """)
-    inputs.foreach { case (name, width) =>
+    toplevel.inputs.foreach { case (name, width) =>
       // replaceFirst used here in case port name contains the dutName
       pushBack("inputs", "dut->" + name, width)
     }
-    outputs.foreach { case (name, width) =>
+    toplevel.outputs.foreach { case (name, width) =>
       // replaceFirst used here in case port name contains the dutName
       pushBack("outputs", "dut->" + name, width)
     }

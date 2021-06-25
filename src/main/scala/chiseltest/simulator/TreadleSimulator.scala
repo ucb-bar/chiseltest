@@ -38,7 +38,7 @@ object TreadleSimulator extends Simulator {
      FirrtlCircuitAnnotation(state.circuit) +: state.annotations
 }
 
-class TreadleContext(tester: TreadleTester) extends SimulatorContext {
+private class TreadleContext(tester: TreadleTester) extends SimulatorContext {
   override def sim: Simulator = TreadleSimulator
 
   require(tester.clockInfoList.size == 1, "Currently only single clock circuits are supported!")

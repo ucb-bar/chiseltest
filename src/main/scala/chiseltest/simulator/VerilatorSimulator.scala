@@ -45,9 +45,10 @@ object VerilatorSimulator extends Simulator {
   override def createContext(state: CircuitState): SimulatorContext = {
     // we will create the simulation in the target directory
     val targetDir = chiseltest.dut.Compiler.requireTargetDir(state.annotations)
+    val toplevel = TopmoduleInfo(state.circuit)
 
     // Create the header files that verilator needs + a custom harness
-    val cppHarness =  generateHarness(targetDir, state.circuit)
+    val cppHarness =  generateHarness(targetDir, toplevel)
 
     // compile low firrtl to System Verilog for verilator to use
     chiseltest.dut.Compiler.lowFirrtlToSystemVerilog(state, VerilatorCoverage.CoveragePasses)
@@ -63,9 +64,10 @@ object VerilatorSimulator extends Simulator {
       VerilatorPatchCoverageCpp(verilatedDir.toString())
     }
 
-    val sim = compileSimulation(topName = state.circuit.main, verilatedDir)
+    val simBin = compileSimulation(topName = state.circuit.main, verilatedDir)
 
-    new VerilatorContext(sim)
+    // the binary we created communicates using our standard IPC interface
+    new IPCSimulatorContext(List(simBin.toString()), toplevel, VerilatorSimulator)
   }
 
   private def compileSimulation(topName: String, verilatedDir: os.Path): os.Path = {
@@ -139,50 +141,18 @@ object VerilatorSimulator extends Simulator {
     flags
   }
 
-  private def generateHarness(targetDir: String, circuit: ir.Circuit): String = {
+  private def generateHarness(targetDir: String, toplevel: TopmoduleInfo): String = {
     val targetDirPath = os.pwd / os.RelPath(targetDir)
-
-    // gather some information about the top level interface
-    val topName = circuit.main
-    val (inputs, outputs) = getToplevelIO(circuit)
+    val topName = toplevel.name
 
     // Create the header files that verilator needs + a custom harness
     CopyVerilatorHeaderFiles(targetDir)
     val cppHarnessFileName = s"${topName}-harness.cpp"
     val vcdFile = new File(targetDir, s"$topName.vcd")
-    val emittedStuff = VerilatorCppHarnessGenerator.codeGen(topName, inputs, outputs, vcdFile.toString, targetDir,
+    val emittedStuff = VerilatorCppHarnessGenerator.codeGen(toplevel, vcdFile.toString, targetDir,
       majorVersion = majorVersion, minorVersion = minorVersion)
     os.write.over(targetDirPath / cppHarnessFileName, emittedStuff)
 
     cppHarnessFileName
   }
-
-  private def getToplevelIO(circuit: ir.Circuit): (Seq[(String, Int)], Seq[(String, Int)]) = {
-    val main = circuit.modules.find(_.name == circuit.main).get
-    val (in, out) = main.ports.partition(_.direction == ir.Input)
-    (in.map(portNameAndWidth), out.map(portNameAndWidth))
-  }
-  private def portNameAndWidth(p: ir.Port): (String, Int) = {
-    require(p.tpe.isInstanceOf[ir.GroundType],
-      s"Port ${p.serialize} is not of ground type! Please make sure to provide LowFirrtl to this API!")
-    p.name -> bitWidth(p.tpe).toInt
-  }
-}
-
-class VerilatorContext(sim: os.Path) extends SimulatorContext {
-  override def sim: Simulator = VerilatorSimulator
-
-  override def step(clock: String, n: Int) = ???
-
-  override def peek(signal: String) = ???
-
-  override def poke(signal: String, value: BigInt): Unit = ???
-
-  override def peekMemory(memory: String, index: Long) = ???
-
-  override def pokeMemory(memory: String, index: Long, value: BigInt): Unit = ???
-
-  override def getCoverage = ???
-
-  override def finish() = ???
 }

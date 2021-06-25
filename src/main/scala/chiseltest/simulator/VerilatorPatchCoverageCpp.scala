@@ -10,7 +10,7 @@ import java.nio.file.Path
   * the simulator needs to return per instance coverage counts.
   * See: https://github.com/verilator/verilator/issues/2793
   */
-object VerilatorPatchCoverageCpp {
+private object VerilatorPatchCoverageCpp {
   private val CallNeedle = "VL_COVER_INSERT("
   private val CallReplacement = "CHISEL_VL_COVER_INSERT("
   private val CoverageStartNeedle = "// Coverage"
