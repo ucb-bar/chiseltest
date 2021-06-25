@@ -113,9 +113,8 @@ class DecoupledBackPressureInputStallTest extends AnyFreeSpec with ChiselScalate
         for (stimulus <- inputSeq) {
           dut.input.enqueue(stimulus)
 
-          // Create random input stall delay
+          // Create random input stall delay by inserting steps before enqueue
           makeDelay(inputDelayRand) { delay =>
-            dut.input.notValid()
             dut.clock.step(delay)
           }
         }
@@ -123,9 +122,8 @@ class DecoupledBackPressureInputStallTest extends AnyFreeSpec with ChiselScalate
         for (expected <- resultSeq) {
           dut.output.expectDequeue(expected)
 
-          // Create random amount of backpressure
+          // Create random amount of backpressure, by adding steps before next dequeue
           makeDelay(outputDelayRand) { delay =>
-            dut.output.notReady()
             dut.clock.step(delay)
           }
         }
@@ -150,22 +148,6 @@ class DecoupledBackPressureInputStallTest extends AnyFreeSpec with ChiselScalate
       cyclesTaken(2) should be > cyclesTaken.head
       cyclesTaken(3) should be > cyclesTaken.head
       cyclesTaken(4) should be > cyclesTaken.head
-    }
-  }
-
-  "Attempting notReady on input will make decent error" in {
-    intercept[UnpokeableException] {
-      test(new DecoupledGcd(16)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
-        dut.input.notReady()
-      }
-    }
-  }
-
-  "Attempting notValid on output will make decent error" in {
-    intercept[UnpokeableException] {
-      test(new DecoupledGcd(16)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
-        dut.output.notValid()
-      }
     }
   }
 }
