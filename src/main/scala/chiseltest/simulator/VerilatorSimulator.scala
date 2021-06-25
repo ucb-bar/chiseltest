@@ -87,7 +87,7 @@ object VerilatorSimulator extends Simulator {
 
     removeOldCode(verilatedDir)
     val flags = generateFlags(topName, verilatedDir, annos)
-    val cmd = List("verilator", "--cc", s"$topName.sv", "--exe", cppHarness) ++ flags
+    val cmd = List("verilator", "--cc", "--exe", cppHarness) ++ flags ++ List(s"$topName.sv")
     val ret = os.proc(cmd).call(cwd = targetDirPath)
 
     assert(ret.exitCode == 0, s"verilator command failed on circuit ${topName} in work dir $targetDir")
@@ -104,7 +104,7 @@ object VerilatorSimulator extends Simulator {
   private def DefaultCFlags(topName: String) = List(
     "-Wno-undefined-bool-conversion",
     "-O1",
-    "-DVL_USER_FINISH",
+    "-DVL_USER_FINISH", // this is required because we ant to overwrite the vl_finish function!
     s"-DTOP_TYPE=V$topName",
     s"-include V$topName.h"
   )
@@ -118,7 +118,7 @@ object VerilatorSimulator extends Simulator {
     "--top-module", topName,
     "+define+TOP_TYPE=V" + topName,
     // flags passed to the C++ compiler
-    "-CFLAGS", "\"" + cFlags.mkString(" ") + "\"",
+    "-CFLAGS", cFlags.mkString(" "),
     // name of the directory that verilator generates the C++ model + Makefile in
     "-Mdir", verilatedDir.toString()
   )
