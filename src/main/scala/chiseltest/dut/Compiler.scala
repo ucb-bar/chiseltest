@@ -22,7 +22,7 @@ object Compiler {
     val dut = elaborationAnnos.collectFirst{ case DesignAnnotation(d) => d}.get
 
     // run aspects
-    val aspectAnnos = maybeAspects.transform(elaborationAnnos)
+    val aspectAnnos = maybeAspects.transform(elaborationAnnos ++ annotationSeq)
 
     // run Converter.convert(a.circuit) and toFirrtl on all annotations
     val converterAnnos = converter.transform(aspectAnnos)
