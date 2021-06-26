@@ -24,6 +24,7 @@ class IoTestersGcd(gcd: DecoupledGcd, testValues: Seq[(Int, Int, Int)]) extends 
 object GcdRegression {
   def main(args: Array[String]): Unit = {
     val t = new Timer
+    val Repetitions = 6
 
     def computeGcd(a: Int, b: Int): Int = {
       var x = a
@@ -43,12 +44,13 @@ object GcdRegression {
 
     val testValues = (for {x <- 2 to 100; y <- 2 to 100} yield (x, y, computeGcd(x, y)))
 
-    val backendName = if (args.nonEmpty) { "verilator" } else { "treadle" }
+    val backendName = "verilator" // if (args.nonEmpty) { "verilator" } else { "treadle" }
 
     Driver.execute(Array(
       "--target-dir", "test_run_dir/iotesters_gcd",
       "--top-name", "iotesters_gcd",
       "--backend-name", backendName,
+      // "--generate-vcd-output", "on",
       //      "-tiwv"
     ), () => new DecoupledGcd(bitWidth = 60)) { dut =>
       t("iotesters-gcd") {
@@ -71,5 +73,7 @@ object GcdRegression {
         new IoTestersGcd(dut, testValues)
       }
     }
+
+    println(t.report())
   }
 }
