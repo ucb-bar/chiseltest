@@ -5,12 +5,13 @@ package chiseltest.iotesters
 
 
 import chisel3.{ChiselExecutionFailure => _, ChiselExecutionSuccess => _, _}
-import chiseltest.internal.{BackendAnnotation, TreadleBackendAnnotation, VerilatorBackendAnnotation}
+import chiseltest.internal.{BackendAnnotation, TreadleBackendAnnotation, VerilatorBackendAnnotation, WriteVcdAnnotation}
 import chiseltest.simulator._
 import chiseltest.dut.Compiler
 import firrtl.AnnotationSeq
 import firrtl.annotations.Annotation
 import firrtl.options.TargetDirAnnotation
+import firrtl.stage.phases.DriverCompatibility.TopNameAnnotation
 import logger.Logger
 
 import scala.collection.mutable
@@ -172,6 +173,11 @@ object Driver {
           case "--test-seed" =>
             val seed = a.toLong
             println(s"TODO: support --test-seed $seed")
+          case "--target-dir" => annos.append(TargetDirAnnotation(a))
+          case "--top-name" =>
+            println(s"ignoring --top-name ${a}")
+          case "--generate-vcd-output" if a == "on" =>
+            annos.append(WriteVcdAnnotation)
           case other =>
             throw new NotImplementedError(s"Unsupported argument: $other $a")
         }
