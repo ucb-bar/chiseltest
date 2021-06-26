@@ -18,9 +18,15 @@ import scala.sys.process._
 
 /** This context works with a simulation binary that communicates through shared memory.
  * @param cmd command to launch the simulation binary
+ * @param toplevel information about the interface exposed by the module at the top of the RTL hierarchy
+ * @param waveformFile optional path to the waveform file, we assume that the file will only be available _after_
+ *                     the simulation has been terminated
+ * @param loadCoverage may be called _after_ the simulation is finished to retrieve coverage information
  * @param sim simulator that generated the binary
  * */
-private [chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: TopmoduleInfo, override val sim: Simulator) extends SimulatorContext with LazyLogging {
+private [chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: TopmoduleInfo,
+  waveformFile: Option[os.Path], loadCoverage: () => List[(String, Long)],
+  override val sim: Simulator) extends SimulatorContext with LazyLogging {
   require(toplevel.clocks.size == 1, "currently this interface only works with exactly one clock")
 
   // Construct maps for the input and output
@@ -113,6 +119,7 @@ private [chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: Topmo
         "test application exit"
       } + " - exit code %d".format(exitCode)
       dumpLogs()
+      isRunning = false
       throw TestApplicationException(exitCode, errorString)
     }
   }
@@ -289,6 +296,7 @@ private [chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: Topmo
   private def start(): Unit = {
     println(s"""STARTING ${cmd.mkString(" ")}""")
     mwhile(!recvOutputs) {}
+    isRunning = true
   }
 
   override def poke(signal: String, value: BigInt) {
@@ -338,10 +346,11 @@ private [chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: Topmo
       None
     } catch {
       case TestApplicationException(exit, msg) =>
-        Some(IPCSimulatorResults(exit))
+        Some(SimulatorResults(exit, waveformFile))
     }
   }
 
+  private var isRunning = false
   override def finish(): SimulatorResults = {
     mwhile(!sendCmd(SIM_CMD.FIN)) {}
     val exit = Await.result(exitValue, Duration.Inf)
@@ -350,8 +359,8 @@ private [chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: Topmo
     inChannel.close()
     outChannel.close()
     cmdChannel.close()
-    // TODO: add waveform info
-    IPCSimulatorResults(exit)
+    isRunning = false
+    SimulatorResults(exit, waveformFile)
   }
 
   // Once everything has been prepared, we can start the communications.
@@ -365,14 +374,12 @@ private [chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: Topmo
     throw new NotImplementedError("pokeMemory")
   }
 
-  override def getCoverage = {
-    throw new NotImplementedError("getCoverage")
+  override def getCoverage: List[(String, Long)] = {
+    require(!isRunning, "Cannot get coverage while the simulation is running!")
+    loadCoverage()
   }
 }
 
-case class IPCSimulatorResults(exitCode: Int) extends SimulatorResults {
-  override def waveformFile = None
-}
 
 
 private[chiseltest] object TesterProcess {

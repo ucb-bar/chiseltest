@@ -73,6 +73,7 @@ object VerilatorSimulator extends Simulator {
     val simBin = compileSimulation(topName = state.circuit.main, verilatedDir)
 
     // the binary we created communicates using our standard IPC interface
+    // TODO: waveform file + getCoverage!
     new IPCSimulatorContext(List(simBin.toString()), toplevel, VerilatorSimulator)
   }
 

@@ -51,7 +51,7 @@ private class TreadleContext(tester: TreadleTester) extends SimulatorContext {
     } catch {
       case s : StopException =>
         val exitCode = 1 // TODO!
-        Some(TreadleResults(exitCode, waveformFile))
+        Some(SimulatorResults(exitCode, waveformFile))
     }
   }
 
@@ -77,10 +77,10 @@ private class TreadleContext(tester: TreadleTester) extends SimulatorContext {
 
   override def finish(): SimulatorResults = {
     tester.finish
-    TreadleResults(0, waveformFile)
+    SimulatorResults(0, waveformFile)
   }
 
-  private def waveformFile = if(tester.engine.vcdFileName.isEmpty) None else Some(tester.engine.vcdFileName)
+  private def waveformFile: Option[os.Path] = if(tester.engine.vcdFileName.isEmpty) { None }  else {
+    Some(os.pwd / os.RelPath(tester.engine.vcdFileName))
+  }
 }
-
-case class TreadleResults(exitCode: Int, waveformFile: Option[String]) extends SimulatorResults

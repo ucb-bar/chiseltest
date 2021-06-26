@@ -31,10 +31,7 @@ trait SimulatorContext {
   def pokeMemory(memory: String, index: Long, value: Long): Unit = pokeMemory(memory, index, BigInt(value))
 }
 
-trait SimulatorResults {
-  def exitCode: Int
-  def waveformFile: Option[String]
-}
+case class SimulatorResults(exitCode: Int, waveformFile: Option[os.Path])
 
 /** a firrtl circuit simulator */
 trait Simulator {
