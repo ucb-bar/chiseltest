@@ -1,15 +1,18 @@
-package chiseltest.simulator
+// SPDX-License-Identifier: Apache-2.0
+
+package chiseltest.simulator.ipc
 
 import chiseltest.legacy.backends.verilator.SimApiInterface
+import chiseltest.simulator.{Simulator, SimulatorContext, SimulatorResults, TopmoduleInfo}
 import logger.LazyLogging
 
 import java.io.File
 import java.nio.channels.FileChannel
 import scala.collection.immutable.ListMap
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future, blocking}
-import scala.collection.mutable.ArrayBuffer
 import scala.sys.process._
 
 
@@ -17,7 +20,7 @@ import scala.sys.process._
  * @param cmd command to launch the simulation binary
  * @param sim simulator that generated the binary
  * */
-private class IPCSimulatorContext(cmd: Seq[String], toplevel: TopmoduleInfo, override val sim: Simulator) extends SimulatorContext with LazyLogging {
+private [chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: TopmoduleInfo, override val sim: Simulator) extends SimulatorContext with LazyLogging {
   require(toplevel.clocks.size == 1, "currently this interface only works with exactly one clock")
 
   // Construct maps for the input and output

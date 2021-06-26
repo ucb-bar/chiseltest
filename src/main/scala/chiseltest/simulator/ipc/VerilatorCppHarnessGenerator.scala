@@ -1,7 +1,11 @@
-package chiseltest.simulator
+// SPDX-License-Identifier: Apache-2.0
+
+package chiseltest.simulator.ipc
+
+import chiseltest.simulator.TopmoduleInfo
 
 /** Generates the Module specific verilator harness cpp file for verilator compilation */
-private object VerilatorCppHarnessGenerator {
+private [chiseltest] object VerilatorCppHarnessGenerator {
   def codeGen(toplevel: TopmoduleInfo, vcdFilePath: String, targetDir: String, majorVersion: Int, minorVersion: Int): String = {
     val codeBuffer = new StringBuilder
 
