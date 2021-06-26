@@ -2,12 +2,14 @@
 
 package chiseltest.simulator
 
-import chiseltest.legacy.backends.verilator.{CopyVerilatorHeaderFiles, VerilatorCFlags, VerilatorCoverage, VerilatorFlags}
+import chiseltest.legacy.backends.verilator.CopyVerilatorHeaderFiles.getClass
+import chiseltest.legacy.backends.verilator.{VerilatorCFlags, VerilatorFlags}
 import chiseltest.simulator.ipc.{IPCSimulatorContext, VerilatorCppHarnessGenerator}
 import firrtl._
 
-import java.io.File
-import java.nio.file.Path
+import java.io.{File, IOException}
+import java.nio.file.StandardCopyOption.REPLACE_EXISTING
+import java.nio.file.{FileAlreadyExistsException, Files, Path, Paths}
 import scala.sys.process._
 
 object VerilatorSimulator extends Simulator {
@@ -71,7 +73,7 @@ object VerilatorSimulator extends Simulator {
     val simBin = compileSimulation(topName = state.circuit.main, verilatedDir)
 
     // the binary we created communicates using our standard IPC interface
-    new ipc.IPCSimulatorContext(List(simBin.toString()), toplevel, VerilatorSimulator)
+    new IPCSimulatorContext(List(simBin.toString()), toplevel, VerilatorSimulator)
   }
 
   private def compileSimulation(topName: String, verilatedDir: os.Path): os.Path = {
@@ -246,4 +248,35 @@ private object VerilatorPatchCoverageCpp {
       |}
       |#endif
       |""".stripMargin
+}
+
+/** Copies the necessary header files used for verilator compilation to the specified destination folder
+ */
+object CopyVerilatorHeaderFiles {
+
+  def apply(destinationDirPath: String): Unit = {
+    new File(destinationDirPath).mkdirs()
+    val simApiHFilePath = Paths.get(destinationDirPath + "/sim_api.h")
+    val verilatorApiHFilePath = Paths.get(destinationDirPath + "/veri_api.h")
+    try {
+      Files.createFile(simApiHFilePath)
+      Files.createFile(verilatorApiHFilePath)
+    } catch {
+      case _: FileAlreadyExistsException =>
+        System.out.format("")
+      case x: IOException =>
+        System.err.format("createFile error: %s%n", x)
+    }
+
+    Files.copy(
+      getClass.getResourceAsStream("/chisel3/tester/legacy/backends/verilator/sim_api.h"),
+      simApiHFilePath,
+      REPLACE_EXISTING
+    )
+    Files.copy(
+      getClass.getResourceAsStream("/chisel3/tester/legacy/backends/verilator/veri_api.h"),
+      verilatorApiHFilePath,
+      REPLACE_EXISTING
+    )
+  }
 }
