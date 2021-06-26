@@ -94,8 +94,8 @@ abstract class PeekPokeTester[T <: Module](val dut: T) {
 
   def reset(n: Int = 1) {
     backend.poke("reset", 1)
-    backend.step("clock", 1)
-    backend.poke("reset", 1)
+    backend.step("clock", n)
+    backend.poke("reset", 0)
   }
 
   def step(n: Int) {
