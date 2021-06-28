@@ -83,10 +83,8 @@ class $dutApiClassName: public sim_api_t<VerilatorDataWrapper*> {
       // replaceFirst used here in case port name contains the dutName
       pushBack("outputs", "dut->" + name, width)
     }
-    // TODO: stop special case-ing reset!
-    pushBack("signals", "dut->reset", 1)
     codeBuffer.append(
-      s"""        sim_data.signal_map["dut->reset"] = 0;
+      s"""
     }
 #if VM_TRACE
      void init_dump(VerilatedVcdC* _tfp) { tfp = _tfp; }

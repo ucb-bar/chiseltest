@@ -140,8 +140,7 @@ JNIEXPORT void JNICALL ${ApiPrefix}_sim_1init(JNIEnv *env, jobject obj) {
       codeBuffer.append(s"""        s->sim_data.signal_map["$mapName"] = $signalMapCnt;""")
       signalMapCnt += 1
     }
-    pushBack("signals", "s->dut->reset", 1)
-    codeBuffer.append(s"""        s->sim_data.signal_map["reset"] = $signalMapCnt;
+    codeBuffer.append(s"""
 }
 
 JNIEXPORT void ${ApiPrefix}_step(JNIEnv *env, jobject obj) {
