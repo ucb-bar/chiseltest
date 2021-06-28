@@ -19,6 +19,9 @@ import scala.collection.mutable
 private [chiseltest] class JNISimulatorContext(cmd: Seq[String], toplevel: TopmoduleInfo,
   override val sim: Simulator) extends SimulatorContext with LazyLogging {
   require(toplevel.clocks.size == 1, "currently this interface only works with exactly one clock")
+  (toplevel.inputs ++ toplevel.outputs).foreach { case (name, width) =>
+    require(width <= 64, s"$width-bit I/O $name is not supported!")
+  }
 
   def int(x: Int): BigInt = (BigInt(x >>> 1) << 1) | BigInt(x & 1)
   def int(x: Long): BigInt = (BigInt(x >>> 1) << 1) | BigInt(x & 1)
@@ -43,14 +46,6 @@ private [chiseltest] class JNISimulatorContext(cmd: Seq[String], toplevel: Topmo
     so.getid(path)
   }
 
-  private def poke(id: Int, v: BigInt): Unit = {
-    so.poke(id, v.toInt)
-  }
-
-  private def peek(id: Int): BigInt = {
-    so.peek(id)
-  }
-
   private def start(): Unit = {
     println(s"""STARTING ${cmd mkString " "}""")
     so.start()
@@ -60,7 +55,7 @@ private [chiseltest] class JNISimulatorContext(cmd: Seq[String], toplevel: Topmo
   override def poke(signal: String, value: BigInt) {
     val id = _signalMap.getOrElseUpdate(signal, getId(signal))
     if (id >= 0) {
-      poke(id, value)
+      so.poke(id, value.toLong)
       isStale = true
     } else {
       logger.info(s"Can't find $signal in the emulator...")
@@ -71,7 +66,7 @@ private [chiseltest] class JNISimulatorContext(cmd: Seq[String], toplevel: Topmo
     if (isStale) { update() }
     val id = _signalMap getOrElseUpdate (signal, getId(signal))
     val r = if (id >= 0) {
-      Some(peek(id))
+      Some(so.peek(id))
     } else {
       logger.info(s"Can't find $signal in the emulator...")
       None
@@ -126,8 +121,8 @@ class TesterSharedLib(libPath: String) {
   @native def start(): Unit
   @native def step(): Unit
   @native def update(): Unit
-  @native def poke(id: Int, value: Int): Unit
-  @native def peek(id: Int): Int
+  @native def poke(id: Int, value: Long): Unit
+  @native def peek(id: Int): Long
   @native def getid(path: String): Int
   @native def getchk(id: Int): Int
   @native def finish(): Unit

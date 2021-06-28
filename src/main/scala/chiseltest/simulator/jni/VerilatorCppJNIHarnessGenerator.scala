@@ -179,7 +179,7 @@ JNIEXPORT void ${ApiPrefix}_finish(JNIEnv *env, jobject obj) {
   // TODO: dump waveform + coverage
 }
 
-JNIEXPORT void ${ApiPrefix}_poke(JNIEnv *env, jobject obj, jint id, jint value) {
+JNIEXPORT void ${ApiPrefix}_poke(JNIEnv *env, jobject obj, jint id, jlong value) {
   sim_state *s = get_state(env, obj);
 
   VerilatorDataWrapper *sig = s->sim_data.signals[id];
@@ -194,7 +194,7 @@ JNIEXPORT void ${ApiPrefix}_poke(JNIEnv *env, jobject obj, jint id, jint value) 
   sig->put_value(&toput);
 }
 
-JNIEXPORT jint ${ApiPrefix}_peek(JNIEnv *env, jobject obj, jint id) {
+JNIEXPORT jlong ${ApiPrefix}_peek(JNIEnv *env, jobject obj, jint id) {
   sim_state *s = get_state(env, obj);
 
   VerilatorDataWrapper *sig = s->sim_data.signals[id];
