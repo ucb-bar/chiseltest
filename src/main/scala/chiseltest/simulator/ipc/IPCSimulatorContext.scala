@@ -25,7 +25,6 @@ import scala.sys.process._
  * @param sim simulator that generated the binary
  * */
 private [chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: TopmoduleInfo,
-  waveformFile: Option[os.Path], loadCoverage: () => List[(String, Long)],
   override val sim: Simulator) extends SimulatorContext with LazyLogging {
   require(toplevel.clocks.size == 1, "currently this interface only works with exactly one clock")
 
@@ -300,7 +299,7 @@ private [chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: Topmo
   }
 
   override def poke(signal: String, value: BigInt) {
-    if (inputsNameToChunkSizeMap contains signal) {
+    if (inputsNameToChunkSizeMap.contains(signal)) {
       _pokeMap(signal) = value
       isStale = true
     } else {
@@ -346,7 +345,7 @@ private [chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: Topmo
       None
     } catch {
       case TestApplicationException(exit, msg) =>
-        Some(SimulatorResults(exit, waveformFile))
+        Some(SimulatorResults(exit))
     }
   }
 
@@ -360,7 +359,7 @@ private [chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: Topmo
     outChannel.close()
     cmdChannel.close()
     isRunning = false
-    SimulatorResults(exit, waveformFile)
+    SimulatorResults(exit)
   }
 
   // Once everything has been prepared, we can start the communications.
@@ -372,11 +371,6 @@ private [chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: Topmo
 
   override def pokeMemory(memory: String, index: Long, value: BigInt): Unit = {
     throw new NotImplementedError("pokeMemory")
-  }
-
-  override def getCoverage: List[(String, Long)] = {
-    require(!isRunning, "Cannot get coverage while the simulation is running!")
-    loadCoverage()
   }
 }
 

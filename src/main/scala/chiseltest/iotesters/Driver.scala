@@ -42,16 +42,16 @@ object Driver {
    * @param testerGen  A peek-poke tester with test for the dey
    * @return           Returns true if all tests in testerGen pass
    */
-  def execute[T <: Module](args: Array[String], dut: () => T)(
+  def execute[T <: Module](args: Array[String], dut: () => T, annos: Seq[Annotation] = List())(
     testerGen: T => PeekPokeTester[T]
   ): Boolean = {
 
-    val annos = parseArgs(args)
+    val inAnnos = annos ++: parseArgs(args)
 
-    val backendAnno = annos.collectFirst { case x: BackendAnnotation => x }.getOrElse(TreadleBackendAnnotation)
+    val backendAnno = inAnnos.collectFirst { case x: BackendAnnotation => x }.getOrElse(TreadleBackendAnnotation)
 
     // compile design
-    val (highFirrtl, module) = Compiler.elaborate(() => dut(), annos)
+    val (highFirrtl, module) = Compiler.elaborate(() => dut(), inAnnos)
 
     // attach a target directory to place the firrtl in
     val highFirrtlWithTargetDir = defaultTargetDir(highFirrtl, getTesterName(testerGen))
@@ -67,7 +67,7 @@ object Driver {
 
     // run tests
     val result = testContext.withValue(Some(localCtx)) {
-      Logger.makeScope(annos) {
+      Logger.makeScope(inAnnos) {
         testerGen(module).finish
       }
     }
@@ -141,14 +141,15 @@ object Driver {
     dutGen: () => T,
     backendType: String = "firrtl",
     verbose: Boolean = false,
-    testerSeed: Long = System.currentTimeMillis())(
+    testerSeed: Long = System.currentTimeMillis(),
+    annos: Seq[Annotation] = List())(
     testerGen: T => PeekPokeTester[T]): Boolean = {
 
     val args = List(
       "--backend-name", backendType,
       "--test-seed", testerSeed.toString,
     ) ++ (if(verbose) List("--is-verbose") else List())
-    execute(args.toArray, dutGen)(testerGen)
+    execute(args.toArray, dutGen, annos = annos)(testerGen)
   }
 
   private def backendNameToAnnotation(name: String): Annotation = name match {

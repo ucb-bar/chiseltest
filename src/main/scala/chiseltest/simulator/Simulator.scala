@@ -21,17 +21,18 @@ trait SimulatorContext {
   def poke(signal: String, value: BigInt): Unit
   def peekMemory(memory: String, index: Long): BigInt
   def pokeMemory(memory: String, index: Long, value: BigInt): Unit
-  // TODO: add reset coverage
-  def getCoverage: List[(String, Long)]
   def finish(): SimulatorResults
   // for possible optimizations
   def peekLong(signal: String): Long = peek(signal).toLong
   def poke(signal: String, value: Long): Unit = poke(signal, BigInt(value))
   def peekMemoryLong(memory: String, index: Long): Long = peekMemory(memory, index).toLong
   def pokeMemory(memory: String, index: Long, value: Long): Unit = pokeMemory(memory, index, BigInt(value))
+  // for fuzzing
+  // def getCoverage(): List[(String, Long)]
+  // def resetCoverage(): Unit
 }
 
-case class SimulatorResults(exitCode: Int, waveformFile: Option[os.Path])
+case class SimulatorResults(exitCode: Int)
 
 /** a firrtl circuit simulator */
 trait Simulator {

@@ -5,6 +5,7 @@ package chiseltest.iotesters.examples
 import chisel3._
 import chisel3.util._
 import chiseltest.iotesters._
+import chiseltest.simulator.VerilatorUseJNI
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers._
 
@@ -216,5 +217,15 @@ class ALUTester extends AnyFlatSpec {
         c => new ALUBizarreInputTester(c)
       } should be(true)
     }
+  }
+}
+
+class ALUJNITest extends AnyFlatSpec {
+  behavior of "ALU with JNI backend"
+
+  it should s"compute data output according to alu_opcode (with Verilator  + JNI)" in {
+    Driver(() => new ALU, "verilator", annos = Seq(VerilatorUseJNI)) {
+      c => new ALUBasicFunctionTester(c)
+    } should be(true)
   }
 }

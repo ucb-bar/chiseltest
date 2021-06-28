@@ -2,15 +2,18 @@
 
 package chiseltest.simulator
 
-import chiseltest.legacy.backends.verilator.CopyVerilatorHeaderFiles.getClass
 import chiseltest.legacy.backends.verilator.{VerilatorCFlags, VerilatorFlags}
 import chiseltest.simulator.ipc.{IPCSimulatorContext, VerilatorCppHarnessGenerator}
+import chiseltest.simulator.jni.{JNISimulatorContext, JNIUtils, VerilatorCppJNIHarnessGenerator}
 import firrtl._
+import firrtl.annotations.{Annotation, NoTargetAnnotation}
 
 import java.io.{File, IOException}
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import java.nio.file.{FileAlreadyExistsException, Files, Path, Paths}
 import scala.sys.process._
+
+private [chiseltest] case object VerilatorUseJNI extends NoTargetAnnotation
 
 object VerilatorSimulator extends Simulator {
   override def name: String = "verilator"
@@ -53,14 +56,16 @@ object VerilatorSimulator extends Simulator {
     val targetDir = chiseltest.dut.Compiler.requireTargetDir(state.annotations)
     val toplevel = TopmoduleInfo(state.circuit)
 
+    val useJNI = state.annotations.contains(VerilatorUseJNI)
+
     // Create the header files that verilator needs + a custom harness
-    val cppHarness =  generateHarness(targetDir, toplevel)
+    val cppHarness =  generateHarness(targetDir, toplevel, useJNI)
 
     // compile low firrtl to System Verilog for verilator to use
     chiseltest.dut.Compiler.lowFirrtlToSystemVerilog(state, VerilatorCoverage.CoveragePasses)
 
     // turn SystemVerilog into C++ simulation
-    val verilatedDir = runVerilator(state.circuit.main, targetDir, cppHarness, state.annotations)
+    val verilatedDir = runVerilator(state.circuit.main, targetDir, cppHarness, state.annotations, useJNI)
 
     // patch the coverage cpp provided with verilator only if Verilator is older than 4.202
     // Starting with Verilator 4.202, the whole patch coverage hack is no longer necessary
@@ -74,7 +79,11 @@ object VerilatorSimulator extends Simulator {
 
     // the binary we created communicates using our standard IPC interface
     // TODO: waveform file + getCoverage!
-    new IPCSimulatorContext(List(simBin.toString()), toplevel, VerilatorSimulator)
+    if(useJNI) {
+      new JNISimulatorContext(List(simBin.toString()), toplevel, VerilatorSimulator)
+    } else {
+      new IPCSimulatorContext(List(simBin.toString()), toplevel, VerilatorSimulator)
+    }
   }
 
   private def compileSimulation(topName: String, verilatedDir: os.Path): os.Path = {
@@ -88,12 +97,13 @@ object VerilatorSimulator extends Simulator {
   }
 
   /** executes verilator in order to generate a C++ simulation */
-  private def runVerilator(topName: String, targetDir: String, cppHarness: String, annos: AnnotationSeq): os.Path = {
+  private def runVerilator(topName: String, targetDir: String, cppHarness: String, annos: AnnotationSeq, useJNI: Boolean): os.Path = {
     val targetDirPath = os.pwd / os.RelPath(targetDir)
     val verilatedDir = targetDirPath / "verilated"
 
     removeOldCode(verilatedDir)
-    val flags = generateFlags(topName, verilatedDir, annos)
+    val flagAnnos: Seq[Annotation] = if(useJNI) { VerilatorCFlags(JNIUtils.ccFlags) +: annos } else { annos }
+    val flags = generateFlags(topName, verilatedDir, flagAnnos)
     val cmd = List("verilator", "--cc", "--exe", cppHarness) ++ flags ++ List(s"$topName.sv")
     val ret = os.proc(cmd).call(cwd = targetDirPath)
 
@@ -148,7 +158,7 @@ object VerilatorSimulator extends Simulator {
     flags
   }
 
-  private def generateHarness(targetDir: String, toplevel: TopmoduleInfo): String = {
+  private def generateHarness(targetDir: String, toplevel: TopmoduleInfo, useJNI: Boolean): String = {
     val targetDirPath = os.pwd / os.RelPath(targetDir)
     val topName = toplevel.name
 
@@ -156,8 +166,11 @@ object VerilatorSimulator extends Simulator {
     CopyVerilatorHeaderFiles(targetDir)
     val cppHarnessFileName = s"${topName}-harness.cpp"
     val vcdFile = new File(targetDir, s"$topName.vcd")
-    val emittedStuff = VerilatorCppHarnessGenerator.codeGen(toplevel, vcdFile.toString, targetDir,
-      majorVersion = majorVersion, minorVersion = minorVersion)
+    val emittedStuff = if(useJNI) {
+      VerilatorCppJNIHarnessGenerator.codeGen(toplevel, vcdFile.toString, targetDir, majorVersion = majorVersion, minorVersion = minorVersion)
+    } else {
+      VerilatorCppHarnessGenerator.codeGen(toplevel, vcdFile.toString, targetDir, majorVersion = majorVersion, minorVersion = minorVersion)
+    }
     os.write.over(targetDirPath / cppHarnessFileName, emittedStuff)
 
     cppHarnessFileName
