@@ -116,7 +116,7 @@ JNIEXPORT void JNICALL ${ApiPrefix}_sim_1init(JNIEnv *env, jobject obj) {
 #endif
 #if VM_TRACE
     Verilated::traceEverOn(true);
-    VL_PRINTF(\"Enabling waves..\");
+    VL_PRINTF(\"Enabling waves..\\n\");
     // s->tfp = new VerilatedVcdC;
     // s->main_time = 0;
     s->dut->trace(s->tfp, 99);
@@ -150,7 +150,7 @@ JNIEXPORT void ${ApiPrefix}_step(JNIEnv *env, jobject obj) {
   s->dut->clock = 0;
   s->dut->eval();
 #if VM_TRACE
-  if (s->tfp) s->tfp->dump(main_time);
+  if (s->tfp) s->tfp->dump(s->main_time);
 #endif
   s->main_time++;
   s->dut->clock = 1;

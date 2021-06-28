@@ -4,6 +4,7 @@ package chiseltest.iotesters.examples
 
 import chisel3._
 import chisel3.util._
+import chiseltest.internal.WriteVcdAnnotation
 import chiseltest.iotesters._
 import chiseltest.simulator.VerilatorUseJNI
 import org.scalatest.flatspec.AnyFlatSpec
@@ -224,7 +225,7 @@ class ALUJNITest extends AnyFlatSpec {
   behavior of "ALU with JNI backend"
 
   it should s"compute data output according to alu_opcode (with Verilator  + JNI)" in {
-    Driver(() => new ALU, "verilator", annos = Seq(VerilatorUseJNI)) {
+    Driver(() => new ALU, "verilator", annos = Seq(WriteVcdAnnotation, VerilatorUseJNI)) {
       c => new ALUBasicFunctionTester(c)
     } should be(true)
   }

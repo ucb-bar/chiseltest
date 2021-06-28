@@ -112,13 +112,11 @@ private [chiseltest] class JNISimulatorContext(cmd: Seq[String], toplevel: Topmo
 }
 
 class TesterSharedLib(libPath: String) {
-  Predef.printf(s"TesterSharedLib: loading $libPath ")
   try {
     System.load(new File(libPath).getCanonicalPath())
-    println(" ok")
   } catch {
     case e: Throwable =>
-      println(" failed: " + e.toString)
+      println(s"Failed to load $libPath: " + e.toString)
       throw e
   }
 
