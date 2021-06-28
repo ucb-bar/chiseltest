@@ -43,10 +43,6 @@ private [chiseltest] class JNISimulatorContext(cmd: Seq[String], toplevel: Topmo
     so.getid(path)
   }
 
-  private def getChunk(id: Int): Int = {
-    so.getchk(id)
-  }
-
   private def poke(id: Int, v: BigInt): Unit = {
     so.poke(id, v.toInt)
   }
@@ -129,16 +125,14 @@ class TesterSharedLib(libPath: String) {
   private val state: Long = 0
 
   @native private def sim_init(): Unit
-  @native def reset(): Unit
+  @native def start(): Unit
   @native def step(): Unit
   @native def update(): Unit
   @native def poke(id: Int, value: Int): Unit
   @native def peek(id: Int): Int
-  @native def force(): Unit
   @native def getid(path: String): Int
   @native def getchk(id: Int): Int
   @native def finish(): Unit
-  @native def start(): Unit
 
   println(s"State before: $state")
   sim_init()

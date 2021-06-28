@@ -147,43 +147,37 @@ JNIEXPORT void JNICALL ${ApiPrefix}_sim_1init(JNIEnv *env, jobject obj) {
 JNIEXPORT void ${ApiPrefix}_step(JNIEnv *env, jobject obj) {
   sim_state *s = get_state(env, obj);
 
-  // std::cout << "Stepping" << std::endl;
   s->dut->clock = 0;
   s->dut->eval();
 #if VM_TRACE
-  if (s->tfp) s->tfp->dump(s->main_time);
-#endif /* VM_TRACE */
+  if (s->tfp) s->tfp->dump(main_time);
+#endif
+  s->main_time++;
   s->dut->clock = 1;
   s->dut->eval();
 #if VM_TRACE
   if (s->tfp) s->tfp->dump(s->main_time);
-#endif /* VM_TRACE */
+#endif
   s->main_time++;
-}
-
-JNIEXPORT void ${ApiPrefix}_reset(JNIEnv *env, jobject obj) {
-  sim_state *s = get_state(env, obj);
-
-  s->dut->reset = 1;
-  ${ApiPrefix}_step(env, obj);
-}
-
-JNIEXPORT void ${ApiPrefix}_update(JNIEnv *env, jobject obj) {
-  sim_state *s = get_state(env, obj);
-
-  s->dut->_eval_settle(s->dut->__VlSymsp);
 }
 
 JNIEXPORT void ${ApiPrefix}_start(JNIEnv *env, jobject obj) {
   sim_state *s = get_state(env, obj);
 
-  s->dut->reset = 0;
+  s->dut->reset = 0; // for backwards compatibility reasons
+}
+
+JNIEXPORT void ${ApiPrefix}_update(JNIEnv *env, jobject obj) {
+  sim_state *s = get_state(env, obj);
+
+  s->dut->eval();
 }
 
 JNIEXPORT void ${ApiPrefix}_finish(JNIEnv *env, jobject obj) {
   sim_state *s = get_state(env, obj);
 
   s->dut->eval();
+  // TODO: dump waveform + coverage
 }
 
 JNIEXPORT void ${ApiPrefix}_poke(JNIEnv *env, jobject obj, jint id, jint value) {
@@ -217,9 +211,6 @@ JNIEXPORT jint ${ApiPrefix}_peek(JNIEnv *env, jobject obj, jint id) {
   return toret;
 }
 
-JNIEXPORT void ${ApiPrefix}_force(JNIEnv *env, jobject obj) {
-}
-
 JNIEXPORT jint ${ApiPrefix}_getid(JNIEnv *env, jobject obj, jstring jniPath) {
   sim_state *s = get_state(env, obj);
 
@@ -243,20 +234,6 @@ JNIEXPORT jint ${ApiPrefix}_getid(JNIEnv *env, jobject obj, jstring jniPath) {
   env->ReleaseStringUTFChars(jniPath, path);
 
   return id;
-}
-
-JNIEXPORT jint ${ApiPrefix}_getchk(JNIEnv *env, jobject obj, jint id) {
-  sim_state *s = get_state(env, obj);
-
-  VerilatorDataWrapper *sig = s->sim_data.signals[id];
-  if (!sig) {
-    std::cerr << "Cannot find the object of id = " << id << std::endl;
-    ${ApiPrefix}_finish(env, obj);
-    // TODO what?
-  } else {
-    // std::cout << "Peeking signal " << id << std::endl;
-  }
-  return sig->get_num_words();
 }
 
 }
