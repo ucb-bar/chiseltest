@@ -20,25 +20,11 @@ private [chiseltest] class JNISimulatorContext(cmd: Seq[String], toplevel: Topmo
   override val sim: Simulator) extends SimulatorContext with LazyLogging {
   require(toplevel.clocks.size == 1, "currently this interface only works with exactly one clock")
 
-  // Construct maps for the input and output
-  private val (inputsNameToChunkSizeMap, outputsNameToChunkSizeMap) = {
-    def genChunk(port: (String, Int)): (String, Int) = port._1 -> ((port._2 - 1) / 64 + 1)
-    (
-      ListMap(toplevel.inputs.map(genChunk):  _*),
-      ListMap(toplevel.outputs.map(genChunk): _*)
-    )
-  }
-  private object SIM_CMD extends Enumeration {
-    val RESET, STEP, UPDATE, POKE, PEEK, FORCE, GETID, GETCHK, FIN = Value
-  }
   def int(x: Int): BigInt = (BigInt(x >>> 1) << 1) | BigInt(x & 1)
   def int(x: Long): BigInt = (BigInt(x >>> 1) << 1) | BigInt(x & 1)
 
   private var isStale = false
-  private val _pokeMap = mutable.HashMap[String, BigInt]()
-  private val _peekMap = mutable.HashMap[String, BigInt]()
   private val _signalMap = mutable.HashMap[String, Int]()
-  private val _chunks = mutable.HashMap[String, Int]()
   private val _logs = mutable.ArrayBuffer[String]()
 
   // load shared library
@@ -161,8 +147,7 @@ class TesterSharedLib(libPath: String) {
 
 private[chiseltest] object TesterSharedLib {
   def apply(cmd: Seq[String], logs: mutable.ArrayBuffer[String]): TesterSharedLib = {
-
-    require(new java.io.File(cmd.head + ".dylib").exists, s"${cmd.head}.dylib doesn't exist")
-    new TesterSharedLib(cmd.head + ".dylib")
+    require(os.exists(os.Path(cmd.head)), s"${cmd.head} doesn't exist")
+    new TesterSharedLib(cmd.head)
   }
 }

@@ -63,13 +63,17 @@ void vl_finish(const char* filename, int linenum, const char* hier) {
 
 struct sim_state {
   $dutVerilatorClassName* dut;
+#if VM_TRACE
   VerilatedVcdC* tfp;
+#endif
   vluint64_t main_time;
   sim_data_t<VerilatorDataWrapper*> sim_data;
 
   sim_state() :
     dut(new $dutVerilatorClassName),
+#if VM_TRACE
     tfp(new VerilatedVcdC),
+#endif
     main_time(0)
   {
     std::cout << "Allocating! " << ((long long) dut) << std::endl;
@@ -274,7 +278,7 @@ object JNIUtils {
   def ccFlags: Seq[String] = Seq(
     "-fPIC",
     "-shared",
-    s"$javaHome/include",
+    s"-I$javaHome/include",
     s"-I$javaHome/include/$osIncludeName",
   )
 }
