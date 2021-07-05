@@ -1,7 +1,8 @@
 package chiseltest.simulator.jni
 
 import chiseltest.simulator.ipc.TestApplicationException
-import chiseltest.simulator.{Simulator, SimulatorContext, SimulatorResults, TopmoduleInfo}
+import chiseltest.simulator.{Simulator, SimulatorContext, SimulatorResults, TopmoduleInfo, VerilatorCoverage}
+import firrtl.AnnotationSeq
 import logger.LazyLogging
 
 import java.io.File
@@ -11,12 +12,9 @@ import scala.collection.mutable
 /** This context works with a simulation binary that communicates through shared memory.
  * @param cmd command to launch the simulation binary
  * @param toplevel information about the interface exposed by the module at the top of the RTL hierarchy
- * @param waveformFile optional path to the waveform file, we assume that the file will only be available _after_
- *                     the simulation has been terminated
- * @param loadCoverage may be called _after_ the simulation is finished to retrieve coverage information
  * @param sim simulator that generated the binary
  * */
-private [chiseltest] class JNISimulatorContext(cmd: Seq[String], toplevel: TopmoduleInfo,
+private [chiseltest] class JNISimulatorContext(lib: os.Path, toplevel: TopmoduleInfo, coverageAnnos: AnnotationSeq,
   override val sim: Simulator) extends SimulatorContext with LazyLogging {
   require(toplevel.clocks.size == 1, "currently this interface only works with exactly one clock")
   (toplevel.inputs ++ toplevel.outputs).foreach { case (name, width) =>
@@ -31,7 +29,7 @@ private [chiseltest] class JNISimulatorContext(cmd: Seq[String], toplevel: Topmo
   private val _logs = mutable.ArrayBuffer[String]()
 
   // load shared library
-  private val so = TesterSharedLib(cmd, _logs)
+  private val so = TesterSharedLib(lib, _logs)
 
   private def update(): Unit = {
     so.update()
@@ -47,7 +45,6 @@ private [chiseltest] class JNISimulatorContext(cmd: Seq[String], toplevel: Topmo
   }
 
   private def start(): Unit = {
-    println(s"""STARTING ${cmd mkString " "}""")
     so.start()
     isRunning = true
   }
@@ -104,11 +101,22 @@ private [chiseltest] class JNISimulatorContext(cmd: Seq[String], toplevel: Topmo
   override def pokeMemory(memory: String, index: Long, value: BigInt): Unit = {
     throw new NotImplementedError("pokeMemory")
   }
+
+  private val coverageFile = lib / os.up / "coverage.dat"
+  override def getCoverage(): List[(String, Long)] = {
+    so.writeCoverage(coverageFile.toString())
+    assert(os.exists(coverageFile), s"Could not find `$coverageFile` file!")
+    VerilatorCoverage.loadCoverage(coverageAnnos, coverageFile)
+  }
+
+  override def resetCoverage(): Unit = {
+    so.resetCoverage()
+  }
 }
 
-class TesterSharedLib(libPath: String) {
+class TesterSharedLib(libPath: os.Path) {
   try {
-    System.load(new File(libPath).getCanonicalPath())
+    System.load(libPath.toString())
   } catch {
     case e: Throwable =>
       println(s"Failed to load $libPath: " + e.toString)
@@ -126,15 +134,17 @@ class TesterSharedLib(libPath: String) {
   @native def getid(path: String): Int
   @native def getchk(id: Int): Int
   @native def finish(): Unit
+  @native def writeCoverage(filename: String): Unit
+  @native def resetCoverage(): Unit
 
-  println(s"State before: $state")
+  //println(s"State before: $state")
   sim_init()
-  println(s"State after: $state")
+  //println(s"State after: $state")
 }
 
 private[chiseltest] object TesterSharedLib {
-  def apply(cmd: Seq[String], logs: mutable.ArrayBuffer[String]): TesterSharedLib = {
-    require(os.exists(os.Path(cmd.head)), s"${cmd.head} doesn't exist")
-    new TesterSharedLib(cmd.head)
+  def apply(lib: os.Path, logs: mutable.ArrayBuffer[String]): TesterSharedLib = {
+    require(os.exists(lib), s"$lib doesn't exist")
+    new TesterSharedLib(lib)
   }
 }

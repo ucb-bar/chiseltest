@@ -28,8 +28,8 @@ trait SimulatorContext {
   def peekMemoryLong(memory: String, index: Long): Long = peekMemory(memory, index).toLong
   def pokeMemory(memory: String, index: Long, value: Long): Unit = pokeMemory(memory, index, BigInt(value))
   // for fuzzing
-  // def getCoverage(): List[(String, Long)]
-  // def resetCoverage(): Unit
+  def getCoverage(): List[(String, Long)]
+  def resetCoverage(): Unit
 }
 
 case class SimulatorResults(exitCode: Int)
@@ -56,12 +56,12 @@ private object Simulator {
 }
 
 /** Contains information about the top-level module in the circuit being simulated. */
-private case class TopmoduleInfo(name: String, inputs: Seq[(String, Int)], outputs: Seq[(String, Int)], clocks: Seq[String]) {
+case class TopmoduleInfo(name: String, inputs: Seq[(String, Int)], outputs: Seq[(String, Int)], clocks: Seq[String]) {
   require(inputs.forall(_._2 > 0), s"Inputs need to be at least 1-bit!\n$inputs")
   require(outputs.forall(_._2 > 0), s"Outputs need to be at least 1-bit!\n$outputs")
 }
 
-private object TopmoduleInfo {
+object TopmoduleInfo {
   def apply(circuit: ir.Circuit): TopmoduleInfo = {
     val main = circuit.modules.find(_.name == circuit.main).get
 

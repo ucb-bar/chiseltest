@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package chiseltest.simulator
+
+import firrtl.annotations.Annotation
 import firrtl.stage.FirrtlCircuitAnnotation
 import firrtl.{AnnotationSeq, CircuitState}
 import treadle.{TreadleTester, TreadleTesterAnnotation}
@@ -20,9 +22,8 @@ object TreadleSimulator extends Simulator {
    * @param state LoFirrtl circuit + annotations
    */
   override def createContext(state: CircuitState): SimulatorContext = {
-    val treadleState = (new TreadleTesterPhase).transform(toAnnos(state))
-
-    // TODO: translate VCD annotation!
+    val annos = toAnnos(state).map(translateAnnotation)
+    val treadleState = (new TreadleTesterPhase).transform(annos)
 
     val treadleTester = treadleState.collectFirst { case TreadleTesterAnnotation(t) => t }.getOrElse(
       throw new Exception(
@@ -32,6 +33,11 @@ object TreadleSimulator extends Simulator {
     )
 
     new TreadleContext(treadleTester)
+  }
+
+  private def translateAnnotation(a: Annotation): Annotation = a match {
+    case chiseltest.internal.WriteVcdAnnotation => treadle.WriteVcdAnnotation
+    case other => other
   }
 
   private def toAnnos(state: CircuitState): AnnotationSeq =
@@ -55,13 +61,9 @@ private class TreadleContext(tester: TreadleTester) extends SimulatorContext {
     }
   }
 
-  override def peek(signal: String): BigInt = {
-    tester.peek(signal)
-  }
+  override def peek(signal: String): BigInt = tester.peek(signal)
 
-  override def poke(signal: String, value: BigInt): Unit = {
-    tester.poke(signal, value)
-  }
+  override def poke(signal: String, value: BigInt): Unit = tester.poke(signal, value)
 
   override def peekMemory(memory: String, index: Long): BigInt = {
     tester.peekMemory(memory, index.toInt)
@@ -76,7 +78,7 @@ private class TreadleContext(tester: TreadleTester) extends SimulatorContext {
     SimulatorResults(0)
   }
 
-  private def waveformFile: Option[os.Path] = if(tester.engine.vcdFileName.isEmpty) { None }  else {
-    Some(os.pwd / os.RelPath(tester.engine.vcdFileName))
-  }
+  override def resetCoverage(): Unit = tester.resetCoverage()
+
+  override def getCoverage():List[(String, Long)] = tester.getCoverage()
 }

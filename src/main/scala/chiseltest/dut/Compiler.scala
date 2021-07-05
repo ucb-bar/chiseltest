@@ -47,7 +47,8 @@ object Compiler {
   private val maybeAspects = new MaybeAspectPhase
   private val converter = new Convert
   private def stateToAnnos(state: firrtl.CircuitState): AnnotationSeq = {
-    FirrtlCircuitAnnotation(state.circuit) +: state.annotations
+    val annosWithoutCircuit = state.annotations.filterNot(_.isInstanceOf[FirrtlCircuitAnnotation])
+    FirrtlCircuitAnnotation(state.circuit) +: annosWithoutCircuit
   }
   private def annosToState(annos: AnnotationSeq): firrtl.CircuitState = {
     val circuit = annos.collectFirst { case FirrtlCircuitAnnotation(c) => c }.get

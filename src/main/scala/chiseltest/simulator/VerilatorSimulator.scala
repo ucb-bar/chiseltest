@@ -62,7 +62,7 @@ object VerilatorSimulator extends Simulator {
     val cppHarness =  generateHarness(targetDir, toplevel, useJNI)
 
     // compile low firrtl to System Verilog for verilator to use
-    chiseltest.dut.Compiler.lowFirrtlToSystemVerilog(state, VerilatorCoverage.CoveragePasses)
+    val verilogState = chiseltest.dut.Compiler.lowFirrtlToSystemVerilog(state, VerilatorCoverage.CoveragePasses)
 
     // turn SystemVerilog into C++ simulation
     val verilatedDir = runVerilator(state.circuit.main, targetDir, cppHarness, state.annotations, useJNI)
@@ -80,7 +80,8 @@ object VerilatorSimulator extends Simulator {
     // the binary we created communicates using our standard IPC interface
     // TODO: waveform file + getCoverage!
     if(useJNI) {
-      new JNISimulatorContext(List(simBin.toString()), toplevel, VerilatorSimulator)
+      val coverageAnnos = VerilatorCoverage.collectCoverageAnnotations(verilogState.annotations)
+      new JNISimulatorContext(simBin, toplevel, coverageAnnos, VerilatorSimulator)
     } else {
       new IPCSimulatorContext(List(simBin.toString()), toplevel, VerilatorSimulator)
     }

@@ -65,20 +65,16 @@ void vl_finish(const char* filename, int linenum, const char* hier) {
 
 struct sim_state {
   $dutVerilatorClassName* dut;
-#if VM_TRACE
   VerilatedVcdC* tfp;
-#endif
   vluint64_t main_time;
   sim_data_t<VerilatorDataWrapper*> sim_data;
 
   sim_state() :
     dut(new $dutVerilatorClassName),
-#if VM_TRACE
-    tfp(new VerilatedVcdC),
-#endif
+    tfp(nullptr),
     main_time(0)
   {
-    std::cout << "Allocating! " << ((long long) dut) << std::endl;
+    // std::cout << "Allocating! " << ((long long) dut) << std::endl;
   }
 
 };
@@ -116,8 +112,8 @@ JNIEXPORT void JNICALL ${ApiPrefix}_sim_1init(JNIEnv *env, jobject obj) {
 #endif
 #if VM_TRACE
     Verilated::traceEverOn(true);
-    VL_PRINTF(\"Enabling waves..\\n\");
-    // s->tfp = new VerilatedVcdC;
+    // VL_PRINTF(\"Enabling waves..\\n\");
+    s->tfp = new VerilatedVcdC;
     // s->main_time = 0;
     s->dut->trace(s->tfp, 99);
     s->tfp->open(vcdfile.c_str());
@@ -176,7 +172,24 @@ JNIEXPORT void ${ApiPrefix}_finish(JNIEnv *env, jobject obj) {
   sim_state *s = get_state(env, obj);
 
   s->dut->eval();
-  // TODO: dump waveform + coverage
+
+#if VM_TRACE
+    if (s->tfp) s->tfp->close();
+    delete s->tfp;
+#endif
+#if VM_COVERAGE
+    Verilated::mkdir("$targetDir/logs");
+    VerilatedCov::write("$targetDir/logs/coverage.dat");
+#endif
+}
+
+JNIEXPORT void ${ApiPrefix}_resetCoverage(JNIEnv *env, jobject obj) {
+  VerilatedCov::zero();
+}
+
+JNIEXPORT void ${ApiPrefix}_writeCoverage(JNIEnv *env, jobject obj, jstring filename) {
+  const char *c_str = env->GetStringUTFChars(filename, NULL);
+  VerilatedCov::write(c_str);
 }
 
 JNIEXPORT void ${ApiPrefix}_poke(JNIEnv *env, jobject obj, jint id, jlong value) {
