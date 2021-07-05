@@ -4,9 +4,8 @@ package chiseltest.iotesters.examples
 
 import chisel3._
 import chisel3.util._
-import chiseltest.internal.WriteVcdAnnotation
 import chiseltest.iotesters._
-import chiseltest.simulator.VerilatorUseJNI
+import chiseltest.simulator.{VerilatorUseJNI, WriteVcdAnnotation}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers._
 
