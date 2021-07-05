@@ -3,7 +3,6 @@
 package chiseltest.iotesters
 
 import chisel3.{ChiselExecutionFailure => _, ChiselExecutionSuccess => _, _}
-import chiseltest.internal.{BackendAnnotation, TreadleBackendAnnotation, VerilatorBackendAnnotation, WriteVcdAnnotation}
 import chiseltest.simulator._
 import chiseltest.dut.Compiler
 import firrtl.AnnotationSeq
@@ -47,8 +46,6 @@ object Driver {
 
     val inAnnos = annos ++: parseArgs(args)
 
-    val backendAnno = inAnnos.collectFirst { case x: BackendAnnotation => x }.getOrElse(TreadleBackendAnnotation)
-
     // compile design
     val (highFirrtl, module) = Compiler.elaborate(() => dut(), inAnnos)
 
@@ -57,10 +54,7 @@ object Driver {
     val lowFirrtl = Compiler.toLowFirrtl(highFirrtlWithTargetDir)
 
     // create simulator context
-    val simulator = backendAnno match {
-      case TreadleBackendAnnotation   => TreadleSimulator
-      case VerilatorBackendAnnotation => VerilatorSimulator
-    }
+    val simulator = Simulator.getSimulator(inAnnos, default = TreadleBackendAnnotation)
     val sim = simulator.createContext(lowFirrtl)
     val localCtx = IOTestersContext(sim)
 

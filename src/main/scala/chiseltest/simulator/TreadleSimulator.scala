@@ -3,11 +3,24 @@
 package chiseltest.simulator
 
 import firrtl.annotations.Annotation
+import firrtl.options.{HasShellOptions, ShellOption}
 import firrtl.stage.FirrtlCircuitAnnotation
 import firrtl.{AnnotationSeq, CircuitState}
 import treadle.{TreadleTester, TreadleTesterAnnotation}
 import treadle.executable.StopException
 import treadle.stage.TreadleTesterPhase
+
+case object TreadleBackendAnnotation extends SimulatorAnnotation with HasShellOptions {
+  override def getSimulator = TreadleSimulator
+
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "t-use-treadle",
+      toAnnotationSeq = _ => Seq(TreadleBackendAnnotation),
+      helpText = "direct tester to use Treadle backend"
+    )
+  )
+}
 
 object TreadleSimulator extends Simulator {
   override def name:        String = "treadle"
@@ -36,8 +49,8 @@ object TreadleSimulator extends Simulator {
   }
 
   private def translateAnnotation(a: Annotation): Annotation = a match {
-    case chiseltest.internal.WriteVcdAnnotation => treadle.WriteVcdAnnotation
-    case other                                  => other
+    case WriteVcdAnnotation => treadle.WriteVcdAnnotation
+    case other => other
   }
 
   private def toAnnos(state: CircuitState): AnnotationSeq =

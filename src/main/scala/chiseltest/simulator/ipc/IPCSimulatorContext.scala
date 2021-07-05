@@ -2,7 +2,6 @@
 
 package chiseltest.simulator.ipc
 
-import chiseltest.legacy.backends.verilator.SimApiInterface
 import chiseltest.simulator.{Simulator, SimulatorContext, SimulatorResults, TopmoduleInfo}
 import logger.LazyLogging
 
@@ -389,11 +388,6 @@ private[chiseltest] object TesterProcess {
     // This makes everything written to stderr get added as lines to logs
     val processLogger = ProcessLogger(println, logs += _) // don't log stdout
     processBuilder.run(processLogger)
-  }
-
-  def kill(sim: SimApiInterface): Unit = {
-    while (!sim.exitValue.isCompleted) sim.process.destroy()
-    println("Exit Code: %d".format(sim.process.exitValue()))
   }
 }
 

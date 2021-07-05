@@ -2,8 +2,9 @@
 
 package chiseltest.simulator
 
-import chiseltest.internal.WriteVcdAnnotation
 import firrtl._
+import firrtl.annotations.NoTargetAnnotation
+import firrtl.options.{HasShellOptions, ShellOption}
 
 // TODO: more powerful step command
 // advance simulation time by N cycles and any number of clocks
@@ -49,12 +50,46 @@ trait Simulator {
   def createContext(state: CircuitState): SimulatorContext
 }
 
+/** Defines a simulator backend that should be used. */
+trait SimulatorAnnotation extends NoTargetAnnotation {
+  def getSimulator: Simulator
+}
+
+case object WriteVcdAnnotation extends NoTargetAnnotation with HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "t-write-vcd",
+      toAnnotationSeq = _ => Seq(WriteVcdAnnotation),
+      helpText = "writes vcd execution log, this option may be moved into firrtl in the future"
+    )
+  )
+}
+
 /** contains some common code that is used by the various simulator backends */
-private object Simulator {
+object Simulator {
   def getWavformFormat(annos: AnnotationSeq): String = {
     val vcd = annos.contains(WriteVcdAnnotation)
     if (vcd) { "vcd" }
     else { "" }
+  }
+
+  def getSimulator(annos: AnnotationSeq, default: SimulatorAnnotation): Simulator =
+    getSimulatorOptionalDefault(annos, Some(default))
+  def getSimulator(annos: AnnotationSeq): Simulator = getSimulatorOptionalDefault(annos, None)
+  private def getSimulatorOptionalDefault(annos: AnnotationSeq, default: Option[SimulatorAnnotation]): Simulator = {
+    val simAnnos = annos.collect { case s: SimulatorAnnotation => s }.distinct
+    if (simAnnos.isEmpty) {
+      default match {
+        case Some(value) => value.getSimulator
+        case None => throw new RuntimeException("No backend specified!")
+      }
+    }
+    if (simAnnos.length > 1) {
+      throw new RuntimeException(
+        s"Multiple simulator backends were specified: ${simAnnos.map(_.getSimulator.name).mkString(", ")}"
+      )
+    }
+    simAnnos.head.getSimulator
   }
 }
 
