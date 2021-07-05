@@ -10,25 +10,24 @@ import firrtl._
 // - example: "clockA" -> "0011001100"
 //            "clockB" -> "0101010101"
 
-
 /** context for a running firrtl circuit simulation */
 trait SimulatorContext {
   def sim: Simulator
   // TODO: maybe turn simulator results into exception?
   //       a poke could also trigger a stop statement...
-  def step(clock: String, n: Int): Option[SimulatorResults]
-  def peek(signal: String): BigInt
-  def poke(signal: String, value: BigInt): Unit
+  def step(clock:        String, n: Int): Option[SimulatorResults]
+  def peek(signal:       String): BigInt
+  def poke(signal:       String, value: BigInt): Unit
   def peekMemory(memory: String, index: Long): BigInt
   def pokeMemory(memory: String, index: Long, value: BigInt): Unit
   def finish(): SimulatorResults
   // for possible optimizations
-  def peekLong(signal: String): Long = peek(signal).toLong
-  def poke(signal: String, value: Long): Unit = poke(signal, BigInt(value))
+  def peekLong(signal:       String): Long = peek(signal).toLong
+  def poke(signal:           String, value: Long): Unit = poke(signal, BigInt(value))
   def peekMemoryLong(memory: String, index: Long): Long = peekMemory(memory, index).toLong
-  def pokeMemory(memory: String, index: Long, value: Long): Unit = pokeMemory(memory, index, BigInt(value))
+  def pokeMemory(memory:     String, index: Long, value: Long): Unit = pokeMemory(memory, index, BigInt(value))
   // for fuzzing
-  def getCoverage(): List[(String, Long)]
+  def getCoverage():   List[(String, Long)]
   def resetCoverage(): Unit
 }
 
@@ -37,13 +36,16 @@ case class SimulatorResults(exitCode: Int)
 /** a firrtl circuit simulator */
 trait Simulator {
   def name: String
+
   /** is this simulator installed on the local machine? */
   def isAvailable: Boolean
+
   /** search the local computer for an installation of this simulator and print versions */
   def findVersions: Unit
+
   /** start a new simulation
-   * @param state LoFirrtl circuit + annotations
-   */
+    * @param state LoFirrtl circuit + annotations
+    */
   def createContext(state: CircuitState): SimulatorContext
 }
 
@@ -51,7 +53,8 @@ trait Simulator {
 private object Simulator {
   def getWavformFormat(annos: AnnotationSeq): String = {
     val vcd = annos.contains(WriteVcdAnnotation)
-    if(vcd) { "vcd" } else { "" }
+    if (vcd) { "vcd" }
+    else { "" }
   }
 }
 
@@ -78,8 +81,10 @@ object TopmoduleInfo {
   }
 
   private def portNameAndWidth(p: ir.Port): (String, Int) = {
-    require(p.tpe.isInstanceOf[ir.GroundType],
-      s"Port ${p.serialize} is not of ground type! Please make sure to provide LowFirrtl to this API!")
+    require(
+      p.tpe.isInstanceOf[ir.GroundType],
+      s"Port ${p.serialize} is not of ground type! Please make sure to provide LowFirrtl to this API!"
+    )
     p.name -> bitWidth(p.tpe).toInt
   }
 }

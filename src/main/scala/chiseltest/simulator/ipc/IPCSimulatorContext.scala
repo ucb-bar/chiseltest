@@ -12,20 +12,20 @@ import scala.collection.immutable.ListMap
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future, blocking}
+import scala.concurrent.{blocking, Await, ExecutionContext, Future}
 import scala.sys.process._
 
-
 /** This context works with a simulation binary that communicates through shared memory.
- * @param cmd command to launch the simulation binary
- * @param toplevel information about the interface exposed by the module at the top of the RTL hierarchy
- * @param waveformFile optional path to the waveform file, we assume that the file will only be available _after_
- *                     the simulation has been terminated
- * @param loadCoverage may be called _after_ the simulation is finished to retrieve coverage information
- * @param sim simulator that generated the binary
- * */
-private [chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: TopmoduleInfo,
-  override val sim: Simulator) extends SimulatorContext with LazyLogging {
+  * @param cmd command to launch the simulation binary
+  * @param toplevel information about the interface exposed by the module at the top of the RTL hierarchy
+  * @param waveformFile optional path to the waveform file, we assume that the file will only be available _after_
+  *                     the simulation has been terminated
+  * @param loadCoverage may be called _after_ the simulation is finished to retrieve coverage information
+  * @param sim simulator that generated the binary
+  */
+private[chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: TopmoduleInfo, override val sim: Simulator)
+    extends SimulatorContext
+    with LazyLogging {
   require(toplevel.clocks.size == 1, "currently this interface only works with exactly one clock")
 
   // Construct maps for the input and output
@@ -39,7 +39,7 @@ private [chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: Topmo
   private object SIM_CMD extends Enumeration {
     val RESET, STEP, UPDATE, POKE, PEEK, FORCE, GETID, GETCHK, FIN = Value
   }
-  def int(x: Int): BigInt = (BigInt(x >>> 1) << 1) | BigInt(x & 1)
+  def int(x: Int):  BigInt = (BigInt(x >>> 1) << 1) | BigInt(x & 1)
   def int(x: Long): BigInt = (BigInt(x >>> 1) << 1) | BigInt(x & 1)
 
   private var isStale = false
@@ -124,10 +124,10 @@ private [chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: Topmo
   }
 
   /** A busy-wait loop that monitors exitValue so we don't loop forever if the test application exits for some reason.
-   *
-   * @param block  a thunk that determines when complete
-   * @param loop   a thunk to keep running until block is true or exitValue says completed.
-   */
+    *
+    * @param block  a thunk that determines when complete
+    * @param loop   a thunk to keep running until block is true or exitValue says completed.
+    */
   private def mwhile(block: => Boolean)(loop: => Unit): Unit = {
     while (!exitValue.isCompleted && block) {
       loop
@@ -382,8 +382,6 @@ private [chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: Topmo
   }
 }
 
-
-
 private[chiseltest] object TesterProcess {
   def apply(cmd: Seq[String], logs: ArrayBuffer[String]): Process = {
     require(new java.io.File(cmd.head).exists, s"${cmd.head} doesn't exist")
@@ -398,7 +396,6 @@ private[chiseltest] object TesterProcess {
     println("Exit Code: %d".format(sim.process.exitValue()))
   }
 }
-
 
 private[chiseltest] class Channel(name: String) {
   private lazy val file = new java.io.RandomAccessFile(name, "rw")
@@ -436,4 +433,4 @@ private[chiseltest] class Channel(name: String) {
 }
 
 private[chiseltest] case class TestApplicationException(exitVal: Int, lastMessage: String)
-  extends RuntimeException(lastMessage)
+    extends RuntimeException(lastMessage)

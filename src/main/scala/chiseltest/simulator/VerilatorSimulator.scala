@@ -13,7 +13,7 @@ import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import java.nio.file.{FileAlreadyExistsException, Files, Path, Paths}
 import scala.sys.process._
 
-private [chiseltest] case object VerilatorUseJNI extends NoTargetAnnotation
+private[chiseltest] case object VerilatorUseJNI extends NoTargetAnnotation
 
 object VerilatorSimulator extends Simulator {
   override def name: String = "verilator"
@@ -26,7 +26,7 @@ object VerilatorSimulator extends Simulator {
 
   /** search the local computer for an installation of this simulator and print versions */
   override def findVersions: Unit = {
-    if(isAvailable) {
+    if (isAvailable) {
       val (maj, min) = version
       println(s"Found Verilator $maj.$min")
     }
@@ -48,9 +48,9 @@ object VerilatorSimulator extends Simulator {
   def minorVersion: Int = version._2
 
   /** start a new simulation
-   *
-   * @param state LoFirrtl circuit + annotations
-   */
+    *
+    * @param state LoFirrtl circuit + annotations
+    */
   override def createContext(state: CircuitState): SimulatorContext = {
     // we will create the simulation in the target directory
     val targetDir = chiseltest.dut.Compiler.requireTargetDir(state.annotations)
@@ -59,7 +59,7 @@ object VerilatorSimulator extends Simulator {
     val useJNI = state.annotations.contains(VerilatorUseJNI)
 
     // Create the header files that verilator needs + a custom harness
-    val cppHarness =  generateHarness(targetDir, toplevel, useJNI)
+    val cppHarness = generateHarness(targetDir, toplevel, useJNI)
 
     // compile low firrtl to System Verilog for verilator to use
     val verilogState = chiseltest.dut.Compiler.lowFirrtlToSystemVerilog(state, VerilatorCoverage.CoveragePasses)
@@ -79,7 +79,7 @@ object VerilatorSimulator extends Simulator {
 
     // the binary we created communicates using our standard IPC interface
     // TODO: waveform file + getCoverage!
-    if(useJNI) {
+    if (useJNI) {
       val coverageAnnos = VerilatorCoverage.collectCoverageAnnotations(verilogState.annotations)
       new JNISimulatorContext(simBin, toplevel, coverageAnnos, VerilatorSimulator)
     } else {
@@ -88,12 +88,15 @@ object VerilatorSimulator extends Simulator {
   }
 
   private def compileSimulation(topName: String, verilatedDir: os.Path, useJNI: Boolean): os.Path = {
-    if(useJNI) { addLibraryTarget(topName, verilatedDir) }
-    val target = if(useJNI) { s"V$topName.dylib" } else { s"V$topName" }
+    if (useJNI) { addLibraryTarget(topName, verilatedDir) }
+    val target = if (useJNI) { s"V$topName.dylib" }
+    else { s"V$topName" }
     val cmd = Seq("make", "-C", verilatedDir.toString(), "-j", "-f", s"V$topName.mk", target)
     val ret = os.proc(cmd).call()
-    assert(ret.exitCode == 0,
-      s"Compilation of verilator generated code failed for circuit $topName in work dir $verilatedDir")
+    assert(
+      ret.exitCode == 0,
+      s"Compilation of verilator generated code failed for circuit $topName in work dir $verilatedDir"
+    )
     val simBinary = verilatedDir / target
     assert(os.exists(simBinary), s"Failed to generate simulation binary: $simBinary")
     simBinary
@@ -109,12 +112,19 @@ object VerilatorSimulator extends Simulator {
   }
 
   /** executes verilator in order to generate a C++ simulation */
-  private def runVerilator(topName: String, targetDir: String, cppHarness: String, annos: AnnotationSeq, useJNI: Boolean): os.Path = {
+  private def runVerilator(
+    topName:    String,
+    targetDir:  String,
+    cppHarness: String,
+    annos:      AnnotationSeq,
+    useJNI:     Boolean
+  ): os.Path = {
     val targetDirPath = os.pwd / os.RelPath(targetDir)
     val verilatedDir = targetDirPath / "verilated"
 
     removeOldCode(verilatedDir)
-    val flagAnnos: Seq[Annotation] = if(useJNI) { VerilatorCFlags(JNIUtils.ccFlags) +: annos } else { annos }
+    val flagAnnos: Seq[Annotation] = if (useJNI) { VerilatorCFlags(JNIUtils.ccFlags) +: annos }
+    else { annos }
     val flags = generateFlags(topName, verilatedDir, flagAnnos)
     val cmd = List("verilator", "--cc", "--exe", cppHarness) ++ flags ++ List(s"$topName.sv")
     val ret = os.proc(cmd).call(cwd = targetDirPath)
@@ -124,7 +134,7 @@ object VerilatorSimulator extends Simulator {
   }
 
   private def removeOldCode(verilatedDir: os.Path): Unit = {
-    if(os.exists(verilatedDir)) {
+    if (os.exists(verilatedDir)) {
       println(s"Deleting stale Verilator object directory: $verilatedDir")
       os.remove.all(verilatedDir)
     }
@@ -139,17 +149,20 @@ object VerilatorSimulator extends Simulator {
   )
 
   private def DefaultFlags(topName: String, verilatedDir: os.Path, cFlags: Seq[String]) = List(
-    "--assert",        // we always enable assertions
+    "--assert", // we always enable assertions
     "--coverage-user", // we always enable use coverage
     "-Wno-fatal",
     "-Wno-WIDTH",
     "-Wno-STMTDLY",
-    "--top-module", topName,
+    "--top-module",
+    topName,
     "+define+TOP_TYPE=V" + topName,
     // flags passed to the C++ compiler
-    "-CFLAGS", cFlags.mkString(" "),
+    "-CFLAGS",
+    cFlags.mkString(" "),
     // name of the directory that verilator generates the C++ model + Makefile in
-    "-Mdir", verilatedDir.toString()
+    "-Mdir",
+    verilatedDir.toString()
   )
 
   // documentation of Verilator flags: https://verilator.org/guide/latest/exe_verilator.html#
@@ -163,7 +176,7 @@ object VerilatorSimulator extends Simulator {
     val waveformFlags = Simulator.getWavformFormat(annos) match {
       case "vcd" => List("--trace")
       case "fst" => List("--trace-fst")
-      case "" => List()
+      case ""    => List()
       case other => throw new RuntimeException(s"Unsupported waveform format: $other")
     }
     val flags = DefaultFlags(topName, verilatedDir, cFlags) ++ waveformFlags ++ userFlags
@@ -178,10 +191,22 @@ object VerilatorSimulator extends Simulator {
     CopyVerilatorHeaderFiles(targetDir)
     val cppHarnessFileName = s"${topName}-harness.cpp"
     val vcdFile = new File(targetDir, s"$topName.vcd")
-    val emittedStuff = if(useJNI) {
-      VerilatorCppJNIHarnessGenerator.codeGen(toplevel, vcdFile.toString, targetDir, majorVersion = majorVersion, minorVersion = minorVersion)
+    val emittedStuff = if (useJNI) {
+      VerilatorCppJNIHarnessGenerator.codeGen(
+        toplevel,
+        vcdFile.toString,
+        targetDir,
+        majorVersion = majorVersion,
+        minorVersion = minorVersion
+      )
     } else {
-      VerilatorCppHarnessGenerator.codeGen(toplevel, vcdFile.toString, targetDir, majorVersion = majorVersion, minorVersion = minorVersion)
+      VerilatorCppHarnessGenerator.codeGen(
+        toplevel,
+        vcdFile.toString,
+        targetDir,
+        majorVersion = majorVersion,
+        minorVersion = minorVersion
+      )
     }
     os.write.over(targetDirPath / cppHarnessFileName, emittedStuff)
 
@@ -189,12 +214,11 @@ object VerilatorSimulator extends Simulator {
   }
 }
 
-
 /** Changes the file generated by verilator to generate per instance and not per module coverage.
- * This is required in order to satisfy our generic TestCoverage interface for which
- * the simulator needs to return per instance coverage counts.
- * See: https://github.com/verilator/verilator/issues/2793
- */
+  * This is required in order to satisfy our generic TestCoverage interface for which
+  * the simulator needs to return per instance coverage counts.
+  * See: https://github.com/verilator/verilator/issues/2793
+  */
 private object VerilatorPatchCoverageCpp {
   private val CallNeedle = "VL_COVER_INSERT("
   private val CallReplacement = "CHISEL_VL_COVER_INSERT("
@@ -277,7 +301,7 @@ private object VerilatorPatchCoverageCpp {
 }
 
 /** Copies the necessary header files used for verilator compilation to the specified destination folder
- */
+  */
 object CopyVerilatorHeaderFiles {
 
   def apply(destinationDirPath: String): Unit = {

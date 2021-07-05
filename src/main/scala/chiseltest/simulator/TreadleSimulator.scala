@@ -10,7 +10,7 @@ import treadle.executable.StopException
 import treadle.stage.TreadleTesterPhase
 
 object TreadleSimulator extends Simulator {
-  override def name: String = "treadle"
+  override def name:        String = "treadle"
   override def isAvailable: Boolean = true
   override def findVersions: Unit = {
     println("treadle is available")
@@ -18,9 +18,9 @@ object TreadleSimulator extends Simulator {
   }
 
   /** start a new simulation
-   *
-   * @param state LoFirrtl circuit + annotations
-   */
+    *
+    * @param state LoFirrtl circuit + annotations
+    */
   override def createContext(state: CircuitState): SimulatorContext = {
     val annos = toAnnos(state).map(translateAnnotation)
     val treadleState = (new TreadleTesterPhase).transform(annos)
@@ -37,11 +37,11 @@ object TreadleSimulator extends Simulator {
 
   private def translateAnnotation(a: Annotation): Annotation = a match {
     case chiseltest.internal.WriteVcdAnnotation => treadle.WriteVcdAnnotation
-    case other => other
+    case other                                  => other
   }
 
   private def toAnnos(state: CircuitState): AnnotationSeq =
-     FirrtlCircuitAnnotation(state.circuit) +: state.annotations
+    FirrtlCircuitAnnotation(state.circuit) +: state.annotations
 }
 
 private class TreadleContext(tester: TreadleTester) extends SimulatorContext {
@@ -55,7 +55,7 @@ private class TreadleContext(tester: TreadleTester) extends SimulatorContext {
       tester.step(n = n)
       None
     } catch {
-      case s : StopException =>
+      case s: StopException =>
         val exitCode = 1 // TODO!
         Some(SimulatorResults(exitCode))
     }
@@ -80,5 +80,5 @@ private class TreadleContext(tester: TreadleTester) extends SimulatorContext {
 
   override def resetCoverage(): Unit = tester.resetCoverage()
 
-  override def getCoverage():List[(String, Long)] = tester.getCoverage()
+  override def getCoverage(): List[(String, Long)] = tester.getCoverage()
 }

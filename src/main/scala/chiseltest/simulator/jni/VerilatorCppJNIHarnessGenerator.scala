@@ -3,10 +3,16 @@ package chiseltest.simulator.jni
 import chiseltest.simulator.TopmoduleInfo
 
 /** Generates the Module specific verilator harness cpp file for verilator compilation.
- *  This version generates a harness that can be called into through the JNI.
- * */
-private [chiseltest] object VerilatorCppJNIHarnessGenerator {
-  def codeGen(toplevel: TopmoduleInfo, vcdFilePath: String, targetDir: String, majorVersion: Int, minorVersion: Int): String = {
+  *  This version generates a harness that can be called into through the JNI.
+  */
+private[chiseltest] object VerilatorCppJNIHarnessGenerator {
+  def codeGen(
+    toplevel:     TopmoduleInfo,
+    vcdFilePath:  String,
+    targetDir:    String,
+    majorVersion: Int,
+    minorVersion: Int
+  ): String = {
     val codeBuffer = new StringBuilder
 
     def pushBack(vector: String, pathName: String, width: BigInt): Unit = {
@@ -258,18 +264,19 @@ JNIEXPORT jint ${ApiPrefix}_getid(JNIEnv *env, jobject obj, jstring jniPath) {
 object JNIUtils {
   def javaHome: String = System.getProperty("java.home") match {
     case s: String if s.endsWith("/jre") => s.dropRight(4)
-    case s: String => s
+    case s: String                       => s
   }
   def osIncludeName: String = System.getProperty("os.name") match {
     case "Mac OS X" => "darwin"
-    case "Linux" => "linux"
+    case "Linux"    => "linux"
     case s: String => s
   }
+
   /** additional ccFlags that are required in order to compile into a library that can be loaded with JNI */
   def ccFlags: Seq[String] = Seq(
     "-fPIC",
     "-shared",
     s"-I$javaHome/include",
-    s"-I$javaHome/include/$osIncludeName",
+    s"-I$javaHome/include/$osIncludeName"
   )
 }

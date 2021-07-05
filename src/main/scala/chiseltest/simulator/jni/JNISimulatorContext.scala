@@ -10,18 +10,23 @@ import scala.collection.immutable.ListMap
 import scala.collection.mutable
 
 /** This context works with a simulation binary that communicates through shared memory.
- * @param cmd command to launch the simulation binary
- * @param toplevel information about the interface exposed by the module at the top of the RTL hierarchy
- * @param sim simulator that generated the binary
- * */
-private [chiseltest] class JNISimulatorContext(lib: os.Path, toplevel: TopmoduleInfo, coverageAnnos: AnnotationSeq,
-  override val sim: Simulator) extends SimulatorContext with LazyLogging {
+  * @param cmd command to launch the simulation binary
+  * @param toplevel information about the interface exposed by the module at the top of the RTL hierarchy
+  * @param sim simulator that generated the binary
+  */
+private[chiseltest] class JNISimulatorContext(
+  lib:              os.Path,
+  toplevel:         TopmoduleInfo,
+  coverageAnnos:    AnnotationSeq,
+  override val sim: Simulator)
+    extends SimulatorContext
+    with LazyLogging {
   require(toplevel.clocks.size == 1, "currently this interface only works with exactly one clock")
   (toplevel.inputs ++ toplevel.outputs).foreach { case (name, width) =>
     require(width <= 64, s"$width-bit I/O $name is not supported!")
   }
 
-  def int(x: Int): BigInt = (BigInt(x >>> 1) << 1) | BigInt(x & 1)
+  def int(x: Int):  BigInt = (BigInt(x >>> 1) << 1) | BigInt(x & 1)
   def int(x: Long): BigInt = (BigInt(x >>> 1) << 1) | BigInt(x & 1)
 
   private var isStale = false
@@ -61,7 +66,7 @@ private [chiseltest] class JNISimulatorContext(lib: os.Path, toplevel: Topmodule
 
   override def peek(signal: String): BigInt = {
     if (isStale) { update() }
-    val id = _signalMap getOrElseUpdate (signal, getId(signal))
+    val id = _signalMap.getOrElseUpdate(signal, getId(signal))
     val r = if (id >= 0) {
       Some(so.peek(id))
     } else {
@@ -126,13 +131,13 @@ class TesterSharedLib(libPath: os.Path) {
   private val state: Long = 0
 
   @native private def sim_init(): Unit
-  @native def start(): Unit
-  @native def step(): Unit
-  @native def update(): Unit
-  @native def poke(id: Int, value: Long): Unit
-  @native def peek(id: Int): Long
+  @native def start():            Unit
+  @native def step():             Unit
+  @native def update():           Unit
+  @native def poke(id:    Int, value: Long): Unit
+  @native def peek(id:    Int): Long
   @native def getid(path: String): Int
-  @native def getchk(id: Int): Int
+  @native def getchk(id:  Int):    Int
   @native def finish(): Unit
   @native def writeCoverage(filename: String): Unit
   @native def resetCoverage(): Unit

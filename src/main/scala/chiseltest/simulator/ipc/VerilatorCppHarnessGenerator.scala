@@ -5,8 +5,14 @@ package chiseltest.simulator.ipc
 import chiseltest.simulator.TopmoduleInfo
 
 /** Generates the Module specific verilator harness cpp file for verilator compilation */
-private [chiseltest] object VerilatorCppHarnessGenerator {
-  def codeGen(toplevel: TopmoduleInfo, vcdFilePath: String, targetDir: String, majorVersion: Int, minorVersion: Int): String = {
+private[chiseltest] object VerilatorCppHarnessGenerator {
+  def codeGen(
+    toplevel:     TopmoduleInfo,
+    vcdFilePath:  String,
+    targetDir:    String,
+    majorVersion: Int,
+    minorVersion: Int
+  ): String = {
     val codeBuffer = new StringBuilder
 
     def pushBack(vector: String, pathName: String, width: BigInt): Unit = {

@@ -1,6 +1,5 @@
 package chiseltest.dut
 
-
 import chisel3.RawModule
 import chisel3.stage._
 import chisel3.stage.phases.{Convert, MaybeAspectPhase}
@@ -10,7 +9,6 @@ import firrtl.options.TargetDirAnnotation
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlStage}
 import logger.{LogLevel, LogLevelAnnotation, Logger}
 
-
 object Compiler {
 
   def elaborate[M <: RawModule](gen: () => M, annotationSeq: AnnotationSeq): (firrtl.CircuitState, M) = {
@@ -19,7 +17,7 @@ object Compiler {
     val elaborationAnnos = Logger.makeScope(annotationSeq) { genAnno.elaborate }
 
     // extract elaborated module
-    val dut = elaborationAnnos.collectFirst{ case DesignAnnotation(d) => d}.get
+    val dut = elaborationAnnos.collectFirst { case DesignAnnotation(d) => d }.get
 
     // run aspects
     val aspectAnnos = maybeAspects.transform(elaborationAnnos ++ annotationSeq)
@@ -56,8 +54,8 @@ object Compiler {
     firrtl.CircuitState(circuit, filteredAnnos)
   }
   private def isInternalAnno(a: Annotation): Boolean = a match {
-    case _: FirrtlCircuitAnnotation | _: DesignAnnotation[_] | _:ChiselCircuitAnnotation => true
-    case _=> false
+    case _: FirrtlCircuitAnnotation | _: DesignAnnotation[_] | _: ChiselCircuitAnnotation => true
+    case _ => false
   }
   private def firrtlStage = new FirrtlStage
   def requireTargetDir(annos: AnnotationSeq): String = {
