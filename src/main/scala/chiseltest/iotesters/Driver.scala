@@ -103,7 +103,7 @@ object Driver {
    *
    * @param args unused args
    */
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     execute(Array("--help"), null)(null)
   }
   /**

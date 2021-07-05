@@ -49,7 +49,7 @@ private [chiseltest] class JNISimulatorContext(lib: os.Path, toplevel: Topmodule
     isRunning = true
   }
 
-  override def poke(signal: String, value: BigInt) {
+  override def poke(signal: String, value: BigInt): Unit = {
     val id = _signalMap.getOrElseUpdate(signal, getId(signal))
     if (id >= 0) {
       so.poke(id, value.toLong)

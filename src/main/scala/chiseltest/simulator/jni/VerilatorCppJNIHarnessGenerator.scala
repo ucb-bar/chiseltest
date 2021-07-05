@@ -9,7 +9,7 @@ private [chiseltest] object VerilatorCppJNIHarnessGenerator {
   def codeGen(toplevel: TopmoduleInfo, vcdFilePath: String, targetDir: String, majorVersion: Int, minorVersion: Int): String = {
     val codeBuffer = new StringBuilder
 
-    def pushBack(vector: String, pathName: String, width: BigInt) {
+    def pushBack(vector: String, pathName: String, width: BigInt): Unit = {
       if (width == 0) {
         // Do nothing- 0 width wires are removed
       } else if (width <= 8) {

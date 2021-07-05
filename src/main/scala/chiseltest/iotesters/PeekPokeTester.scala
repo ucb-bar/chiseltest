@@ -2,13 +2,13 @@ package chiseltest.iotesters
 
 
 import chisel3._
-import chisel3.{Aggregate, Module, Bits, Element, InstanceId}
+import chisel3.{Aggregate, Bits, Element, InstanceId, Module}
 import chisel3.experimental.EnumType
 import chisel3.experimental.{FixedPoint, Interval}
 import chisel3.internal.firrtl.KnownBinaryPoint
 import chiseltest.simulator.SimulatorContext
 
-import scala.collection.immutable.ListMap
+import scala.collection.immutable.SeqMap
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
@@ -43,7 +43,7 @@ abstract class PeekPokeTester[T <: Module](val dut: T) {
   implicit val _verbose = ctx.isVerbose
   implicit val _base = ctx.base
 
-  def println(msg: String = "") {
+  def println(msg: String = ""): Unit = {
     //logger.info(msg)
   }
 
@@ -57,13 +57,13 @@ abstract class PeekPokeTester[T <: Module](val dut: T) {
   /********************************/
   /* Simulation Time */
   private var simTime = 0L
-  protected[iotesters] def incTime(n: Int) { simTime += n }
+  protected[iotesters] def incTime(n: Int): Unit = { simTime += n }
   def t = simTime
 
   /** Indicate a failure has occurred.  */
   private var failureTime = -1L
   private var ok = true
-  def fail = if (ok) {
+  def fail(): Unit = if (ok) {
     failureTime = simTime
     ok = false
   }
@@ -92,13 +92,13 @@ abstract class PeekPokeTester[T <: Module](val dut: T) {
    */
   def longToUnsignedBigInt(x: Long): BigInt = (BigInt(x >>> 1) << 1) | BigInt(x & 1)
 
-  def reset(n: Int = 1) {
+  def reset(n: Int = 1): Unit = {
     backend.poke("reset", 1)
     backend.step("clock", n)
     backend.poke("reset", 0)
   }
 
-  def step(n: Int) {
+  def step(n: Int): Unit = {
     if (_verbose) println(s"STEP $simTime -> ${simTime+n}")
     backend.step("clock", n)
     incTime(n)
@@ -117,18 +117,18 @@ abstract class PeekPokeTester[T <: Module](val dut: T) {
   }
 
   def poke[T <: Element: Pokeable](signal: T, value: BigInt): Unit = {
-    if (!signal.isLit) {
+    if (!signal.isLit()) {
       backend.poke(fullSignalName(signal), maskedBigInt(value, signal.widthOption.getOrElse(256)))
     }
     // TODO: Warn if signal.isLit
   }
 
-  def poke[T <: Element: Pokeable](signal: T, value: Int) {
+  def poke[T <: Element: Pokeable](signal: T, value: Int): Unit = {
     poke(signal, value.toLong)
   }
 
-  def poke[T <: Element: Pokeable](signal: T, value: Long) {
-    if (!signal.isLit) {
+  def poke[T <: Element: Pokeable](signal: T, value: Long): Unit = {
+    if (!signal.isLit()) {
       backend.poke(fullSignalName(signal), maskedLong(value, signal.widthOption.getOrElse(256)))
     }
   }
@@ -171,7 +171,7 @@ abstract class PeekPokeTester[T <: Module](val dut: T) {
    * @param bundle - bundle containing the element
    * @return the element (as Element)
    */
-  private def getBundleElement(path: List[String], bundle: ListMap[String, Data]): Element = {
+  private def getBundleElement(path: List[String], bundle: SeqMap[String, Data]): Element = {
     (path, bundle(path.head)) match {
       case (head :: Nil, element: Element) => element
       case (head :: tail, b: Bundle) => getBundleElement(tail, b.elements)
@@ -223,7 +223,7 @@ abstract class PeekPokeTester[T <: Module](val dut: T) {
   }
 
   def peek[T <: Element: Pokeable](signal: T):BigInt = {
-    if (!signal.isLit) backend.peek(fullSignalName(signal)) else signal.litValue()
+    if (!signal.isLit()) backend.peek(fullSignalName(signal)) else signal.litValue()
   }
 
   /** Returns the value signal as a Double. Double may not be big enough to contain the
@@ -335,14 +335,14 @@ abstract class PeekPokeTester[T <: Module](val dut: T) {
 
   def expect (good: Boolean, msg: => String): Boolean = {
     if (_verbose || ! good) println(s"""EXPECT AT $simTime $msg ${if (good) "PASS" else "FAIL"}""")
-    if (!good) fail
+    if (!good) fail()
     good
   }
 
   def expect[T <: Element: Pokeable](signal: T, expected: BigInt, msg: => String = ""): Boolean = {
-    if (!signal.isLit) {
+    if (!signal.isLit()) {
       val good = expect(peek(signal) == expected, msg)
-      if (!good) fail
+      if (!good) fail()
       good
     } else expect(signal.litValue() == expected, s"${signal.litValue()} == $expected")
   }
@@ -412,7 +412,7 @@ abstract class PeekPokeTester[T <: Module](val dut: T) {
   }
 
   def expect (signal: Aggregate, expected: IndexedSeq[BigInt]): Boolean = {
-    (extractElementBits(signal), expected.reverse).zipped.forall { case (elem, value) =>
+    extractElementBits(signal).zip(expected.reverse).forall { case (elem, value) =>
       elem match {
         case Pokeable(e) => expect(e, value)
         case default => throw new Exception(s"Cannot expect type ${default.getClass.getName}")

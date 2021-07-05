@@ -62,7 +62,7 @@ private [chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: Topmo
 
   // Set up a Future to wait for (and signal) the test process exit.
   import ExecutionContext.Implicits.global
-  private[chiseltest] val exitValue = Future(blocking(process.exitValue))
+  private[chiseltest] val exitValue = Future(blocking(process.exitValue()))
 
   // memory mapped channels
   private val (inChannel, outChannel, cmdChannel) = {
@@ -102,12 +102,12 @@ private [chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: Topmo
     (in_channel, out_channel, cmd_channel)
   }
 
-  private def dumpLogs() {
+  private def dumpLogs(): Unit = {
     _logs.foreach(x => println(x))
-    _logs.clear
+    _logs.clear()
   }
 
-  private def throwExceptionIfDead(exitValue: Future[Int]) {
+  private def throwExceptionIfDead(exitValue: Future[Int]): Unit = {
     //    implicit val logger = new TestErrorLog
     if (exitValue.isCompleted) {
       val exitCode = Await.result(exitValue, Duration(-1, SECONDS))
@@ -128,7 +128,7 @@ private [chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: Topmo
    * @param block  a thunk that determines when complete
    * @param loop   a thunk to keep running until block is true or exitValue says completed.
    */
-  private def mwhile(block: => Boolean)(loop: => Unit) {
+  private def mwhile(block: => Boolean)(loop: => Unit): Unit = {
     while (!exitValue.isCompleted && block) {
       loop
     }
@@ -200,7 +200,7 @@ private [chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: Topmo
   }
 
   private def recvOutputs = {
-    _peekMap.clear
+    _peekMap.clear()
     outChannel.acquire()
     val valid = outChannel.valid
     if (valid) {
@@ -271,7 +271,7 @@ private [chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: Topmo
     }
   }
 
-  private def poke(id: Int, chunk: Int, v: BigInt, force: Boolean = false) {
+  private def poke(id: Int, chunk: Int, v: BigInt, force: Boolean = false): Unit = {
     val cmd = if (!force) SIM_CMD.POKE else SIM_CMD.FORCE
     mwhile(!sendCmd(cmd)) {}
     mwhile(!sendCmd(id)) {}
@@ -298,7 +298,7 @@ private [chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: Topmo
     isRunning = true
   }
 
-  override def poke(signal: String, value: BigInt) {
+  override def poke(signal: String, value: BigInt): Unit = {
     if (inputsNameToChunkSizeMap.contains(signal)) {
       _pokeMap(signal) = value
       isStale = true
@@ -393,9 +393,9 @@ private[chiseltest] object TesterProcess {
     processBuilder.run(processLogger)
   }
 
-  def kill(sim: SimApiInterface) {
-    while (!sim.exitValue.isCompleted) sim.process.destroy
-    println("Exit Code: %d".format(sim.process.exitValue))
+  def kill(sim: SimApiInterface): Unit = {
+    while (!sim.exitValue.isCompleted) sim.process.destroy()
+    println("Exit Code: %d".format(sim.process.exitValue()))
   }
 }
 
