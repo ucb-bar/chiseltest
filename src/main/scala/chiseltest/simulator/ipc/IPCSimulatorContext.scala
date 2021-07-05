@@ -2,7 +2,8 @@
 
 package chiseltest.simulator.ipc
 
-import chiseltest.simulator.{Simulator, SimulatorContext, SimulatorResults, TopmoduleInfo}
+import chiseltest.simulator.{Simulator, SimulatorContext, SimulatorResults, TopmoduleInfo, VerilatorCoverage}
+import firrtl.AnnotationSeq
 import logger.LazyLogging
 
 import java.io.File
@@ -11,7 +12,7 @@ import scala.collection.immutable.ListMap
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration._
-import scala.concurrent.{blocking, Await, ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future, blocking}
 import scala.sys.process._
 
 /** This context works with a simulation binary that communicates through shared memory.
@@ -22,7 +23,11 @@ import scala.sys.process._
   * @param loadCoverage may be called _after_ the simulation is finished to retrieve coverage information
   * @param sim simulator that generated the binary
   */
-private[chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: TopmoduleInfo, override val sim: Simulator)
+private[chiseltest] class IPCSimulatorContext(
+  bin:              os.Path,
+  toplevel:         TopmoduleInfo,
+  coverageAnnos:    AnnotationSeq,
+  override val sim: Simulator)
     extends SimulatorContext
     with LazyLogging {
   require(toplevel.clocks.size == 1, "currently this interface only works with exactly one clock")
@@ -57,7 +62,7 @@ private[chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: Topmod
   }
 
   //initialize simulator process
-  private[chiseltest] val process = startProcess(cmd, _logs)
+  private[chiseltest] val process = startProcess(Seq(bin.toString()), _logs)
 
   // Set up a Future to wait for (and signal) the test process exit.
   import ExecutionContext.Implicits.global
@@ -292,7 +297,7 @@ private[chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: Topmod
   }
 
   private def start(): Unit = {
-    println(s"""STARTING ${cmd.mkString(" ")}""")
+    println(s"""STARTING $bin""")
     mwhile(!recvOutputs) {}
     isRunning = true
   }
@@ -372,8 +377,14 @@ private[chiseltest] class IPCSimulatorContext(cmd: Seq[String], toplevel: Topmod
     throw new NotImplementedError("pokeMemory")
   }
 
+  private val coverageFile = bin / os.up / os.up / "logs" / "coverage.dat"
   override def getCoverage(): List[(String, Long)] = {
-    throw new NotImplementedError("getCoverage")
+    if(isRunning) {
+      throw new RuntimeException("This backend does not support providing coverage while the simulation is still running.")
+    } else {
+      assert(os.exists(coverageFile), s"Could not find `$coverageFile` file!")
+      VerilatorCoverage.loadCoverage(coverageAnnos, coverageFile)
+    }
   }
 
   override def resetCoverage(): Unit = {

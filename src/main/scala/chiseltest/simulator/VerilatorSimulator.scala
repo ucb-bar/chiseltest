@@ -98,12 +98,11 @@ object VerilatorSimulator extends Simulator {
     val simBin = compileSimulation(topName = state.circuit.main, verilatedDir, useJNI)
 
     // the binary we created communicates using our standard IPC interface
-    // TODO: waveform file + getCoverage!
+    val coverageAnnos = VerilatorCoverage.collectCoverageAnnotations(verilogState.annotations)
     if (useJNI) {
-      val coverageAnnos = VerilatorCoverage.collectCoverageAnnotations(verilogState.annotations)
       new JNISimulatorContext(simBin, toplevel, coverageAnnos, VerilatorSimulator)
     } else {
-      new IPCSimulatorContext(List(simBin.toString()), toplevel, VerilatorSimulator)
+      new IPCSimulatorContext(simBin, toplevel, coverageAnnos, VerilatorSimulator)
     }
   }
 
