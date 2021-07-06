@@ -3,7 +3,7 @@
 package chiseltest
 
 import chiseltest.internal._
-import chiseltest.experimental.{ChiselTestShell, sanitizeFileName}
+import chiseltest.experimental.{sanitizeFileName, ChiselTestShell}
 import chisel3.Module
 import chiseltest.simulator.WriteVcdAnnotation
 import firrtl.AnnotationSeq

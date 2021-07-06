@@ -50,7 +50,7 @@ object TreadleSimulator extends Simulator {
 
   private def translateAnnotation(a: Annotation): Annotation = a match {
     case WriteVcdAnnotation => treadle.WriteVcdAnnotation
-    case other => other
+    case other              => other
   }
 
   private def toAnnos(state: CircuitState): AnnotationSeq =

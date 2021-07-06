@@ -81,7 +81,7 @@ object Simulator {
     if (simAnnos.isEmpty) {
       default match {
         case Some(value) => value.getSimulator
-        case None => throw new RuntimeException("No backend specified!")
+        case None        => throw new RuntimeException("No backend specified!")
       }
     }
     if (simAnnos.length > 1) {

@@ -12,7 +12,7 @@ import scala.collection.immutable.ListMap
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future, blocking}
+import scala.concurrent.{blocking, Await, ExecutionContext, Future}
 import scala.sys.process._
 
 /** This context works with a simulation binary that communicates through shared memory.
@@ -379,8 +379,10 @@ private[chiseltest] class IPCSimulatorContext(
 
   private val coverageFile = bin / os.up / os.up / "logs" / "coverage.dat"
   override def getCoverage(): List[(String, Long)] = {
-    if(isRunning) {
-      throw new RuntimeException("This backend does not support providing coverage while the simulation is still running.")
+    if (isRunning) {
+      throw new RuntimeException(
+        "This backend does not support providing coverage while the simulation is still running."
+      )
     } else {
       assert(os.exists(coverageFile), s"Could not find `$coverageFile` file!")
       VerilatorCoverage.loadCoverage(coverageAnnos, coverageFile)
