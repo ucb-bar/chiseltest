@@ -1,0 +1,3 @@
+package chiseltest.simulator
+
+class VerilatorBasicCompliance extends BasicCompliance(VerilatorSimulator)
