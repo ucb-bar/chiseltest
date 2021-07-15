@@ -6,17 +6,12 @@ import firrtl._
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.{HasShellOptions, ShellOption}
 
-// TODO: more powerful step command
-// advance simulation time by N cycles and any number of clocks
-// - example: "clockA" -> "0011001100"
-//            "clockB" -> "0101010101"
-
 /** context for a running firrtl circuit simulation */
 trait SimulatorContext {
   def sim: Simulator
   // TODO: maybe turn simulator results into exception?
   //       a poke could also trigger a stop statement...
-  def step(clock:        String, n: Int): Option[SimulatorResults]
+  def step(clock:        List[String] = List(), n: Int = 1): Unit
   def peek(signal:       String): BigInt
   def poke(signal:       String, value: BigInt): Unit
   def peekMemory(memory: String, index: Long): BigInt

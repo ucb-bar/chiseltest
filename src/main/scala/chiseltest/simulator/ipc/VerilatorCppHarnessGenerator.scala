@@ -16,7 +16,7 @@ private[chiseltest] object VerilatorCppHarnessGenerator {
 
     require(toplevel.clocks.length <= 1, "Multi clock circuits are currently not supported!")
     val clockName = toplevel.clocks.headOption
-    val clockLow  = clockName.map("dut->" + _ + " = 0;").getOrElse("")
+    val clockLow = clockName.map("dut->" + _ + " = 0;").getOrElse("")
     val clockHigh = clockName.map("dut->" + _ + " = 1;").getOrElse("")
 
     val codeBuffer = new StringBuilder

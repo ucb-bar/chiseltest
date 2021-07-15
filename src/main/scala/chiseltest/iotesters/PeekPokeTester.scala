@@ -98,13 +98,13 @@ abstract class PeekPokeTester[T <: Module](val dut: T) {
 
   def reset(n: Int = 1): Unit = {
     backend.poke("reset", 1)
-    backend.step("clock", n)
+    backend.step(List("clock"), n)
     backend.poke("reset", 0)
   }
 
   def step(n: Int): Unit = {
     if (_verbose) println(s"STEP $simTime -> ${simTime + n}")
-    backend.step("clock", n)
+    backend.step(List("clock"), n)
     incTime(n)
   }
 

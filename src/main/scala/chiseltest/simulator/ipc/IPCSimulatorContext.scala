@@ -342,10 +342,10 @@ private[chiseltest] class IPCSimulatorContext(
   }
 
   private def defaultClock = toplevel.clocks.headOption
-  override def step(clock: String, n: Int): Option[SimulatorResults] = {
+  override def step(clocks: List[String], n: Int): Unit = {
     defaultClock match {
-      case Some(value) => require(clock == value)
-      case None => throw new RuntimeException(s"Circuit has no clock, cannot be stepped!")
+      case Some(value) => require(clocks.isEmpty || clocks == List(value))
+      case None        => throw new RuntimeException(s"Circuit has no clock, cannot be stepped!")
     }
     try {
       update()

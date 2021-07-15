@@ -24,7 +24,7 @@ class GenericBackend[T <: Module](
   // Debug utility functions
   //
   val verbose: Boolean = false // hard-coded debug flag
-  def debugLog(str: => String) {
+  def debugLog(str: => String): Unit = {
     if (verbose) println(str)
   }
 
@@ -149,7 +149,7 @@ class GenericBackend[T <: Module](
     val mainThread = new TesterThread(
       () => {
         tester.poke("reset", 1)
-        tester.step(clockName, 1)
+        tester.step(List(clockName), 1)
         tester.poke("reset", 0)
 
         testFn(dut)
@@ -193,7 +193,7 @@ class GenericBackend[T <: Module](
           }
         }
 
-        tester.step(clockName, 1)
+        tester.step(List(clockName), 1)
       }
     } finally {
       rootTimescope = None

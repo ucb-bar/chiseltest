@@ -76,8 +76,12 @@ private[chiseltest] class JNISimulatorContext(
     r.getOrElse(throw new RuntimeException(s"Could not find signal $signal"))
   }
 
-  override def step(clock: String, n: Int): Option[SimulatorResults] = {
-    require(clock == toplevel.clocks.head)
+  private def defaultClock = toplevel.clocks.headOption
+  override def step(clocks: List[String], n: Int): Unit = {
+    defaultClock match {
+      case Some(value) => require(clocks.isEmpty || clocks == List(value))
+      case None        => throw new RuntimeException(s"Circuit has no clock, cannot be stepped!")
+    }
     try {
       update()
       (0 until n).foreach(_ => takeStep())
