@@ -13,6 +13,12 @@ private[chiseltest] object VerilatorCppHarnessGenerator {
     majorVersion: Int,
     minorVersion: Int
   ): String = {
+
+    require(toplevel.clocks.length <= 1, "Multi clock circuits are currently not supported!")
+    val clockName = toplevel.clocks.headOption
+    val clockLow  = clockName.map("dut->" + _ + " = 0;").getOrElse("")
+    val clockHigh = clockName.map("dut->" + _ + " = 1;").getOrElse("")
+
     val codeBuffer = new StringBuilder
 
     def pushBack(vector: String, pathName: String, width: BigInt): Unit = {
@@ -118,25 +124,20 @@ class $dutApiClassName: public sim_api_t<VerilatorDataWrapper*> {
     virtual inline size_t get_chunk(VerilatorDataWrapper* &sig) {
         return sig->get_num_words();
     }
-    virtual inline void reset() {
-        dut->reset = 1;
-        step();
-    }
     virtual inline void start() {
-        dut->reset = 0;
     }
     virtual inline void finish() {
         dut->eval();
         is_exit = true;
     }
     virtual inline void step() {
-        dut->clock = 0;
+        $clockLow
         dut->eval();
 #if VM_TRACE
         if (tfp) tfp->dump(main_time);
 #endif
         main_time++;
-        dut->clock = 1;
+        $clockHigh
         dut->eval();
 #if VM_TRACE
         if (tfp) tfp->dump(main_time);

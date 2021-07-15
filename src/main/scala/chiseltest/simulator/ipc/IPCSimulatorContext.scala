@@ -30,7 +30,7 @@ private[chiseltest] class IPCSimulatorContext(
   override val sim: Simulator)
     extends SimulatorContext
     with LazyLogging {
-  require(toplevel.clocks.size == 1, "currently this interface only works with exactly one clock")
+  require(toplevel.clocks.length <= 1, "Multi clock circuits are currently not supported!")
 
   // Construct maps for the input and output
   private val (inputsNameToChunkSizeMap, outputsNameToChunkSizeMap) = {
@@ -341,8 +341,12 @@ private[chiseltest] class IPCSimulatorContext(
     r.getOrElse(throw new RuntimeException(s"Could not find signal $signal"))
   }
 
+  private def defaultClock = toplevel.clocks.headOption
   override def step(clock: String, n: Int): Option[SimulatorResults] = {
-    require(clock == toplevel.clocks.head)
+    defaultClock match {
+      case Some(value) => require(clock == value)
+      case None => throw new RuntimeException(s"Circuit has no clock, cannot be stepped!")
+    }
     try {
       update()
       (0 until n).foreach(_ => takeStep())

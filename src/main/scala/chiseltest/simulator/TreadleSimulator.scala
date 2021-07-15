@@ -60,10 +60,14 @@ object TreadleSimulator extends Simulator {
 private class TreadleContext(tester: TreadleTester) extends SimulatorContext {
   override def sim: Simulator = TreadleSimulator
 
-  require(tester.clockInfoList.size == 1, "Currently only single clock circuits are supported!")
-  private def defaultClock = tester.clockInfoList.head.name
+  require(tester.clockInfoList.size <= 1, "Currently only single clock circuits are supported!")
+  private def defaultClock = tester.clockInfoList.headOption.map(_.name)
   override def step(clock: String, n: Int): Option[SimulatorResults] = {
-    require(clock == defaultClock)
+    defaultClock match {
+      case Some(value) => require(clock == value)
+      case None => throw new RuntimeException(s"Circuit has no clock, cannot be stepped!")
+    }
+
     try {
       tester.step(n = n)
       None
