@@ -6,7 +6,6 @@ import chisel3.experimental.{BaseModule, DataMirror}
 import chisel3.internal.firrtl.Circuit
 import chisel3.{Data, Element, Module, Record, Vec}
 import chiseltest.coverage.Coverage
-import chiseltest.dut.Compiler
 import chiseltest.simulator.Simulator
 import firrtl.AnnotationSeq
 import firrtl.annotations.ReferenceTarget

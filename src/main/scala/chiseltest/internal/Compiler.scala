@@ -1,4 +1,4 @@
-package chiseltest.dut
+package chiseltest.internal
 
 import chisel3.RawModule
 import chisel3.stage._
@@ -7,7 +7,7 @@ import firrtl.AnnotationSeq
 import firrtl.annotations.Annotation
 import firrtl.options.TargetDirAnnotation
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlStage}
-import logger.{LogLevel, LogLevelAnnotation, Logger}
+import logger.Logger
 
 object Compiler {
 

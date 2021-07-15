@@ -2,6 +2,8 @@
 
 package chiseltest.simulator
 
+import chiseltest.internal
+import chiseltest.internal.Compiler
 import chiseltest.simulator.ipc.{IPCSimulatorContext, VerilatorCppHarnessGenerator}
 import chiseltest.simulator.jni.{JNISimulatorContext, JNIUtils, VerilatorCppJNIHarnessGenerator}
 import firrtl._
@@ -73,7 +75,7 @@ object VerilatorSimulator extends Simulator {
     */
   override def createContext(state: CircuitState): SimulatorContext = {
     // we will create the simulation in the target directory
-    val targetDir = chiseltest.dut.Compiler.requireTargetDir(state.annotations)
+    val targetDir = Compiler.requireTargetDir(state.annotations)
     val toplevel = TopmoduleInfo(state.circuit)
 
     val useJNI = state.annotations.contains(VerilatorUseJNI)
@@ -82,7 +84,7 @@ object VerilatorSimulator extends Simulator {
     val cppHarness = generateHarness(targetDir, toplevel, useJNI)
 
     // compile low firrtl to System Verilog for verilator to use
-    val verilogState = chiseltest.dut.Compiler.lowFirrtlToSystemVerilog(state, VerilatorCoverage.CoveragePasses)
+    val verilogState = internal.Compiler.lowFirrtlToSystemVerilog(state, VerilatorCoverage.CoveragePasses)
 
     // turn SystemVerilog into C++ simulation
     val verilatedDir = runVerilator(state.circuit.main, targetDir, cppHarness, state.annotations, useJNI)

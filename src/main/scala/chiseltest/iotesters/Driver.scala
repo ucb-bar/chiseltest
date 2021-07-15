@@ -3,8 +3,8 @@
 package chiseltest.iotesters
 
 import chisel3.{ChiselExecutionFailure => _, ChiselExecutionSuccess => _, _}
+import chiseltest.internal.Compiler
 import chiseltest.simulator._
-import chiseltest.dut.Compiler
 import firrtl.AnnotationSeq
 import firrtl.annotations.Annotation
 import firrtl.options.TargetDirAnnotation
