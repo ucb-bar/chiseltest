@@ -6,8 +6,8 @@ import firrtl.annotations.Annotation
 import firrtl.options.{HasShellOptions, ShellOption}
 import firrtl.stage.FirrtlCircuitAnnotation
 import firrtl.{AnnotationSeq, CircuitState}
-import treadle.{TreadleTester, TreadleTesterAnnotation}
-import treadle.executable.StopException
+import treadle.{ClockInfoAnnotation, TreadleTester, TreadleTesterAnnotation}
+import treadle.executable.{ClockInfo, StopException}
 import treadle.stage.TreadleTesterPhase
 
 case object TreadleBackendAnnotation extends SimulatorAnnotation with HasShellOptions {
@@ -35,9 +35,11 @@ object TreadleSimulator extends Simulator {
     * @param state LoFirrtl circuit + annotations
     */
   override def createContext(state: CircuitState): SimulatorContext = {
-    val annos = toAnnos(state).map(translateAnnotation)
+    // we need to annotate clocks for treadle to recognize them
+    val toplevel = TopmoduleInfo(state.circuit)
+    val clockAnno = ClockInfoAnnotation(toplevel.clocks.map(name => ClockInfo(name)))
 
-    // TODO: add appropriate ClockInfoAnnotation !
+    val annos = clockAnno +: toAnnos(state).map(translateAnnotation)
 
     val treadleState = (new TreadleTesterPhase).transform(annos)
 
