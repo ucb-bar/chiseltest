@@ -36,6 +36,9 @@ object TreadleSimulator extends Simulator {
     */
   override def createContext(state: CircuitState): SimulatorContext = {
     val annos = toAnnos(state).map(translateAnnotation)
+
+    // TODO: add appropriate ClockInfoAnnotation !
+
     val treadleState = (new TreadleTesterPhase).transform(annos)
 
     val treadleTester = treadleState.collectFirst { case TreadleTesterAnnotation(t) => t }.getOrElse(
