@@ -20,22 +20,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Install Verilator for Ubuntu
+      - name: Install Verilator and Icarus Verilog for Ubuntu
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get install -y verilator
+          sudo apt-get install -y verilator iverilog
           verilator --version
-      - name: Install Verilator for MacOS
+          iverilog -v || true
+      - name: Install Verilator and Icarus Verilog for MacOS
         if: runner.os == 'macOS'
         run: |
           brew install verilator
+          brew install icarus-verilog
           verilator --version
+          iverilog -v || true
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
           java-version: ${{ matrix.jvm }}
       - name: Test
-        run: sbt ++${{ matrix.scala }} test
+        run: sbt ++${{ matrix.scala }} "testOnly -- -l RequiresVcs"
 
   verilator:
     name: verilator regressions
@@ -81,7 +84,7 @@ jobs:
         with:
           java-version: adopt@1.8
       - name: Test
-        run: sbt "testOnly chiseltest.backends.verilator.**"
+        run: sbt "testOnly chiseltest.backends.verilator.** ; testOnly chiseltest.simulator.Verilator**"
 
   doc:
     name: Documentation and Formatting
