@@ -203,28 +203,11 @@ object VerilatorExecutive extends BackendExecutive {
       .getOrElse(Seq.empty)
     val writeVcdFlag = if (compiledAnnotations.contains(WriteVcdAnnotation)) { Seq("--trace") }
     else { Seq() }
-    val coverageFlags = Seq((compiledAnnotations.collect {
-      case LineCoverageAnnotation   => List("--coverage-line")
-      case ToggleCoverageAnnotation => List("--coverage-toggle")
-      // user coverage is enabled by default
-      //case UserCoverageAnnotation       => List("--coverage-user")
-      case StructuralCoverageAnnotation => List("--coverage-line", "--coverage-toggle")
-    } :+ List("--coverage-user")).flatten.distinct.mkString(" "))
-
     val commandEditsFile = compiledAnnotations.collectFirst { case CommandEditsFile(f) => f }
       .getOrElse("")
 
-    val coverageFlag =
-      if (
-        compiledAnnotations
-          .intersect(Seq(LineCoverageAnnotation, ToggleCoverageAnnotation, UserCoverageAnnotation))
-          .nonEmpty
-      ) {
-        Seq("-DSP_COVERAGE_ENABLE")
-      } else { Seq() }
-
-    val verilatorFlags = moreVerilatorFlags ++ writeVcdFlag ++ coverageFlags
-    val verilatorCFlags = moreVerilatorCFlags ++ coverageFlag
+    val verilatorFlags = moreVerilatorFlags ++ writeVcdFlag ++ List("--coverage-user")
+    val verilatorCFlags = moreVerilatorCFlags
 
     val verilateRetCode = verilogToVerilator(
       circuit.name,
