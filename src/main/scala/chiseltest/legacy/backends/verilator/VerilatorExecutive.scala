@@ -240,7 +240,7 @@ object VerilatorExecutive extends BackendExecutive {
     require(verilatorMajor == 4, "Unsupported Verilator version")
 
     if (verilatorMinor < 202) {
-      PatchCoverageCpp(objDir.toString())
+      PatchCoverageCpp(objDir.toString, verilatorMajor, verilatorMinor)
     }
 
     assert(
