@@ -60,8 +60,9 @@ jobs:
         # 4.034: Chipyard
         # 4.038: Ubuntu 20.10
         # 4.108: Fedora 34
-        # 4.200: latest (unsupported atm)
-        version: ["4.028", "4.032", "4.034", "4.038", "4.108", "4.202"]
+        # 4.200: currently the latest version on brew (MacOS)
+        # 4.202: added "forcePerInstance" to support our coverage flow
+        version: ["4.028", "4.032", "4.034", "4.038", "4.108", "4.200", "4.202"]
 
     steps:
       - name: Checkout

@@ -13,7 +13,9 @@ object VerilatorCppHarnessGenerator {
       versionSplitted.length > 1 && versionSplitted.head == "Verilator",
       s"Unknown verilator version string: ${versionSplitted.mkString(" ")}"
     )
-    val Array(maj, min) = versionSplitted(1).split('.').map(_.toInt)
+    val Array(majStr, minStr) = versionSplitted(1).split('.').map(_.trim)
+    assert(majStr.length == 1 && minStr.length == 3, s"$majStr.$minStr is not of the expected format: D.DDD")
+    val (maj, min) = (majStr.toInt, minStr.toInt)
     println(s"Detected Verilator version $maj.$min")
     (maj, min)
   }
