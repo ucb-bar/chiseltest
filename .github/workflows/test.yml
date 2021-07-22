@@ -10,43 +10,30 @@ on:
 jobs:
   test:
     name: sbt test
-    runs-on: ubuntu-20.04
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-20.04, macos-latest]
         scala: [2.12.13, 2.13.5]
+        jvm: [adopt@1.8, adopt@1.11]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Install Verilator
+      - name: Install Verilator for Ubuntu
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get install -y verilator
+          verilator --version
+      - name: Install Verilator for MacOS
+        if: runner.os == 'macOS'
+        run: |
+          brew install verilator
           verilator --version
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
-          java-version: adopt@1.8
-      - name: Test
-        run: sbt ++${{ matrix.scala }} test
-
-  test-java-11:
-    name: sbt test on Java 11
-    runs-on: ubuntu-20.04
-    strategy:
-      matrix:
-        scala: [2.12.13, 2.13.6]
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Install Verilator
-        run: |
-          sudo apt-get install -y verilator
-          verilator --version
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.11
+          java-version: ${{ matrix.jvm }}
       - name: Test
         run: sbt ++${{ matrix.scala }} test
 
