@@ -15,18 +15,19 @@ object PatchCoverageCpp {
   private val CallReplacement = "CHISEL_VL_COVER_INSERT("
   private val CoverageStartNeedle = "// Coverage"
 
-  def apply(dir: String): Unit = {
+  def apply(dir: String, major: Int, minor: Int): Unit = {
+    assert(major == 4 && minor < 202, "Starting with Verilator 4.202 this hack is no longer necessary!")
     val files = loadFiles(dir)
     files.foreach { case (cppFile, lines) =>
-      replaceCoverage(cppFile, lines)
+      replaceCoverage(cppFile, lines, minor)
       doWrite(cppFile, lines)
     }
   }
 
-  private def replaceCoverage(cppFile: Path, lines: Array[String]): Unit = {
+  private def replaceCoverage(cppFile: Path, lines: Array[String], minor: Int): Unit = {
     // we add our code at the beginning of the coverage section
     val coverageStart = findLine(CoverageStartNeedle, cppFile, lines)
-    lines(coverageStart) += "\n" + CustomCoverInsertCode + "\n"
+    lines(coverageStart) += "\n" + CustomCoverInsertCode(withCtxPtr = minor >= 200) + "\n"
 
     // then we replace the call
     val call = findLine(CallNeedle, cppFile, lines)
@@ -65,28 +66,33 @@ object PatchCoverageCpp {
     throw new RuntimeException(msg + "\n" + "Please file an issue and include the output of `verilator --version`")
   }
 
-  private val CustomCoverInsertCode =
-    """#define CHISEL_VL_COVER_INSERT(countp, ...) \
-      |    VL_IF_COVER(VerilatedCov::_inserti(countp); VerilatedCov::_insertf(__FILE__, __LINE__); \
-      |                chisel_insertp("hier", name(), __VA_ARGS__))
-      |
-      |#ifdef VM_COVERAGE
-      |static void chisel_insertp(
-      |  const char* key0, const char* valp0, const char* key1, const char* valp1,
-      |  const char* key2, int lineno, const char* key3, int column,
-      |  const char* key4, const std::string& hier_str,
-      |  const char* key5, const char* valp5, const char* key6, const char* valp6,
-      |  const char* key7 = nullptr, const char* valp7 = nullptr) {
-      |
-      |    std::string val2str = vlCovCvtToStr(lineno);
-      |    std::string val3str = vlCovCvtToStr(column);
-      |    VerilatedCov::_insertp(
-      |        key0, valp0, key1, valp1, key2, val2str.c_str(),
-      |        key3, val3str.c_str(), key4, hier_str.c_str(),
-      |        key5, valp5, key6, valp6, key7, valp7,
-      |        // turn on per instance cover points
-      |        "per_instance", "1");
-      |}
-      |#endif
-      |""".stripMargin
+  private def CustomCoverInsertCode(withCtxPtr: Boolean): String = {
+    val argPrefix = if (withCtxPtr) "VerilatedCovContext* covcontextp, " else ""
+    val callArgPrefix = if (withCtxPtr) "covcontextp, " else ""
+    val cov = if (withCtxPtr) "covcontextp->" else "VerilatedCov::"
+
+    s"""#define CHISEL_VL_COVER_INSERT(${callArgPrefix}countp, ...) \\
+       |    VL_IF_COVER(${cov}_inserti(countp); ${cov}_insertf(__FILE__, __LINE__); \\
+       |                chisel_insertp(${callArgPrefix}"hier", name(), __VA_ARGS__))
+       |
+       |#ifdef VM_COVERAGE
+       |static void chisel_insertp(${argPrefix}
+       |  const char* key0, const char* valp0, const char* key1, const char* valp1,
+       |  const char* key2, int lineno, const char* key3, int column,
+       |  const char* key4, const std::string& hier_str,
+       |  const char* key5, const char* valp5, const char* key6, const char* valp6,
+       |  const char* key7 = nullptr, const char* valp7 = nullptr) {
+       |
+       |    std::string val2str = vlCovCvtToStr(lineno);
+       |    std::string val3str = vlCovCvtToStr(column);
+       |    ${cov}_insertp(
+       |        key0, valp0, key1, valp1, key2, val2str.c_str(),
+       |        key3, val3str.c_str(), key4, hier_str.c_str(),
+       |        key5, valp5, key6, valp6, key7, valp7,
+       |        // turn on per instance cover points
+       |        "per_instance", "1");
+       |}
+       |#endif
+       |""".stripMargin
+  }
 }
