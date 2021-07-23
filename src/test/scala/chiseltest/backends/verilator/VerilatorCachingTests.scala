@@ -7,6 +7,7 @@ import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.experimental.sanitizeFileName
 import chiseltest.internal.{CachingAnnotation, VerilatorBackendAnnotation}
 import chiseltest.tests.StaticModule
+import firrtl.AnnotationSeq
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -15,29 +16,37 @@ class VerilatorCachingTests extends AnyFlatSpec with ChiselScalatestTester with 
 
   val default = Seq(VerilatorBackendAnnotation)
   val withCaching = Seq(VerilatorBackendAnnotation, CachingAnnotation)
-  private val cachingMin = 1.4
-  private val nonCachingMax = 1.2
+  private val cachingMin = 0.7    // at least 70% difference between first (uncached) and subsequent runs (cached)
+  private val nonCachingMax = 0.2 // max 20% difference between runs
+
+  private def runTest(num: Int, annos: AnnotationSeq): Long = {
+    time(test(new StaticModule(num.U)).withAnnotations(annos) { c =>
+      c.out.expect(num.U)
+    })._2
+  }
 
   it should "re-compile by default" in {
+    // warmup to improve measurement accuracy
+    (0 until 2).foreach { _ => runTest(42, default) }
     startWithEmptyTestDir()
     // here we test out hypothesis that without caching, the tet execution times will all be about the same
-    val times = (0 until 3).map { _ =>
-      time(test(new StaticModule(42.U)).withAnnotations(default) { c =>
-        c.out.expect(42.U)
-      })._2
-    }
-    relativeTime(times).foreach(delta => assert(delta < nonCachingMax))
+    val times = (0 until 3).map { _ => runTest(42, default) }
+    val delta = avgRelativeDelta(times)
+    assert(delta < nonCachingMax)
+    println(times)
+    println(delta)
   }
 
   it should "not re-compile when caching is enabled" in {
+    // warmup to improve measurement accuracy
+    (0 until 2).foreach { _ => runTest(42, default) }
     startWithEmptyTestDir()
     // with caching, the first time we execute the test should be significantly slower
-    val times = (0 until 3).map { _ =>
-      time(test(new StaticModule(42.U)).withAnnotations(withCaching) { c =>
-        c.out.expect(42.U)
-      })._2
-    }
-    relativeTime(times).foreach(delta => assert(delta > cachingMin))
+    val times = (0 until 3).map { _ => runTest(42, withCaching) }
+    val delta = avgRelativeDelta(times)
+    assert(delta > cachingMin)
+    println(times)
+    println(delta)
   }
 
   it should "not cache when two different modules are instantiated" in {
@@ -61,8 +70,8 @@ class VerilatorCachingTests extends AnyFlatSpec with ChiselScalatestTester with 
 
     val unCached = Seq(first, second, others.head)
     val cached = Seq(first) ++ others.tail
-    relativeTime(unCached).foreach(delta => assert(delta < nonCachingMax))
-    relativeTime(cached).foreach(delta => assert(delta > cachingMin))
+    assert(avgRelativeDelta(unCached) < nonCachingMax)
+    assert(avgRelativeDelta(cached) > cachingMin)
   }
 
   private def time[T](f: => T): (T, Long) = {
@@ -72,12 +81,12 @@ class VerilatorCachingTests extends AnyFlatSpec with ChiselScalatestTester with 
     (r, delta)
   }
 
-  private def relativeTime(ts: Seq[Long]): Seq[Double] = {
+  private def avgRelativeDelta(ts: Seq[Long]): Double = {
     require(ts.length >= 2)
     val first = ts.head
     val diffs = ts.tail.map(_ - first).map(math.abs)
-    val average = (ts.sum / ts.length).toDouble
-    diffs.map(_.toDouble / average)
+    val rel = diffs.map(_.toDouble / first.toDouble)
+    rel.sum / rel.size
   }
 
   private def startWithEmptyTestDir(): Unit = {
