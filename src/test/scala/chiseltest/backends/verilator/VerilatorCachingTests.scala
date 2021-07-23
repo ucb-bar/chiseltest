@@ -17,7 +17,7 @@ class VerilatorCachingTests extends AnyFlatSpec with ChiselScalatestTester with 
   val default = Seq(VerilatorBackendAnnotation)
   val withCaching = Seq(VerilatorBackendAnnotation, CachingAnnotation)
   private val cachingMin = 0.7    // at least 70% difference between first (uncached) and subsequent runs (cached)
-  private val nonCachingMax = 0.2 // max 20% difference between runs
+  private val nonCachingMax = 0.4 // max 40% difference between runs
 
   private def runTest(num: Int, annos: AnnotationSeq): Long = {
     time(test(new StaticModule(num.U)).withAnnotations(annos) { c =>

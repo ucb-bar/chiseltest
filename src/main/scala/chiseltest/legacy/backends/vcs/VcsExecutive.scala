@@ -87,24 +87,15 @@ object VcsExecutive extends BackendExecutive {
       .getOrElse(Seq())
     val moreVcsCFlags = compiledAnnotations.collectFirst { case VcsCFlags(flagSeq) => flagSeq }
       .getOrElse(Seq())
-    val coverageFlags = (compiledAnnotations.collect {
-      case LineCoverageAnnotation        => List("line")
-      case ToggleCoverageAnnotation      => List("tgl")
-      case BranchCoverageAnnotation      => List("branch")
-      case ConditionalCoverageAnnotation => List("cond")
-      case UserCoverageAnnotation        => List("assert")
-      case StructuralCoverageAnnotation  => List("line", "tgl", "branch", "cond")
-    }).flatten.distinct match {
-      case Nil   => Seq()
-      case flags => Seq("-cm " + flags.mkString("+"))
-    }
+    val moreVcsSimFlags = compiledAnnotations.collectFirst { case VcsSimFlags(flagSeq) => flagSeq }
+      .getOrElse(Seq())
     val editCommands = compiledAnnotations.collectFirst { case CommandEditsFile(fileName) =>
       fileName
     }.getOrElse("")
 
     // Pass coverageFlags to VCS compiler s.t. coverage is compiled into design
     // * To enable coverage monitoring, the flags need to be passed to simulator as well
-    val vcsFlags = moreVcsFlags ++ coverageFlags
+    val vcsFlags = moreVcsFlags
 
     assert(
       VerilogToVcs(
@@ -123,7 +114,7 @@ object VcsExecutive extends BackendExecutive {
       .collectFirst[Seq[String]] { case TestCommandOverride(f) =>
         f.split(" +")
       }
-      .getOrElse { Seq(new File(targetDir, circuit.name).toString) } ++ coverageFlags
+      .getOrElse { Seq(new File(targetDir, circuit.name).toString) } ++ moreVcsSimFlags
 
     val paths = compiledAnnotations.collect { case c: CombinationalPath => c }
 

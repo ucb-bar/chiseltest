@@ -5,78 +5,102 @@ package chiseltest.backends.verilator
 import chisel3._
 import chiseltest._
 import chiseltest.experimental.TestOptionBuilder._
-import chiseltest.internal._
+import chiseltest.experimental.sanitizeFileName
+import chiseltest.internal.VerilatorBackendAnnotation
+import chiseltest.legacy.backends.verilator.VerilatorFlags
+import firrtl.AnnotationSeq
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-import java.io.{ByteArrayOutputStream, File, PrintStream}
+private class TestModule extends Module {
+  val in = IO(Input(Bool()))
+  val reg = RegNext(~in)
+  val out = IO(Output(Bool()))
+  chisel3.experimental.verification.cover(out && in)
+  out := reg
+}
 
 class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2"
 
-  it should "allow specifying toggle coverage for Verilator" in {
-    val coverageName = "test_run_dir/Testers2_should_allow_specifying_toggle_coverage_for_Verilator/logs/coverage.dat"
-    val coverage = new File(coverageName)
-    val outputStream = new ByteArrayOutputStream()
-    Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {}).withAnnotations(Seq(VerilatorBackendAnnotation, ToggleCoverageAnnotation)) { c => }
-    }
-    val output = outputStream.toString
-    assert(coverage.exists())
-    output should include("--coverage-toggle")
-    output should not include("--coverage-line")
+  it should "allow specifying Verilog toggle coverage for Verilator" in {
+    clean()
+    val annos = Seq(VerilatorBackendAnnotation, VerilatorFlags(Seq("--coverage-toggle")))
+    runTest(annos)
+    val counts = coverageTypes()
+    assert(counts.user == 1, "user coverage is always included!")
+    assert(counts.toggle == 5)
+    assert(counts.line == 0)
   }
 
-  it should "allow specifying line coverage for Verilator" in {
-    val coverageName = "test_run_dir/Testers2_should_allow_specifying_line_coverage_for_Verilator/logs/coverage.dat"
-    val coverage = new File(coverageName)
-    val outputStream = new ByteArrayOutputStream()
-    Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {}).withAnnotations(Seq(VerilatorBackendAnnotation, LineCoverageAnnotation)) { c => }
-    }
-    val output = outputStream.toString
-    assert(coverage.exists())
-    output should not include("--coverage-toggle")
-    output should include("--coverage-line")
+  it should "allow specifying Verilog line coverage for Verilator" in {
+    clean()
+    val annos = Seq(VerilatorBackendAnnotation, VerilatorFlags(Seq("--coverage-line")))
+    runTest(annos)
+    val counts = coverageTypes()
+    assert(counts.user == 1, "user coverage is always included!")
+    assert(counts.toggle == 0)
+    assert(counts.line == 3 || counts.line == 1) // different verilator versions add different numbers of cover points
   }
 
-  it should "allow specifying structural coverage for Verilator" in {
-    val coverageName = "test_run_dir/Testers2_should_allow_specifying_structural_coverage_for_Verilator/logs/coverage.dat"
-    val coverage = new File(coverageName)
-    val outputStream = new ByteArrayOutputStream()
-    Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {}).withAnnotations(Seq(VerilatorBackendAnnotation, StructuralCoverageAnnotation)) { c => }
-    }
-    val output = outputStream.toString
-    assert(coverage.exists())
-    output should include("--coverage-toggle")
-    output should include("--coverage-line")
+  it should "allow specifying Verilog structural coverage for Verilator" in {
+    clean()
+    val annos = Seq(VerilatorBackendAnnotation, VerilatorFlags(Seq("--coverage-toggle", "--coverage-line")))
+    runTest(annos)
+    val counts = coverageTypes()
+    assert(counts.user == 1, "user coverage is always included!")
+    assert(counts.toggle == 5)
+    assert(counts.line == 3 || counts.line == 1) // different verilator versions add different numbers of cover points
   }
 
-  it should "specify user coverage for Verilator by default" in {
-    val coverageName = "test_run_dir/Testers2_should_allow_specifying_user_coverage_for_Verilator/logs/coverage.dat"
-    val coverage = new File(coverageName)
-    val outputStream = new ByteArrayOutputStream()
-    Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {}).withAnnotations(Seq(VerilatorBackendAnnotation)) { c => }
-    }
-    val output = outputStream.toString
-    output should not include("--coverage-toggle")
-    output should not include("--coverage-line")
-    output should include("--coverage-user")
+  it should "always generate user coverage" in {
+    clean()
+    val annos = Seq(VerilatorBackendAnnotation)
+    runTest(annos)
+    val counts = coverageTypes()
+    assert(counts.user == 1, "user coverage is always included!")
+    assert(counts.toggle == 0)
+    assert(counts.line == 0)
   }
 
-  it should "allow stacking coverage for Verilator" in {
-    val coverageName = "test_run_dir/Testers2_should_allow_stacking_coverage_for_Verilator/logs/coverage.dat"
-    val coverage = new File(coverageName)
-    val outputStream = new ByteArrayOutputStream()
-    Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {}).withAnnotations(Seq(VerilatorBackendAnnotation, UserCoverageAnnotation, StructuralCoverageAnnotation)) { c => }
+  // run a basic test in order to generate some interesting coverage data
+  private def runTest(annos: AnnotationSeq): Unit = {
+    val rand = new scala.util.Random(0)
+    test(new TestModule).withAnnotations(annos) { dut =>
+      (0 until 50).foreach { _ =>
+        val in = rand.nextBoolean()
+        dut.in.poke(in.B)
+        dut.clock.step()
+        dut.out.expect((!in).B)
+      }
     }
-    val output = outputStream.toString
-    assert(coverage.exists())
-    output should include("--coverage-toggle")
-    output should include("--coverage-line")
-    output should include("--coverage-user")
+  }
+
+  private def testDir: os.Path = os.pwd / "test_run_dir" / sanitizeFileName(scalaTestContext.value.get.name)
+
+  private def clean(): Unit = {
+    if(os.exists(testDir)) { os.remove.all(testDir) }
+  }
+
+  private def loadCoverage(): Seq[Map[String, String]] = {
+    assert(os.exists(testDir))
+    val coverageFile = testDir / "logs" / "coverage.dat"
+    assert(os.exists(coverageFile))
+    val lines = os.read.lines(coverageFile).drop(1)
+    lines.map(_.split('\'').toList).map {
+        case List(_, dict, countStr) =>
+          dict.drop(1).split('\u0001').map(_.split('\u0002').toList).map { case Seq(k, v) => k -> v }.toMap
+        case _ => Map[String, String]()
+    }.toSeq
+  }
+
+  private case class Counts(user: Int, toggle: Int, line: Int)
+  private def coverageTypes(): Counts = {
+    val cov = loadCoverage()
+    Counts(
+      user = cov.count(_("page").startsWith("v_user")),
+      toggle = cov.count(_("page").startsWith("v_toggle")),
+      line = cov.count(_("page").startsWith("v_line")),
+    )
   }
 }

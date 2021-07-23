@@ -2,92 +2,108 @@
 
 package chiseltest.experimental.tests
 
-import java.io.{ByteArrayOutputStream, File, PrintStream}
-
 import chisel3._
 import chiseltest._
 import chiseltest.experimental.TestOptionBuilder._
+import chiseltest.experimental.sanitizeFileName
 import chiseltest.internal._
+import chiseltest.legacy.backends.vcs.{VcsFlags, VcsSimFlags}
+import firrtl.AnnotationSeq
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+
+private class TestModule extends Module {
+  val in = IO(Input(Bool()))
+  val reg = RegNext(~in)
+  val out = IO(Output(Bool()))
+  chisel3.experimental.verification.cover(out && in)
+  out := reg
+}
 
 class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2"
 
+  private def SimAndCompileFlags(flags: Seq[String]): AnnotationSeq = Seq(VcsFlags(flags), VcsSimFlags(flags))
+
   it should "allow specifying line coverage for Vcs" in {
     assume(firrtl.FileUtils.isVCSAvailable)
+    clean()
+    val annos = Seq(VcsBackendAnnotation) ++ SimAndCompileFlags(Seq("-cm", "line"))
+    runTest(annos)
 
-    val outputStream = new ByteArrayOutputStream()
-    Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {}).withAnnotations(Seq(VcsBackendAnnotation, LineCoverageAnnotation)) { c => }
-    }
-    val output = outputStream.toString
-    output.contains("-cm line") should be(true)
+    // TODO: check output file
   }
 
   it should "allow specifying toggle coverage for Vcs" in {
     assume(firrtl.FileUtils.isVCSAvailable)
+    clean()
+    val annos = Seq(VcsBackendAnnotation) ++ SimAndCompileFlags(Seq("-cm", "tgl"))
+    runTest(annos)
 
-    val outputStream = new ByteArrayOutputStream()
-    Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {}).withAnnotations(Seq(VcsBackendAnnotation, ToggleCoverageAnnotation)) { c => }
-    }
-    val output = outputStream.toString
-    output.contains("-cm tgl") should be(true)
+    // TODO: check output file
   }
 
   it should "allow specifying branch coverage for Vcs" in {
     assume(firrtl.FileUtils.isVCSAvailable)
+    clean()
+    val annos = Seq(VcsBackendAnnotation) ++ SimAndCompileFlags(Seq("-cm", "branch"))
+    runTest(annos)
 
-    val outputStream = new ByteArrayOutputStream()
-    Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {}).withAnnotations(Seq(VcsBackendAnnotation, BranchCoverageAnnotation)) { c => }
-    }
-    val output = outputStream.toString
-    output.contains("-cm branch") should be(true)
+    // TODO: check output file
   }
 
   it should "allow specifying conditional coverage for Vcs" in {
     assume(firrtl.FileUtils.isVCSAvailable)
+    clean()
+    val annos = Seq(VcsBackendAnnotation) ++ SimAndCompileFlags(Seq("-cm", "cond"))
+    runTest(annos)
 
-    val outputStream = new ByteArrayOutputStream()
-    Console.withOut(new PrintStream(outputStream)) {
-      test(new Module() {}).withAnnotations(Seq(VcsBackendAnnotation, ConditionalCoverageAnnotation)) { c => }
-    }
-    val output = outputStream.toString
-    output.contains("-cm cond") should be(true)
+    // TODO: check output file
   }
 
   it should "allow specifying structural coverage for Vcs" in {
     assume(firrtl.FileUtils.isVCSAvailable)
+    clean()
+    val annos = Seq(VcsBackendAnnotation) ++ SimAndCompileFlags(Seq("-cm", "line+tgl+branch+cond"))
+    runTest(annos)
 
-    val outputStream = new ByteArrayOutputStream()
-    Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {}).withAnnotations(Seq(VcsBackendAnnotation, StructuralCoverageAnnotation)) { c => }
-    }
-    val output = outputStream.toString
-    output.contains("-cm line+tgl+branch+cond") should be(true)
+    // TODO: check output file
   }
 
   it should "allow specifying user coverage for Vcs" in {
     assume(firrtl.FileUtils.isVCSAvailable)
+    clean()
+    val annos = Seq(VcsBackendAnnotation) ++ SimAndCompileFlags(Seq("-cm", "assert"))
+    runTest(annos)
 
-    val outputStream = new ByteArrayOutputStream()
-    Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {}).withAnnotations(Seq(VcsBackendAnnotation, UserCoverageAnnotation)) { c => }
-    }
-    val output = outputStream.toString
-    output.contains("-cm assert") should be(true)
+    // TODO: check output file
   }
 
   it should "allow stacking coverage for Vcs" in {
     assume(firrtl.FileUtils.isVCSAvailable)
+    clean()
+    val annos = Seq(VcsBackendAnnotation) ++ SimAndCompileFlags(Seq("-cm", "line+tgl+branch+cond+assert"))
+    runTest(annos)
 
-    val outputStream = new ByteArrayOutputStream()
-    Console.withOut(new PrintStream(outputStream)) {
-      test(new Module {}).withAnnotations(Seq(VcsBackendAnnotation, UserCoverageAnnotation, StructuralCoverageAnnotation)) { c => }
+    // TODO: check output file
+  }
+
+  // run a basic test in order to generate some interesting coverage data
+  private def runTest(annos: AnnotationSeq): Unit = {
+    val rand = new scala.util.Random(0)
+    test(new TestModule).withAnnotations(annos) { dut =>
+      (0 until 50).foreach { _ =>
+        val in = rand.nextBoolean()
+        dut.in.poke(in.B)
+        dut.clock.step()
+        dut.out.expect((!in).B)
+      }
     }
-    val output = outputStream.toString
-    output.contains("-cm line+tgl+branch+cond+assert") should be(true)
+  }
+
+  private def testDir: os.Path = os.pwd / "test_run_dir" / sanitizeFileName(scalaTestContext.value.get.name)
+
+  private def clean(): Unit = {
+    if(os.exists(testDir)) { os.remove.all(testDir) }
   }
 }

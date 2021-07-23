@@ -22,11 +22,17 @@ case object SuppressVcsVcd extends VcsOptionObject {
   )
 }
 
-/** A sequence string flags to add to verilator command line
+/** A sequence string flags to add to vcs command line
   *
   * @param flags additional flags
   */
 case class VcsFlags(flags: Seq[String]) extends VcsOption
+
+/** A sequence string flags to add to the VCS created simulation binary
+  *
+  * @param flags additional flags
+  */
+case class VcsSimFlags(flags: Seq[String]) extends VcsOption
 
 /** CLI builder for VcsFlags
   */
