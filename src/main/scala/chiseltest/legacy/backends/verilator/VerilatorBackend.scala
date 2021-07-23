@@ -30,7 +30,8 @@ class VerilatorBackend[T <: Module](
   val combinationalPaths: Map[Data, Set[Data]],
   command:                Seq[String],
   targetDir:              String,
-  coverageAnnotations:    AnnotationSeq)
+  coverageAnnotations:    AnnotationSeq,
+  supportsCoverage:       Boolean)
     extends BackendInstance[T]
     with ThreadedBackend[T] {
 
@@ -251,7 +252,8 @@ class VerilatorBackend[T <: Module](
 
       simApiInterface.finish() // Do this to close down the communication
     }
-    generateTestCoverageAnnotation() +: coverageAnnotations
+    if (supportsCoverage) { generateTestCoverageAnnotation() +: coverageAnnotations }
+    else { Seq() }
   }
 
   /** Generates an annotation containing the map from coverage point names to coverage counts. */

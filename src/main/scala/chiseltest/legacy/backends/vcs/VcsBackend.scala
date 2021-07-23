@@ -21,4 +21,4 @@ class VcsBackend[T <: Module](
   command:             Seq[String],
   targetDir:           String,
   coverageAnnotations: AnnotationSeq)
-    extends VerilatorBackend(dut, dataNames, combinationalPaths, command, targetDir, coverageAnnotations)
+    extends VerilatorBackend(dut, dataNames, combinationalPaths, command, targetDir, coverageAnnotations, false)
