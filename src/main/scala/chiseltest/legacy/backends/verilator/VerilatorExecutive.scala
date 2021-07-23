@@ -119,7 +119,7 @@ object VerilatorExecutive extends BackendExecutive {
             command,
             targetDirPath.toString(),
             coverageAnnotations,
-            true
+            supportsCoverage = true
           )
         ) -> cachingHash
       } else {
