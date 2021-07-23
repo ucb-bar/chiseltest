@@ -15,6 +15,8 @@ class VerilatorCachingTests extends AnyFlatSpec with ChiselScalatestTester with 
 
   val default = Seq(VerilatorBackendAnnotation)
   val withCaching = Seq(VerilatorBackendAnnotation, CachingAnnotation)
+  private val cachingMin = 1.4
+  private val nonCachingMax = 1.2
 
   it should "re-compile by default" in {
     startWithEmptyTestDir()
@@ -24,7 +26,7 @@ class VerilatorCachingTests extends AnyFlatSpec with ChiselScalatestTester with 
         c.out.expect(42.U)
       })._2
     }
-    relativeTime(times).foreach(delta => assert(delta < 1.3))
+    relativeTime(times).foreach(delta => assert(delta < nonCachingMax))
   }
 
   it should "not re-compile when caching is enabled" in {
@@ -35,7 +37,7 @@ class VerilatorCachingTests extends AnyFlatSpec with ChiselScalatestTester with 
         c.out.expect(42.U)
       })._2
     }
-    relativeTime(times).foreach(delta => assert(delta > 1.6))
+    relativeTime(times).foreach(delta => assert(delta > cachingMin))
   }
 
   it should "not cache when two different modules are instantiated" in {
@@ -59,8 +61,8 @@ class VerilatorCachingTests extends AnyFlatSpec with ChiselScalatestTester with 
 
     val unCached = Seq(first, second, others.head)
     val cached = Seq(first) ++ others.tail
-    relativeTime(unCached).foreach(delta => assert(delta < 1.3))
-    relativeTime(cached).foreach(delta => assert(delta > 1.6))
+    relativeTime(unCached).foreach(delta => assert(delta < nonCachingMax))
+    relativeTime(cached).foreach(delta => assert(delta > cachingMin))
   }
 
   private def time[T](f: => T): (T, Long) = {
