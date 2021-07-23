@@ -112,7 +112,15 @@ object VerilatorExecutive extends BackendExecutive {
         )
 
         return Some(
-          new VerilatorBackend(dut, portNames, pathsAsData, command, targetDirPath.toString(), coverageAnnotations)
+          new VerilatorBackend(
+            dut,
+            portNames,
+            pathsAsData,
+            command,
+            targetDirPath.toString(),
+            coverageAnnotations,
+            supportsCoverage = true
+          )
         ) -> cachingHash
       } else {
         return None -> cachingHash // enable caching for next time
@@ -274,6 +282,6 @@ object VerilatorExecutive extends BackendExecutive {
 
     cacheSim(paths, command, coverageAnnotations, elaboratedAnno, targetDirPath, cachingHash)
 
-    new VerilatorBackend(dut, portNames, pathsAsData, command, targetDir, coverageAnnotations)
+    new VerilatorBackend(dut, portNames, pathsAsData, command, targetDir, coverageAnnotations, true)
   }
 }
