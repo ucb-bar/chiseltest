@@ -4,7 +4,7 @@ package chiseltest.simulator
 
 import chiseltest.simulator.ipc.{IPCSimulatorContext, VerilatorCppHarnessGenerator}
 import firrtl._
-import firrtl.annotations.NoTargetAnnotation
+import firrtl.annotations.{JsonProtocol, NoTargetAnnotation}
 
 case object VerilatorBackendAnnotation extends SimulatorAnnotation {
   override def getSimulator: Simulator = VerilatorSimulator
@@ -61,6 +61,27 @@ private object VerilatorSimulator extends Simulator {
     * @param state LoFirrtl circuit + annotations
     */
   override def createContext(state: CircuitState): SimulatorContext = {
+    val simName = s"${VerilatorSimulator.name} ${VerilatorSimulator.majorVersion}.${VerilatorSimulator.minorVersion}"
+    Caching.cacheSimulationBin(simName, state, createContextFromScratch, recreateCachedContext)
+  }
+
+  private def recreateCachedContext(state: CircuitState): SimulatorContext = {
+    // we will create the simulation in the target directory
+    val targetDir = Compiler.requireTargetDir(state.annotations)
+    val toplevel = TopmoduleInfo(state.circuit)
+
+    val simCmd = Seq("verilated" + "/V" + toplevel.name)
+    // the binary we created communicates using our standard IPC interface
+    val coverageAnnos = loadCoverageAnnos(targetDir)
+    val coverageFile = targetDir / "logs" / "coverage.dat"
+    def readCoverage(): List[(String, Long)] = {
+      assert(os.exists(coverageFile), s"Could not find `$coverageFile` file!")
+      VerilatorCoverage.loadCoverage(coverageAnnos, coverageFile)
+    }
+    new IPCSimulatorContext(simCmd, targetDir, toplevel, VerilatorSimulator, Some(readCoverage))
+  }
+
+  private def createContextFromScratch(state: CircuitState): SimulatorContext = {
     // we will create the simulation in the target directory
     val targetDir = Compiler.requireTargetDir(state.annotations)
     val toplevel = TopmoduleInfo(state.circuit)
@@ -87,12 +108,23 @@ private object VerilatorSimulator extends Simulator {
 
     // the binary we created communicates using our standard IPC interface
     val coverageAnnos = VerilatorCoverage.collectCoverageAnnotations(verilogState.annotations)
+    if (Caching.shouldCache(state)) {
+      saveCoverageAnnos(targetDir, coverageAnnos)
+    }
     val coverageFile = targetDir / "logs" / "coverage.dat"
     def readCoverage(): List[(String, Long)] = {
       assert(os.exists(coverageFile), s"Could not find `$coverageFile` file!")
       VerilatorCoverage.loadCoverage(coverageAnnos, coverageFile)
     }
     new IPCSimulatorContext(simCmd, targetDir, toplevel, VerilatorSimulator, Some(readCoverage))
+  }
+
+  private def saveCoverageAnnos(targetDir: os.Path, annos: AnnotationSeq): Unit = {
+    os.write.over(targetDir / "coverageAnnotations.json", JsonProtocol.serialize(annos))
+  }
+
+  private def loadCoverageAnnos(targetDir: os.Path): AnnotationSeq = {
+    JsonProtocol.deserialize((targetDir / "coverageAnnotations.json").toIO)
   }
 
   private def compileSimulation(topName: String, verilatedDir: os.Path): Seq[String] = {

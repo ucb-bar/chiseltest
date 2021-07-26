@@ -6,8 +6,7 @@ import chisel3._
 import chiseltest._
 import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.experimental.sanitizeFileName
-import chiseltest.internal._
-import chiseltest.legacy.backends.vcs.{VcsFlags, VcsSimFlags}
+import chiseltest.simulator.{VcsFlags, VcsSimFlags}
 import firrtl.AnnotationSeq
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers

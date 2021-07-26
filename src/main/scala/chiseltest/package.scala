@@ -323,4 +323,15 @@ package object chiseltest {
   implicit def decoupledToDriver[T <: Data](x: ReadyValidIO[T]) = new DecoupledDriver(x)
 
   implicit def validToDriver[T <: Data](x: ValidIO[T]) = new ValidDriver(x)
+
+  // expose public flags
+  val VerilatorBackendAnnotation = simulator.VerilatorBackendAnnotation
+  val TreadleBackendAnnotation = simulator.TreadleBackendAnnotation
+  val VcsBackendAnnotation = simulator.VcsBackendAnnotation
+  val IcarusBackendAnnotation = simulator.IcarusBackendAnnotation
+  val WriteVcdAnnotation = simulator.WriteVcdAnnotation
+  val WriteVpdAnnotation = simulator.WriteVpdAnnotation
+  val WriteLxtAnnotation = simulator.WriteLxtAnnotation
+  type WriteLxtAnnotation = simulator.WriteLxtAnnotation
+  val WriteFstAnnotation = simulator.WriteFstAnnotation
 }

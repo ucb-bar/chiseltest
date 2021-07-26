@@ -1,47 +1,30 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chiseltest.legacy.backends.verilator
+package chiseltest.internal
 
-import chiseltest.internal.{BackendInstance, Context, ThreadedBackend}
-import chiseltest.legacy.backends.verilator.Utils.unsignedBigIntToSigned
 import chiseltest.{ClockResolutionException, Region, TimeoutException}
-import chisel3.experimental.{DataMirror, FixedPoint, Interval}
-import chisel3.internal.firrtl.KnownWidth
-import chisel3.{SInt, _}
-import chiseltest.coverage.TestCoverage
+import chisel3._
+import chiseltest.coverage.{Coverage, TestCoverage}
+import chiseltest.simulator.SimulatorContext
 import firrtl.AnnotationSeq
 
-import java.nio.file.Paths
 import scala.collection.mutable
-import scala.math.BigInt
 
-/** Supports Backend and Threaded traits for ex
-  *
-  * @param dut                  the device under test
-  * @param dataNames            basically the IO ports
-  * @param combinationalPaths   paths detected by CheckCombLoop
-  * @param command              the simulation program to execute
-  * @tparam T                   the dut's type
-  */
-// TODO: is Seq[CombinationalPath] the right API here? It's unclear where name -> Data resolution should go
-class VerilatorBackend[T <: Module](
+/** Chiseltest threaded backend using the generic SimulatorContext abstraction from [[chiseltest.simulator]] */
+class GenericBackend[T <: Module](
   val dut:                T,
   val dataNames:          Map[Data, String],
   val combinationalPaths: Map[Data, Set[Data]],
-  command:                Seq[String],
-  targetDir:              String,
-  coverageAnnotations:    AnnotationSeq,
-  supportsCoverage:       Boolean)
+  tester:                 SimulatorContext,
+  coverageAnnotations:    AnnotationSeq)
     extends BackendInstance[T]
     with ThreadedBackend[T] {
-
-  private[chiseltest] val simApiInterface = new SimApiInterface(dut, command)
 
   //
   // Debug utility functions
   //
   val verbose: Boolean = false // hard-coded debug flag
-  def debugLog(str: => String) {
+  def debugLog(str: => String): Unit = {
     if (verbose) println(str)
   }
 
@@ -53,15 +36,11 @@ class VerilatorBackend[T <: Module](
   // Circuit introspection functionality
   //
   override def getSourceClocks(signal: Data): Set[Clock] = {
-    throw new ClockResolutionException(
-      "ICR not available on chisel-testers2 / firrtl master"
-    )
+    throw new ClockResolutionException("ICR not available on chisel-testers2 / firrtl master")
   }
 
   override def getSinkClocks(signal: Data): Set[Clock] = {
-    throw new ClockResolutionException(
-      "ICR not available on chisel-testers2 / firrtl master"
-    )
+    throw new ClockResolutionException("ICR not available on chisel-testers2 / firrtl master")
   }
 
   //
@@ -72,26 +51,24 @@ class VerilatorBackend[T <: Module](
 
   override def pokeClock(signal: Clock, value: Boolean): Unit = {
     // TODO: check thread ordering
-
     val intValue = if (value) 1 else 0
-    simApiInterface.poke(dataNames(signal), intValue)
+    tester.poke(dataNames(signal), intValue)
     debugLog(s"${resolveName(signal)} <- $intValue")
   }
 
   override def peekClock(signal: Clock): Boolean = {
     doPeek(signal, new Throwable)
-    val a = simApiInterface.peek(dataNames(signal)).getOrElse(BigInt(0))
+    val a = tester.peek(dataNames(signal))
     debugLog(s"${resolveName(signal)} -> $a")
     a > 0
   }
 
   override def pokeBits(signal: Data, value: BigInt): Unit = {
     doPoke(signal, value, new Throwable)
-    val dataName = dataNames(signal)
-    if (simApiInterface.peek(dataName).get != value) {
+    if (tester.peek(dataNames(signal)) != value) {
       idleCycles.clear()
     }
-    simApiInterface.poke(dataNames(signal), value)
+    tester.poke(dataNames(signal), value)
     debugLog(s"${resolveName(signal)} <- $value")
   }
 
@@ -99,22 +76,9 @@ class VerilatorBackend[T <: Module](
     require(!stale, "Stale peek not yet implemented")
 
     doPeek(signal, new Throwable)
-    val dataName = dataNames(signal)
-    val a = simApiInterface.peek(dataName).get
+    val a = tester.peek(dataNames(signal))
     debugLog(s"${resolveName(signal)} -> $a")
-
-    signal match {
-      case s: SInt =>
-        val width = DataMirror.widthOf(s).asInstanceOf[KnownWidth].value
-        unsignedBigIntToSigned(a, width)
-      case f: FixedPoint =>
-        val width = DataMirror.widthOf(f).asInstanceOf[KnownWidth].value
-        unsignedBigIntToSigned(a, width)
-      case i: Interval =>
-        val width = DataMirror.widthOf(i).asInstanceOf[KnownWidth].value
-        unsignedBigIntToSigned(a, width)
-      case _ => a
-    }
+    a
   }
 
   override def expectBits(
@@ -127,27 +91,19 @@ class VerilatorBackend[T <: Module](
     require(!stale, "Stale peek not yet implemented")
 
     debugLog(s"${resolveName(signal)} ?> $value")
-    Context().env.testerExpect(
-      value,
-      peekBits(signal, stale),
-      resolveName(signal),
-      message,
-      decode
-    )
+    Context().env.testerExpect(value, peekBits(signal, stale), resolveName(signal), message, decode)
   }
 
   protected val clockCounter: mutable.HashMap[Clock, Int] = mutable.HashMap()
   protected def getClockCycle(clk: Clock): Int = {
     clockCounter.getOrElse(clk, 0)
   }
-  protected def getClock(clk: Clock): Boolean =
-    simApiInterface.peek(dataNames(clk)) match {
-      case Some(x) if x == BigInt(1) => true
-      case _                         => false
-    }
+  protected def getClock(clk: Clock): Boolean = tester.peek(dataNames(clk)).toInt match {
+    case 0 => false
+    case 1 => true
+  }
 
-  protected val lastClockValue: mutable.HashMap[Clock, Boolean] =
-    mutable.HashMap()
+  protected val lastClockValue: mutable.HashMap[Clock, Boolean] = mutable.HashMap()
 
   override def doTimescope(contents: () => Unit): Unit = {
     val createdTimescope = newTimescope()
@@ -157,14 +113,14 @@ class VerilatorBackend[T <: Module](
     closeTimescope(createdTimescope).foreach { case (data, valueOption) =>
       valueOption match {
         case Some(value) =>
-          if (simApiInterface.peek(dataNames(data)).get != value) {
+          if (tester.peek(dataNames(data)) != value) {
             idleCycles.clear()
           }
-          simApiInterface.poke(dataNames(data), value)
+          tester.poke(dataNames(data), value)
           debugLog(s"${resolveName(data)} <- (revert) $value")
         case None =>
           idleCycles.clear()
-          simApiInterface.poke(dataNames(data), 0) // TODO: randomize or 4-state sim
+          tester.poke(dataNames(data), 0) // TODO: randomize or 4-state sim
           debugLog(s"${resolveName(data)} <- (revert) DC")
       }
     }
@@ -190,9 +146,9 @@ class VerilatorBackend[T <: Module](
     rootTimescope = Some(new RootTimescope)
     val mainThread = new TesterThread(
       () => {
-        simApiInterface.poke("reset", 1)
-        simApiInterface.step(1)
-        simApiInterface.poke("reset", 0)
+        tester.poke("reset", 1)
+        tester.step(1)
+        tester.poke("reset", 0)
 
         testFn(dut)
       },
@@ -216,8 +172,7 @@ class VerilatorBackend[T <: Module](
         // TODO: remove multiple invocations of getClock
         // Unblock threads waiting on dependent clock
         val steppedClocks = Seq(dut.clock) ++ lastClockValue.collect {
-          case (clock, lastValue) if getClock(clock) != lastValue && getClock(clock) =>
-            clock
+          case (clock, lastValue) if getClock(clock) != lastValue && getClock(clock) => clock
         }
         steppedClocks.foreach { clock =>
           clockCounter.put(dut.clock, getClockCycle(clock) + 1) // TODO: ignores cycles before a clock was stepped on
@@ -232,13 +187,11 @@ class VerilatorBackend[T <: Module](
         idleLimits.foreach { case (clock, limit) =>
           idleCycles.put(clock, idleCycles.getOrElse(clock, -1) + 1)
           if (idleCycles(clock) >= limit) {
-            throw new TimeoutException(
-              s"timeout on $clock at $limit idle cycles"
-            )
+            throw new TimeoutException(s"timeout on $clock at $limit idle cycles")
           }
         }
 
-        simApiInterface.step(1)
+        tester.step(1)
       }
     } finally {
       rootTimescope = None
@@ -250,16 +203,13 @@ class VerilatorBackend[T <: Module](
         }
       }
 
-      simApiInterface.finish() // Do this to close down the communication
+      tester.finish() // needed to dump VCDs + terminate any external process
     }
-    if (supportsCoverage) { generateTestCoverageAnnotation() +: coverageAnnotations }
-    else { Seq() }
+    generateTestCoverageAnnotation() +: coverageAnnotations
   }
 
   /** Generates an annotation containing the map from coverage point names to coverage counts. */
   private def generateTestCoverageAnnotation(): TestCoverage = {
-    val coverageData = Paths.get(targetDir, "logs", "coverage.dat")
-    val coverage = VerilatorCoverage.loadCoverage(coverageAnnotations, coverageData)
-    TestCoverage(coverage)
+    TestCoverage(tester.getCoverage())
   }
 }
