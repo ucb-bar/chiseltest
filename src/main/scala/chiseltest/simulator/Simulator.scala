@@ -42,7 +42,7 @@ trait SimulatorContext {
     throw new NotImplementedError(s"${sim.name} does not support coverage!")
 }
 
-/** Throws by [[SimulatorContext.step]] if the circuit has no clock input */
+/** Thrown by [[SimulatorContext.step]] if the circuit has no clock input */
 case class NoClockException(toplevel: String)
     extends Exception(s"Circuit $toplevel has now clock and therefore cannot be stepped!")
 
@@ -52,9 +52,6 @@ trait Simulator {
 
   /** is this simulator installed on the local machine? */
   def isAvailable: Boolean
-
-  /** search the local computer for an installation of this simulator and print versions */
-  def findVersions(): Unit
 
   /** returns annotations of all supported waveform formats */
   def waveformFormats: Seq[WriteWaveformAnnotation]
