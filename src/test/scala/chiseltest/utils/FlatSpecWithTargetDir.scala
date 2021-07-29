@@ -3,6 +3,7 @@
 package chiseltest.utils
 
 import chiseltest.experimental.sanitizeFileName
+import firrtl.AnnotationSeq
 import firrtl.options.TargetDirAnnotation
 import org.scalatest.{Outcome, Tag}
 import org.scalatest.flatspec.AnyFlatSpec
@@ -26,6 +27,10 @@ abstract class FlatSpecWithTargetDir extends AnyFlatSpec {
 
   protected def targetDirAnno = TargetDirAnnotation("test_run_dir/" + getTestName)
   protected def targetDir = os.pwd / os.RelPath(targetDirAnno.directory)
+  protected def withTargetDir(annos: AnnotationSeq): AnnotationSeq = {
+    if (annos.exists(_.isInstanceOf[TargetDirAnnotation])) { annos
+    } else { targetDirAnno +: annos }
+  }
 
 
   def getTestName: String = {

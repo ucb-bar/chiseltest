@@ -32,9 +32,9 @@ private[chiseltest] object Compiler {
 
     (state, dut.asInstanceOf[M])
   }
-  def toLowFirrtl(state: firrtl.CircuitState): firrtl.CircuitState = {
+  def toLowFirrtl(state: firrtl.CircuitState, annos: AnnotationSeq = List()): firrtl.CircuitState = {
     requireTargetDir(state.annotations)
-    val inAnnos = stateToAnnos(state)
+    val inAnnos = annos ++: stateToAnnos(state)
     val res = firrtlStage.execute(Array("-E", "low"), inAnnos)
     annosToState(res)
   }

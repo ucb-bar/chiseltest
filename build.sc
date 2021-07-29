@@ -56,6 +56,7 @@ class chiseltestCrossModule(val crossScalaVersion: String) extends CrossSbtModul
       ivy"org.scalatest::scalatest:3.2.0",
       ivy"com.lihaoyi::utest:0.7.9",
       ivy"net.java.dev.jna:jna:5.8.0",
+      ivy"edu.berkeley.cs::maltese-smt:0.5-SNAPSHOT",
     ) ++ chisel3IvyDeps ++ treadleIvyDeps
   }
 
