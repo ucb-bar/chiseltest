@@ -2,6 +2,7 @@
 
 package chiseltest.simulator
 
+import firrtl.options.TargetDirAnnotation
 import org.scalatest.Tag
 
 /** tests some basic functionality that should be supported by all simulators */
@@ -38,7 +39,9 @@ abstract class BasicCompliance(sim: Simulator, tag: Tag = DefaultTag) extends Co
 
   it should "be able to create two independent simulators for the same circuit" taggedAs(tag) in {
     val dut0 = load(standardCircuit)
-    val dut1 = load(standardCircuit)
+    // note: while we need to be able to create two simulators,
+    // creating them in the same target dir isn't necessarily supported
+    val dut1 = load(standardCircuit, Seq(TargetDirAnnotation(targetDirAnno.directory + "_2")))
     val inputs = Seq(1, 0, 1, 1, 0, 0)
     inputs.foreach { i =>
       dut0.poke("io_in", i)
@@ -66,8 +69,12 @@ abstract class BasicCompliance(sim: Simulator, tag: Tag = DefaultTag) extends Co
   }
 
   it should "be able to simulate different circuits at the same time" taggedAs(tag) in {
+    // note: while we need to be able to create two simulators,
+    // creating them in the same target dir isn't necessarily supported
     val nums = Seq(123, 432, 555)
-    val duts = nums.map(staticModule).map(load(_))
+    val duts = nums.map { n =>
+      load(staticModule(n), Seq(TargetDirAnnotation(targetDirAnno.directory + "_" + n.toString)))
+    }
 
     nums.zip(duts).foreach { case (num, dut) =>
       assert(dut.peek("num") == num)
@@ -120,7 +127,7 @@ abstract class BasicCompliance(sim: Simulator, tag: Tag = DefaultTag) extends Co
   it should "not generate any files in the target dir directly" taggedAs(tag) in {
     // we expect simulators to create most of their files in a subdirectory
     // only the firrtl, (System)Verilog and C++ test bench files should be in the directory
-    val allowedExts = Seq("sv", "fir", "cpp", "h", "tab", "key")
+    val allowedExts = Seq("sv", "fir", "cpp", "h", "tab", "key", "dat")
 
     val dut = load(standardCircuit)
     dut.poke("io_in", 1)
@@ -133,6 +140,8 @@ abstract class BasicCompliance(sim: Simulator, tag: Tag = DefaultTag) extends Co
       .filter(os.isFile)
       .filterNot( f => allowedExts.contains(f.last.split('.').last))
       .filterNot( _.last == "Foo")
+      // JNI library copies
+      .filterNot(_.last.startsWith("TesterSharedLib"))
     assert(unexpected.isEmpty, s"${sim.name} generated unexpected file(s):\n" + unexpected.mkString("\n"))
   }
 }

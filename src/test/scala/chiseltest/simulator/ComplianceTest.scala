@@ -34,7 +34,9 @@ abstract class ComplianceTest(sim: Simulator, protected val tag: Tag) extends An
   protected def targetDir = os.pwd / os.RelPath(targetDirAnno.directory)
 
   def load(src: String, annos: AnnotationSeq = List()): SimulatorContext = {
-    sim.createContext(loadFirrtl(src, targetDirAnno +: annos))
+    val withTargetDir: AnnotationSeq =
+      if(annos.exists(_.isInstanceOf[TargetDirAnnotation])) { annos } else { targetDirAnno +: annos }
+    sim.createContext(loadFirrtl(src, withTargetDir))
   }
 
   def getTestName: String = {
