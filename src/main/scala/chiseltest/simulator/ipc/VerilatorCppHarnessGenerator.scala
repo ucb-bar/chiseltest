@@ -6,6 +6,106 @@ import chiseltest.simulator.TopmoduleInfo
 
 /** Generates the Module specific verilator harness cpp file for verilator compilation */
 private[chiseltest] object VerilatorCppHarnessGenerator {
+  // generated code that can be re-used for the JNI based interface
+  def commonCodeGen(toplevel: TopmoduleInfo, targetDir: os.Path, majorVersion: Int, minorVersion: Int): String = {
+    val dutName = toplevel.name
+    val dutVerilatorClassName = "V" + dutName
+
+    require(toplevel.clocks.length <= 1, "Multi clock circuits are currently not supported!")
+    val clockName = toplevel.clocks.headOption
+    val clockLow = clockName.map("top->" + _ + " = 0;").getOrElse("")
+    val clockHigh = clockName.map("top->" + _ + " = 1;").getOrElse("")
+
+    val coverageInit =
+      if (majorVersion >= 4 && minorVersion >= 202)
+        """|#if VM_COVERAGE
+           |    Verilated::defaultContextp()->coveragep()->forcePerInstance(true);
+           |#endif
+           |""".stripMargin
+      else ""
+
+    val verilatorRunFlushCallback = if (majorVersion >= 4 && minorVersion >= 38) {
+      "Verilated::runFlushCallbacks();\n  Verilated::runExitCallbacks();"
+    } else {
+      "Verilated::flushCall();"
+    }
+
+    val codeBuffer = new StringBuilder
+    codeBuffer.append(s"""#include "$dutVerilatorClassName.h"
+                         |#include "verilated.h"
+                         |#include "veri_api.h"
+                         |
+                         |#define TOP_CLASS $dutVerilatorClassName
+                         |
+                         |#ifndef VM_TRACE_FST
+                         |#define VM_TRACE_FST 0
+                         |#endif
+                         |
+                         |#if VM_TRACE
+                         |#if VM_TRACE_FST
+                         |  #include "verilated_fst_c.h"
+                         |  #define VERILATED_C VerilatedFstC
+                         |#else // !(VM_TRACE_FST)
+                         |  #include "verilated_vcd_c.h"
+                         |  #define VERILATED_C VerilatedVcdC
+                         |#endif
+                         |#else // !(VM_TRACE)
+                         |  #define VERILATED_C VerilatedVcdC
+                         |#endif
+                         |#include <iostream>
+                         |
+                         |
+                         |// Override Verilator definition so first $$finish ends simulation
+                         |// Note: VL_USER_FINISH needs to be defined when compiling Verilator code
+                         |void vl_finish(const char* filename, int linenum, const char* hier) {
+                         |  $verilatorRunFlushCallback
+                         |  exit(0);
+                         |}
+                         |
+                         |static void _startCoverageAndDump(VERILATED_C** tfp, const std::string& dumpfile, TOP_CLASS* top) {
+                         |$coverageInit
+                         |#if VM_TRACE || VM_COVERAGE
+                         |    Verilated::traceEverOn(true);
+                         |#endif
+                         |#if VM_TRACE
+                         |    VL_PRINTF(\"Enabling waves..\\n\");
+                         |    *tfp = new VERILATED_C;
+                         |    top->trace(*tfp, 99);
+                         |    (*tfp)->open(dumpfile.c_str());
+                         |#endif
+                         |}
+                         |
+                         |static void _step(VERILATED_C* tfp, TOP_CLASS* top, vluint64_t& main_time) {
+                         |    $clockLow
+                         |    top->eval();
+                         |#if VM_TRACE
+                         |    if (tfp) tfp->dump(main_time);
+                         |#endif
+                         |    main_time++;
+                         |    $clockHigh
+                         |    top->eval();
+                         |#if VM_TRACE
+                         |    if (tfp) tfp->dump(main_time);
+                         |#endif
+                         |    main_time++;
+                         |}
+                         |
+                         |static void _finish(VERILATED_C* tfp, TOP_CLASS* top) {
+                         |#if VM_TRACE
+                         |  if (tfp) tfp->close();
+                         |  delete tfp;
+                         |#endif
+                         |#if VM_COVERAGE
+                         |  VerilatedCov::write("$targetDir/coverage.dat");
+                         |#endif
+                         |  // TODO: re-enable!
+                         |  // delete top;
+                         |}
+                         |""".stripMargin)
+
+    codeBuffer.toString()
+  }
+
   def codeGen(
     toplevel:     TopmoduleInfo,
     dumpFilePath: os.Path,
@@ -13,11 +113,6 @@ private[chiseltest] object VerilatorCppHarnessGenerator {
     majorVersion: Int,
     minorVersion: Int
   ): String = {
-
-    require(toplevel.clocks.length <= 1, "Multi clock circuits are currently not supported!")
-    val clockName = toplevel.clocks.headOption
-    val clockLow = clockName.map("dut->" + _ + " = 0;").getOrElse("")
-    val clockHigh = clockName.map("dut->" + _ + " = 1;").getOrElse("")
 
     val codeBuffer = new StringBuilder
 
@@ -52,43 +147,14 @@ private[chiseltest] object VerilatorCppHarnessGenerator {
     val dutApiClassName = dutName + "_api_t"
     val dutVerilatorClassName = "V" + dutName
 
-    val coverageInit =
-      if (majorVersion >= 4 && minorVersion >= 202)
-        """|Verilated::defaultContextp()->coveragep()->forcePerInstance(true);
-           |""".stripMargin
-      else ""
-
-    val verilatorRunFlushCallback = if (majorVersion >= 4 && minorVersion >= 38) {
-      "Verilated::runFlushCallbacks();\nVerilated::runExitCallbacks();\n"
-    } else {
-      "Verilated::flushCall();\n"
-    }
     codeBuffer.append(s"""
-#include "$dutVerilatorClassName.h"
-#include "verilated.h"
-#include "veri_api.h"
-
-#ifndef VM_TRACE_FST
-#define VM_TRACE_FST 0
-#endif
-
-#if VM_TRACE
-#if VM_TRACE_FST
-#include "verilated_fst_c.h"
-#else
-#include "verilated_vcd_c.h"
-#endif
-#endif
-#include <iostream>
 class $dutApiClassName: public sim_api_t<VerilatorDataWrapper*> {
     public:
-    $dutApiClassName($dutVerilatorClassName* _dut) {
+    $dutApiClassName(TOP_CLASS* _dut) {
         dut = _dut;
         main_time = 0L;
         is_exit = false;
-#if VM_TRACE
-        tfp = NULL;
-#endif
+        tfp = nullptr;
     }
     void init_sim_data() {
         sim_data.inputs.clear();
@@ -107,13 +173,7 @@ class $dutApiClassName: public sim_api_t<VerilatorDataWrapper*> {
     codeBuffer.append(
       s"""
     }
-#if VM_TRACE
-#if VM_TRACE_FST
-     void init_dump(VerilatedFstC* _tfp) { tfp = _tfp; }
-#else
-     void init_dump(VerilatedVcdC* _tfp) { tfp = _tfp; }
-#endif
-#endif
+    void init_dump(VERILATED_C* _tfp) { tfp = _tfp; }
     inline bool exit() { return is_exit; }
 
     // required for sc_time_stamp()
@@ -125,13 +185,7 @@ class $dutApiClassName: public sim_api_t<VerilatorDataWrapper*> {
     $dutVerilatorClassName* dut;
     bool is_exit;
     vluint64_t main_time;
-#if VM_TRACE
-#if VM_TRACE_FST
-    VerilatedFstC* tfp;
-#else
-    VerilatedVcdC* tfp;
-#endif
-#endif
+    VERILATED_C* tfp;
     virtual inline size_t put_value(VerilatorDataWrapper* &sig, uint64_t* data, bool force=false) {
         return sig->put_value(data);
     }
@@ -148,24 +202,10 @@ class $dutApiClassName: public sim_api_t<VerilatorDataWrapper*> {
         is_exit = true;
     }
     virtual inline void step() {
-        $clockLow
-        dut->eval();
-#if VM_TRACE
-        if (tfp) tfp->dump(main_time);
-#endif
-        main_time++;
-        $clockHigh
-        dut->eval();
-#if VM_TRACE
-        if (tfp) tfp->dump(main_time);
-#endif
-        main_time++;
+        _step(tfp, dut, main_time);
     }
     virtual inline void update() {
-        // This seems to force a full eval of circuit, so registers with alternate clocks are update correctly
         dut->eval();
-        // This was the original call, did not refresh registers when some  other clock transitioned
-        // dut->_eval_settle(dut->__VlSymsp);
     }
 };
 
@@ -174,38 +214,18 @@ class $dutApiClassName: public sim_api_t<VerilatorDataWrapper*> {
 static $dutApiClassName * _Top_api;
 double sc_time_stamp () { return _Top_api->get_time_stamp(); }
 
-// Override Verilator definition so first $$finish ends simulation
-// Note: VL_USER_FINISH needs to be defined when compiling Verilator code
-void vl_finish(const char* filename, int linenum, const char* hier) {
-  $verilatorRunFlushCallback
-  exit(0);
-}
-
 int main(int argc, char **argv, char **env) {
     Verilated::commandArgs(argc, argv);
-    $dutVerilatorClassName* top = new $dutVerilatorClassName;
+    TOP_CLASS* top = new TOP_CLASS;
     std::string dumpfile = "$dumpFilePath";
     std::vector<std::string> args(argv+1, argv+argc);
     std::vector<std::string>::const_iterator it;
     for (it = args.begin() ; it != args.end() ; it++) {
         if (it->find("+waveform=") == 0) dumpfile = it->c_str()+10;
     }
-#if VM_COVERAGE
-    $coverageInit
-#endif
-#if VM_TRACE || VM_COVERAGE
-    Verilated::traceEverOn(true);
-#endif
-#if VM_TRACE
-    VL_PRINTF(\"Enabling waves..\\n\");
-#if VM_TRACE_FST
-    VerilatedFstC* tfp = new VerilatedFstC;
-#else
-    VerilatedVcdC* tfp = new VerilatedVcdC;
-#endif
-    top->trace(tfp, 99);
-    tfp->open(dumpfile.c_str());
-#endif
+    VERILATED_C* ftp = nullptr;
+    _startCoverageAndDump(&ftp, dumpfile, top);
+
     $dutApiClassName api(top);
     _Top_api = &api; /* required for sc_time_stamp() */
     api.init_sim_data();
@@ -214,20 +234,12 @@ int main(int argc, char **argv, char **env) {
     api.init_dump(tfp);
 #endif
     while(!api.exit()) api.tick();
-#if VM_TRACE
-    if (tfp) tfp->close();
-    delete tfp;
-#endif
-#if VM_COVERAGE
-    VL_PRINTF(\"Writing Coverage..\\n\");
-    Verilated::mkdir("$targetDir/logs");
-    VerilatedCov::write("$targetDir/logs/coverage.dat");
-#endif
-    delete top;
+
+    _finish(ftp, top);
     exit(0);
 }
 """
     )
-    codeBuffer.toString()
+    commonCodeGen(toplevel, targetDir, majorVersion, minorVersion) + codeBuffer.toString()
   }
 }

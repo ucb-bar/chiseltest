@@ -83,7 +83,7 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
 
   private def loadCoverage(): Seq[Map[String, String]] = {
     assert(os.exists(testDir))
-    val coverageFile = testDir / "logs" / "coverage.dat"
+    val coverageFile = testDir / "coverage.dat"
     assert(os.exists(coverageFile))
     val lines = os.read.lines(coverageFile).drop(1)
     lines.map(_.split('\'').toList).map {

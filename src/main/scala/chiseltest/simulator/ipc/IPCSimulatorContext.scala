@@ -343,7 +343,7 @@ private[chiseltest] class IPCSimulatorContext(
   override def step(n: Int): Unit = {
     defaultClock match {
       case Some(value) =>
-      case None        => throw new NoClockException(toplevel.name)
+      case None        => throw NoClockException(toplevel.name)
     }
     try {
       update()
