@@ -42,11 +42,32 @@ abstract class BasicCompliance(sim: Simulator, tag: Tag = DefaultTag) extends Co
     val inputs = Seq(1, 0, 1, 1, 0, 0)
     inputs.foreach { i =>
       dut0.poke("io_in", i)
+      val out0 = dut0.peek("io_out")
       dut1.poke("io_in", i)
-      assert(dut0.peek("io_out") == dut1.peek("io_out"))
+      val out1 = dut1.peek("io_out")
+      assert(out0 == out1)
     }
     dut0.finish()
     dut1.finish()
+  }
+
+  private def staticModule(num: Int) =
+    s"""circuit Foo :
+      |  module Foo :
+      |    output num: UInt<30>
+      |
+      |    num <= UInt($num)
+      |""".stripMargin
+
+  it should "be able to simulate different circuits at the same time" taggedAs(tag) in {
+    val nums = Seq(123, 432, 555)
+    val duts = nums.map(staticModule).map(load(_))
+
+    nums.zip(duts).foreach { case (num, dut) =>
+      assert(dut.peek("num") == num)
+    }
+
+    duts.foreach(_.finish())
   }
 
   private val standardNoReset =
