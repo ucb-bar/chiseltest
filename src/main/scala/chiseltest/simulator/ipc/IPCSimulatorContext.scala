@@ -405,15 +405,15 @@ private class Channel(targetDir: os.Path, name: String) {
 
   val channel_data_offset_64bw = 4 // Offset from start of channel buffer to actual user data in 64bit words.
   def acquire(): Unit = {
-    buffer.put(0, 1)
-    buffer.put(2, 0)
+    buffer.put(0, 1.toByte)
+    buffer.put(2, 0.toByte)
     while (buffer.get(1) == 1 && buffer.get(2) == 0) {}
   }
-  def release(): Unit = { buffer.put(0, 0) }
+  def release(): Unit = { buffer.put(0, 0.toByte) }
   def ready: Boolean = buffer.get(3) == 0
   def valid: Boolean = buffer.get(3) == 1
-  def produce(): Unit = { buffer.put(3, 1) }
-  def consume(): Unit = { buffer.put(3, 0) }
+  def produce(): Unit = { buffer.put(3, 1.toByte) }
+  def consume(): Unit = { buffer.put(3, 0.toByte) }
   def update(idx: Int, data: Long): Unit = {
     buffer.putLong(8 * idx + channel_data_offset_64bw, data)
   }
@@ -421,7 +421,7 @@ private class Channel(targetDir: os.Path, name: String) {
     data.zipWithIndex.foreach { case (c, i) =>
       buffer.put(base + i + channel_data_offset_64bw, c.toByte)
     }
-    buffer.put(base + data.length + channel_data_offset_64bw, 0)
+    buffer.put(base + data.length + channel_data_offset_64bw, 0.toByte)
   }
   def apply(idx: Int): Long = buffer.getLong(8 * idx + channel_data_offset_64bw)
   def close(): Unit = { file.close() }
