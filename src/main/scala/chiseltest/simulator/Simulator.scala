@@ -53,9 +53,6 @@ trait Simulator {
   /** is this simulator installed on the local machine? */
   def isAvailable: Boolean
 
-  /** search the local computer for an installation of this simulator and print versions */
-  def findVersions(): Unit
-
   /** returns annotations of all supported waveform formats */
   def waveformFormats: Seq[WriteWaveformAnnotation]
 

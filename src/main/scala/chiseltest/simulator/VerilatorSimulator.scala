@@ -32,7 +32,7 @@ private object VerilatorSimulator extends Simulator {
   override def waveformFormats = Seq(WriteVcdAnnotation, WriteFstAnnotation)
 
   /** search the local computer for an installation of this simulator and print versions */
-  override def findVersions(): Unit = {
+  def findVersions(): Unit = {
     if (isAvailable) {
       val (maj, min) = version
       println(s"Found Verilator $maj.$min")

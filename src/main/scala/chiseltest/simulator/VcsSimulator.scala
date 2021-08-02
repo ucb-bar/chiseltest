@@ -54,7 +54,7 @@ private object VcsSimulator extends Simulator {
   }
 
   /** search the local computer for an installation of this simulator and print versions */
-  override def findVersions(): Unit = {
+  def findVersions(): Unit = {
     if (isAvailable) {
       val (maj, min) = version
       println(s"Found Vcs $maj.$min")
