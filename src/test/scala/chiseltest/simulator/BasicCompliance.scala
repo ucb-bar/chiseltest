@@ -59,6 +59,12 @@ abstract class BasicCompliance(sim: Simulator, tag: Tag = DefaultTag) extends Co
       |    num <= UInt($num)
       |""".stripMargin
 
+  it should "be able to simulate a circuit with no inputs" taggedAs(tag) in {
+    val dut = load(staticModule(1234))
+    assert(dut.peek("num") == 1234)
+    dut.finish()
+  }
+
   it should "be able to simulate different circuits at the same time" taggedAs(tag) in {
     val nums = Seq(123, 432, 555)
     val duts = nums.map(staticModule).map(load(_))

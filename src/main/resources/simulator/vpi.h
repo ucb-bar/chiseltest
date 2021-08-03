@@ -29,9 +29,11 @@ public:
   void init_ins() {
     vpiHandle syscall_handle = vpi_handle(vpiSysTfCall, NULL);
     vpiHandle arg_iter = vpi_iterate(vpiArgument, syscall_handle);
-    // Cache Inputs  
-    while (vpiHandle arg_handle = vpi_scan(arg_iter)) {
-      sim_data.inputs.push_back(arg_handle);
+    // Cache Inputs
+    if(arg_iter != nullptr) {
+      while (vpiHandle arg_handle = vpi_scan(arg_iter)) {
+        sim_data.inputs.push_back(arg_handle);
+      }
     }
   }
 
@@ -39,8 +41,10 @@ public:
     vpiHandle syscall_handle = vpi_handle(vpiSysTfCall, NULL);
     vpiHandle arg_iter = vpi_iterate(vpiArgument, syscall_handle);
     // Cache Outputs
-    while (vpiHandle arg_handle = vpi_scan(arg_iter)) {
-      sim_data.outputs.push_back(arg_handle);
+    if(arg_iter != nullptr) {
+      while (vpiHandle arg_handle = vpi_scan(arg_iter)) {
+        sim_data.outputs.push_back(arg_handle);
+      }
     }
   }
 
