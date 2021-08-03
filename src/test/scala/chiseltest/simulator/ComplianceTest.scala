@@ -42,7 +42,7 @@ abstract class ComplianceTest(sim: Simulator, protected val tag: Tag) extends An
   }
 }
 
-private object CaptureStdout {
+object CaptureStdout {
   def apply[T](f: => T): (T, String) = {
     val outputStream = new ByteArrayOutputStream()
     val r = Console.withOut(new PrintStream(outputStream)) {

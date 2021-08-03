@@ -25,7 +25,7 @@ private object IcarusSimulator extends Simulator {
     Seq(WriteVcdAnnotation, WriteFstAnnotation, WriteLxtAnnotation(1), WriteLxtAnnotation(2))
 
   /** search the local computer for an installation of this simulator and print versions */
-  override def findVersions(): Unit = {
+  def findVersions(): Unit = {
     if (isAvailable) {
       val (maj, min) = version
       println(s"Found Icarus Verilog $maj.$min")

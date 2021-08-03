@@ -16,7 +16,7 @@ case object TreadleBackendAnnotation extends SimulatorAnnotation {
 private object TreadleSimulator extends Simulator {
   override def name:        String = "treadle"
   override def isAvailable: Boolean = true
-  override def findVersions(): Unit = {
+  def findVersions(): Unit = {
     println("treadle is available")
     println(s"version: ${treadle.BuildInfo.version}")
   }
