@@ -18,6 +18,7 @@ private[chiseltest] object VerilatorCppJNAHarnessGenerator {
   ): (String, String) = {
     val pokeable = toplevel.inputs.zipWithIndex
     val peekable = (toplevel.inputs ++ toplevel.outputs).zipWithIndex
+    def fitsIn64Bits(s: ((String, Int), Int)): Boolean = s._1._2 <= 64
 
     val codeBuffer = new StringBuilder
     // generate Verilator specific "sim_state" class
@@ -47,9 +48,10 @@ struct sim_state {
   }
   inline void poke(int32_t id, int64_t value) {
     const uint64_t u = value;
+    // std::cout << "poking: " << std::hex << u << std::endl;
     switch(id) {
 """)
-    pokeable.foreach { case ((name, _), id) =>
+    pokeable.filter(fitsIn64Bits).foreach { case ((name, _), id) =>
       codeBuffer.append(s"      case $id : dut->$name = u; break;\n")
     }
     codeBuffer.append(s"""
@@ -60,16 +62,74 @@ struct sim_state {
     }
   }
   inline int64_t peek(int32_t id) {
+    uint64_t value = 0;
     switch(id) {
 """)
-    peekable.foreach { case ((name, _), id) =>
-      codeBuffer.append(s"      case $id : return dut->$name;\n")
+    peekable.filter(fitsIn64Bits).foreach { case ((name, _), id) =>
+      codeBuffer.append(s"      case $id : value = dut->$name; break;\n")
     }
     codeBuffer.append(s"""
     default:
       std::cerr << "Cannot find the object of id = " << id << std::endl;
       finish();
       return -1;
+    }
+    // std::cout << "peeking: " << std::hex << value << std::endl;
+    return value;
+  }
+  inline void poke_wide(int32_t id, int32_t offset, int64_t value) {
+    const uint64_t u = value;
+    WData* data = nullptr;
+    size_t words = 0;
+    switch(id) {
+""")
+    pokeable.filterNot(fitsIn64Bits).foreach { case ((name, width), id) =>
+      val numWords = (width - 1) / 32 + 1
+      codeBuffer.append(s"      case $id : data = dut->$name; words = $numWords; break;\n")
+    }
+    codeBuffer.append(s"""
+    default:
+      std::cerr << "Cannot find the object of id = " << id << std::endl;
+      finish();
+      break;
+    }
+    const size_t firstWord = offset * 2;
+    const size_t secondWord = firstWord + 1;
+    if(firstWord >= words || firstWord < 0) {
+      std::cerr << "Out of bounds index for id = " << id << " index = " << offset << std::endl;
+      finish();
+    } else if(secondWord >= words) {
+      data[firstWord] = u;
+    } else {
+      data[firstWord] = u & 0xffffffffu;
+      data[secondWord] = (u >> 32) & 0xffffffffu;
+    }
+  }
+  inline int64_t peek_wide(int32_t id, int32_t offset) {
+    WData* data = nullptr;
+    size_t words = 0;
+    switch(id) {
+""")
+    peekable.filterNot(fitsIn64Bits).foreach { case ((name, width), id) =>
+      val numWords = (width - 1) / 32 + 1
+      codeBuffer.append(s"      case $id : data = dut->$name; words = $numWords; break;\n")
+    }
+    codeBuffer.append(s"""
+    default:
+      std::cerr << "Cannot find the object of id = " << id << std::endl;
+      finish();
+      return -1;
+    }
+    const size_t firstWord = offset * 2;
+    const size_t secondWord = firstWord + 1;
+    if(firstWord >= words || firstWord < 0) {
+      std::cerr << "Out of bounds index for id = " << id << " index = " << offset << std::endl;
+      finish();
+      return -1;
+    } else if(secondWord >= words) {
+      return (uint64_t)data[firstWord];
+    } else {
+      return (((uint64_t)data[secondWord]) << 32) | ((uint64_t)data[firstWord]);
     }
   }
 };

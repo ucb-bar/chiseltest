@@ -41,7 +41,9 @@ object JNIUtils {
     ("void", "resetCoverage", Seq()),
     ("void", "writeCoverage", Seq("filename" -> "String")),
     ("void", "poke", Seq("id" -> "int", "value" -> "long")),
-    ("long", "peek", Seq("id" -> "int"))
+    ("long", "peek", Seq("id" -> "int")),
+    ("void", "poke_wide", Seq("id" -> "int", "offset" -> "int", "value" -> "long")),
+    ("long", "peek_wide", Seq("id" -> "int", "offset" -> "int"))
   )
 
   private var idCounter = 123
@@ -131,5 +133,13 @@ class TesterSharedLibInterface(so: NativeLibrary, sPtr: Pointer) {
   private val peekFoo = so.getFunction("peek")
   def peek(id: Int): Long = {
     peekFoo.invokeLong(Array(sPtr, Integer.valueOf(id)))
+  }
+  private val pokeWideFoo = so.getFunction("poke_wide")
+  def pokeWide(id: Int, offset: Int, value: Long): Unit = {
+    pokeWideFoo.invoke(Array(sPtr, Integer.valueOf(id), Integer.valueOf(offset), Long.box(value)))
+  }
+  private val peekWideFoo = so.getFunction("peek_wide")
+  def peekWide(id: Int, offset: Int): Long = {
+    peekWideFoo.invokeLong(Array(sPtr, Integer.valueOf(id), Integer.valueOf(offset)))
   }
 }

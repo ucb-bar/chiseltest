@@ -19,9 +19,10 @@ private[chiseltest] class JNASimulatorContext(
     extends SimulatorContext
     with LazyLogging {
   require(toplevel.clocks.length <= 1, "Multi clock circuits are currently not supported!")
-  (toplevel.inputs ++ toplevel.outputs).foreach { case (name, width) =>
-    require(width <= 64, s"$width-bit I/O $name is not supported!")
-  }
+  private val allSignals = (toplevel.inputs ++ toplevel.outputs)
+  private val isWide = allSignals.filter(_._2 > 64).map(_._1).toSet
+  private val mask64 = (BigInt(1) << 64) - 1
+  private val signalWidth = allSignals.toMap
 
   private var isStale = true
   private val signalToId = (toplevel.inputs ++ toplevel.outputs).map(_._1).zipWithIndex.toMap
@@ -42,14 +43,38 @@ private[chiseltest] class JNASimulatorContext(
 
   override def poke(signal: String, value: BigInt): Unit = {
     assert(isRunning)
-    so.poke(getId(signal), value.toLong)
+    if (isWide(signal)) {
+      val width = signalWidth(signal)
+      val words = (width + 63) / 64
+      val signalId = getId(signal)
+      var remaining = value
+      (0 until words).foreach { ii =>
+        val part = (remaining & mask64).toLong
+        so.pokeWide(signalId, ii, part)
+        remaining = remaining >> 64
+      }
+    } else {
+      so.poke(getId(signal), (value & mask64).toLong)
+    }
     isStale = true
   }
 
   override def peek(signal: String): BigInt = {
     assert(isRunning)
     if (isStale) { update() }
-    so.peek(getId(signal))
+    if (isWide(signal)) {
+      val width = signalWidth(signal)
+      val words = (width + 63) / 64
+      val signalId = getId(signal)
+      var value = BigInt(0)
+      (0 until words).foreach { ii =>
+        val word = BigInt(so.peekWide(signalId, ii)) & mask64
+        value = value | (word << (ii * 64))
+      }
+      value
+    } else {
+      so.peek(getId(signal)) & mask64
+    }
   }
 
   private def defaultClock = toplevel.clocks.headOption
