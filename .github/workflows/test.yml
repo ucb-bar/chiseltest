@@ -40,6 +40,23 @@ jobs:
       - name: Test
         run: sbt ++${{ matrix.scala }} "testOnly -- -l RequiresVcs -l RequiresVerilator"
 
+  verilator-mac:
+    name: verilator regression on mac
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Verilator
+        run: |
+          brew install verilator
+          verilator --version
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11
+      - name: Test
+        run: sbt "testOnly chiseltest.backends.verilator.** ; testOnly -- -n RequiresVerilator"
+
   verilator:
     name: verilator regressions
     runs-on: ubuntu-20.04
@@ -106,7 +123,7 @@ jobs:
   # When adding new jobs, please add them to `needs` below
   all_tests_passed:
     name: "all tests passed"
-    needs: [test, doc, verilator]
+    needs: [test, doc, verilator, verilator-mac]
     runs-on: ubuntu-latest
     steps:
       - run: echo Success!
