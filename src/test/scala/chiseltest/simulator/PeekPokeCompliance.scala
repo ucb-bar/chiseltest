@@ -78,7 +78,7 @@ abstract class PeekPokeCompliance(sim: Simulator, tag: Tag = DefaultTag) extends
       Widths.zipWithIndex.flatMap{ case (w, i) => Seq(s"    out$w <= in$w")} ++ Seq("")
     val src = lines.mkString("\n")
     // println(src)
-    val dut = load(src)
+    val dut = load(src) //, Seq(WriteVcdAnnotation))
 
     val rand = new Random(0)
     Widths.foreach { w =>
@@ -88,6 +88,7 @@ abstract class PeekPokeCompliance(sim: Simulator, tag: Tag = DefaultTag) extends
         dut.step()
         dut.peek(s"out$w")
       }
+      if(res != values) { dut.finish() }
       assert(res == values, s"width = $w")
     }
   }

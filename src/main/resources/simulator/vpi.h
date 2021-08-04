@@ -9,6 +9,8 @@ extern "C" PLI_INT32 tick_cb(p_cb_data cb_data);
 extern "C" PLI_INT32 sim_start_cb(p_cb_data cb_data);
 extern "C" PLI_INT32 sim_end_cb(p_cb_data cb_data);
 
+static inline uint64_t intToU64(int v) { return static_cast<uint64_t>(v) & 0xffffffffu; }
+
 class vpi_api_t: public sim_api_t<vpiHandle> {
 public:
   vpi_api_t() { srand(time(NULL)); }
@@ -103,12 +105,12 @@ private:
     value_s.value.vector = vecval_s;
     vpi_get_value(sig, &value_s);
     for (size_t i = 0 ; i < size ; i += 2) {
-      data[i>>1] = (uint64_t)value_s.value.vector[i].aval;
+      data[i/2] = intToU64(value_s.value.vector[i].aval);
     }
     for (size_t i = 1 ; i < size ; i += 2) {
-      data[i>>1] |= (uint64_t)value_s.value.vector[i].aval << 32;
+      data[i/2] |= intToU64(value_s.value.vector[i].aval) << 32;
     }
-    return ((size-1)>>1)+1;
+    return (size-1) / 2  + 1;
   }
 
   inline size_t get_size(vpiHandle &sig) {
