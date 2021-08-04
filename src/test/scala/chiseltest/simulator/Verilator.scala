@@ -2,6 +2,7 @@
 
 package chiseltest.simulator
 
+import firrtl.CircuitState
 import org.scalatest.flatspec.AnyFlatSpec
 
 class VerilatorBasicCompliance extends BasicCompliance(VerilatorSimulator)
@@ -22,3 +23,20 @@ class VerilatorSpecificTests extends AnyFlatSpec {
     assert(out.contains("Found Verilator 4"))
   }
 }
+
+object IPCVerilatorSim extends Simulator {
+  override def name = VerilatorSimulator.name
+  override def isAvailable = VerilatorSimulator.isAvailable
+  override def supportsCoverage = true
+  override def waveformFormats = VerilatorSimulator.waveformFormats
+  override def createContext(state: CircuitState) = {
+    val patchedState = state.copy(annotations = VerilatorUseExternalProcess +: state.annotations)
+    VerilatorSimulator.createContext(patchedState)
+  }
+}
+
+class VerilatorIPCBasicCompliance extends BasicCompliance(IPCVerilatorSim)
+class VerilatorIPCStepCompliance extends StepCompliance(IPCVerilatorSim)
+class VerilatorIPCPeekPokeCompliance extends PeekPokeCompliance(IPCVerilatorSim)
+class VerilatorIPCWaveformCompliance extends WaveformCompliance(IPCVerilatorSim)
+class VerilatorIPCCoverageCompliance extends CoverageCompliance(IPCVerilatorSim)
