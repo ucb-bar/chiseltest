@@ -6,7 +6,7 @@ import firrtl.options.TargetDirAnnotation
 import org.scalatest.Tag
 
 /** tests some basic functionality that should be supported by all simulators */
-abstract class BasicCompliance(sim: Simulator, tag: Tag = DefaultTag) extends ComplianceTest(sim, tag) {
+abstract class BasicCompliance(sim: Simulator, tag: Tag = DefaultTag, skipSimRefTest: Boolean = false) extends ComplianceTest(sim, tag) {
   it should "be available" taggedAs(tag) in {
     assert(sim.isAvailable)
   }
@@ -32,6 +32,7 @@ abstract class BasicCompliance(sim: Simulator, tag: Tag = DefaultTag) extends Co
   }
 
   it should "provide a reference to the simulator from the dut context object" taggedAs(tag) in {
+    assume(!skipSimRefTest)
     val dut = load(standardCircuit)
     assert(dut.sim == sim)
     dut.finish()

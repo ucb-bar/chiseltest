@@ -25,7 +25,7 @@ class VerilatorSpecificTests extends AnyFlatSpec {
 }
 
 object IPCVerilatorSim extends Simulator {
-  override def name = VerilatorSimulator.name
+  override def name = VerilatorSimulator.name + "_ipc" // we need a suffix in order to get different test folders
   override def isAvailable = VerilatorSimulator.isAvailable
   override def supportsCoverage = true
   override def waveformFormats = VerilatorSimulator.waveformFormats
@@ -35,7 +35,7 @@ object IPCVerilatorSim extends Simulator {
   }
 }
 
-class VerilatorIPCBasicCompliance extends BasicCompliance(IPCVerilatorSim)
+class VerilatorIPCBasicCompliance extends BasicCompliance(IPCVerilatorSim, skipSimRefTest = true)
 class VerilatorIPCStepCompliance extends StepCompliance(IPCVerilatorSim)
 class VerilatorIPCPeekPokeCompliance extends PeekPokeCompliance(IPCVerilatorSim)
 class VerilatorIPCWaveformCompliance extends WaveformCompliance(IPCVerilatorSim)

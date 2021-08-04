@@ -222,8 +222,8 @@ int main(int argc, char **argv, char **env) {
     for (it = args.begin() ; it != args.end() ; it++) {
         if (it->find("+waveform=") == 0) dumpfile = it->c_str()+10;
     }
-    VERILATED_C* ftp = nullptr;
-    _startCoverageAndDump(&ftp, dumpfile, top);
+    VERILATED_C* tfp = nullptr;
+    _startCoverageAndDump(&tfp, dumpfile, top);
 
     $dutApiClassName api(top);
     _Top_api = &api; /* required for sc_time_stamp() */
@@ -232,9 +232,11 @@ int main(int argc, char **argv, char **env) {
 #if VM_TRACE
     api.init_dump(tfp);
 #endif
+    // evaluate dut once to start in a non-stale state
+    top->eval();
     while(!api.exit()) api.tick();
 
-    _finish(ftp, top);
+    _finish(tfp, top);
     exit(0);
 }
 """
