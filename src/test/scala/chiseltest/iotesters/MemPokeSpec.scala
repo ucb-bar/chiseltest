@@ -9,7 +9,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 /**
   * This whole test is about checking whether memory can be directly poked.
   * To this end the circuit design is a bit of a mess.
-  * Trying to make sure memory does not get DCE'd or flagged as unitialized.
+  * Trying to make sure memory does not get DCE'd or flagged as uninitialized.
   * Don't look here for anything other than how to poke a memory using the test harness
   * with a scala based simulator
   */

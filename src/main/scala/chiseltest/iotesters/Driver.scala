@@ -9,7 +9,6 @@ import chiseltest.simulator._
 import firrtl.AnnotationSeq
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.TargetDirAnnotation
-import firrtl.stage.phases.DriverCompatibility.TopNameAnnotation
 import firrtl.transforms.DontCheckCombLoopsAnnotation
 import logger.{LogLevelAnnotation, Logger}
 
@@ -138,10 +137,10 @@ object Driver {
   }
 
   /** Runs the ClassicTester and returns a Boolean indicating test success or failure
-    * @@backendType determines whether the ClassicTester uses verilator or the firrtl interpreter to simulate
+    * backendType determines whether the ClassicTester uses verilator or treadle to simulate
     * the circuit.
-    * Will do intermediate compliation steps to setup the backend specified, including cpp compilation for the
-    * verilator backend and firrtl IR compilation for the firrlt backend
+    * Will do intermediate compilation steps to setup the backend specified, including cpp compilation for the
+    * verilator backend and firrtl IR compilation for the firrtl backend
     *
     * This apply method is a convenient short form of the [[Driver.execute()]] which has many more options
     *
@@ -159,9 +158,8 @@ object Driver {
     *                    "verilator" will use the verilator c++ simulation generator
     *                    "ivl" will use the Icarus Verilog simulation
     *                    "vcs" will use the VCS simulation
-    *                    "vsim" will use the ModelSim/QuestaSim simulation
     * @param verbose     Setting this to true will make the tester display information on peeks,
-    *                    pokes, steps, and expects.  By default only failed expects will be printed
+    *                    pokes, steps, and expects. By default only failed expects will be printed
     * @param testerSeed  Set the random number generator seed
     * @param testerGen   This is a test harness subclassing PeekPokeTester for dutGen,
     * @return            This will be true if all tests in the testerGen pass
@@ -189,6 +187,8 @@ object Driver {
     // we no longer support the firrtl interpreter
     case "firrtl"    => List(TreadleBackendAnnotation)
     case "verilator" => List(VerilatorBackendAnnotation, WriteVcdAnnotation) // verilator needs to write VCS by default!
+    case "ivl"       => List(IcarusBackendAnnotation)
+    case "vcs"       => List(VcsBackendAnnotation)
     case other       => throw new NotImplementedError(s"Unsupported backend: $other")
   }
 

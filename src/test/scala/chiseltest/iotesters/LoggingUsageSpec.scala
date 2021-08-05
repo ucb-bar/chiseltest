@@ -22,7 +22,7 @@ class DutWithLoggingTester(c: DutWithLogging) extends PeekPokeTester(c)
 class LoggingUsageSpec extends AnyFreeSpec with Matchers {
   "logging can be emitted during hardware generation" - {
     "level defaults to error" in {
-      Logger.makeScope() {
+      Logger.makeScope(Seq()) {
         val captor = new Logger.OutputCaptor
         Logger.setOutput(captor.printStream)
 
@@ -37,7 +37,7 @@ class LoggingUsageSpec extends AnyFreeSpec with Matchers {
       }
     }
     "logging level can be set via command line args" in {
-      Logger.makeScope() {
+      Logger.makeScope(Seq()) {
         val captor = new Logger.OutputCaptor
         Logger.setOutput(captor.printStream)
 
@@ -54,7 +54,7 @@ class LoggingUsageSpec extends AnyFreeSpec with Matchers {
     "logging level can be set for a specific package" ignore {
       // this test seems somewhat broken since it enables logging for chisel iotesters and then expects
       // to see messages from the chisel elaboration ...
-      Logger.makeScope() {
+      Logger.makeScope(Seq()) {
         val captor = new Logger.OutputCaptor
         Logger.setOutput(captor.printStream)
 

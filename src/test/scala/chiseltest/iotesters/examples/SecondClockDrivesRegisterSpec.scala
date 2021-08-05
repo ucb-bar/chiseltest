@@ -5,7 +5,6 @@ package chiseltest.iotesters.examples
 import chisel3._
 import chiseltest.iotesters._
 import chisel3.util.Counter
-import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 

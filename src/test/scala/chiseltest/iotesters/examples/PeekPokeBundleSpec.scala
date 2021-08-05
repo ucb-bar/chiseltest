@@ -8,7 +8,7 @@ import chiseltest.iotesters._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-import scala.collection.mutable.LinkedHashMap
+import scala.collection.mutable
 
 class PeekPokeBundleSpec extends AnyFlatSpec with Matchers {
   // Define some data types to be used in the circuit.
@@ -48,12 +48,12 @@ class PeekPokeBundleSpec extends AnyFlatSpec with Matchers {
     // If only we had Bundle literals ...
     // This is extremely fragile. The map definitions must match the order of element definitions in the Bundle
     //  we're about to peek or poke.
-    val myBundleMap : LinkedHashMap[String, BigInt] = LinkedHashMap[String, BigInt]() ++ List[(String, BigInt)](
-      ("aUInt4"	-> BigInt(3) ),
-      ("aSInt5"	-> BigInt(2) ),
-      ("aBundle.aBool"	-> BigInt(1) ),
-      ("aBottomBool"	-> BigInt(0) ),
-      ("anEnum" -> MyEnum.e1)
+    val myBundleMap = mutable.LinkedHashMap[String, BigInt]() ++ List[(String, BigInt)](
+      "aUInt4"	-> BigInt(3),
+      "aSInt5"	-> BigInt(2),
+      "aBundle.aBool"	-> BigInt(1),
+      "aBottomBool"	-> BigInt(0),
+      "anEnum" -> MyEnum.e1
     )
     poke(dut.io.in, myBundleMap.values.toArray)
     step(1)
@@ -63,12 +63,12 @@ class PeekPokeBundleSpec extends AnyFlatSpec with Matchers {
   // A tester for the trivial circuit.
   class BundlePeekPokeTesterMap(dut: MyCircuit = new MyCircuit) extends PeekPokeTester(dut) {
     // If only we had Bundle literals ...
-    val myBundleMap : LinkedHashMap[String, BigInt] = LinkedHashMap[String, BigInt]() ++ List[(String, BigInt)](
-      ("aUInt4"	-> BigInt(4) ),
-      ("aSInt5"	-> BigInt(5) ),
-      ("aBundle.aBool"	-> BigInt(0) ),
-      ("aBottomBool"	-> BigInt(1) ),
-      ("anEnum" -> MyEnum.e1)
+    val myBundleMap = mutable.LinkedHashMap[String, BigInt]() ++ List[(String, BigInt)](
+      "aUInt4"	-> BigInt(4),
+      "aSInt5"	-> BigInt(5),
+      "aBundle.aBool"	-> BigInt(0),
+      "aBottomBool"	-> BigInt(1),
+      "anEnum" -> MyEnum.e1
     )
     poke(dut.io.in, myBundleMap.toMap)
     step(1)

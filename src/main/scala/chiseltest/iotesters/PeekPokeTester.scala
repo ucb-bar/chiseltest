@@ -1,19 +1,16 @@
 package chiseltest.iotesters
 
 import chisel3._
-import chisel3.{Aggregate, Bits, Element, InstanceId, Module}
-import chisel3.experimental.EnumType
-import chisel3.experimental.{FixedPoint, Interval}
+import chisel3.experimental._
 import chisel3.internal.firrtl.KnownBinaryPoint
 import chiseltest.simulator.SimulatorContext
 import logger.LazyLogging
 
-import scala.collection.immutable.SeqMap
+import scala.collection.immutable
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.util.Random
-import scala.annotation.implicitNotFound
+import scala.annotation.{implicitNotFound, tailrec}
 
 // A typeclass that defines the types we can poke, peek, or expect from
 @implicitNotFound("Cannot peek or poke elements of type ${T}")
@@ -34,14 +31,14 @@ object Pokeable {
 }
 
 abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
-  implicit def longToInt(x: Long) = x.toInt
+  implicit def longToInt(x: Long): Int = x.toInt
 
   private val ctx = Driver.ctx.getOrElse(
     throw new RuntimeException("PeekPokeTester needs to be instantiated by the Driver!")
   )
 
-  implicit val _verbose = ctx.isVerbose
-  implicit val _base = ctx.base
+  implicit val _verbose: Boolean = ctx.isVerbose
+  implicit val _base:    Int = ctx.base
 
   def println(msg: String = ""): Unit = {
     logger.info(msg)
@@ -53,8 +50,8 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
     */
   /** *************************
     */
-  val backend: SimulatorContext = ctx.backend
-  val dataNames = ctx.dataNames
+  val backend:   SimulatorContext = ctx.backend
+  val dataNames: Map[Data, String] = ctx.dataNames
 
   /** *****************************
     */
@@ -63,9 +60,9 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
   /** *****************************
     */
   /* Simulation Time */
-  private var simTime = 0L
+  private var simTime: Long = 0L
   protected[iotesters] def incTime(n: Int): Unit = { simTime += n }
-  def t = simTime
+  def t: Long = simTime
 
   /** Indicate a failure has occurred. */
   private var failureTime = -1L
@@ -84,7 +81,7 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
   implicit def int(x: Boolean): BigInt = if (x) 1 else 0
 
   /** Convert Pokeables to BigInt */
-  implicit def int[T <: Element: Pokeable](x: T): BigInt = x.litValue()
+  implicit def int[E <: Element: Pokeable](x: E): BigInt = x.litValue()
 
   def reset(n: Int = 1): Unit = {
     backend.poke("reset", 1)
@@ -118,8 +115,8 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
     // TODO: Warn if signal.isLit
   }
 
-  def poke[T <: Element: Pokeable](signal: T, value: Int):  Unit = poke(signal, BigInt(value))
-  def poke[T <: Element: Pokeable](signal: T, value: Long): Unit = poke(signal, BigInt(value))
+  def poke[E <: Element: Pokeable](signal: E, value: Int):  Unit = poke(signal, BigInt(value))
+  def poke[E <: Element: Pokeable](signal: E, value: Long): Unit = poke(signal, BigInt(value))
 
   /*
   Some backends, verilator in particular will not check to see if too many
@@ -160,10 +157,11 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
     * @param bundle - bundle containing the element
     * @return the element (as Element)
     */
-  private def getBundleElement(path: List[String], bundle: SeqMap[String, Data]): Element = {
+  @tailrec
+  private def getBundleElement(path: List[String], bundle: immutable.SeqMap[String, Data]): Element = {
     (path, bundle(path.head)) match {
-      case (head :: Nil, element: Element) => element
-      case (head :: tail, b: Bundle) => getBundleElement(tail, b.elements)
+      case (_ :: Nil, element: Element) => element
+      case (_ :: tail, b: Bundle) => getBundleElement(tail, b.elements)
       case _ => throw new Exception(s"peek/poke bundle element mismatch $path")
     }
   }
@@ -199,7 +197,7 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
   }
 
   def poke(signal: Aggregate, value: IndexedSeq[BigInt]): Unit = {
-    (extractElementBits(signal).zip(value.reverse)).foreach { case (elem, value) =>
+    extractElementBits(signal).zip(value.reverse).foreach { case (elem, value) =>
       elem match {
         case Pokeable(e) => poke(e, value)
         case _           => throw new Exception(s"Cannot poke type ${elem.getClass.getName}")
@@ -207,7 +205,7 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
     }
   }
 
-  def pokeAt[TT <: Element: Pokeable](data: MemBase[TT], value: BigInt, off: Int): Unit = {
+  def pokeAt[E <: Element: Pokeable](data: MemBase[E], value: BigInt, off: Int): Unit = {
     backend.pokeMemory(fullSignalName(data), off, value)
   }
 
@@ -220,7 +218,7 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
     } else { bits }
   }
 
-  def peek[T <: Element: Pokeable](signal: T): BigInt = {
+  def peek[E <: Element: Pokeable](signal: E): BigInt = {
     if (!signal.isLit()) {
       val bits = backend.peek(fullSignalName(signal))
       if (signal.isInstanceOf[SInt] || signal.isInstanceOf[Interval]) {
@@ -301,7 +299,7 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
     */
   private def setBundleElement(
     map:         mutable.LinkedHashMap[String, Element],
-    indexPrefix: ArrayBuffer[String],
+    indexPrefix: mutable.ArrayBuffer[String],
     signalName:  String,
     signalData:  Data
   ): Unit = {
@@ -325,7 +323,7 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
     */
   def peek(signal: Bundle): mutable.LinkedHashMap[String, BigInt] = {
     val elemMap = mutable.LinkedHashMap[String, Element]()
-    val index = ArrayBuffer[String]()
+    val index = mutable.ArrayBuffer[String]()
     // Populate the Element map.
     for ((elementName, elementValue) <- signal.elements) {
       setBundleElement(elemMap, index, elementName, elementValue)
@@ -339,7 +337,7 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
     bigIntMap
   }
 
-  def peekAt[TT <: Element: Pokeable](data: MemBase[TT], off: Int): BigInt = {
+  def peekAt[E <: Element: Pokeable](data: MemBase[E], off: Int): BigInt = {
     backend.peekMemory(fullSignalName(data), off)
   }
 
@@ -355,7 +353,7 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
     good
   }
 
-  def expect[T <: Element: Pokeable](signal: T, expected: BigInt, msg: => String = ""): Boolean = {
+  def expect[E <: Element: Pokeable](signal: E, expected: BigInt, msg: => String = ""): Boolean = {
     if (!signal.isLit()) {
       val actual = peek(signal)
       val good = expect(actual == expected, msg)
@@ -364,7 +362,7 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
     } else expect(signal.litValue() == expected, s"${signal.litValue()} == $expected")
   }
 
-  def expect[T <: Element: Pokeable](signal: T, expected: Int, msg: => String): Boolean = {
+  def expect[E <: Element: Pokeable](signal: E, expected: Int, msg: => String): Boolean = {
     expect(signal, BigInt(expected), msg)
   }
 
@@ -451,7 +449,7 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
     */
   def expect(signal: Bundle, expected: Map[String, BigInt]): Boolean = {
     val elemMap = mutable.LinkedHashMap[String, Element]()
-    val index = ArrayBuffer[String]()
+    val index = mutable.ArrayBuffer[String]()
     for ((elementName, elementValue) <- signal.elements) {
       setBundleElement(elemMap, index, elementName, elementValue)
     }

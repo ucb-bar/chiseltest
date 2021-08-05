@@ -69,16 +69,16 @@ class BundlePeekPokeTester(c: BundlePassThrough) extends PeekPokeTester(c) {
   private val allAtOncePeekedInputs = peek(c.io.inBundle)
   println(s"input peeked all at once           ${allAtOncePeekedInputs.mkString(",")}")
 
-  private val individualyPeekedInputs = Array(peek(c.io.inBundle.u1), peek(c.io.inBundle.u2), peek(c.io.inBundle.u3))
-  println(s"input peeked individually          ${individualyPeekedInputs.mkString(",")}")
+  private val individuallyPeekedInputs = Array(peek(c.io.inBundle.u1), peek(c.io.inBundle.u2), peek(c.io.inBundle.u3))
+  println(s"input peeked individually          ${individuallyPeekedInputs.mkString(",")}")
 
   step(1)
 
   private val allAtOncePeekedOutputs = peek(c.io.outBundle)
   println(s"output peeked all at once          ${allAtOncePeekedOutputs.mkString(",")}")
 
-  private val individualyPeekedOutputs = Array(peek(c.io.inBundle.u1), peek(c.io.inBundle.u2), peek(c.io.inBundle.u3))
-  println(s"output peeked individually         ${individualyPeekedOutputs.mkString(",")}")
+  private val individuallyPeekedOutputs = Array(peek(c.io.inBundle.u1), peek(c.io.inBundle.u2), peek(c.io.inBundle.u3))
+  println(s"output peeked individually         ${individuallyPeekedOutputs.mkString(",")}")
 }
 
 
@@ -101,8 +101,8 @@ class VecPeekPokeTester(c: VecPassThrough) extends PeekPokeTester(c) {
   private val allAtOncePeekedInputs = peek(c.io.inVector)
   println(s"input peeked all at once           ${allAtOncePeekedInputs.mkString(",")}")
 
-  private val individualyPeekedInputs = vectorInputs.indices.map { index => peek(c.io.inVector(index)) }
-  println(s"input peeked individually          ${individualyPeekedInputs.mkString(",")}")
+  private val individuallyPeekedInputs = vectorInputs.indices.map { index => peek(c.io.inVector(index)) }
+  println(s"input peeked individually          ${individuallyPeekedInputs.mkString(",")}")
 
   // @NOTE: The poked array and returned peeked array are opposite
   assert(vectorInputs.zip(allAtOncePeekedInputs.reverse).forall { case (a, b) => a == b })
@@ -116,8 +116,8 @@ class VecPeekPokeTester(c: VecPassThrough) extends PeekPokeTester(c) {
   private val allAtOncePeekedOutputs = vectorInputs.indices.map { index => peek(c.io.outVector(index)) }
   println(s"output peeked all at once          ${allAtOncePeekedOutputs.mkString(",")}")
 
-  private val individualyPeekedOutputs = vectorInputs.indices.map { index => peek(c.io.inVector(index)) }
-  println(s"output peeked individually         ${individualyPeekedOutputs.mkString(",")}")
+  private val individuallyPeekedOutputs = vectorInputs.indices.map { index => peek(c.io.inVector(index)) }
+  println(s"output peeked individually         ${individuallyPeekedOutputs.mkString(",")}")
 }
 
 /**

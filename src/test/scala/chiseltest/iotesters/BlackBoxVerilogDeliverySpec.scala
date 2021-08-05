@@ -19,7 +19,7 @@ class BBAddOne extends HasBlackBoxInline {
     |    output reg [15:0] out
     |);
     |  always @* begin
-    |  out <= in + 1;
+    |    out = in + 1;
     |  end
     |endmodule
   """.stripMargin)

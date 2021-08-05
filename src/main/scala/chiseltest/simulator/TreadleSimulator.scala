@@ -76,7 +76,7 @@ private class TreadleContext(tester: TreadleTester, toplevel: TopmoduleInfo) ext
   }
 
   override def peek(signal:       String): BigInt = tester.peek(signal)
-  override def peekMemory(signal: String, index: Long) = tester.peekMemory(signal, index.toInt)
+  override def peekMemory(signal: String, index: Long): BigInt = tester.peekMemory(signal, index.toInt)
   override def poke(signal:       String, value: BigInt): Unit = tester.poke(signal, value)
   override def pokeMemory(signal: String, index: Long, value: BigInt): Unit =
     tester.pokeMemory(signal, index.toInt, value)

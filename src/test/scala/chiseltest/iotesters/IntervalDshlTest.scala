@@ -38,7 +38,6 @@ class IntervalShifter(val bitWidth: Int, val binaryPoint: Int, val fixedShiftSiz
 class IntervalShiftLeftSpec extends AnyFreeSpec with Matchers {
   "Shift left of interval used to create Dshlw problem in CheckTypes" in {
     val backendName = "treadle"
-    val defaultWidth = 8
     val binaryPoint = 0
     val fixedShiftSize = 1
     Driver.execute(

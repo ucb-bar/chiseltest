@@ -24,7 +24,6 @@ class IoTestersGcd(gcd: DecoupledGcd, testValues: Seq[(Int, Int, Int)]) extends 
 object GcdRegression {
   def main(args: Array[String]): Unit = {
     val t = new Timer
-    val Repetitions = 6
 
     def computeGcd(a: Int, b: Int): Int = {
       var x = a

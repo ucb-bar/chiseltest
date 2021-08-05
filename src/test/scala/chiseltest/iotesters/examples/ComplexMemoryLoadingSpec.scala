@@ -6,7 +6,7 @@ import java.nio.file.{Files, Paths}
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import chisel3._
 import chiseltest.iotesters._
-import chisel3.util.experimental.{loadMemoryFromFile, loadMemoryFromFileInline}
+import chisel3.util.experimental.loadMemoryFromFileInline
 import chisel3.util.log2Ceil
 import firrtl.FileUtils
 import org.scalatest.freespec.AnyFreeSpec
