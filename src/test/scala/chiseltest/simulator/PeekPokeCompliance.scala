@@ -75,14 +75,14 @@ abstract class PeekPokeCompliance(sim: Simulator, tag: Tag = DefaultTag) extends
       300, 400, 500, 600, 1023, 1024, 1025)
     val lines = Seq("circuit test:", "  module test:", "    input clock: Clock") ++
       Widths.flatMap(w => Seq(s"    input in$w : UInt<$w>",   s"    output out$w : UInt<$w>")) ++ Seq("") ++
-      Widths.zipWithIndex.flatMap{ case (w, i) => Seq(s"    out$w <= in$w")} ++ Seq("")
+      Widths.map( w => s"    out$w <= in$w") ++ Seq("")
     val src = lines.mkString("\n")
     // println(src)
     val dut = load(src) //, Seq(WriteVcdAnnotation))
 
     val rand = new Random(0)
     Widths.foreach { w =>
-      val values = Seq.fill(1)(BigInt(w, rand))
+      val values = Seq.fill(20)(BigInt(w, rand))
       val res = values.map { in =>
         dut.poke(s"in$w", in)
         dut.step()

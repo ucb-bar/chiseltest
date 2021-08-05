@@ -142,7 +142,7 @@ static sim_state* create_sim_state() {
 }
 """)
 
-    val (jnaCode, className) = JNIUtils.genJNACppCode(codeBuffer.toString())
+    val (jnaCode, className) = JNAUtils.genJNACppCode(codeBuffer.toString())
     val code = VerilatorCppHarnessGenerator.commonCodeGen(toplevel, targetDir, majorVersion, minorVersion) + jnaCode
     (code, className)
   }

@@ -60,7 +60,7 @@ object SimulatorBenchmark extends App {
 
   val repetitions = 6
   val numMax = 200
-  val testValues = (for {x <- 2 to numMax; y <- 2 to numMax} yield (BigInt(x), BigInt(y), computeGcd(x, y)))
+  val testValues = for {x <- 2 to numMax; y <- 2 to numMax} yield (BigInt(x), BigInt(y), computeGcd(x, y))
   val t = new Timer
   var cycles = 0L
   (0 until repetitions).foreach { _ =>

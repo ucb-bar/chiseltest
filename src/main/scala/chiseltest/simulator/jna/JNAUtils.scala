@@ -4,7 +4,7 @@ package chiseltest.simulator.jna
 import com.sun.jna._
 import scala.collection.JavaConverters
 
-object JNIUtils {
+object JNAUtils {
   def javaHome: String = System.getProperty("java.home") match {
     case s: String if s.endsWith("/jre") => s.dropRight(4)
     case s: String                       => s
@@ -53,7 +53,7 @@ object JNIUtils {
     id
   }
 
-  def compileAndLoadJNIClass(libPath: os.Path, className: String): TesterSharedLibInterface = {
+  def compileAndLoadJNAClass(libPath: os.Path): TesterSharedLibInterface = {
     // dlopen options: RTLD_NOW
     val opts = JavaConverters.mapAsJavaMap(Map(Library.OPTION_OPEN_FLAGS -> 2))
     val so = NativeLibrary.getInstance(libPath.toString(), opts)

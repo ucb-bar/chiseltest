@@ -6,9 +6,11 @@ import chiseltest.simulator._
 import logger.LazyLogging
 
 /** This context works with a simulation binary that communicates through the Java Native Access library.
-  * @param cmd command to launch the simulation binary
+  * @param so interface to the dynamic simulation library
+  * @param targetDir simulation target directory
   * @param toplevel information about the interface exposed by the module at the top of the RTL hierarchy
   * @param sim simulator that generated the binary
+  * @param readCoverageFile function that parses the coverage file and returns the list of counts
   */
 private[chiseltest] class JNASimulatorContext(
   so:               TesterSharedLibInterface,
@@ -19,7 +21,7 @@ private[chiseltest] class JNASimulatorContext(
     extends SimulatorContext
     with LazyLogging {
   require(toplevel.clocks.length <= 1, "Multi clock circuits are currently not supported!")
-  private val allSignals = (toplevel.inputs ++ toplevel.outputs)
+  private val allSignals = toplevel.inputs ++ toplevel.outputs
   private val isWide = allSignals.filter(_._2 > 64).map(_._1).toSet
   private val mask64 = (BigInt(1) << 64) - 1
   private val signalWidth = allSignals.toMap
