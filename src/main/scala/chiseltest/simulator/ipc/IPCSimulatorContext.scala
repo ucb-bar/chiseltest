@@ -42,8 +42,10 @@ private[chiseltest] class IPCSimulatorContext(
   private object SIM_CMD extends Enumeration {
     val RESET, STEP, UPDATE, POKE, PEEK, FORCE, GETID, GETCHK, FIN = Value
   }
-  def int(x: Int):  BigInt = (BigInt(x >>> 1) << 1) | BigInt(x & 1)
-  def int(x: Long): BigInt = (BigInt(x >>> 1) << 1) | BigInt(x & 1)
+  private val mask32 = (BigInt(1) << 32) - 1
+  private val mask64 = (BigInt(1) << 64) - 1
+  private def int(x: Int):  BigInt = BigInt(x) & mask32
+  private def int(x: Long): BigInt = BigInt(x) & mask64
 
   private var isStale = false
   private val _pokeMap = mutable.HashMap[String, BigInt]()
@@ -207,7 +209,8 @@ private[chiseltest] class IPCSimulatorContext(
     val valid = outChannel.valid
     if (valid) {
       (outputsNameToChunkSizeMap.toList.foldLeft(0)) { case (off, (out, chunk)) =>
-        _peekMap(out) = ((0 until chunk).foldLeft(BigInt(0)))((res, i) => res | (int(outChannel(off + i)) << (64 * i)))
+        val value = (0 until chunk).foldLeft(BigInt(0))((res, i) => res | (int(outChannel(off + i)) << (64 * i)))
+        _peekMap(out) = value
         off + chunk
       }
       outChannel.consume()
@@ -343,7 +346,7 @@ private[chiseltest] class IPCSimulatorContext(
   override def step(n: Int): Unit = {
     defaultClock match {
       case Some(value) =>
-      case None        => throw new NoClockException(toplevel.name)
+      case None        => throw NoClockException(toplevel.name)
     }
     try {
       update()

@@ -44,7 +44,7 @@ trait SimulatorContext {
 
 /** Thrown by [[SimulatorContext.step]] if the circuit has no clock input */
 case class NoClockException(toplevel: String)
-    extends Exception(s"Circuit $toplevel has now clock and therefore cannot be stepped!")
+    extends Exception(s"Circuit $toplevel has no clock and therefore cannot be stepped!")
 
 /** a firrtl circuit simulator */
 trait Simulator {
