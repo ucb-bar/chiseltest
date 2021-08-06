@@ -54,58 +54,58 @@ object JNAUtils {
   }
 
   val interfaceCode: String =
-  """// we only export the symbols that we prefixed with a unique id
-    |#define _EXPORT __attribute__((visibility("default")))
-    |extern "C" {
-    |
-    |_EXPORT void* sim_init() {
-    |  // void* ptr = create_sim_state();
-    |  // std::cout << "native ptr: " << std::hex << ptr << std::endl;
-    |  // return ptr;
-    |  return (void*) create_sim_state();
-    |}
-    |
-    |_EXPORT void step(void* s) {
-    |  ((sim_state*)s)->step();
-    |}
-    |
-    |_EXPORT void update(void* s) {
-    |  ((sim_state*)s)->update();
-    |}
-    |
-    |_EXPORT void finish(void* s) {
-    |  ((sim_state*)s)->finish();
-    |}
-    |
-    |_EXPORT void resetCoverage(void* s) {
-    |  ((sim_state*)s)->resetCoverage();
-    |}
-    |
-    |_EXPORT uint64_t* readCoverage(void* s) {
-    |  return ((sim_state*)s)->readCoverage();
-    |}
-    |
-    |_EXPORT void poke(void* s, int32_t id, int64_t value) {
-    |  ((sim_state*)s)->poke(id, value);
-    |}
-    |
-    |_EXPORT int64_t peek(void* s, int32_t id) {
-    |  return ((sim_state*)s)->peek(id);
-    |}
-    |
-    |_EXPORT void poke_wide(void* s, int32_t id, int32_t offset, int64_t value) {
-    |  ((sim_state*)s)->poke_wide(id, offset, value);
-    |}
-    |
-    |_EXPORT int64_t peek_wide(void* s, int32_t id, int32_t offset) {
-    |  return ((sim_state*)s)->peek_wide(id, offset);
-    |}
-    |} /* extern C */
-    |
-    |""".stripMargin
+    """// we only export the symbols that we prefixed with a unique id
+      |#define _EXPORT __attribute__((visibility("default")))
+      |extern "C" {
+      |
+      |_EXPORT void* sim_init() {
+      |  // void* ptr = create_sim_state();
+      |  // std::cout << "native ptr: " << std::hex << ptr << std::endl;
+      |  // return ptr;
+      |  return (void*) create_sim_state();
+      |}
+      |
+      |_EXPORT void step(void* s) {
+      |  ((sim_state*)s)->step();
+      |}
+      |
+      |_EXPORT void update(void* s) {
+      |  ((sim_state*)s)->update();
+      |}
+      |
+      |_EXPORT void finish(void* s) {
+      |  ((sim_state*)s)->finish();
+      |}
+      |
+      |_EXPORT void resetCoverage(void* s) {
+      |  ((sim_state*)s)->resetCoverage();
+      |}
+      |
+      |_EXPORT uint64_t* readCoverage(void* s) {
+      |  return ((sim_state*)s)->readCoverage();
+      |}
+      |
+      |_EXPORT void poke(void* s, int32_t id, int64_t value) {
+      |  ((sim_state*)s)->poke(id, value);
+      |}
+      |
+      |_EXPORT int64_t peek(void* s, int32_t id) {
+      |  return ((sim_state*)s)->peek(id);
+      |}
+      |
+      |_EXPORT void poke_wide(void* s, int32_t id, int32_t offset, int64_t value) {
+      |  ((sim_state*)s)->poke_wide(id, offset, value);
+      |}
+      |
+      |_EXPORT int64_t peek_wide(void* s, int32_t id, int32_t offset) {
+      |  return ((sim_state*)s)->peek_wide(id, offset);
+      |}
+      |} /* extern C */
+      |
+      |""".stripMargin
 }
 
-class TesterSharedLibInterface(so: NativeLibrary, sPtr: Pointer, coverageSize : Int) {
+class TesterSharedLibInterface(so: NativeLibrary, sPtr: Pointer, coverageSize: Int) {
   private val stepFoo = so.getFunction("step")
   def step(): Unit = { stepFoo.invoke(Array(sPtr)) }
   private val updateFoo = so.getFunction("update")

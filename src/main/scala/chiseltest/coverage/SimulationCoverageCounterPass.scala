@@ -60,8 +60,24 @@ object SimulationCoverageCounterPass extends Transform with DependencyAPIMigrati
     annos.append(CoverCounterAnnotation(m.ref(cover.name)))
     ir.Block(reg, con)
   }
+
+  def getCounterNames(annos: AnnotationSeq): List[String] = {
+    // map from module name to an ordered list of cover points in said module
+    val coverPoints = annos.collect { case a: CoverCounterAnnotation => a.target.module -> a.target.ref }.groupBy(_._1)
+    // map from instance path name to the name of the module
+    val instToModule = annos.collect { case a: ModuleInstancesAnnotation => a }.toList match {
+      case List(anno) => anno.instanceToModule
+      case other      => throw new RuntimeException(s"Exactly one ModuleInstancesAnnotation is required! Found: $other")
+    }
+
+    instToModule.flatMap { case (inst, module) =>
+      coverPoints.getOrElse(module, List()).map(cover => s"$inst.${cover._2}")
+    }.toList.sorted
+  }
 }
 
-case class CoverCounterAnnotation(target: ReferenceTarget) extends SingleTargetAnnotation[ReferenceTarget] with DontTouchAllTargets {
+case class CoverCounterAnnotation(target: ReferenceTarget)
+    extends SingleTargetAnnotation[ReferenceTarget]
+    with DontTouchAllTargets {
   override def duplicate(n: ReferenceTarget) = copy(target = n)
 }

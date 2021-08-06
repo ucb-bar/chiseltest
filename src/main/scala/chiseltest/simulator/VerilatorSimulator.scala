@@ -2,7 +2,7 @@
 
 package chiseltest.simulator
 
-import chiseltest.coverage.CoverCounterAnnotation
+import chiseltest.coverage.{CoverCounterAnnotation, ModuleInstancesAnnotation, SimulationCoverageCounterPass}
 import firrtl._
 import firrtl.annotations._
 import chiseltest.simulator.jna._
@@ -77,8 +77,8 @@ private object VerilatorSimulator extends Simulator {
     val targetDir = Compiler.requireTargetDir(state.annotations)
     val toplevel = TopmoduleInfo(state.circuit)
 
-    val coverageAnnos = loadCoverageAnnos(targetDir)
-    val coverageCounters = getCoverageNames(coverageAnnos)
+    val coverageAnnos = getCoverageAnnos(targetDir, None)
+    val coverageCounters = SimulationCoverageCounterPass.getCounterNames(coverageAnnos)
     val libPath = targetDir / "verilated" / ("V" + toplevel.name)
     val lib = JNAUtils.compileAndLoadJNAClass(libPath, coverageCounters.length)
     new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, coverageCounters)
@@ -86,7 +86,7 @@ private object VerilatorSimulator extends Simulator {
 
   private val CoveragePasses = Seq(
     RunFirrtlTransformAnnotation(Dependency(chiseltest.coverage.SimulationCoverageCounterPass)),
-    RunFirrtlTransformAnnotation(Dependency(chiseltest.coverage.ModuleInstancesPass)),
+    RunFirrtlTransformAnnotation(Dependency(chiseltest.coverage.ModuleInstancesPass))
   )
 
   private def createContextFromScratch(state: CircuitState): SimulatorContext = {
@@ -99,13 +99,17 @@ private object VerilatorSimulator extends Simulator {
 
     // Create the header files that verilator needs + a custom harness
     val waveformExt = Simulator.getWavformFormat(state.annotations)
-    val coverageAnnos = verilogState.annotations.collect{ case c: CoverCounterAnnotation => c }
-    if (Caching.shouldCache(state)) { saveCoverageAnnos(targetDir, coverageAnnos) }
-    val coverageCounters = getCoverageNames(coverageAnnos)
+    val coverageAnnos = getCoverageAnnos(targetDir, Some(verilogState.annotations))
+    val coverageCounters = SimulationCoverageCounterPass.getCounterNames(coverageAnnos)
     val cppHarness = generateHarness(targetDir, toplevel, waveformExt, coverageCounters)
 
+    // ensure that coverage counters can be accessed
+    val coverTargets = coverageAnnos.collect { case CoverCounterAnnotation(target) =>
+      PublicSignal(target.module, target.ref, readOnly = true)
+    }
+
     // turn SystemVerilog into C++ simulation
-    val verilatedDir = runVerilator(toplevel.name, targetDir, cppHarness, state.annotations)
+    val verilatedDir = runVerilator(toplevel.name, targetDir, cppHarness, state.annotations, coverTargets)
 
     // compile simulation and load trhough JNA
     val libPath = compileSimulation(topName = toplevel.name, verilatedDir)
@@ -113,16 +117,31 @@ private object VerilatorSimulator extends Simulator {
     new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, coverageCounters)
   }
 
-  private def getCoverageNames(annos: AnnotationSeq): List[String] = {
-    List() // TODO
+  private def getCoverageAnnos(targetDir: os.Path, a: Option[AnnotationSeq]): AnnotationSeq = a match {
+    case Some(annos) =>
+      // filter out the annotations that we care about
+      val coverageAnnos = annos.collect {
+        case a: CoverCounterAnnotation    => a
+        case a: ModuleInstancesAnnotation => a
+      }
+      // if caching is enabled we want to save these annotations to disk
+      if (Caching.shouldCache(annos)) {
+        os.write.over(targetDir / "coverageAnnotations.json", JsonProtocol.serialize(annos))
+      }
+      // return annos
+      coverageAnnos
+    case None => // if we do not have any annotations, we need to lead them from disk
+      JsonProtocol.deserialize((targetDir / "coverageAnnotations.json").toIO)
   }
 
-  private def saveCoverageAnnos(targetDir: os.Path, annos: AnnotationSeq): Unit = {
-    os.write.over(targetDir / "coverageAnnotations.json", JsonProtocol.serialize(annos))
-  }
-
-  private def loadCoverageAnnos(targetDir: os.Path): AnnotationSeq = {
-    JsonProtocol.deserialize((targetDir / "coverageAnnotations.json").toIO)
+  private def writeConfigFile(verilatedDir: os.Path, publicSignals: Iterable[PublicSignal]): Unit = {
+    // see Verilator Manual section on "Configuration Files"
+    val makePublic = publicSignals.map { signal =>
+      val suffix = if (signal.readOnly) "rd" else "rw"
+      s"""public_flat_$suffix -module "${signal.module}" -var "${signal.name}""""
+    }
+    val content = "`verilator_config\n" + makePublic.mkString("\n") + "\n"
+    os.write.over(verilatedDir / "config.vlt", content)
   }
 
   private def compileSimulation(topName: String, verilatedDir: os.Path): os.Path = {
@@ -140,17 +159,19 @@ private object VerilatorSimulator extends Simulator {
 
   /** executes verilator in order to generate a C++ simulation */
   private def runVerilator(
-    topName:    String,
-    targetDir:  os.Path,
-    cppHarness: String,
-    annos:      AnnotationSeq
+    topName:       String,
+    targetDir:     os.Path,
+    cppHarness:    String,
+    annos:         AnnotationSeq,
+    publicSignals: Iterable[PublicSignal]
   ): os.Path = {
     val verilatedDir = targetDir / "verilated"
 
     removeOldCode(verilatedDir)
+    writeConfigFile(verilatedDir, publicSignals)
     val flagAnnos = VerilatorLinkFlags(JNAUtils.ldFlags) +: VerilatorCFlags(JNAUtils.ccFlags) +: annos
     val flags = generateFlags(topName, verilatedDir, flagAnnos)
-    val cmd = List("verilator", "--cc", "--exe", cppHarness) ++ flags ++ List(s"$topName.sv")
+    val cmd = List("verilator", "--cc", "--exe", cppHarness) ++ flags ++ List("verilated/config.vlt", s"$topName.sv")
     val ret = os.proc(cmd).call(cwd = targetDir)
 
     assert(ret.exitCode == 0, s"verilator command failed on circuit ${topName} in work dir $targetDir")
@@ -162,6 +183,7 @@ private object VerilatorSimulator extends Simulator {
       println(s"Deleting stale Verilator object directory: $verilatedDir")
       os.remove.all(verilatedDir)
     }
+    os.makeDir(verilatedDir)
   }
 
   private def DefaultCFlags(topName: String) = List(
@@ -211,10 +233,10 @@ private object VerilatorSimulator extends Simulator {
   }
 
   private def generateHarness(
-    targetDir:   os.Path,
-    toplevel:    TopmoduleInfo,
-    waveformExt: String,
-    coverageCounters: List[String],
+    targetDir:        os.Path,
+    toplevel:         TopmoduleInfo,
+    waveformExt:      String,
+    coverageCounters: List[String]
   ): String = {
     val topName = toplevel.name
 
@@ -227,10 +249,12 @@ private object VerilatorSimulator extends Simulator {
       targetDir,
       majorVersion = majorVersion,
       minorVersion = minorVersion,
-      coverageCounters = coverageCounters,
+      coverageCounters = coverageCounters
     )
     os.write.over(targetDir / cppHarnessFileName, code)
 
     cppHarnessFileName
   }
 }
+
+private case class PublicSignal(module: String, name: String, readOnly: Boolean)

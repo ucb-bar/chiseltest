@@ -38,7 +38,11 @@ private object Caching {
   }
 
   def shouldCache(state: CircuitState): Boolean = {
-    state.annotations.contains(CachingAnnotation)
+    shouldCache(state.annotations)
+  }
+
+  def shouldCache(annotations: AnnotationSeq): Boolean = {
+    annotations.contains(CachingAnnotation)
   }
 
   private def saveHash(targetDir: os.Path, value: String): Unit = {

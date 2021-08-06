@@ -8,17 +8,20 @@ import chiseltest.simulator.TopmoduleInfo
   *  This version generates a harness that can be called into through the JNI.
   */
 private[chiseltest] object VerilatorCppJNAHarnessGenerator {
+  private val Dot = "__DOT__"
   def codeGen(
-    toplevel:     TopmoduleInfo,
-    vcdFilePath:  os.Path,
-    targetDir:    os.Path,
-    majorVersion: Int,
-    minorVersion: Int,
-    coverageCounters: List[String],
+    toplevel:         TopmoduleInfo,
+    vcdFilePath:      os.Path,
+    targetDir:        os.Path,
+    majorVersion:     Int,
+    minorVersion:     Int,
+    coverageCounters: List[String]
   ): String = {
     val pokeable = toplevel.inputs.zipWithIndex
     val peekable = (toplevel.inputs ++ toplevel.outputs).zipWithIndex
-    def fitsIn64Bits(s: ((String, Int), Int)): Boolean = s._1._2 <= 64
+    def fitsIn64Bits(s:    ((String, Int), Int)): Boolean = s._1._2 <= 64
+    def access(firrtlPath: String): String =
+      "dut->" + toplevel.name + Dot + firrtlPath.split('.').mkString(Dot)
 
     val codeBuffer = new StringBuilder
     // generate Verilator specific "sim_state" class
@@ -46,10 +49,18 @@ struct sim_state {
     delete[] coverCounters;
   }
   inline void resetCoverage() {
-    // TODO: actually write to counters
+""")
+    coverageCounters.foreach { name =>
+      codeBuffer.append(s"    ${access(name)} = 0;\n")
+    }
+    codeBuffer.append(s"""
   }
   inline uint64_t* readCoverage() {
-    // TODO: actually read in things...
+""")
+    coverageCounters.zipWithIndex.foreach { case (name, i) =>
+      codeBuffer.append(s"    coverCounters[$i] = ${access(name)};\n")
+    }
+    codeBuffer.append(s"""
     return coverCounters;
   }
   inline void poke(int32_t id, int64_t value) {

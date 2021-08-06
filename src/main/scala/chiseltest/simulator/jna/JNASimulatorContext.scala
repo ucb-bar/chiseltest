@@ -99,8 +99,9 @@ private[chiseltest] class JNASimulatorContext(
   }
 
   override def getCoverage(): List[(String, Long)] = {
-    if(coverageCounters.isEmpty) return List()
+    if (coverageCounters.isEmpty) return List()
     if (isRunning) {
+      if (isStale) { update() }
       val counts = so.readCoverage()
       assert(counts.length == coverageCounters.length)
       coverageCounters.zip(counts)
@@ -111,7 +112,7 @@ private[chiseltest] class JNASimulatorContext(
 
   override def resetCoverage(): Unit = {
     assert(isRunning)
-    if(coverageCounters.nonEmpty) {
+    if (coverageCounters.nonEmpty) {
       so.resetCoverage()
     }
   }

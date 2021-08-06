@@ -120,7 +120,7 @@ abstract class CoverageCompliance(sim: Simulator, tag: Tag = DefaultTag) extends
     }
 
     it should "support resetting the coverage counters to zero" taggedAs(tag) in {
-      val dut = load(testSrc)
+      val dut = load(testSrc, Seq(WriteVcdAnnotation))
       performDutTest(dut)
 
       val cov = dut.getCoverage()
@@ -134,6 +134,7 @@ abstract class CoverageCompliance(sim: Simulator, tag: Tag = DefaultTag) extends
       performDutTest(dut)
 
       val cov2 = dut.getCoverage()
+      dut.finish()
       assert(cov2.size == 2)
       assert(cov2 == List(
         "c.r_one" -> 7, "c.r_zero" -> 5
