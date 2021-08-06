@@ -13,7 +13,8 @@ private[chiseltest] object VerilatorCppJNAHarnessGenerator {
     vcdFilePath:  os.Path,
     targetDir:    os.Path,
     majorVersion: Int,
-    minorVersion: Int
+    minorVersion: Int,
+    coverageCounters: List[String],
   ): String = {
     val pokeable = toplevel.inputs.zipWithIndex
     val peekable = (toplevel.inputs ++ toplevel.outputs).zipWithIndex
@@ -26,11 +27,13 @@ struct sim_state {
   TOP_CLASS* dut;
   VERILATED_C* tfp;
   vluint64_t main_time;
+  uint64_t* coverCounters;
 
   sim_state() :
     dut(new TOP_CLASS),
     tfp(nullptr),
-    main_time(0)
+    main_time(0),
+    coverCounters(new uint64_t [${coverageCounters.length}])
   {
     // std::cout << "Allocating! " << ((long long) dut) << std::endl;
   }
@@ -40,10 +43,14 @@ struct sim_state {
   inline void finish() {
     dut->eval();
     _finish(tfp, dut);
+    delete[] coverCounters;
   }
-  inline void resetCoverage() { VerilatedCov::zero(); }
-  inline void writeCoverage(const char* filename) {
-    VerilatedCov::write(filename);
+  inline void resetCoverage() {
+    // TODO: actually write to counters
+  }
+  inline uint64_t* readCoverage() {
+    // TODO: actually read in things...
+    return coverCounters;
   }
   inline void poke(int32_t id, int64_t value) {
     const uint64_t u = value;
@@ -141,7 +148,7 @@ static sim_state* create_sim_state() {
 }
 """)
 
-    val jnaCode = JNAUtils.genJNACppCode(codeBuffer.toString())
+    val jnaCode = codeBuffer.toString() + JNAUtils.interfaceCode
     commonCodeGen(toplevel, targetDir, majorVersion, minorVersion) + jnaCode
   }
 

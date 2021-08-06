@@ -5,6 +5,8 @@ package chiseltest.coverage
 import firrtl._
 import firrtl.annotations._
 import firrtl.stage.Forms
+import firrtl.transforms.DontTouchAllTargets
+
 import scala.collection.mutable
 
 /** This pass replaces each `cover` statement in the circuit with a register of the same name.
@@ -60,6 +62,6 @@ object SimulationCoverageCounterPass extends Transform with DependencyAPIMigrati
   }
 }
 
-case class CoverCounterAnnotation(target: ReferenceTarget) extends SingleTargetAnnotation[ReferenceTarget] {
+case class CoverCounterAnnotation(target: ReferenceTarget) extends SingleTargetAnnotation[ReferenceTarget] with DontTouchAllTargets {
   override def duplicate(n: ReferenceTarget) = copy(target = n)
 }

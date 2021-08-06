@@ -2,9 +2,12 @@
 
 package chiseltest.simulator
 
+import chiseltest.coverage.CoverCounterAnnotation
 import firrtl._
 import firrtl.annotations._
 import chiseltest.simulator.jna._
+import firrtl.options.Dependency
+import firrtl.stage.RunFirrtlTransformAnnotation
 
 case object VerilatorBackendAnnotation extends SimulatorAnnotation {
   override def getSimulator: Simulator = VerilatorSimulator
@@ -74,57 +77,44 @@ private object VerilatorSimulator extends Simulator {
     val targetDir = Compiler.requireTargetDir(state.annotations)
     val toplevel = TopmoduleInfo(state.circuit)
 
-    val libPath = targetDir / "verilated" / ("V" + toplevel.name)
-    // the binary we created communicates using our standard IPC interface
     val coverageAnnos = loadCoverageAnnos(targetDir)
-    val coverageFile = targetDir / "coverage.dat"
-    def readCoverage(): List[(String, Long)] = {
-      assert(os.exists(coverageFile), s"Could not find `$coverageFile` file!")
-      VerilatorCoverage.loadCoverage(coverageAnnos, coverageFile)
-    }
-
-    val lib = JNAUtils.compileAndLoadJNAClass(libPath)
-    new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, Some(readCoverage))
+    val coverageCounters = getCoverageNames(coverageAnnos)
+    val libPath = targetDir / "verilated" / ("V" + toplevel.name)
+    val lib = JNAUtils.compileAndLoadJNAClass(libPath, coverageCounters.length)
+    new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, coverageCounters)
   }
+
+  private val CoveragePasses = Seq(
+    RunFirrtlTransformAnnotation(Dependency(chiseltest.coverage.SimulationCoverageCounterPass)),
+    RunFirrtlTransformAnnotation(Dependency(chiseltest.coverage.ModuleInstancesPass)),
+  )
 
   private def createContextFromScratch(state: CircuitState): SimulatorContext = {
     // we will create the simulation in the target directory
     val targetDir = Compiler.requireTargetDir(state.annotations)
     val toplevel = TopmoduleInfo(state.circuit)
 
+    // compile low firrtl to System Verilog for verilator to use
+    val verilogState = Compiler.lowFirrtlToSystemVerilog(state, CoveragePasses)
+
     // Create the header files that verilator needs + a custom harness
     val waveformExt = Simulator.getWavformFormat(state.annotations)
-    val cppHarness = generateHarness(targetDir, toplevel, waveformExt)
-
-    // compile low firrtl to System Verilog for verilator to use
-    val verilogState = Compiler.lowFirrtlToSystemVerilog(state, VerilatorCoverage.CoveragePasses)
+    val coverageAnnos = verilogState.annotations.collect{ case c: CoverCounterAnnotation => c }
+    if (Caching.shouldCache(state)) { saveCoverageAnnos(targetDir, coverageAnnos) }
+    val coverageCounters = getCoverageNames(coverageAnnos)
+    val cppHarness = generateHarness(targetDir, toplevel, waveformExt, coverageCounters)
 
     // turn SystemVerilog into C++ simulation
     val verilatedDir = runVerilator(toplevel.name, targetDir, cppHarness, state.annotations)
 
-    // patch the coverage cpp provided with verilator only if Verilator is older than 4.202
-    // Starting with Verilator 4.202, the whole patch coverage hack is no longer necessary
-    require(majorVersion >= 4, "Unsupported Verilator version")
-
-    if (majorVersion == 4 && minorVersion < 202) {
-      VerilatorPatchCoverageCpp(verilatedDir, majorVersion, minorVersion)
-    }
-
+    // compile simulation and load trhough JNA
     val libPath = compileSimulation(topName = toplevel.name, verilatedDir)
+    val lib = JNAUtils.compileAndLoadJNAClass(libPath, coverageCounters.length)
+    new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, coverageCounters)
+  }
 
-    // the binary we created communicates using our standard IPC interface
-    val coverageAnnos = VerilatorCoverage.collectCoverageAnnotations(verilogState.annotations)
-    if (Caching.shouldCache(state)) {
-      saveCoverageAnnos(targetDir, coverageAnnos)
-    }
-    val coverageFile = targetDir / "coverage.dat"
-    def readCoverage(): List[(String, Long)] = {
-      assert(os.exists(coverageFile), s"Could not find `$coverageFile` file!")
-      VerilatorCoverage.loadCoverage(coverageAnnos, coverageFile)
-    }
-
-    val lib = JNAUtils.compileAndLoadJNAClass(libPath)
-    new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, Some(readCoverage))
+  private def getCoverageNames(annos: AnnotationSeq): List[String] = {
+    List() // TODO
   }
 
   private def saveCoverageAnnos(targetDir: os.Path, annos: AnnotationSeq): Unit = {
@@ -183,7 +173,6 @@ private object VerilatorSimulator extends Simulator {
 
   private def DefaultFlags(topName: String, verilatedDir: os.Path, cFlags: Seq[String], ldFlags: Seq[String]) = List(
     "--assert", // we always enable assertions
-    "--coverage-user", // we always enable use coverage
     "-Wno-fatal",
     "-Wno-WIDTH",
     "-Wno-STMTDLY",
@@ -224,7 +213,8 @@ private object VerilatorSimulator extends Simulator {
   private def generateHarness(
     targetDir:   os.Path,
     toplevel:    TopmoduleInfo,
-    waveformExt: String
+    waveformExt: String,
+    coverageCounters: List[String],
   ): String = {
     val topName = toplevel.name
 
@@ -236,100 +226,11 @@ private object VerilatorSimulator extends Simulator {
       vcdFile,
       targetDir,
       majorVersion = majorVersion,
-      minorVersion = minorVersion
+      minorVersion = minorVersion,
+      coverageCounters = coverageCounters,
     )
     os.write.over(targetDir / cppHarnessFileName, code)
 
     cppHarnessFileName
-  }
-}
-
-/** Changes the file generated by verilator to generate per instance and not per module coverage.
-  * This is required in order to satisfy our generic TestCoverage interface for which
-  * the simulator needs to return per instance coverage counts.
-  * See: https://github.com/verilator/verilator/issues/2793
-  */
-private object VerilatorPatchCoverageCpp {
-  private val CallNeedle = "VL_COVER_INSERT("
-  private val CallReplacement = "CHISEL_VL_COVER_INSERT("
-  private val CoverageStartNeedle = "// Coverage"
-
-  def apply(dir: os.Path, major: Int, minor: Int): Unit = {
-    assert(major == 4 && minor < 202, "Starting with Verilator 4.202 this hack is no longer necessary!")
-    val files = loadFiles(dir)
-    files.foreach { case (cppFile, lines) =>
-      replaceCoverage(cppFile, lines, minor)
-      doWrite(cppFile, lines)
-    }
-  }
-
-  private def replaceCoverage(cppFile: os.Path, lines: Array[String], minor: Int): Unit = {
-    // we add our code at the beginning of the coverage section
-    val coverageStart = findLine(CoverageStartNeedle, cppFile, lines)
-    lines(coverageStart) += "\n" + CustomCoverInsertCode(withCtxPtr = minor >= 200) + "\n"
-
-    // then we replace the call
-    val call = findLine(CallNeedle, cppFile, lines)
-    val callLine = lines(call).replaceAllLiterally(CallNeedle, CallReplacement)
-    lines(call) = callLine
-  }
-
-  private def loadFiles(dir: os.Path): Seq[(os.Path, Array[String])] = {
-    if (!os.exists(dir) || !os.isDir(dir)) {
-      error(s"Failed to find directory $dir")
-    }
-
-    // find all cpp files generated by verilator
-    val cppFiles = os.list(dir).filter(os.isFile).filter { f =>
-      val name = f.last
-      name.startsWith("V") && name.endsWith(".cpp")
-    }
-
-    // filter out files that do not contain any coverage definitions
-    cppFiles.map(f => (f, FileUtils.getLines(f).toArray)).filter { case (name, lines) =>
-      findLineOption(CoverageStartNeedle, lines).isDefined
-    }
-  }
-
-  private def findLineOption(needle: String, lines: Iterable[String]): Option[Int] =
-    lines.map(_.trim).zipWithIndex.find(_._1.startsWith(needle)).map(_._2)
-
-  private def findLine(needle: String, filename: os.Path, lines: Iterable[String]): Int =
-    findLineOption(needle, lines).getOrElse(error(s"Failed to find line `$needle` in $filename."))
-
-  private def doWrite(file: os.Path, lines: Array[String]): Unit = os.write.over(file, lines.mkString("\n"))
-
-  private def error(msg: String): Nothing = {
-    throw new RuntimeException(msg + "\n" + "Please file an issue and include the output of `verilator --version`")
-  }
-
-  private def CustomCoverInsertCode(withCtxPtr: Boolean): String = {
-    val argPrefix = if (withCtxPtr) "VerilatedCovContext* covcontextp, " else ""
-    val callArgPrefix = if (withCtxPtr) "covcontextp, " else ""
-    val cov = if (withCtxPtr) "covcontextp->" else "VerilatedCov::"
-
-    s"""#define CHISEL_VL_COVER_INSERT(${callArgPrefix}countp, ...) \\
-       |    VL_IF_COVER(${cov}_inserti(countp); ${cov}_insertf(__FILE__, __LINE__); \\
-       |                chisel_insertp(${callArgPrefix}"hier", name(), __VA_ARGS__))
-       |
-       |#ifdef VM_COVERAGE
-       |static void chisel_insertp(${argPrefix}
-       |  const char* key0, const char* valp0, const char* key1, const char* valp1,
-       |  const char* key2, int lineno, const char* key3, int column,
-       |  const char* key4, const std::string& hier_str,
-       |  const char* key5, const char* valp5, const char* key6, const char* valp6,
-       |  const char* key7 = nullptr, const char* valp7 = nullptr) {
-       |
-       |    std::string val2str = vlCovCvtToStr(lineno);
-       |    std::string val3str = vlCovCvtToStr(column);
-       |    ${cov}_insertp(
-       |        key0, valp0, key1, valp1, key2, val2str.c_str(),
-       |        key3, val3str.c_str(), key4, hier_str.c_str(),
-       |        key5, valp5, key6, valp6, key7, valp7,
-       |        // turn on per instance cover points
-       |        "per_instance", "1");
-       |}
-       |#endif
-       |""".stripMargin
   }
 }

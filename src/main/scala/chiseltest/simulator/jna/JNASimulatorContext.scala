@@ -10,14 +10,14 @@ import logger.LazyLogging
   * @param targetDir simulation target directory
   * @param toplevel information about the interface exposed by the module at the top of the RTL hierarchy
   * @param sim simulator that generated the binary
-  * @param readCoverageFile function that parses the coverage file and returns the list of counts
+  * @param coverageCounters sorted list of coverage counter names
   */
 private[chiseltest] class JNASimulatorContext(
   so:               TesterSharedLibInterface,
   targetDir:        os.Path,
   toplevel:         TopmoduleInfo,
   override val sim: Simulator,
-  readCoverageFile: Option[() => List[(String, Long)]] = None)
+  coverageCounters: List[String])
     extends SimulatorContext
     with LazyLogging {
   require(toplevel.clocks.length <= 1, "Multi clock circuits are currently not supported!")
@@ -91,22 +91,28 @@ private[chiseltest] class JNASimulatorContext(
   }
 
   private var isRunning = true
+  private var finalCoverage: List[(String, Long)] = List()
   override def finish(): Unit = {
+    finalCoverage = getCoverage()
     so.finish()
     isRunning = false
   }
 
-  private val coverageFile = targetDir / "coverage.dat"
   override def getCoverage(): List[(String, Long)] = {
+    if(coverageCounters.isEmpty) return List()
     if (isRunning) {
-      so.writeCoverage(coverageFile.toString())
+      val counts = so.readCoverage()
+      assert(counts.length == coverageCounters.length)
+      coverageCounters.zip(counts)
+    } else {
+      finalCoverage
     }
-    assert(os.exists(coverageFile), s"Could not find `$coverageFile` file!")
-    readCoverageFile.get()
   }
 
   override def resetCoverage(): Unit = {
     assert(isRunning)
-    so.resetCoverage()
+    if(coverageCounters.nonEmpty) {
+      so.resetCoverage()
+    }
   }
 }

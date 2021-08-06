@@ -33,19 +33,6 @@ object JNAUtils {
     "-fvisibility=hidden"
   )
 
-  /** needs to match up with [[TesterSharedLibInterface]]! */
-  val Methods = Seq(
-    ("void", "step", Seq()),
-    ("void", "update", Seq()),
-    ("void", "finish", Seq()),
-    ("void", "resetCoverage", Seq()),
-    ("void", "writeCoverage", Seq("filename" -> "String")),
-    ("void", "poke", Seq("id" -> "int", "value" -> "long")),
-    ("long", "peek", Seq("id" -> "int")),
-    ("void", "poke_wide", Seq("id" -> "int", "offset" -> "int", "value" -> "long")),
-    ("long", "peek_wide", Seq("id" -> "int", "offset" -> "int"))
-  )
-
   private var idCounter = 123
   private def getUniqueId: Int = synchronized {
     val id = idCounter
@@ -53,7 +40,7 @@ object JNAUtils {
     id
   }
 
-  def compileAndLoadJNAClass(libPath: os.Path): TesterSharedLibInterface = {
+  def compileAndLoadJNAClass(libPath: os.Path, coverageSize: Int): TesterSharedLibInterface = {
     // make a copy of the library, since overwriting the library while it is still loaded
     // seems to go wrong
     val libCopy = libPath / os.up / (libPath.last + s"_$getUniqueId")
@@ -63,53 +50,62 @@ object JNAUtils {
     val so = NativeLibrary.getInstance(libCopy.toString(), opts)
     val initFoo = so.getFunction("sim_init")
     val sPtr = initFoo.invokePointer(Array())
-    new TesterSharedLibInterface(so = so, sPtr = sPtr)
+    new TesterSharedLibInterface(so = so, sPtr = sPtr, coverageSize = coverageSize)
   }
 
-  private def cType(tpe: String): String = tpe.toLowerCase match {
-    case "void"   => "void"
-    case "string" => "const char*"
-    case "int"    => "int32_t"
-    case "long"   => "int64_t"
-    case other    => other
-  }
-
-  def genJNACppCode(simState: String): String = {
-    val header =
-      s"""// we only export the symbols that we prefixed with a unique id
-         |#define _EXPORT __attribute__((visibility("default")))
-         |extern "C" {
-         |""".stripMargin
-
-    // define common functions that will be called from Java
-    val initFoo =
-      s"""
-         |_EXPORT void* sim_init() {
-         |  // void* ptr = create_sim_state();
-         |  // std::cout << "native ptr: " << std::hex << ptr << std::endl;
-         |  // return ptr;
-         |  return (void*) create_sim_state();
-         |}
-         |
-         |""".stripMargin
-    val methods = Methods.map { case (ret, name, args) =>
-      val argDecl = (Seq("s" -> "void*") ++ args).map { case (n, t) => cType(t) + " " + n }.mkString(", ")
-      val retTpe = cType(ret)
-      val decl = s"_EXPORT $retTpe $name($argDecl) {\n"
-      val callRet = if (ret == "void") "" else "return "
-      val call = "  " + callRet + s"((sim_state*)s)->$name(" + args.map(_._1).mkString(", ") + ");\n"
-      decl + call + "}\n"
-    }.mkString("\n")
-
-    val footer =
-      s"""} /* extern C */
-         |""".stripMargin
-
-    simState + header + initFoo + methods + footer
-  }
+  val interfaceCode: String =
+  """// we only export the symbols that we prefixed with a unique id
+    |#define _EXPORT __attribute__((visibility("default")))
+    |extern "C" {
+    |
+    |_EXPORT void* sim_init() {
+    |  // void* ptr = create_sim_state();
+    |  // std::cout << "native ptr: " << std::hex << ptr << std::endl;
+    |  // return ptr;
+    |  return (void*) create_sim_state();
+    |}
+    |
+    |_EXPORT void step(void* s) {
+    |  ((sim_state*)s)->step();
+    |}
+    |
+    |_EXPORT void update(void* s) {
+    |  ((sim_state*)s)->update();
+    |}
+    |
+    |_EXPORT void finish(void* s) {
+    |  ((sim_state*)s)->finish();
+    |}
+    |
+    |_EXPORT void resetCoverage(void* s) {
+    |  ((sim_state*)s)->resetCoverage();
+    |}
+    |
+    |_EXPORT uint64_t* readCoverage(void* s) {
+    |  return ((sim_state*)s)->readCoverage();
+    |}
+    |
+    |_EXPORT void poke(void* s, int32_t id, int64_t value) {
+    |  ((sim_state*)s)->poke(id, value);
+    |}
+    |
+    |_EXPORT int64_t peek(void* s, int32_t id) {
+    |  return ((sim_state*)s)->peek(id);
+    |}
+    |
+    |_EXPORT void poke_wide(void* s, int32_t id, int32_t offset, int64_t value) {
+    |  ((sim_state*)s)->poke_wide(id, offset, value);
+    |}
+    |
+    |_EXPORT int64_t peek_wide(void* s, int32_t id, int32_t offset) {
+    |  return ((sim_state*)s)->peek_wide(id, offset);
+    |}
+    |} /* extern C */
+    |
+    |""".stripMargin
 }
 
-class TesterSharedLibInterface(so: NativeLibrary, sPtr: Pointer) {
+class TesterSharedLibInterface(so: NativeLibrary, sPtr: Pointer, coverageSize : Int) {
   private val stepFoo = so.getFunction("step")
   def step(): Unit = { stepFoo.invoke(Array(sPtr)) }
   private val updateFoo = so.getFunction("update")
@@ -123,9 +119,9 @@ class TesterSharedLibInterface(so: NativeLibrary, sPtr: Pointer) {
   def resetCoverage(): Unit = {
     resetCoverageFoo.invoke(Array(sPtr))
   }
-  private val writeCoverageFoo = so.getFunction("writeCoverage")
-  def writeCoverage(filename: String): Unit = {
-    writeCoverageFoo.invoke(Array(sPtr, filename))
+  private val readCoverageFoo = so.getFunction("readCoverage")
+  def readCoverage(): Array[Long] = {
+    readCoverageFoo.invokePointer(Array(sPtr)).getLongArray(0, coverageSize)
   }
   private val pokeFoo = so.getFunction("poke")
   def poke(id: Int, value: Long): Unit = {
