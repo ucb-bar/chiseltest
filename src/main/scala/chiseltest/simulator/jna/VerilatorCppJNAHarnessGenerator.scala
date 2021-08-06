@@ -3,7 +3,6 @@
 package chiseltest.simulator.jna
 
 import chiseltest.simulator.TopmoduleInfo
-import chiseltest.simulator.ipc.VerilatorCppHarnessGenerator
 
 /** Generates the Module specific verilator harness cpp file for verilator compilation.
   *  This version generates a harness that can be called into through the JNI.
@@ -15,7 +14,7 @@ private[chiseltest] object VerilatorCppJNAHarnessGenerator {
     targetDir:    os.Path,
     majorVersion: Int,
     minorVersion: Int
-  ): (String, String) = {
+  ): String = {
     val pokeable = toplevel.inputs.zipWithIndex
     val peekable = (toplevel.inputs ++ toplevel.outputs).zipWithIndex
     def fitsIn64Bits(s: ((String, Int), Int)): Boolean = s._1._2 <= 64
@@ -142,8 +141,110 @@ static sim_state* create_sim_state() {
 }
 """)
 
-    val (jnaCode, className) = JNAUtils.genJNACppCode(codeBuffer.toString())
-    val code = VerilatorCppHarnessGenerator.commonCodeGen(toplevel, targetDir, majorVersion, minorVersion) + jnaCode
-    (code, className)
+    val jnaCode = JNAUtils.genJNACppCode(codeBuffer.toString())
+    commonCodeGen(toplevel, targetDir, majorVersion, minorVersion) + jnaCode
+  }
+
+  private def commonCodeGen(
+    toplevel:     TopmoduleInfo,
+    targetDir:    os.Path,
+    majorVersion: Int,
+    minorVersion: Int
+  ): String = {
+    val dutName = toplevel.name
+    val dutVerilatorClassName = "V" + dutName
+
+    require(toplevel.clocks.length <= 1, "Multi clock circuits are currently not supported!")
+    val clockName = toplevel.clocks.headOption
+    val clockLow = clockName.map("top->" + _ + " = 0;").getOrElse("")
+    val clockHigh = clockName.map("top->" + _ + " = 1;").getOrElse("")
+
+    val coverageInit =
+      if (majorVersion >= 4 && minorVersion >= 202)
+        """|#if VM_COVERAGE
+           |    Verilated::defaultContextp()->coveragep()->forcePerInstance(true);
+           |#endif
+           |""".stripMargin
+      else ""
+
+    val verilatorRunFlushCallback = if (majorVersion >= 4 && minorVersion >= 38) {
+      "Verilated::runFlushCallbacks();\n  Verilated::runExitCallbacks();"
+    } else {
+      "Verilated::flushCall();"
+    }
+
+    val codeBuffer = new StringBuilder
+    codeBuffer.append(s"""#include "$dutVerilatorClassName.h"
+                         |#include "verilated.h"
+                         |
+                         |#define TOP_CLASS $dutVerilatorClassName
+                         |
+                         |#ifndef VM_TRACE_FST
+                         |#define VM_TRACE_FST 0
+                         |#endif
+                         |
+                         |#if VM_TRACE
+                         |#if VM_TRACE_FST
+                         |  #include "verilated_fst_c.h"
+                         |  #define VERILATED_C VerilatedFstC
+                         |#else // !(VM_TRACE_FST)
+                         |  #include "verilated_vcd_c.h"
+                         |  #define VERILATED_C VerilatedVcdC
+                         |#endif
+                         |#else // !(VM_TRACE)
+                         |  #define VERILATED_C VerilatedVcdC
+                         |#endif
+                         |#include <iostream>
+                         |
+                         |
+                         |// Override Verilator definition so first $$finish ends simulation
+                         |// Note: VL_USER_FINISH needs to be defined when compiling Verilator code
+                         |void vl_finish(const char* filename, int linenum, const char* hier) {
+                         |  $verilatorRunFlushCallback
+                         |  exit(0);
+                         |}
+                         |
+                         |static void _startCoverageAndDump(VERILATED_C** tfp, const std::string& dumpfile, TOP_CLASS* top) {
+                         |$coverageInit
+                         |#if VM_TRACE || VM_COVERAGE
+                         |    Verilated::traceEverOn(true);
+                         |#endif
+                         |#if VM_TRACE
+                         |    VL_PRINTF(\"Enabling waves..\\n\");
+                         |    *tfp = new VERILATED_C;
+                         |    top->trace(*tfp, 99);
+                         |    (*tfp)->open(dumpfile.c_str());
+                         |#endif
+                         |}
+                         |
+                         |static void _step(VERILATED_C* tfp, TOP_CLASS* top, vluint64_t& main_time) {
+                         |    $clockLow
+                         |    top->eval();
+                         |#if VM_TRACE
+                         |    if (tfp) tfp->dump(main_time);
+                         |#endif
+                         |    main_time++;
+                         |    $clockHigh
+                         |    top->eval();
+                         |#if VM_TRACE
+                         |    if (tfp) tfp->dump(main_time);
+                         |#endif
+                         |    main_time++;
+                         |}
+                         |
+                         |static void _finish(VERILATED_C* tfp, TOP_CLASS* top) {
+                         |#if VM_TRACE
+                         |  if (tfp) tfp->close();
+                         |  delete tfp;
+                         |#endif
+                         |#if VM_COVERAGE
+                         |  VerilatedCov::write("$targetDir/coverage.dat");
+                         |#endif
+                         |  // TODO: re-enable!
+                         |  // delete top;
+                         |}
+                         |""".stripMargin)
+
+    codeBuffer.toString()
   }
 }
