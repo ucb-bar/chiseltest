@@ -15,18 +15,15 @@ import scala.sys.process._
 
 /** This context works with a simulation binary that communicates through shared memory.
   * @param cmd command to launch the simulation binary
+  * @param targetDir simulation target directory
   * @param toplevel information about the interface exposed by the module at the top of the RTL hierarchy
-  * @param waveformFile optional path to the waveform file, we assume that the file will only be available _after_
-  *                     the simulation has been terminated
-  * @param loadCoverage may be called _after_ the simulation is finished to retrieve coverage information
   * @param sim simulator that generated the binary
   */
 private[chiseltest] class IPCSimulatorContext(
   cmd:              Seq[String],
   targetDir:        os.Path,
   toplevel:         TopmoduleInfo,
-  override val sim: Simulator,
-  readCoverageFile: Option[() => List[(String, Long)]] = None)
+  override val sim: Simulator)
     extends SimulatorContext
     with LazyLogging {
   require(toplevel.clocks.length <= 1, "Multi clock circuits are currently not supported!")
@@ -371,20 +368,6 @@ private[chiseltest] class IPCSimulatorContext(
 
   // Once everything has been prepared, we can start the communications.
   start()
-
-  override def getCoverage(): List[(String, Long)] = {
-    if (isRunning) {
-      throw new NotImplementedError(
-        "This backend does not support providing coverage while the simulation is still running."
-      )
-    } else {
-      readCoverageFile
-        .map(_())
-        .getOrElse(
-          throw new NotImplementedError(s"${sim.name} does not support coverage!")
-        )
-    }
-  }
 }
 
 private object TesterProcess {

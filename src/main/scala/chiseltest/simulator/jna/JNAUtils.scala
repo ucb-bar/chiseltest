@@ -54,9 +54,13 @@ object JNAUtils {
   }
 
   def compileAndLoadJNAClass(libPath: os.Path): TesterSharedLibInterface = {
+    // make a copy of the library, since overwriting the library while it is still loaded
+    // seems to go wrong
+    val libCopy = libPath / os.up / (libPath.last + s"_$getUniqueId")
+    os.copy.over(libPath, to = libCopy)
     // dlopen options: RTLD_NOW
     val opts = JavaConverters.mapAsJavaMap(Map(Library.OPTION_OPEN_FLAGS -> 2))
-    val so = NativeLibrary.getInstance(libPath.toString(), opts)
+    val so = NativeLibrary.getInstance(libCopy.toString(), opts)
     val initFoo = so.getFunction("sim_init")
     val sPtr = initFoo.invokePointer(Array())
     new TesterSharedLibInterface(so = so, sPtr = sPtr)
@@ -70,9 +74,7 @@ object JNAUtils {
     case other    => other
   }
 
-  def genJNACppCode(simState: String): (String, String) = {
-    val className = "TesterSharedLib" + getUniqueId.toString
-
+  def genJNACppCode(simState: String): String = {
     val header =
       s"""// we only export the symbols that we prefixed with a unique id
          |#define _EXPORT __attribute__((visibility("default")))
@@ -103,8 +105,7 @@ object JNAUtils {
       s"""} /* extern C */
          |""".stripMargin
 
-    val code = simState + header + initFoo + methods + footer
-    (code, className)
+    simState + header + initFoo + methods + footer
   }
 }
 
