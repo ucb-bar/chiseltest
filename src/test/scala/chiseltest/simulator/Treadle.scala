@@ -2,6 +2,7 @@
 
 package chiseltest.simulator
 
+import chiseltest.utils.CaptureStdout
 import org.scalatest.flatspec.AnyFlatSpec
 
 class TreadleBasicCompliance extends BasicCompliance(TreadleSimulator)
