@@ -32,7 +32,7 @@ private[chiseltest] object VpiVerilogHarnessGenerator {
     }
 
     codeBuffer.append(s"  always #`CLOCK_PERIOD $clockName = ~$clockName;\n")
-    codeBuffer.append(s"  reg [1023:0] $dumpFileVar = 0;\n")
+    codeBuffer.append(s"  reg [4095:0] $dumpFileVar = 0;\n")
     codeBuffer.append(s"  reg $dumpOnVar = 0;\n") // this is a hack to exclude the first half-cycle from the wave dump
 
     codeBuffer.append("\n  /*** DUT instantiation ***/\n")
