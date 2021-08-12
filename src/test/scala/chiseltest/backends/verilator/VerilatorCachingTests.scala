@@ -6,7 +6,7 @@ import chiseltest._
 import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.experimental.sanitizeFileName
 import chiseltest.internal.CachingAnnotation
-import chiseltest.simulator.CaptureStdout
+import chiseltest.utils.CaptureStdout
 import chiseltest.tests.StaticModule
 import firrtl.AnnotationSeq
 import org.scalatest.flatspec.AnyFlatSpec

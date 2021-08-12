@@ -2,6 +2,7 @@
 
 package chiseltest.simulator
 
+import chiseltest.utils.CaptureStdout
 import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
 
