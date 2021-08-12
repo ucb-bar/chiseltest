@@ -22,6 +22,18 @@ trait SimulatorContext {
   /** Change the value of an input port on the top-level module. */
   def poke(signal: String, value: BigInt): Unit
 
+  /** Returns the latest value of a memory location. Only supported by some simulators.
+    * @note the simulator has to take care of recomputing signals after any change
+    */
+  def peekMemory(signal: String, index: Long): BigInt = {
+    throw new NotImplementedError(s"${sim.name} does not support accessing memories!")
+  }
+
+  /** Change the value of memory location. Only supported by some simulators. */
+  def pokeMemory(signal: String, index: Long, value: BigInt): Unit = {
+    throw new NotImplementedError(s"${sim.name} does not support accessing memories!")
+  }
+
   /** Needs to be called after the context is no longer needed.
     * @note only after `finish` has been successfully returned is a potential waveform file guaranteed to exists on disk.
     * @note after `finish` no other functions besides `sim` or `getCoverage` may be called.
@@ -107,18 +119,19 @@ private[chiseltest] object Simulator {
   def getSimulator(annos: AnnotationSeq): Simulator = getSimulatorOptionalDefault(annos, None)
   private def getSimulatorOptionalDefault(annos: AnnotationSeq, default: Option[SimulatorAnnotation]): Simulator = {
     val simAnnos = annos.collect { case s: SimulatorAnnotation => s }.distinct
-    if (simAnnos.isEmpty) {
-      default match {
-        case Some(value) => value.getSimulator
-        case None        => throw new RuntimeException("No backend specified!")
-      }
-    }
     if (simAnnos.length > 1) {
       throw new RuntimeException(
         s"Multiple simulator backends were specified: ${simAnnos.map(_.getSimulator.name).mkString(", ")}"
       )
     }
-    simAnnos.head.getSimulator
+    if (simAnnos.isEmpty) {
+      default match {
+        case Some(value) => value.getSimulator
+        case None        => throw new RuntimeException("No backend specified!")
+      }
+    } else {
+      simAnnos.head.getSimulator
+    }
   }
 }
 
