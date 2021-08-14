@@ -14,6 +14,7 @@ class VerilatorStepCompliance extends StepCompliance(VerilatorSimulator, Require
 class VerilatorPeekPokeCompliance extends PeekPokeCompliance(VerilatorSimulator, RequiresVerilator)
 class VerilatorWaveformCompliance extends WaveformCompliance(VerilatorSimulator, RequiresVerilator)
 class VerilatorCoverageCompliance extends CoverageCompliance(VerilatorSimulator, RequiresVerilator)
+class VerilatorMemoryCompliance extends MemoryCompliance(VerilatorSimulator, RequiresVerilator)
 
 class VerilatorSpecificTests extends AnyFlatSpec {
   behavior of "verilator"

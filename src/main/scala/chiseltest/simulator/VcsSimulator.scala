@@ -90,7 +90,7 @@ private object VcsSimulator extends Simulator {
       waveformFlags(toplevel.name, state.annotations)
 
     // the binary we created communicates using our standard IPC interface
-    new IPCSimulatorContext(simCmd, targetDir, toplevel, VcsSimulator)
+    new IPCSimulatorContext(simCmd, toplevel, VcsSimulator)
   }
 
   private def waveformFlags(topName: String, annos: AnnotationSeq): Seq[String] = {
