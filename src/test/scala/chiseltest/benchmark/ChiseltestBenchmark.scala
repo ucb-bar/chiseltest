@@ -4,6 +4,7 @@ package chiseltest.benchmark
 
 import chiseltest._
 import chisel3._
+import chiseltest.internal.UseThreads
 import chiseltest.simulator.SimulatorAnnotation
 import chiseltest.simulator.benchmark.DecoupledGcd
 import firrtl.options.TargetDirAnnotation
@@ -55,7 +56,7 @@ object ChiseltestBenchmark extends App {
   val annos = Seq(targetDir, sim)
 
   val repetitions = 6
-  val numMax = 100
+  val numMax = 200
   val testValues = for {x <- 2 to numMax; y <- 2 to numMax} yield (BigInt(x), BigInt(y), computeGcd(x, y))
   val t = new Timer
   var cycles = 0L

@@ -41,6 +41,16 @@ case object CachingAnnotation extends TestOptionObject {
   )
 }
 
+case object UseThreads extends TestOptionObject {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "t-use-threads",
+      toAnnotationSeq = _ => Seq(UseThreads),
+      helpText = "enable fork and timescope constructs for your test"
+    )
+  )
+}
+
 object Context {
   class Instance(val backend: BackendInterface, val env: TestEnvInterface) {}
 
