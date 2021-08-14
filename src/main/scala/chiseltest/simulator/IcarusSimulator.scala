@@ -75,10 +75,10 @@ private object IcarusSimulator extends Simulator {
 
     // turn SystemVerilog into simulation binary
     val simCmd = compileSimulation(toplevel.name, targetDir, verilogHarness) ++
-      waveformFlags(toplevel.name, state.annotations)
+      waveformFlags(targetDir, toplevel.name, state.annotations)
 
     // the binary we created communicates using our standard IPC interface
-    new IPCSimulatorContext(simCmd, targetDir, toplevel, IcarusSimulator)
+    new IPCSimulatorContext(simCmd, toplevel, IcarusSimulator)
   }
 
   private def makeCompileDir(targetDir: os.Path): os.Path = {
@@ -105,22 +105,30 @@ private object IcarusSimulator extends Simulator {
     lib
   }
 
-  private def waveformFlags(topName: String, annos: AnnotationSeq): Seq[String] = {
+  private def waveformFlags(targetDir: os.Path, topName: String, annos: AnnotationSeq): Seq[String] = {
     val ext = Simulator.getWavformFormat(annos)
+    val dumpfile = targetDir.relativeTo(os.pwd) / s"$topName.$ext"
     if (ext.isEmpty) { Seq("-none") }
-    else { Seq("-" + ext, s"+dumpfile=$topName.$ext") }
+    else { Seq("-" + ext, s"+dumpfile=${dumpfile.toString()}") }
   }
 
   /** executes iverilog in order to generate a simulation binary */
   private def compileSimulation(topName: String, targetDir: os.Path, verilogHarness: String): Seq[String] = {
-    val flags = Seq(s"-m./icarus/$topName.vpi", "-g2005-sv", "-DCLOCK_PERIOD=1")
-    val cmd = List("iverilog") ++ flags ++ List("-o", "icarus/" + topName, s"$topName.sv", "icarus/" + verilogHarness)
-    val ret = os.proc(cmd).call(cwd = targetDir, check = false)
+    val relTargetDir = targetDir.relativeTo(os.pwd)
+    val vpiFile = relTargetDir / "icarus" / s"$topName.vpi"
+    val flags = Seq(s"-m${vpiFile.toString()}", "-g2005-sv", "-DCLOCK_PERIOD=1")
+    val simBinary = relTargetDir / "icarus" / topName
+    val cmd = List("iverilog") ++ flags ++ List(
+      "-o",
+      simBinary.toString(),
+      (relTargetDir / s"$topName.sv").toString(),
+      (relTargetDir / "icarus" / verilogHarness).toString()
+    )
+    val ret = os.proc(cmd).call(cwd = os.pwd, check = false)
 
-    val simBinary = targetDir / "icarus" / topName
-    val success = ret.exitCode == 0 && os.exists(simBinary)
+    val success = ret.exitCode == 0 && os.exists(os.pwd / simBinary)
     assert(success, s"iverilog command failed on circuit ${topName} in work dir $targetDir\n" + cmd.mkString(" "))
-    Seq("vvp", "icarus/" + topName)
+    Seq("vvp", simBinary.toString())
   }
 
   private def generateHarness(compileDir: os.Path, toplevel: TopmoduleInfo, moduleNames: Seq[String]): String = {

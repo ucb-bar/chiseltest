@@ -15,13 +15,11 @@ import scala.sys.process._
 
 /** This context works with a simulation binary that communicates through shared memory.
   * @param cmd command to launch the simulation binary
-  * @param targetDir simulation target directory
   * @param toplevel information about the interface exposed by the module at the top of the RTL hierarchy
   * @param sim simulator that generated the binary
   */
 private[chiseltest] class IPCSimulatorContext(
   cmd:              Seq[String],
-  targetDir:        os.Path,
   toplevel:         TopmoduleInfo,
   override val sim: Simulator)
     extends SimulatorContext
@@ -59,7 +57,8 @@ private[chiseltest] class IPCSimulatorContext(
   }
 
   //initialize simulator process
-  private[chiseltest] val process = startProcess(cmd, _logs, targetDir)
+  private val cwd = os.pwd
+  private[chiseltest] val process = startProcess(cmd, _logs, cwd)
 
   // Set up a Future to wait for (and signal) the test process exit.
   import ExecutionContext.Implicits.global
@@ -86,9 +85,9 @@ private[chiseltest] class IPCSimulatorContext(
     val in_channel_name = _logs.remove(0)
     val out_channel_name = _logs.remove(0)
     val cmd_channel_name = _logs.remove(0)
-    val in_channel = new Channel(targetDir, in_channel_name)
-    val out_channel = new Channel(targetDir, out_channel_name)
-    val cmd_channel = new Channel(targetDir, cmd_channel_name)
+    val in_channel = new Channel(cwd, in_channel_name)
+    val out_channel = new Channel(cwd, out_channel_name)
+    val cmd_channel = new Channel(cwd, cmd_channel_name)
 
     println(s"inChannelName: $in_channel_name")
     println(s"outChannelName: $out_channel_name")
@@ -380,8 +379,8 @@ private object TesterProcess {
   }
 }
 
-private class Channel(targetDir: os.Path, name: String) {
-  private lazy val file = new java.io.RandomAccessFile((targetDir / name).toIO, "rw")
+private class Channel(cwd: os.Path, name: String) {
+  private lazy val file = new java.io.RandomAccessFile((cwd / name).toIO, "rw")
   private lazy val channel = file.getChannel
   @volatile private lazy val buffer = {
     val size = channel.size
@@ -412,7 +411,7 @@ private class Channel(targetDir: os.Path, name: String) {
   def apply(idx: Int): Long = buffer.getLong(8 * idx + channel_data_offset_64bw)
   def close(): Unit = { file.close() }
   buffer.order(java.nio.ByteOrder.nativeOrder)
-  os.remove(targetDir / name)
+  os.remove(cwd / name)
 }
 
 private case class TestApplicationException(exitVal: Int, lastMessage: String) extends RuntimeException(lastMessage)

@@ -11,6 +11,8 @@ class IcarusStepCompliance extends StepCompliance(IcarusSimulator)
 class IcarusPeekPokeCompliance extends PeekPokeCompliance(IcarusSimulator)
 class IcarusWaveformCompliance extends WaveformCompliance(IcarusSimulator)
 class IcarusCoverageCompliance extends CoverageCompliance(IcarusSimulator)
+class IcarusMemoryCompliance extends MemoryCompliance(IcarusSimulator)
+
 
 class IcarusSpecificTests extends AnyFlatSpec {
   behavior of "iverilog"
