@@ -318,7 +318,8 @@ private object VerilatorPatchCoverageCpp {
     val callArgPrefix = if (withCtxPtr) "covcontextp, " else ""
     val cov = if (withCtxPtr) "covcontextp->" else "VerilatedCov::"
 
-    s"""#define CHISEL_VL_COVER_INSERT(${callArgPrefix}countp, ...) \\
+    s"""#ifndef CHISEL_VL_COVER_INSERT
+       |#define CHISEL_VL_COVER_INSERT(${callArgPrefix}countp, ...) \\
        |    VL_IF_COVER(${cov}_inserti(countp); ${cov}_insertf(__FILE__, __LINE__); \\
        |                chisel_insertp(${callArgPrefix}"hier", name(), __VA_ARGS__))
        |
@@ -339,7 +340,8 @@ private object VerilatorPatchCoverageCpp {
        |        // turn on per instance cover points
        |        "per_instance", "1");
        |}
-       |#endif
+       |#endif // VM_COVERAGE
+       |#endif // CHISEL_VL_COVER_INSERT
        |""".stripMargin
   }
 }
