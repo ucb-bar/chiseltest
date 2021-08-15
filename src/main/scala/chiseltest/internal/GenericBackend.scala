@@ -7,6 +7,7 @@ import chisel3._
 import chiseltest.coverage.{Coverage, TestCoverage}
 import chiseltest.simulator.SimulatorContext
 import firrtl.AnnotationSeq
+import logger.LazyLogging
 
 import scala.collection.mutable
 
@@ -18,15 +19,8 @@ class GenericBackend[T <: Module](
   tester:                 SimulatorContext,
   coverageAnnotations:    AnnotationSeq)
     extends BackendInstance[T]
-    with ThreadedBackend[T] {
-
-  //
-  // Debug utility functions
-  //
-  val verbose: Boolean = false // hard-coded debug flag
-  def debugLog(str: => String): Unit = {
-    if (verbose) println(str)
-  }
+    with ThreadedBackend[T]
+    with LazyLogging {
 
   protected def resolveName(signal: Data): String = { // TODO: unify w/ dataNames?
     dataNames.getOrElse(signal, signal.toString)
@@ -53,13 +47,13 @@ class GenericBackend[T <: Module](
     // TODO: check thread ordering
     val intValue = if (value) 1 else 0
     tester.poke(dataNames(signal), intValue)
-    debugLog(s"${resolveName(signal)} <- $intValue")
+    logger.trace(s"${resolveName(signal)} <- $intValue")
   }
 
   override def peekClock(signal: Clock): Boolean = {
     doPeek(signal, new Throwable)
     val a = tester.peek(dataNames(signal))
-    debugLog(s"${resolveName(signal)} -> $a")
+    logger.trace(s"${resolveName(signal)} -> $a")
     a > 0
   }
 
@@ -69,7 +63,7 @@ class GenericBackend[T <: Module](
       idleCycles.clear()
     }
     tester.poke(dataNames(signal), value)
-    debugLog(s"${resolveName(signal)} <- $value")
+    logger.trace(s"${resolveName(signal)} <- $value")
   }
 
   override def peekBits(signal: Data, stale: Boolean): BigInt = {
@@ -77,7 +71,7 @@ class GenericBackend[T <: Module](
 
     doPeek(signal, new Throwable)
     val a = tester.peek(dataNames(signal))
-    debugLog(s"${resolveName(signal)} -> $a")
+    logger.trace(s"${resolveName(signal)} -> $a")
     a
   }
 
@@ -90,7 +84,7 @@ class GenericBackend[T <: Module](
   ): Unit = {
     require(!stale, "Stale peek not yet implemented")
 
-    debugLog(s"${resolveName(signal)} ?> $value")
+    logger.trace(s"${resolveName(signal)} ?> $value")
     Context().env.testerExpect(value, peekBits(signal, stale), resolveName(signal), message, decode)
   }
 
@@ -117,11 +111,11 @@ class GenericBackend[T <: Module](
             idleCycles.clear()
           }
           tester.poke(dataNames(data), value)
-          debugLog(s"${resolveName(data)} <- (revert) $value")
+          logger.trace(s"${resolveName(data)} <- (revert) $value")
         case None =>
           idleCycles.clear()
           tester.poke(dataNames(data), 0) // TODO: randomize or 4-state sim
-          debugLog(s"${resolveName(data)} <- (revert) DC")
+          logger.trace(s"${resolveName(data)} <- (revert) DC")
       }
     }
   }
@@ -166,7 +160,7 @@ class GenericBackend[T <: Module](
       while (!mainThread.done) { // iterate timesteps
         clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
 
-        debugLog(s"clock step")
+        logger.trace(s"clock step")
 
         // TODO: allow dependent clocks to step based on test stimulus generator
         // TODO: remove multiple invocations of getClock
