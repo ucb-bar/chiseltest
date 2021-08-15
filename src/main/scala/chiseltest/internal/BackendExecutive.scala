@@ -13,7 +13,7 @@ import firrtl.transforms.{CheckCombLoops, CombinationalPath}
 
 object BackendExecutive {
 
-  def start[T <: Module](dutGen: () => T, testersAnnotationSeq: AnnotationSeq): ThreadedBackend[T] = {
+  def start[T <: Module](dutGen: () => T, testersAnnotationSeq: AnnotationSeq): BackendInstance[T] = {
 
     // elaborate the design
     val (highFirrtl, dut: T) = Compiler.elaborate[T](dutGen, testersAnnotationSeq)

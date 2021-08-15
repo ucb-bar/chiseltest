@@ -5,7 +5,7 @@ import chisel3.Module
 
 /** Backend associated with a particular circuit, and can run tests
   */
-trait BackendInstance[T <: Module] {
+trait BackendInstance[T <: Module] extends BackendInterface {
 
   /** Runs of tests are wrapped in this, for any special setup/teardown that needs to happen.
     * Takes the test function, which takes the module used as the testing interface.
