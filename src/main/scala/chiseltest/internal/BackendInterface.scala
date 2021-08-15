@@ -4,7 +4,6 @@ package chiseltest.internal
 
 import chiseltest.Region
 import chisel3._
-import firrtl.AnnotationSeq
 
 import scala.collection.mutable
 
@@ -109,19 +108,4 @@ trait BackendInterface {
   def getVar(key: Any): Option[Any] = {
     testMap.get(key)
   }
-}
-
-/** Backend associated with a particular circuit, and can run tests
-  */
-trait BackendInstance[T <: Module] extends BackendInterface {
-
-  /** Runs of tests are wrapped in this, for any special setup/teardown that needs to happen.
-    * Takes the test function, which takes the module used as the testing interface.
-    * TesterContext setup is done externally.
-    *
-    * @return coverage annotations
-    *
-    * Internal API
-    */
-  def run(testFn: T => Unit): AnnotationSeq
 }
