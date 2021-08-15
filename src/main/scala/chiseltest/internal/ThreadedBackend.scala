@@ -12,6 +12,26 @@ import logger.LazyLogging
 
 import scala.collection.mutable
 
+trait AbstractTesterThread
+
+class TesterThreadList(protected val elts: Seq[AbstractTesterThread]) {
+  def toSeq(): Seq[AbstractTesterThread] = elts
+
+  def join() {
+    Context().backend.doJoin(elts, None)
+  }
+
+  def joinAndStep(clock: Clock) {
+    Context().backend.doJoin(elts, Some(clock))
+  }
+
+  def ++(others: TesterThreadList): TesterThreadList = {
+    new TesterThreadList(elts ++ others.elts)
+  }
+
+  val fork: ForkBuilder = new ForkBuilder(None, None, elts)
+}
+
 case class ForkBuilder(name: Option[String], region: Option[Region], threads: Seq[AbstractTesterThread]) {
   def apply(runnable: => Unit): TesterThreadList = {
     new TesterThreadList(threads ++ Seq(Context().backend.doFork(() => runnable, name, region)))
