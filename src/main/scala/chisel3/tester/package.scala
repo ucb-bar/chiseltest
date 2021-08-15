@@ -51,9 +51,6 @@ package object tester {
 
   // Subpackages
   object experimental {
-    type TesterOptions = chiseltest.experimental.TesterOptions
-    val TesterOptions = chiseltest.experimental.TesterOptions
-
     def sanitizeFileName(name: String): String = chiseltest.experimental.sanitizeFileName(name)
 
     object TestOptionBuilder {

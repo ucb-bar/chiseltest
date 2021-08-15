@@ -15,18 +15,6 @@ import scala.util.DynamicVariable
 // Internal common set of options to be understood by all backends
 //TODO: Different backends will have different ways of expressing things like WriteVCD,
 //TODO: there should be a formal mapping from testers2 options form to backend specific forms
-@deprecated("Use annotation based options instead. See: .withAnnotations", "chisel-testers2 20190604")
-case class TesterOptions(
-  name:     String,
-  writeVcd: Boolean) {
-  def toAnnotations: AnnotationSeq = {
-    Seq(
-      Some(TopNameAnnotation(name)),
-      if (writeVcd) { Some(WriteVcdAnnotation) }
-      else None
-    ).flatten
-  }
-}
 
 trait TestOption extends Unserializable { this: Annotation => }
 trait TestOptionObject extends NoTargetAnnotation with HasShellOptions with TestOption

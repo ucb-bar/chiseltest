@@ -11,8 +11,6 @@ package chiseltest
   * You have been warned.
   */
 package object experimental {
-  type TesterOptions = chiseltest.internal.TesterOptions
-  val TesterOptions = chiseltest.internal.TesterOptions // expose this internal object, whose "API" is unstable
 
   /** Simple file name sanitizer
     * @param name file name to be sanitized
