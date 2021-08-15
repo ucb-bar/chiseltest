@@ -5,10 +5,21 @@ package chiseltest.internal
 import chisel3.Module
 import chiseltest.TestResult
 import firrtl.annotations.NoTargetAnnotation
+import firrtl.options.ShellOption
 
 import scala.util.DynamicVariable
 
 case object CachingAnnotation extends NoTargetAnnotation
+
+case object UseSingleThreadingAnnotation extends NoTargetAnnotation {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "t-single-threads",
+      toAnnotationSeq = _ => Seq(UseSingleThreadingAnnotation),
+      helpText = "disable fork/join and timescope API for your test."
+    )
+  )
+}
 
 object Context {
   class Instance(val backend: BackendInterface, val env: TestEnvInterface) {}

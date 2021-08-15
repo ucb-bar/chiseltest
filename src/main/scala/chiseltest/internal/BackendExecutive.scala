@@ -24,11 +24,6 @@ object BackendExecutive {
     // compile to low firrtl
     val lowFirrtl = Compiler.toLowFirrtl(highFirrtl)
 
-    // extract combinatorial loops from the LoFirrtl circuit
-    val pathAnnotations = (new CheckCombLoops).execute(lowFirrtl).annotations
-    val paths = pathAnnotations.collect { case c: CombinationalPath => c }
-    val pathsAsData = combinationalPathsToData(dut, paths, portNames, componentToName)
-
     // extract coverage information
     val coverageAnnotations = Coverage.collectCoverageAnnotations(lowFirrtl.annotations)
 
@@ -36,7 +31,16 @@ object BackendExecutive {
     val sim = Simulator.getSimulator(testersAnnotationSeq)
     val tester = sim.createContext(lowFirrtl)
 
-    new ThreadedBackend(dut, portNames, pathsAsData, tester, coverageAnnotations)
+    val useThreading = !testersAnnotationSeq.contains(UseSingleThreadingAnnotation)
+
+    if (useThreading) {
+      // extract combinatorial loops from the LoFirrtl circuit
+      val pathAnnotations = (new CheckCombLoops).execute(lowFirrtl).annotations
+      val paths = pathAnnotations.collect { case c: CombinationalPath => c }
+      val pathsAsData = combinationalPathsToData(dut, paths, portNames, componentToName)
+      new ThreadedBackend(dut, portNames, pathsAsData, tester, coverageAnnotations)
+    } else
+      new SingleThreadBackend[T](dut, portNames, tester, coverageAnnotations)
   }
 
   private def componentToName(component: ReferenceTarget): String = component.name

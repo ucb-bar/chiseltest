@@ -9,6 +9,7 @@ import chiseltest.{Region, TemporalParadox, ThreadOrderDependentException, Timeo
 import chiseltest.coverage.TestCoverage
 import chiseltest.simulator.SimulatorContext
 import firrtl.AnnotationSeq
+import firrtl.annotations.NoTargetAnnotation
 
 import scala.collection.mutable
 
