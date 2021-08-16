@@ -7,6 +7,7 @@ import chisel3.experimental.IntParam
 import chisel3.util._
 import chiseltest._
 import chiseltest.experimental.TestOptionBuilder._
+import chiseltest.simulator.RequiresVerilator
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -96,7 +97,7 @@ class VerilatorBackendRegression extends AnyFlatSpec with ChiselScalatestTester 
 
   val dataWidth = 32
 
-  it should "work" in {
+  it should "work" taggedAs RequiresVerilator in {
     test(new Doohickey).withAnnotations(annos) { dut =>
       dut.reset.poke(true.B)
       dut.clock.step(3)
