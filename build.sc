@@ -4,12 +4,14 @@ import mill._
 import mill.scalalib._
 import mill.scalalib.scalafmt._
 import mill.scalalib.publish._
+import coursier.maven.MavenRepository
 
 object chiseltest extends mill.Cross[chiseltestCrossModule]("2.12.13")
 
 val defaultVersions = Map(
   "chisel3" -> "3.5-SNAPSHOT",
-  "treadle" -> "1.5-SNAPSHOT"
+  "treadle" -> "1.5-SNAPSHOT",
+  "maltese-smt" -> "0.5-SNAPSHOT",
 )
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
@@ -18,6 +20,12 @@ def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
 }
 
 class chiseltestCrossModule(val crossScalaVersion: String) extends CrossSbtModule with PublishModule with ScalafmtModule {
+  override def repositoriesTask = T.task {
+    super.repositoriesTask() ++ Seq(
+      MavenRepository("https://oss.sonatype.org/content/repositories/snapshots")
+    )
+  }
+
   def chisel3Module: Option[PublishModule] = None
 
   def chisel3IvyDeps = if (chisel3Module.isEmpty) Agg(
@@ -28,6 +36,12 @@ class chiseltestCrossModule(val crossScalaVersion: String) extends CrossSbtModul
 
   def treadleIvyDeps = if (treadleModule.isEmpty) Agg(
     getVersion("treadle")
+  ) else Agg.empty[Dep]
+
+  def malteseModule: Option[PublishModule] = None
+
+  def malteseIvyDeps = if (treadleModule.isEmpty) Agg(
+    getVersion("maltese-smt")
   ) else Agg.empty[Dep]
 
   override def millSourcePath = super.millSourcePath / os.up
@@ -49,15 +63,14 @@ class chiseltestCrossModule(val crossScalaVersion: String) extends CrossSbtModul
     super.javacOptions() ++ Seq("-source", "1.8", "-target", "1.8")
   }
 
-  override def moduleDeps = super.moduleDeps ++ chisel3Module ++ treadleModule
+  override def moduleDeps = super.moduleDeps ++ chisel3Module ++ treadleModule ++ malteseModule
 
   override def ivyDeps = T {
     Agg(
       ivy"org.scalatest::scalatest:3.2.0",
       ivy"com.lihaoyi::utest:0.7.9",
       ivy"net.java.dev.jna:jna:5.8.0",
-      ivy"edu.berkeley.cs::maltese-smt:0.5-SNAPSHOT",
-    ) ++ chisel3IvyDeps ++ treadleIvyDeps
+    ) ++ chisel3IvyDeps ++ treadleIvyDeps ++ malteseIvyDeps
   }
 
   object test extends Tests with ScalafmtModule {
