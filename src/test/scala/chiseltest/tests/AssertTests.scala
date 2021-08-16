@@ -19,7 +19,7 @@ class AssertTestBench() extends Module {
 class AssertTests extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Assert"
 
-  val annotations = Seq(VerilatorBackendAnnotation, WriteVcdAnnotation)
+  val annotations = Seq(VerilatorBackendAnnotation)
 
   it should "not assert" taggedAs RequiresVerilator in {
     test(
@@ -27,6 +27,24 @@ class AssertTests extends AnyFlatSpec with ChiselScalatestTester {
     ).withAnnotations(annotations) { dut =>
       dut.io.enable.poke(false.B)
       dut.clock.step(1)
+    }
+  }
+
+  it should "assert (with treadle)" in {
+    assertThrows[ChiselAssertionError] {
+      test(new AssertTestBench()) { dut =>
+        dut.io.enable.poke(true.B)
+        dut.clock.step(1)
+      }
+    }
+  }
+
+  it should "assert (with verilator)" taggedAs RequiresVerilator in {
+    assertThrows[ChiselAssertionError] {
+      test(new AssertTestBench()).withAnnotations(annotations) { dut =>
+        dut.io.enable.poke(true.B)
+        dut.clock.step(1)
+      }
     }
   }
 }

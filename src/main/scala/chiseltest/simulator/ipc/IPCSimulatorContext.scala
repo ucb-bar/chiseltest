@@ -339,17 +339,22 @@ private[chiseltest] class IPCSimulatorContext(
   }
 
   private def defaultClock = toplevel.clocks.headOption
-  override def step(n: Int): Unit = {
+  override def step(n: Int): StepResult = {
     defaultClock match {
       case Some(value) =>
       case None        => throw NoClockException(toplevel.name)
     }
+    var delta: Int = 0
     try {
       update()
-      (0 until n).foreach(_ => takeStep())
+      (0 until n).foreach { _ =>
+        delta += 1
+        takeStep()
+      }
+      StepOk
     } catch {
       case TestApplicationException(exit, msg) =>
-      // TODO: throw exception
+        StepInterrupted(delta, exit != 0, List())
     }
   }
 

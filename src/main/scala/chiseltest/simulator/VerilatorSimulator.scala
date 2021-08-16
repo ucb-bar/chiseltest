@@ -176,6 +176,8 @@ private object VerilatorSimulator extends Simulator {
 
   private def DefaultCFlags(topName: String) = List(
     "-O1",
+    "-DVL_USER_STOP",
+    "-DVL_USER_FATAL",
     "-DVL_USER_FINISH", // this is required because we ant to overwrite the vl_finish function!
     s"-DTOP_TYPE=V$topName",
     s"-include V$topName.h"

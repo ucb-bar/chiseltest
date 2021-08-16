@@ -35,7 +35,7 @@ private[chiseltest] class JNASimulatorContext(
     isStale = false
   }
 
-  private def takeStep(): Unit = {
+  private def takeStep(): Long = {
     assert(isRunning)
     so.step()
   }
@@ -80,14 +80,23 @@ private[chiseltest] class JNASimulatorContext(
   }
 
   private def defaultClock = toplevel.clocks.headOption
-  override def step(n: Int): Unit = {
+  override def step(n: Int): StepResult = {
     assert(isRunning)
     defaultClock match {
       case Some(_) =>
       case None    => throw NoClockException(toplevel.name)
     }
     update()
-    (0 until n).foreach(_ => takeStep())
+    var delta: Int = 0
+    (0 until n).foreach { _ =>
+      delta += 1
+      val r = takeStep()
+      if (r != 0) {
+        val isFailure = r != 1
+        return StepInterrupted(delta, isFailure, List())
+      }
+    }
+    StepOk
   }
 
   private var isRunning = true

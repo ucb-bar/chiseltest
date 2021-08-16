@@ -11,6 +11,7 @@ class TreadlePeekPokeCompliance extends PeekPokeCompliance(TreadleSimulator)
 class TreadleWaveformCompliance extends WaveformCompliance(TreadleSimulator)
 class TreadleCoverageCompliance extends CoverageCompliance(TreadleSimulator)
 class TreadleMemoryCompliance extends MemoryCompliance(TreadleSimulator)
+class TreadleStopAssertAssumeCompliance extends StopAssertAssumeCompliance(TreadleSimulator)
 
 class TreadleSpecificTests extends AnyFlatSpec {
   behavior of "treadle"

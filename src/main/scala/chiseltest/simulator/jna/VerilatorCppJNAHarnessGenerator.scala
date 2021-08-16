@@ -35,7 +35,7 @@ struct sim_state {
     // std::cout << "Allocating! " << ((long long) dut) << std::endl;
   }
 
-  inline void step() { _step(tfp, dut, main_time); }
+  inline int64_t step() { return _step(tfp, dut, main_time); }
   inline void update() { dut->eval(); }
   inline void finish() {
     dut->eval();
@@ -168,7 +168,7 @@ static sim_state* create_sim_state() {
       else ""
 
     val verilatorRunFlushCallback = if (majorVersion >= 4 && minorVersion >= 38) {
-      "Verilated::runFlushCallbacks();\n  Verilated::runExitCallbacks();"
+      "Verilated::runFlushCallbacks();" // Verilated::runExitCallbacks();
     } else {
       "Verilated::flushCall();"
     }
@@ -199,10 +199,28 @@ static sim_state* create_sim_state() {
                          |
                          |// Override Verilator definition so first $$finish ends simulation
                          |// Note: VL_USER_FINISH needs to be defined when compiling Verilator code
+                         |static bool encounteredFinish = false;
                          |void vl_finish(const char* filename, int linenum, const char* hier) {
+                         |  // std::cout << "finish! (" << filename << ", " << linenum << ", " << hier << ")" << std::endl;
                          |  $verilatorRunFlushCallback
-                         |  exit(0);
+                         |  encounteredFinish = true;
                          |}
+                         |
+                         |
+                         |void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg) {
+                         |  std::cerr << "unexpected call to vl_fatal, please file an issue" << std::endl;
+                         |  std::cerr << "fatal! (" << filename << ", " << linenum << ", " << hier << ")" << std::endl;
+                         |  $verilatorRunFlushCallback
+                         |}
+                         |
+                         |
+                         |static bool encounteredStop = false;
+                         |void vl_stop(const char* filename, int linenum, const char* hier) {
+                         |  // std::cout << "stop! (" << filename << ", " << linenum << ", " << hier << ")" << std::endl;
+                         |  $verilatorRunFlushCallback
+                         |  encounteredStop = true;
+                         |}
+                         |
                          |
                          |// required for asserts (until Verilator 4.200)
                          |double sc_time_stamp () { return 0; }
@@ -220,7 +238,7 @@ static sim_state* create_sim_state() {
                          |#endif
                          |}
                          |
-                         |static void _step(VERILATED_C* tfp, TOP_CLASS* top, vluint64_t& main_time) {
+                         |static int64_t _step(VERILATED_C* tfp, TOP_CLASS* top, vluint64_t& main_time) {
                          |    $clockLow
                          |    top->eval();
                          |#if VM_TRACE
@@ -233,6 +251,17 @@ static sim_state* create_sim_state() {
                          |    if (tfp) tfp->dump(main_time);
                          |#endif
                          |    main_time++;
+                         |    if(encounteredStop) {
+                         |      // vl_stop is called by verilator when an assertion fails or when the fatal command is executed
+                         |      encounteredStop = false;
+                         |      encounteredFinish = false;
+                         |      return 2;
+                         |    } else if(encounteredFinish) {
+                         |      // vl_finish is called by verilator when a finish command is executed (stop(0))
+                         |      encounteredFinish = false;
+                         |      return 1;
+                         |    }
+                         |    return 0;
                          |}
                          |
                          |static void _finish(VERILATED_C* tfp, TOP_CLASS* top) {
@@ -243,6 +272,7 @@ static sim_state* create_sim_state() {
                          |#if VM_COVERAGE
                          |  VerilatedCov::write("$targetDir/coverage.dat");
                          |#endif
+                         |  top->final();
                          |  // TODO: re-enable!
                          |  // delete top;
                          |}
