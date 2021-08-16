@@ -5,13 +5,19 @@ package chiseltest
 import chiseltest.internal._
 import chiseltest.experimental.{sanitizeFileName, ChiselTestShell}
 import chisel3.Module
+import chiseltest.internal.TestEnvInterface.addDefaultTargetDir
 import firrtl.AnnotationSeq
 import org.scalatest._
 import org.scalatest.exceptions.TestFailedException
 
 import scala.util.DynamicVariable
 
-trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvInterface { this: TestSuite =>
+trait HasTestName { def getTestName: String }
+
+trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvInterface with HasTestName {
+  this: TestSuite =>
+
+  override def getTestName: String = sanitizeFileName(scalaTestContext.value.get.name)
 
   class TestBuilder[T <: Module](
     val dutGen:        () => T,

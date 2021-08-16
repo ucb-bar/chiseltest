@@ -18,22 +18,6 @@ trait TestEnvInterface {
 
   def topFileName: Option[String]
 
-  /** Will add a TargetDirAnnotation with defaultDir with "test_run_dir" path prefix to the annotations
-    * if there is not a TargetDirAnnotation already present
-    *
-    * @param defaultDir     a default directory
-    * @param annotationSeq  annotations to add it to, unless one is already there
-    * @return
-    */
-  def addDefaultTargetDir(defaultDir: String, annotationSeq: AnnotationSeq): AnnotationSeq = {
-    if (annotationSeq.exists { x => x.isInstanceOf[TargetDirAnnotation] }) {
-      annotationSeq
-    } else {
-      val target = TargetDirAnnotation("test_run_dir" + File.separator + defaultDir)
-      AnnotationSeq(annotationSeq ++ Seq(target))
-    }
-  }
-
   /** Logs a tester failure at this point.
     * Failures queued until the next checkpoint.
     */
@@ -113,6 +97,25 @@ trait TestEnvInterface {
     // TODO: report multiple exceptions simultaneously
     for (failure <- batchedFailures) {
       throw failure
+    }
+  }
+}
+
+private[chiseltest] object TestEnvInterface {
+
+  /** Will add a TargetDirAnnotation with defaultDir with "test_run_dir" path prefix to the annotations
+    * if there is not a TargetDirAnnotation already present
+    *
+    * @param defaultDir     a default directory
+    * @param annotationSeq  annotations to add it to, unless one is already there
+    * @return
+    */
+  def addDefaultTargetDir(defaultDir: String, annotationSeq: AnnotationSeq): AnnotationSeq = {
+    if (annotationSeq.exists { x => x.isInstanceOf[TargetDirAnnotation] }) {
+      annotationSeq
+    } else {
+      val target = TargetDirAnnotation("test_run_dir" + File.separator + defaultDir)
+      AnnotationSeq(annotationSeq ++ Seq(target))
     }
   }
 }

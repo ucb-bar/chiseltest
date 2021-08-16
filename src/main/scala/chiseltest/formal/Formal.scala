@@ -3,12 +3,12 @@
 package chiseltest.formal
 
 import chisel3.Module
-import chiseltest.ChiselScalatestTester
-import chiseltest.experimental.sanitizeFileName
-import chiseltest.formal.backends.{FormalEngineAnnotation, Z3EngineAnnotation}
+import chiseltest.HasTestName
+import chiseltest.formal.backends.FormalEngineAnnotation
+import chiseltest.internal.TestEnvInterface
 import chiseltest.simulator.{Compiler, WriteVcdAnnotation}
 import firrtl.{AnnotationSeq, CircuitState}
-import firrtl.annotations.{Annotation, NoTargetAnnotation}
+import firrtl.annotations.NoTargetAnnotation
 import firrtl.transforms.formal.DontAssertSubmoduleAssumptionsAnnotation
 
 sealed trait FormalOp extends NoTargetAnnotation
@@ -28,12 +28,11 @@ private[chiseltest] object FailedBoundedCheckException {
 }
 
 /** Adds the `verify` command for formal checks to a ChiselScalatestTester */
-trait Formal { this: ChiselScalatestTester =>
+trait Formal { this: HasTestName =>
   def verify[T <: Module](dutGen: => T, annos: AnnotationSeq): Unit = {
-    val withTargetDir = addDefaultTargetDir(getTestName, annos)
+    val withTargetDir = TestEnvInterface.addDefaultTargetDir(getTestName, annos)
     Formal.verify(dutGen, withTargetDir)
   }
-  private def getTestName: String = sanitizeFileName(scalaTestContext.value.get.name)
 }
 
 private object Formal {
