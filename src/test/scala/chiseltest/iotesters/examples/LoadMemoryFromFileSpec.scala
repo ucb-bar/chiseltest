@@ -21,7 +21,7 @@ class UsesMem(memoryDepth: Int, memoryType: Bits) extends Module {
 
   val memory = Mem(memoryDepth, memoryType)
 
-  loadMemoryFromFileInline(memory, "mem1.txt")
+  loadMemoryFromFileInline(memory, "src/test/resources/iotesters/mem1.txt")
 
   io.value := memory(io.address)
 
@@ -39,7 +39,7 @@ class UsesMemLow(memoryDepth: Int, memoryType: Data) extends Module {
 
   val memory = Mem(memoryDepth, memoryType)
 
-  loadMemoryFromFileInline(memory, "mem2.txt")
+  loadMemoryFromFileInline(memory, "src/test/resources/iotesters/mem2.txt")
 
   io.value := memory(io.address)
 }
@@ -58,12 +58,6 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
   "Users can specify a source file to load memory from" in {
 
     val targetDirName = "test_run_dir/load_mem_test"
-    FileUtils.makeDirectory(targetDirName)
-
-    val path1 = Paths.get(targetDirName + "/mem1.txt")
-    val path2 = Paths.get(targetDirName + "/mem2.txt")
-    Files.copy(getClass.getResourceAsStream("/iotesters/mem1.txt"), path1, REPLACE_EXISTING)
-    Files.copy(getClass.getResourceAsStream("/iotesters/mem2.txt"), path2, REPLACE_EXISTING)
 
     Driver.execute(
       args = Array("--backend-name", "verilator", "--target-dir", targetDirName, "--top-name", "load_mem_test"),
