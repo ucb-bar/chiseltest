@@ -1,16 +1,10 @@
-import chisel3._
-import chiseltest._
-import chiseltest.simulator.VerilatorBackendAnnotation
-import chiseltest.simulator.VerilatorFlags
-import chiseltest.simulator.VerilatorCFlags
-import chiseltest.WriteVcdAnnotation
-import org.scalatest._
+package chiseltest.tests
+
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 import chisel3._
 import chiseltest._
 import chiseltest.experimental.TestOptionBuilder._
-import org.scalatest._
+import chiseltest.simulator.RequiresVerilator
 
 class AssertBundle() extends Bundle {
   val enable = Input(Bool())
@@ -23,15 +17,16 @@ class AssertTestBench() extends Module {
   io <> DontCare
 }
 
-class AssertTests extends AnyFlatSpec with ChiselScalatestTester with Matchers {
+class AssertTests extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Assert"
 
   val annotations = Seq(VerilatorBackendAnnotation, WriteVcdAnnotation)
 
-  it should "not assert" in {
+  it should "not assert" taggedAs RequiresVerilator in {
     test(
       new AssertTestBench()
     ).withAnnotations(annotations) { dut =>
+      dut.io.enable.poke(false.B)
       dut.clock.step(1)
     }
   }

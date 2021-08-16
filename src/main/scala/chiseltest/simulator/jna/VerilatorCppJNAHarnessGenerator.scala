@@ -204,6 +204,9 @@ static sim_state* create_sim_state() {
                          |  exit(0);
                          |}
                          |
+                         |// required for asserts (until Verilator 4.200)
+                         |double sc_time_stamp () { return 0; }
+                         |
                          |static void _startCoverageAndDump(VERILATED_C** tfp, const std::string& dumpfile, TOP_CLASS* top) {
                          |$coverageInit
                          |#if VM_TRACE || VM_COVERAGE
