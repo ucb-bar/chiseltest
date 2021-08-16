@@ -1,0 +1,75 @@
+// SPDX-License-Identifier: Apache-2.0
+
+package chiseltest.formal
+
+import chisel3.Module
+import chiseltest.HasTestName
+import chiseltest.formal.backends.FormalEngineAnnotation
+import chiseltest.internal.TestEnvInterface
+import chiseltest.simulator.{Compiler, WriteVcdAnnotation}
+import firrtl.{AnnotationSeq, CircuitState}
+import firrtl.annotations.NoTargetAnnotation
+import firrtl.transforms.formal.DontAssertSubmoduleAssumptionsAnnotation
+
+sealed trait FormalOp extends NoTargetAnnotation
+case class BoundedCheck(kMax: Int = -1) extends FormalOp
+
+/** Specifies how many cycles the circuit should be reset for. */
+case class ResetOption(cycles: Int = 1) extends NoTargetAnnotation {
+  require(cycles >= 0, "The number of cycles must not be negative!")
+}
+
+class FailedBoundedCheckException(val message: String, val failAt: Int) extends Exception(message)
+private[chiseltest] object FailedBoundedCheckException {
+  def apply(module: String, failAt: Int): FailedBoundedCheckException = {
+    val msg = s"[$module] found an assertion violation $failAt steps after reset!"
+    new FailedBoundedCheckException(msg, failAt)
+  }
+}
+
+/** Adds the `verify` command for formal checks to a ChiselScalatestTester */
+trait Formal { this: HasTestName =>
+  def verify[T <: Module](dutGen: => T, annos: AnnotationSeq): Unit = {
+    val withTargetDir = TestEnvInterface.addDefaultTargetDir(getTestName, annos)
+    Formal.verify(dutGen, withTargetDir)
+  }
+}
+
+private object Formal {
+  def verify[T <: Module](dutGen: => T, annos: AnnotationSeq): Unit = {
+    val ops = getOps(annos)
+    assert(ops.nonEmpty, "No verification operation was specified!")
+    val withDefaults = addDefaults(annos)
+
+    // elaborate the design and compile to low firrtl
+    val (highFirrtl, _) = Compiler.elaborate(() => dutGen, withDefaults)
+    val lowFirrtl = Compiler.toLowFirrtl(highFirrtl, Seq(DontAssertSubmoduleAssumptionsAnnotation))
+
+    // add reset assumptions
+    val withReset = AddResetAssumptionPass.execute(lowFirrtl)
+
+    // execute operations
+    val resetLength = AddResetAssumptionPass.getResetLength(withDefaults)
+    ops.foreach(executeOp(withReset, resetLength, _))
+  }
+
+  val DefaultEngine: FormalEngineAnnotation = Z3EngineAnnotation
+  def addDefaults(annos: AnnotationSeq): AnnotationSeq = {
+    Seq(addDefaultEngine(_), addWriteVcd(_)).foldLeft(annos)((old, f) => f(old))
+  }
+  def addDefaultEngine(annos: AnnotationSeq): AnnotationSeq = {
+    if (annos.exists(_.isInstanceOf[FormalEngineAnnotation])) { annos }
+    else { DefaultEngine +: annos }
+  }
+  def addWriteVcd(annos: AnnotationSeq): AnnotationSeq = {
+    if (annos.contains(WriteVcdAnnotation)) { annos }
+    else { WriteVcdAnnotation +: annos }
+  }
+  def getOps(annos: AnnotationSeq): Seq[FormalOp] = {
+    annos.collect { case a: FormalOp => a }.distinct
+  }
+  def executeOp(state: CircuitState, resetLength: Int, op: FormalOp): Unit = op match {
+    case BoundedCheck(kMax) =>
+      backends.Maltese.bmc(state.circuit, state.annotations, kMax = kMax, resetLength = resetLength)
+  }
+}

@@ -3,8 +3,7 @@
 package chiseltest.simulator
 
 import chiseltest.utils.FlatSpecWithTargetDir
-import firrtl.{AnnotationSeq, CircuitState}
-import firrtl.options.TargetDirAnnotation
+import firrtl._
 import org.scalatest.Tag
 
 /** Base class for all simulator compliance tests. */
@@ -17,15 +16,8 @@ abstract class ComplianceTest(sim: Simulator, protected val tag: Tag) extends Fl
   }
 
   def load(src: String, annos: AnnotationSeq = List()): SimulatorContext = {
-    val withTargetDir: AnnotationSeq =
-      if (annos.exists(_.isInstanceOf[TargetDirAnnotation])) {
-        annos
-      } else {
-        targetDirAnno +: annos
-      }
-    sim.createContext(loadFirrtl(src, withTargetDir))
+    sim.createContext(loadFirrtl(src, withTargetDir(annos)))
   }
-
 }
 
 // a hack for when we do not actually want to tag the tests

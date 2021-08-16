@@ -38,7 +38,7 @@ jobs:
         with:
           java-version: ${{ matrix.jvm }}
       - name: Test
-        run: sbt ++${{ matrix.scala }} "testOnly -- -l RequiresVcs -l RequiresVerilator"
+        run: sbt ++${{ matrix.scala }} "testOnly -- -l RequiresVcs -l RequiresVerilator -l Formal"
 
   verilator-mac:
     name: verilator regression on mac
@@ -103,6 +103,36 @@ jobs:
       - name: Test
         run: sbt "testOnly chiseltest.backends.verilator.** ; testOnly -- -n RequiresVerilator"
 
+  formal:
+    name: formal verification tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, macos-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Z3 and CVC4 for Ubuntu
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y z3 cvc4
+          z3 --version
+          cvc4 --version
+      - name: Install Z3 and CVC4 for MacOS
+        if: runner.os == 'macOS'
+        run: |
+          brew install z3
+          brew tap cvc4/cvc4
+          brew install cvc4/cvc4/cvc4
+          z3 --version
+          cvc4 --version
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11
+      - name: Test
+        run: sbt "testOnly -- -n Formal"
+
   doc:
     name: Documentation and Formatting
     runs-on: ubuntu-20.04
@@ -123,7 +153,7 @@ jobs:
   # When adding new jobs, please add them to `needs` below
   all_tests_passed:
     name: "all tests passed"
-    needs: [test, doc, verilator, verilator-mac]
+    needs: [test, doc, verilator, verilator-mac, formal]
     runs-on: ubuntu-latest
     steps:
       - run: echo Success!
