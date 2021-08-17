@@ -4,7 +4,7 @@ package chiseltest.simulator
 
 import chisel3.RawModule
 import chisel3.stage._
-import chisel3.stage.phases.{Convert, MaybeAspectPhase}
+import chisel3.stage.phases._
 import firrtl.{AnnotationSeq, EmittedCircuitAnnotation}
 import firrtl.annotations.{Annotation, DeletedAnnotation}
 import firrtl.options.TargetDirAnnotation
@@ -13,16 +13,17 @@ import logger.{LogLevelAnnotation, Logger}
 
 private[chiseltest] object Compiler {
 
+  private val elaboratePhase = new Elaborate
   def elaborate[M <: RawModule](gen: () => M, annotationSeq: AnnotationSeq): (firrtl.CircuitState, M) = {
     // run Builder.build(Module(gen()))
     val genAnno = ChiselGeneratorAnnotation(gen)
-    val elaborationAnnos = Logger.makeScope(annotationSeq) { genAnno.elaborate }
+    val elaborationAnnos = Logger.makeScope(annotationSeq) { elaboratePhase.transform(genAnno +: annotationSeq) }
 
     // extract elaborated module
     val dut = elaborationAnnos.collectFirst { case DesignAnnotation(d) => d }.get
 
     // run aspects
-    val aspectAnnos = maybeAspects.transform(elaborationAnnos ++ annotationSeq)
+    val aspectAnnos = maybeAspects.transform(elaborationAnnos)
 
     // run Converter.convert(a.circuit) and toFirrtl on all annotations
     val converterAnnos = converter.transform(aspectAnnos)
