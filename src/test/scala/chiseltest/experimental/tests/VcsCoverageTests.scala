@@ -4,7 +4,6 @@ package chiseltest.experimental.tests
 
 import chisel3._
 import chiseltest._
-import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.experimental.sanitizeFileName
 import chiseltest.simulator.{RequiresVcs, VcsFlags, VcsSimFlags}
 import firrtl.AnnotationSeq

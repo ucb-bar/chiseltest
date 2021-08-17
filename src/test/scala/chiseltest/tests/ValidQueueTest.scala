@@ -5,7 +5,6 @@ package chiseltest.tests
 import chisel3._
 import chiseltest._
 import chisel3.experimental.BundleLiterals._
-import chiseltest.experimental.TestOptionBuilder._
 import chisel3.util.{Pipe, Valid}
 import org.scalatest._
 import treadle.VerboseAnnotation

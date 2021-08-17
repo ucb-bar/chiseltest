@@ -3,7 +3,7 @@
 package chiseltest
 
 import chiseltest.internal._
-import chiseltest.experimental.{sanitizeFileName, ChiselTestShell}
+import chiseltest.experimental.sanitizeFileName
 import chisel3.Module
 import chiseltest.internal.TestEnvInterface.addDefaultTargetDir
 import firrtl.AnnotationSeq
@@ -21,14 +21,13 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
 
   class TestBuilder[T <: Module](
     val dutGen:        () => T,
-    val annotationSeq: AnnotationSeq,
-    val flags:         Array[String]) {
+    val annotationSeq: AnnotationSeq) {
     def getTestName: String = {
       sanitizeFileName(scalaTestContext.value.get.name)
     }
 
     def apply(testFn: T => Unit): TestResult = {
-      val finalAnnos = addDefaultTargetDir(getTestName, (new ChiselTestShell).parse(flags) ++ annotationSeq) ++
+      val finalAnnos = addDefaultTargetDir(getTestName, annotationSeq) ++
         (if (scalaTestContext.value.get.configMap.contains("writeVcd")) {
            Seq(WriteVcdAnnotation)
          } else {
@@ -44,6 +43,10 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
 
     // TODO: in the future, allow reset and re-use of a compiled design to avoid recompilation cost per test
     val outer: ChiselScalatestTester = ChiselScalatestTester.this
+
+    def withAnnotations(annotationSeq: AnnotationSeq): TestBuilder[T] = {
+      new TestBuilder[T](dutGen, this.annotationSeq ++ annotationSeq)
+    }
   }
 
   // Provide test fixture data as part of 'global' context during test runs
@@ -93,12 +96,16 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     *   }
     * }}}
     *
-    * If you need to add options to this unit test you can tack on .withAnnotations modifier
+    * If you need to add options to this unit test you can specify them as
+    * a second argument or tack on .withAnnotations modifier
     * or a .withFlags modifier. These modifiers can be used together.
-    * You must add `import chisel3.tester.experimental.TestOptionBuilder._` to use .withAnnotations
     *
     * For example:
     * {{{
+    *   test(new TestModule, Seq(WriteVcdAnnotation)) { c =>
+    *     // body of the unit test
+    *   }
+    *   // alternative:
     *   test(new TestModule).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
     *     // body of the unit test
     *   }
@@ -112,6 +119,6 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     * @return
     */
   def test[T <: Module](dutGen: => T): TestBuilder[T] = {
-    new TestBuilder(() => dutGen, Seq.empty, Array.empty)
+    new TestBuilder(() => dutGen, Seq())
   }
 }

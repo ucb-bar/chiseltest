@@ -6,7 +6,6 @@ import chisel3._
 import chisel3.experimental.IntParam
 import chisel3.util._
 import chiseltest._
-import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.simulator.RequiresVerilator
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
