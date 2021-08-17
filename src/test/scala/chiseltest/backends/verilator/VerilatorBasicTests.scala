@@ -3,7 +3,6 @@ package chiseltest.backends.verilator
 
 import chisel3._
 import chiseltest._
-import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.simulator.RequiresVerilator
 import chiseltest.tests.{PassthroughModule, StaticModule}
 import org.scalatest._

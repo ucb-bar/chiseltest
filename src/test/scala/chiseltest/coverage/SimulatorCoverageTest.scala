@@ -3,7 +3,6 @@
 
 package chiseltest.coverage
 
-import chisel3.tester.experimental.TestOptionBuilder.ChiselScalatestOptionBuilder
 import chiseltest._
 import firrtl.AnnotationSeq
 import org.scalatest.flatspec.AnyFlatSpec

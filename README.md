@@ -97,8 +97,7 @@ See the test cases for examples:
 - [VerilatorBasicTests](src/test/scala/chiseltest/experimental/tests/VerilatorBasicTests.scala) shows an example using Verilator as the simulator.
   - Note: the simulator is selected by passing an annotation into the `test` function, which requires experimental imports:
     ```scala
-    import chiseltest.experimental.TestOptionBuilder._
-    import chiseltest.internal.VerilatorBackendAnnotation
+    import chiseltest._
     ```
     ```scala
     test(new MyModule).withAnnotations(Seq(VerilatorBackendAnnotation)) { c =>

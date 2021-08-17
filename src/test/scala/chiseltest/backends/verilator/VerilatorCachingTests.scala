@@ -3,7 +3,6 @@ package chiseltest.backends.verilator
 
 import chisel3._
 import chiseltest._
-import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.experimental.sanitizeFileName
 import chiseltest.internal.CachingAnnotation
 import chiseltest.simulator.RequiresVerilator

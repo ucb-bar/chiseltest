@@ -3,7 +3,6 @@ package chiseltest.tests
 import org.scalatest.flatspec.AnyFlatSpec
 import chisel3._
 import chiseltest._
-import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.simulator.RequiresVerilator
 
 class AssertBundle() extends Bundle {

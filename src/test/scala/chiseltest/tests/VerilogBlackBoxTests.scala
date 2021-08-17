@@ -2,7 +2,6 @@
 package chiseltest.tests
 
 import chiseltest._
-import chiseltest.experimental.TestOptionBuilder.ChiselScalatestOptionBuilder
 import chisel3._
 import chisel3.util._
 import chiseltest.simulator.RequiresVerilator

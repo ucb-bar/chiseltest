@@ -4,7 +4,6 @@ package chiseltest.backends.verilator
 
 import chisel3._
 import chiseltest._
-import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.experimental.sanitizeFileName
 import chiseltest.simulator.{RequiresVerilator, VerilatorFlags}
 import firrtl.AnnotationSeq
