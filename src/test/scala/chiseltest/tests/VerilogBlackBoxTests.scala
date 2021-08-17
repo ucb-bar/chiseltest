@@ -3,10 +3,9 @@ package chiseltest.tests
 
 import chiseltest._
 import chiseltest.experimental.TestOptionBuilder.ChiselScalatestOptionBuilder
-
 import chisel3._
 import chisel3.util._
-
+import chiseltest.simulator.RequiresVerilator
 import org.scalatest.flatspec.AnyFlatSpec
 
 
@@ -22,7 +21,7 @@ class VerilogBlackBoxTests extends AnyFlatSpec with ChiselScalatestTester {
     dut.clock.step()
   }
 
-  it should "be copied over so that they are accessible to Verilator" in {
+  it should "be copied over so that they are accessible to Verilator"  taggedAs RequiresVerilator in {
     test(new UsesBBAddOne).withAnnotations(Seq(VerilatorBackendAnnotation))(doTest)
   }
 }

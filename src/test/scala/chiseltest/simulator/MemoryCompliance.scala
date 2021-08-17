@@ -44,17 +44,17 @@ abstract class MemoryCompliance(sim: Simulator, tag: Tag = DefaultTag) extends C
     dut.finish()
   }
 
-  it should "support initializing a memory with a scalar constant" in {
+  it should "support initializing a memory with a scalar constant" taggedAs tag in {
     val dut = load(readMem, Seq(MemoryScalarInitAnnotation(mRef, 123)))
     checkMem(dut, Seq(123, 123, 123))
   }
 
-  it should "support initializing a memory with a list" in {
+  it should "support initializing a memory with a list" taggedAs tag in {
     val dut = load(readMem, Seq(MemoryArrayInitAnnotation(mRef, Seq(123, 231, 234))))
     checkMem(dut, Seq(123, 231, 234))
   }
 
-  it should "support initializing a memory from a file" in {
+  it should "support initializing a memory from a file" taggedAs tag in {
     val dut = load(readMem, Seq(MemoryFileInlineAnnotation(mRef, "src/test/resources/init.mem")))
     checkMem(dut, Seq(0xab, 0xcd, 0xef))
   }

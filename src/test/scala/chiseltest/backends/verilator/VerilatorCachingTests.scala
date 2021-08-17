@@ -6,6 +6,7 @@ import chiseltest._
 import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.experimental.sanitizeFileName
 import chiseltest.internal.CachingAnnotation
+import chiseltest.simulator.RequiresVerilator
 import chiseltest.utils.CaptureStdout
 import chiseltest.tests.StaticModule
 import firrtl.AnnotationSeq
@@ -24,13 +25,13 @@ class VerilatorCachingTests extends AnyFlatSpec with ChiselScalatestTester with 
     })._2
   }
 
-  it should "re-compile by default" in {
+  it should "re-compile by default" taggedAs RequiresVerilator in {
     startWithEmptyTestDir()
     // by default no reuse should occur
     (0 until 3).foreach { _ => assert(runTest(42, default) == 0) }
   }
 
-  it should "not re-compile when caching is enabled" in {
+  it should "not re-compile when caching is enabled" taggedAs RequiresVerilator in {
     startWithEmptyTestDir()
     // the first time no re-use occurs
     assert(runTest(42, withCaching) == 0)
@@ -39,7 +40,7 @@ class VerilatorCachingTests extends AnyFlatSpec with ChiselScalatestTester with 
     assert(runTest(42, withCaching) == 1)
   }
 
-  it should "not cache when two different modules are instantiated" in {
+  it should "not cache when two different modules are instantiated" taggedAs RequiresVerilator in {
     startWithEmptyTestDir()
     // this generates a cache
     println("StaticModule(42)")

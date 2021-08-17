@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.util._
 import chiseltest._
 import chiseltest.experimental.TestOptionBuilder._
+import chiseltest.simulator.RequiresVerilator
 import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.util.Random
@@ -38,7 +39,7 @@ class VerilogBlackBoxTest extends AnyFlatSpec with ChiselScalatestTester {
 
   val annos = Seq(VerilatorBackendAnnotation)
 
-  it should "support Verilog black boxes" in {
+  it should "support Verilog black boxes" taggedAs RequiresVerilator in {
     val rand = new Random()
     val mask = (BigInt(1) << 8) - 1
     test(new BlackBoxAdderWrapper).withAnnotations(annos) { dut =>

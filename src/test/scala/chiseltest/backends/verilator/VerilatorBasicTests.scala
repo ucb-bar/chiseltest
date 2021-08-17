@@ -4,6 +4,7 @@ package chiseltest.backends.verilator
 import chisel3._
 import chiseltest._
 import chiseltest.experimental.TestOptionBuilder._
+import chiseltest.simulator.RequiresVerilator
 import chiseltest.tests.{PassthroughModule, StaticModule}
 import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -14,13 +15,13 @@ class VerilatorBasicTests extends AnyFlatSpec with ChiselScalatestTester with Ma
 
   val annos = Seq(VerilatorBackendAnnotation)
 
-  it should "test static circuits" in {
+  it should "test static circuits" taggedAs RequiresVerilator in {
     test(new StaticModule(42.U)).withAnnotations(annos) { c =>
       c.out.expect(42.U)
     }
   }
 
-  it should "fail on poking outputs" in {
+  it should "fail on poking outputs" taggedAs RequiresVerilator in {
     assertThrows[UnpokeableException] {
       test(new StaticModule(42.U)).withAnnotations(annos) { c =>
         c.out.poke(0.U)
@@ -28,7 +29,7 @@ class VerilatorBasicTests extends AnyFlatSpec with ChiselScalatestTester with Ma
     }
   }
 
-  it should "fail on expect mismatch" in {
+  it should "fail on expect mismatch" taggedAs RequiresVerilator in {
     assertThrows[exceptions.TestFailedException] {
       test(new StaticModule(42.U)).withAnnotations(annos) { c =>
         c.out.expect(0.U)
@@ -36,7 +37,7 @@ class VerilatorBasicTests extends AnyFlatSpec with ChiselScalatestTester with Ma
     }
   }
 
-  it should "fail with user-defined message" in {
+  it should "fail with user-defined message" taggedAs RequiresVerilator in {
     intercept[exceptions.TestFailedException] {
       test(new StaticModule(42.U)).withAnnotations(annos) { c =>
         c.out.expect(0.U, "user-defined failure message =(")
@@ -44,7 +45,7 @@ class VerilatorBasicTests extends AnyFlatSpec with ChiselScalatestTester with Ma
     }.getMessage should include ("user-defined failure message =(")
   }
 
-  it should "test inputless sequential circuits" in {
+  it should "test inputless sequential circuits" taggedAs RequiresVerilator in {
     test(new Module {
       val io = IO(new Bundle {
         val out = Output(UInt(8.W))
@@ -63,7 +64,7 @@ class VerilatorBasicTests extends AnyFlatSpec with ChiselScalatestTester with Ma
     }
   }
 
-  it should "test combinational circuits" in {
+  it should "test combinational circuits" taggedAs RequiresVerilator in {
     test(new PassthroughModule(UInt(8.W))).withAnnotations(annos) { c =>
       c.in.poke(0.U)
       c.out.expect(0.U)
@@ -72,7 +73,7 @@ class VerilatorBasicTests extends AnyFlatSpec with ChiselScalatestTester with Ma
     }
   }
 
-  it should "test sequential circuits" in {
+  it should "test sequential circuits" taggedAs RequiresVerilator in {
     test(new Module {
       val io = IO(new Bundle {
         val in = Input(UInt(8.W))
@@ -89,7 +90,7 @@ class VerilatorBasicTests extends AnyFlatSpec with ChiselScalatestTester with Ma
     }
   }
 
-  it should "test reset" in {
+  it should "test reset" taggedAs RequiresVerilator in {
     test(new Module {
       val io = IO(new Bundle {
         val in = Input(UInt(8.W))

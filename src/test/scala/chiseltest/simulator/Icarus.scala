@@ -3,15 +3,18 @@
 package chiseltest.simulator
 
 import chiseltest.utils.CaptureStdout
+import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
 
+/** To disable tests that require the Icarus Verilog simulator use the following: `sbt testOnly -- -l RequiresIcarus` */
+object RequiresIcarus extends Tag("RequiresIcarus")
 
-class IcarusBasicCompliance extends BasicCompliance(IcarusSimulator)
-class IcarusStepCompliance extends StepCompliance(IcarusSimulator)
-class IcarusPeekPokeCompliance extends PeekPokeCompliance(IcarusSimulator)
-class IcarusWaveformCompliance extends WaveformCompliance(IcarusSimulator)
-class IcarusCoverageCompliance extends CoverageCompliance(IcarusSimulator)
-class IcarusMemoryCompliance extends MemoryCompliance(IcarusSimulator)
+class IcarusBasicCompliance extends BasicCompliance(IcarusSimulator, RequiresIcarus)
+class IcarusStepCompliance extends StepCompliance(IcarusSimulator, RequiresIcarus)
+class IcarusPeekPokeCompliance extends PeekPokeCompliance(IcarusSimulator, RequiresIcarus)
+class IcarusWaveformCompliance extends WaveformCompliance(IcarusSimulator, RequiresIcarus)
+class IcarusCoverageCompliance extends CoverageCompliance(IcarusSimulator, RequiresIcarus)
+class IcarusMemoryCompliance extends MemoryCompliance(IcarusSimulator, RequiresIcarus)
 
 
 class IcarusSpecificTests extends AnyFlatSpec {
@@ -19,7 +22,7 @@ class IcarusSpecificTests extends AnyFlatSpec {
 
   private val sim = IcarusSimulator
 
-  it should "print a version" in {
+  it should "print a version" taggedAs RequiresIcarus in {
     val (_, out) = CaptureStdout {
       sim.findVersions
     }

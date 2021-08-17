@@ -8,16 +8,17 @@ import chiseltest._
 import firrtl.AnnotationSeq
 import org.scalatest.flatspec.AnyFlatSpec
 import chisel3._
-import chiseltest.simulator.SimulatorAnnotation
+import chiseltest.simulator.{DefaultTag, SimulatorAnnotation}
+import org.scalatest.Tag
 
 /** Ensure that all simulators give the same coverage feedback when run with the same tests.
   * To implement this for a particular simulator, just override the `backend` annotation.
   * */
-abstract class SimulatorCoverageTest(name: String, backend: SimulatorAnnotation) extends AnyFlatSpec with ChiselScalatestTester {
+abstract class SimulatorCoverageTest(name: String, backend: SimulatorAnnotation, tag: Tag = DefaultTag) extends AnyFlatSpec with ChiselScalatestTester {
   behavior of s"$name Coverage Collection"
   private def noAutoCov: AnnotationSeq = Seq(backend)
 
-  it should "report count for all user cover points (no submodules)" in {
+  it should "report count for all user cover points (no submodules)" taggedAs tag in {
     val r = test(new Test1Module(withSubmodules = false)).withAnnotations(noAutoCov) { dut =>
       dut.clock.step()
     }
@@ -30,7 +31,7 @@ abstract class SimulatorCoverageTest(name: String, backend: SimulatorAnnotation)
     assert(cov("SIM") == 2)
   }
 
-  it should "report count for all user cover points (with submodules)" in {
+  it should "report count for all user cover points (with submodules)" taggedAs tag in {
     val r = test(new Test1Module(withSubmodules = true)).withAnnotations(noAutoCov) { dut =>
       dut.clock.step()
     }
@@ -46,7 +47,7 @@ abstract class SimulatorCoverageTest(name: String, backend: SimulatorAnnotation)
   }
 
   // this is an integration test that uses chisel3.experimental.verification.cover to estimate PI
-  it should "allow us to estimate pi" in {
+  it should "allow us to estimate pi" taggedAs tag in {
     val rand = new scala.util.Random(0)
     val r = test(new PiEstimator).withAnnotations(noAutoCov) { dut =>
       (0 until 1000).foreach { _ =>

@@ -21,7 +21,7 @@ class VerilatorSpecificTests extends AnyFlatSpec {
 
   private val sim = VerilatorSimulator
 
-  it should "print the version that we depend on" in {
+  it should "print the version that we depend on" taggedAs RequiresVerilator in {
     val (_, out) = CaptureStdout {
       sim.findVersions
     }
