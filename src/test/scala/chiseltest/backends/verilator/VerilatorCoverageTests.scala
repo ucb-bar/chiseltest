@@ -6,7 +6,7 @@ import chisel3._
 import chiseltest._
 import chiseltest.experimental.TestOptionBuilder._
 import chiseltest.experimental.sanitizeFileName
-import chiseltest.simulator.VerilatorFlags
+import chiseltest.simulator.{RequiresVerilator, VerilatorFlags}
 import firrtl.AnnotationSeq
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -22,7 +22,7 @@ private class TestModule extends Module {
 class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2"
 
-  it should "allow specifying Verilog toggle coverage for Verilator" in {
+  it should "allow specifying Verilog toggle coverage for Verilator" taggedAs RequiresVerilator in {
     clean()
     val annos = Seq(VerilatorBackendAnnotation, VerilatorFlags(Seq("--coverage-toggle")))
     runTest(annos)
@@ -32,7 +32,7 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
     assert(counts.line == 0)
   }
 
-  it should "allow specifying Verilog line coverage for Verilator" in {
+  it should "allow specifying Verilog line coverage for Verilator" taggedAs RequiresVerilator in {
     clean()
     val annos = Seq(VerilatorBackendAnnotation, VerilatorFlags(Seq("--coverage-line")))
     runTest(annos)
@@ -42,7 +42,7 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
     assert(counts.line == 3 || counts.line == 1) // different verilator versions add different numbers of cover points
   }
 
-  it should "allow specifying Verilog structural coverage for Verilator" in {
+  it should "allow specifying Verilog structural coverage for Verilator" taggedAs RequiresVerilator in {
     clean()
     val annos = Seq(VerilatorBackendAnnotation, VerilatorFlags(Seq("--coverage-toggle", "--coverage-line")))
     runTest(annos)
@@ -52,7 +52,7 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
     assert(counts.line == 3 || counts.line == 1) // different verilator versions add different numbers of cover points
   }
 
-  it should "always generate user coverage" in {
+  it should "always generate user coverage" taggedAs RequiresVerilator in {
     clean()
     val annos = Seq(VerilatorBackendAnnotation)
     runTest(annos)

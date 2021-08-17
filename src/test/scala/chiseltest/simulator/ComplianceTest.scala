@@ -21,4 +21,4 @@ abstract class ComplianceTest(sim: Simulator, protected val tag: Tag) extends Fl
 }
 
 // a hack for when we do not actually want to tag the tests
-private object DefaultTag extends Tag("DefaultTag")
+object DefaultTag extends Tag("DefaultTag")

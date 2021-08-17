@@ -5,6 +5,7 @@ package chiseltest.experimental.tests
 import chisel3._
 import chiseltest._
 import chiseltest.experimental.TestOptionBuilder._
+import chiseltest.simulator.RequiresVerilator
 import org.scalatest.freespec.AnyFreeSpec
 
 class HasOddWidthSInt extends Module {
@@ -20,7 +21,7 @@ class HasOddWidthSInt extends Module {
 // would break in verilator if the poked value was not masked to the correct number of
 // bits first. This was fixed by masking those values to the proper width before poking
 class NegativeInputValuesTest extends AnyFreeSpec with ChiselScalatestTester {
-  "Negative input values on odd width SInt should not cause verilator to fail" in {
+  "Negative input values on odd width SInt should not cause verilator to fail" taggedAs RequiresVerilator in {
     test(new HasOddWidthSInt).withAnnotations(Seq(VerilatorBackendAnnotation)) { dut =>
       for(inputValue <- Seq(-4, -3, -2, -1, 0, 1, 2, 3, 4)) {
         dut.in.poke(inputValue.S)
