@@ -9,14 +9,12 @@ on:
 
 jobs:
   test:
-    name: sbt test
-    runs-on: ${{ matrix.os }}
+    name: sbt test on ubuntu
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
-        os: [ubuntu-20.04, macos-latest]
         scala: [2.12.13, 2.13.5]
         jvm: [adopt@1.8, adopt@1.11]
-
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -26,6 +24,19 @@ jobs:
           java-version: ${{ matrix.jvm }}
       - name: Test
         run: sbt ++${{ matrix.scala }} "testOnly -- -l RequiresVcs -l RequiresVerilator -l Formal -l RequiresIcarus"
+
+  test-mac:
+    name: sbt test on mac
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11
+      - name: Test
+        run: sbt "testOnly -- -l RequiresVcs -l RequiresVerilator -l Formal -l RequiresIcarus"
 
   icarus:
     name: icarus verilog
@@ -114,7 +125,7 @@ jobs:
         with:
           java-version: adopt@1.8
       - name: Test
-        run: sbt "testOnly chiseltest.backends.verilator.** ; testOnly -- -n RequiresVerilator"
+        run: sbt "testOnly -- -n RequiresVerilator"
 
   formal:
     name: formal verification tests
@@ -166,7 +177,7 @@ jobs:
   # When adding new jobs, please add them to `needs` below
   all_tests_passed:
     name: "all tests passed"
-    needs: [test, doc, verilator, verilator-mac, formal, icarus]
+    needs: [test, doc, verilator, verilator-mac, formal, icarus, test-mac]
     runs-on: ubuntu-latest
     steps:
       - run: echo Success!
