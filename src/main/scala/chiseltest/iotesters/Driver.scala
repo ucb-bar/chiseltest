@@ -20,6 +20,9 @@ private case class TestSeedAnnotation(seed: Long) extends NoTargetAnnotation
 /** exclusively used to affect the target dir behavior of the Driver */
 private case class TesterTopName(name: String) extends NoTargetAnnotation
 
+/** Driver object of the legacy compatibility PeekPokeTester API
+  * Adapted from the original sources at: https://github.com/freechipsproject/chisel-testers/
+  */
 object Driver {
   private val testContext = new DynamicVariable[Option[IOTestersContext]](None)
   private[iotesters] def ctx = testContext.value

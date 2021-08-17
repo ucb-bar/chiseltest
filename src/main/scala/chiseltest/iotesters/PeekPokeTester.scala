@@ -30,6 +30,11 @@ object Pokeable {
   }
 }
 
+/** Legacy PeekPokeTester made to work with the new chiseltest infrastructure.
+  * This code is meant to help port legacy tests, but may be deprecated in the
+  * future.
+  * Adapted from the original sources at: https://github.com/freechipsproject/chisel-testers/
+  */
 abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
   implicit def longToInt(x: Long): Int = x.toInt
 
