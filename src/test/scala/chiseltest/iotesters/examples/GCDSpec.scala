@@ -3,10 +3,10 @@
 package chiseltest.iotesters.examples
 
 import java.io.File
-
 import chisel3._
 import chisel3.util._
 import chiseltest.iotesters._
+import chiseltest.simulator.RequiresVerilator
 import treadle.chronometry.Timer
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -100,7 +100,7 @@ class GCDSpec extends AnyFlatSpec with Matchers {
     } should be(true)
   }
 
-  it should "run verilator via command line arguments" in {
+  it should "run verilator via command line arguments" taggedAs RequiresVerilator in {
     // val args = Array.empty[String]
     val args = Array("--backend-name", "verilator")
     Driver.execute(args, () => new RealGCD2) { c =>
@@ -116,7 +116,7 @@ class GCDSpec extends AnyFlatSpec with Matchers {
     } should be (true)
   }
 
-  "using verilator backend with suppress-verilator-backend" should "not create a vcd" in {
+  "using verilator backend with suppress-verilator-backend" should "not create a vcd" taggedAs RequiresVerilator in {
     Driver.execute(
       Array("--backend-name", "verilator", "--generate-vcd-output", "off",
         "--target-dir", "test_run_dir/gcd_no_vcd", "--top-name", "gcd_no_vcd"),
@@ -129,7 +129,7 @@ class GCDSpec extends AnyFlatSpec with Matchers {
     new File("test_run_dir/gcd_no_vcd/RealGCD2.vcd").exists() should be (false)
   }
 
-  "using verilator default behavior" should "create a vcd" in {
+  "using verilator default behavior" should "create a vcd" taggedAs RequiresVerilator in {
     Driver.execute(
       Array("--backend-name", "verilator",
         "--target-dir", "test_run_dir/gcd_make_vcd", "--top-name", "gcd_make_vcd"),
@@ -142,7 +142,7 @@ class GCDSpec extends AnyFlatSpec with Matchers {
     new File("test_run_dir/gcd_make_vcd/RealGCD2.vcd").exists() should be (true)
   }
 
-  it should "run verilator with larger input vector to run regressions" in {
+  it should "run verilator with larger input vector to run regressions" taggedAs RequiresVerilator in {
     //
     // Use this test combined with changing the comments on VerilatorBackend.scala lines 153 and 155 to
     // measure the consequence of that change, at the time of last using this the cost appeared to be < 3%

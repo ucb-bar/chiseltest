@@ -5,6 +5,7 @@ package chiseltest.iotesters.examples
 import chisel3._
 import chisel3.experimental.FixedPoint
 import chiseltest.iotesters._
+import chiseltest.simulator.RequiresVerilator
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -49,7 +50,7 @@ class SignedAdderSpec extends AnyFreeSpec with Matchers {
     } should be (true)
   }
 
-  "tester should returned signed values with verilator" in {
+  "tester should returned signed values with verilator" taggedAs RequiresVerilator in {
     Driver.execute(Array("--backend-name", "verilator", "--target-dir", "test_run_dir"), () => new SignedAdder(16)) { c =>
       new SignedAdderTester(c)
     } should be (true)

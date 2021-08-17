@@ -3,6 +3,7 @@ package chiseltest.iotesters
 // SPDX-License-Identifier: Apache-2.0
 
 import chisel3._
+import chiseltest.simulator.RequiresVerilator
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -41,7 +42,7 @@ class ZeroWidthIOSpec extends AnyFlatSpec with Matchers {
     test(Array("-tbn", "treadle")) should be (true)
   }
 
-  it should "work with verilator backend" in {
+  it should "work with verilator backend" taggedAs RequiresVerilator in {
     test(Array("-tbn", "verilator")) should be (true)
   }
 }

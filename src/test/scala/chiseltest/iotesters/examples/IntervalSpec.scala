@@ -5,6 +5,7 @@ package chiseltest.iotesters.examples
 import chisel3._
 import chisel3.experimental._
 import chiseltest.iotesters._
+import chiseltest.simulator.RequiresVerilator
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -88,7 +89,7 @@ class IntervalSpec extends AnyFreeSpec with Matchers {
     } should be (false)
   }
 
-  "negative numbers can be read back from verilator" in {
+  "negative numbers can be read back from verilator" taggedAs RequiresVerilator in {
     Driver.execute(
       Array("--backend-name", "verilator"),
       () => new Module {

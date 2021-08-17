@@ -5,6 +5,7 @@ package chiseltest.iotesters
 import chisel3._
 import chisel3.experimental.ChiselEnum
 import chisel3.util._
+import chiseltest.simulator.RequiresVerilator
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -137,7 +138,7 @@ class EnumSpec extends AnyFlatSpec with Matchers {
   }
 
   // pokeAt and peekAt seem to be broken when using Verilator, so we skip the memory tests
-  it should "work with a verilator backend" in {
+  it should "work with a verilator backend" taggedAs RequiresVerilator in {
     testPeekPoke(Array("--backend-name", "verilator"), true) should be(true)
   }
 }

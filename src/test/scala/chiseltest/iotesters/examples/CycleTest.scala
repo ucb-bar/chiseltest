@@ -4,6 +4,7 @@ package chiseltest.iotesters.examples
 
 import chisel3._
 import chiseltest.iotesters._
+import chiseltest.simulator.RequiresVerilator
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -35,7 +36,7 @@ class HasCycleTest extends AnyFlatSpec with Matchers {
       new HasCycleTester( c)
     } should be ( true)
   }
-  it should "work in verilator" in {
+  it should "work in verilator" taggedAs RequiresVerilator in {
     Driver.execute(
               Array( "--no-check-comb-loops", "--backend-name", "verilator"),
       () => new HasCycle) { c =>

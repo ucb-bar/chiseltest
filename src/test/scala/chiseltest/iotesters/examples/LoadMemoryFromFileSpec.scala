@@ -7,6 +7,7 @@ import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import chisel3._
 import chiseltest.iotesters._
 import chisel3.util.experimental.loadMemoryFromFileInline
+import chiseltest.simulator.RequiresVerilator
 import firrtl.FileUtils
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -55,7 +56,7 @@ class LoadMemoryFromFileTester(c: UsesMem) extends PeekPokeTester(c) {
 }
 
 class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
-  "Users can specify a source file to load memory from" in {
+  "Users can specify a source file to load memory from"  taggedAs RequiresVerilator in {
 
     val targetDirName = "test_run_dir/load_mem_test"
 

@@ -5,6 +5,7 @@ package chiseltest.iotesters.examples
 import chisel3._
 import chisel3.util._
 import chiseltest.iotesters._
+import chiseltest.simulator.{DefaultTag, RequiresVerilator}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers._
 
@@ -205,13 +206,17 @@ class ALUTester extends AnyFlatSpec {
 
   private val backendNames = Array[String] ("firrtl", "verilator")
   for (backendName <- backendNames) {
-    it should s"compute data output according to alu_opcode (with  $backendName)" in {
+    val tag = backendName match {
+      case "firrtl" => DefaultTag
+      case "verilator" => RequiresVerilator
+    }
+    it should s"compute data output according to alu_opcode (with  $backendName)" taggedAs tag in {
       Driver(() => new ALU, backendName) {
         c => new ALUBasicFunctionTester(c)
       } should be(true)
     }
 
-    it should s"not compute data with incorrect alu_opcode (with $backendName)" in {
+    it should s"not compute data with incorrect alu_opcode (with $backendName)" taggedAs tag in {
       Driver(() => new ALU, backendName) {
         c => new ALUBizarreInputTester(c)
       } should be(true)

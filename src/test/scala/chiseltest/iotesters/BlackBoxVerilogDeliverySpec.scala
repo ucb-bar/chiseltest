@@ -4,6 +4,7 @@ package chiseltest.iotesters
 
 import chisel3._
 import chisel3.util.{HasBlackBoxInline, HasBlackBoxResource}
+import chiseltest.simulator.{RequiresVcs, RequiresVerilator}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -71,14 +72,13 @@ class UsesBBAddOneTester(c: UsesBBAddOne) extends PeekPokeTester(c) {
 }
 
 class BlackBoxVerilogDeliverySpec extends AnyFreeSpec with Matchers {
-  "blackbox verilog implementation should end up accessible to verilator" in {
+  "blackbox verilog implementation should end up accessible to verilator" taggedAs RequiresVerilator in {
     Driver.execute(Array("--backend-name", "verilator"), () => new UsesBBAddOne) { c =>
       new UsesBBAddOneTester(c)
     } should be (true)
   }
 
-  "blackbox verilog implementation should end up accessible to vcs" in {
-    assume(firrtl.FileUtils.isVCSAvailable)
+  "blackbox verilog implementation should end up accessible to vcs" taggedAs RequiresVcs in {
     val targetDir = "test_run_dir/blackbox_vcs_test"
     Driver.execute(Array("--backend-name", "vcs", "--target-dir", targetDir), () => new UsesBBAddOne) { c =>
       new UsesBBAddOneTester(c)

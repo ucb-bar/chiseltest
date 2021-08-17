@@ -5,6 +5,7 @@ package chiseltest.iotesters.examples
 import chisel3._
 import chisel3.experimental.FixedPoint
 import chiseltest.iotesters._
+import chiseltest.simulator.RequiresVerilator
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -36,13 +37,13 @@ class FixedIsWholeTestBench(dut: FixedIsWhole) extends PeekPokeTester(dut) {
 
 class FixedIsWholeTester extends AnyFreeSpec with Matchers {
 
-  "FixedPoint width 16 succeeds on verilator" in {
+  "FixedPoint width 16 succeeds on verilator" taggedAs RequiresVerilator in {
     Driver.execute(Array("--backend-name", "verilator"), () => new FixedIsWhole(16)) { c =>
       new FixedIsWholeTestBench(c)
     } should be (true)
   }
 
-  "FixedPoint width 15 succeeds on verilator" in {
+  "FixedPoint width 15 succeeds on verilator" taggedAs RequiresVerilator in {
     Driver.execute(Array("--backend-name", "verilator"), () => new FixedIsWhole(15)) { c =>
       new FixedIsWholeTestBench(c)
     } should be (true)  }

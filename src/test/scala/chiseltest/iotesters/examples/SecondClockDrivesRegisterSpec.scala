@@ -5,6 +5,7 @@ package chiseltest.iotesters.examples
 import chisel3._
 import chiseltest.iotesters._
 import chisel3.util.Counter
+import chiseltest.simulator.RequiresVerilator
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -55,7 +56,7 @@ class SecondClockDrivesRegisterSpec extends AnyFreeSpec with Matchers {
       } should be(true)
     }
 
-    "should work with Verilator" in {
+    "should work with Verilator" taggedAs RequiresVerilator in {
       Driver.execute(Array("--backend-name", "verilator"), () => new SecondClock) { c =>
         new SecondClockTester(c)
       } should be(true)

@@ -6,6 +6,7 @@ import chisel3._
 import chiseltest.iotesters._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import chiseltest.simulator.RequiresVerilator
 
 
 class MultiIOAdder extends Module {
@@ -30,7 +31,7 @@ class MultiIOAdderTester(c: MultiIOAdder) extends PeekPokeTester(c) {
 class ModuleSpec extends AnyFlatSpec with Matchers {
   behavior of "MuiltiIOAdder"
 
-  it should "test correctly for every i/o combination with verilator" in {
+  it should "test correctly for every i/o combination with verilator" taggedAs RequiresVerilator in {
     val args = Array("--backend-name", "verilator")
     Driver.execute(args, () => new MultiIOAdder) { c =>
       new MultiIOAdderTester(c)
