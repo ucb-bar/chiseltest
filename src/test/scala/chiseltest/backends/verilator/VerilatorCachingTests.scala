@@ -24,6 +24,16 @@ class VerilatorCachingTests extends AnyFlatSpec with ChiselScalatestTester with 
     })._2
   }
 
+  it should "not cache with empty test dir" taggedAs RequiresVerilator in {
+    startWithEmptyTestDir()
+    assert(runTest(42, default) == 0)
+  }
+
+  it should "re-use cached verilator from another test" taggedAs RequiresVerilator in {
+    startWithEmptyTestDir()
+    assert(runTest(42, default) == 1)
+  }
+
   it should "re-compile by default" taggedAs RequiresVerilator in {
     startWithEmptyTestDir()
     // by default no reuse should occur
