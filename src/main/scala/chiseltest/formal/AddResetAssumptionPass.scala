@@ -24,6 +24,7 @@ private object AddResetAssumptionPass extends Transform with DependencyAPIMigrat
   // we want to run before the actual Verilog is emitted
   override def optionalPrerequisiteOf = firrtl.stage.Forms.BackendEmitters
 
+  import FirrtlUtils._
   override def execute(state: CircuitState): CircuitState = {
     val resetLength = getResetLength(state.annotations)
     if (resetLength == 0 || resetIsPreset(state.circuit.main, state.annotations)) return state
@@ -36,31 +37,15 @@ private object AddResetAssumptionPass extends Transform with DependencyAPIMigrat
     val preset = ir.Port(ir.NoInfo, namespace.newName("_preset"), ir.Input, ir.AsyncResetType)
     val presetAnno = PresetAnnotation(CircuitTarget(main.name).module(main.name).ref(preset.name))
 
-    // add reset count register
-    val resetCountType = ir.UIntType(ir.IntWidth(List(1, log2Ceil(resetLength + 1)).max))
-    val resetCount = ir.DefRegister(
+    // make a saturating reset counter
+    val (_, resetPhaseRef, counterStmts) = makeSaturatingCounter(
       ir.NoInfo,
       namespace.newName("_resetCount"),
-      resetCountType,
+      namespace.newName("_resetPhase"),
+      resetLength,
       clock,
-      reset = ir.Reference(preset).copy(flow = SourceFlow),
-      init = Utils.getGroundZero(resetCountType)
+      ir.Reference(preset).copy(flow = SourceFlow)
     )
-    val resetCountSource = ir.Reference(resetCount).copy(flow = SourceFlow)
-
-    // we are in the reset phase iff the counter is less than the reset length
-    val lessThanCycles = ir.DoPrim(
-      PrimOps.Lt,
-      List(resetCountSource, ir.UIntLiteral(resetLength, resetCountType.width)),
-      List(),
-      Utils.BoolType
-    )
-    val resetPhase = ir.DefNode(ir.NoInfo, namespace.newName("_resetPhase"), lessThanCycles)
-    val resetPhaseRef = ir.Reference(resetPhase).copy(flow = SourceFlow)
-
-    // we increment the counter as long as we are in the reset phase, after that it just retains its value
-    val nextValue = Utils.mux(resetPhaseRef, plusOne(resetCountSource), resetCountSource)
-    val nextCon = ir.Connect(ir.NoInfo, ir.Reference(resetCount).copy(flow = SinkFlow), nextValue)
 
     // add assumption that reset is active
     val resetActive = ir.Verification(
@@ -74,7 +59,7 @@ private object AddResetAssumptionPass extends Transform with DependencyAPIMigrat
     )
 
     // collect all our statements and add them to the main module
-    val stmts = Seq(resetCount, resetPhase, nextCon, resetActive)
+    val stmts = counterStmts :+ resetActive
     val instrumented = main.copy(ports = main.ports :+ preset, body = ir.Block(main.body +: stmts))
 
     // substitute instrumented main and add annotations
@@ -98,26 +83,5 @@ private object AddResetAssumptionPass extends Transform with DependencyAPIMigrat
     annos.collectFirst {
       case PresetAnnotation(target) if target.circuit == main && target.module == main && target.ref == "reset" => true
     }.getOrElse(false)
-  }
-
-  private def findClockAndReset(m: ir.Module): (ir.Reference, ir.Reference) = {
-    val clock = m.ports
-      .find(_.name == "clock")
-      .getOrElse(
-        throw new RuntimeException(s"[${m.name}] Expected module to have a port named clock!")
-      )
-    val reset = m.ports
-      .find(_.name == "reset")
-      .getOrElse(
-        throw new RuntimeException(s"[${m.name}] Expected module to have a port named reset!")
-      )
-    (ir.Reference(clock).copy(flow = SourceFlow), ir.Reference(reset).copy(flow = SourceFlow))
-  }
-
-  private def plusOne(e: ir.Expression): ir.Expression = {
-    val width = e.tpe.asInstanceOf[ir.UIntType].width.asInstanceOf[ir.IntWidth].width
-    val addTpe = ir.UIntType(ir.IntWidth(width + 1))
-    val add = ir.DoPrim(PrimOps.Add, List(e, ir.UIntLiteral(1, ir.IntWidth(width))), List(), addTpe)
-    ir.DoPrim(PrimOps.Bits, List(add), List(width - 1, 0), e.tpe)
   }
 }
