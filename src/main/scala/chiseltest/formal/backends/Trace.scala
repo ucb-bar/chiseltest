@@ -3,7 +3,6 @@
 package chiseltest.formal.backends
 
 import chiseltest.simulator.SimulatorContext
-import firrtl._
 
 /** Represents the inputs and starting state needed to re-create an execution trace. */
 private case class Trace(

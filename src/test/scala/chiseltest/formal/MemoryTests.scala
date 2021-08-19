@@ -6,7 +6,6 @@ import chisel3.SyncReadMem.ReadUnderWrite
 import org.scalatest.flatspec.AnyFlatSpec
 import chiseltest._
 import chisel3._
-import chisel3.util._
 import chisel3.experimental.{ChiselAnnotation, annotate, verification}
 import firrtl.annotations.{Annotation, MemoryArrayInitAnnotation, MemoryScalarInitAnnotation, ReferenceTarget}
 import firrtl.ir.ReadUnderWrite
@@ -60,6 +59,21 @@ class MemoryTests extends AnyFlatSpec with ChiselScalatestTester with Formal {
       verify(new ReadEnableMemInvalidDataAfterEnFalse, Seq(BoundedCheck(2)))
     }
     assert(e.failAt == 1)
+  }
+  "a memory with read enable" should "just ignore the read enable when not modelling undef values" taggedAs FormalTag in {
+    // WARN: it is not recommended to turn of undef modelling and it is not guaranteed that this test won't break
+    verify(new ReadEnableMemInvalidDataAfterEnFalse, Seq(BoundedCheck(3), DoNotModelUndef))
+  }
+  "memory with two write ports" should "always have one write win in a collision when not modelling undef values" taggedAs FormalTag in {
+    // WARN: it is not recommended to turn of undef modelling and it is not guaranteed that this test won't break
+    verify(new MemoryCollisionModule, Seq(BoundedCheck(3), DoNotModelUndef))
+  }
+  "read-only memory" should "not always return 1 even when not modelling undef values" taggedAs FormalTag in {
+    // this test does not rely on any undefined values and thus it should always fail
+    val e = intercept[FailedBoundedCheckException] {
+      verify(new ReadOnlyMemoryAlwaysReturnOneFail, Seq(BoundedCheck(1), DoNotModelUndef))
+    }
+    assert(e.failAt == 0)
   }
 }
 

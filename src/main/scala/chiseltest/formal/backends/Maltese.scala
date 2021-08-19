@@ -2,17 +2,15 @@
 
 package chiseltest.formal.backends
 
-import chiseltest.formal.FailedBoundedCheckException
+import chiseltest.formal.{DoNotModelUndef, FailedBoundedCheckException}
 import firrtl._
 import firrtl.annotations._
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlStage, RunFirrtlTransformAnnotation}
 import maltese.mc._
 import maltese.smt.solvers._
-import maltese.smt
 import chiseltest.simulator.{Compiler, TreadleBackendAnnotation, WriteVcdAnnotation}
 import firrtl.backends.experimental.smt.random.{InvalidToRandomPass, UndefinedMemoryBehaviorPass}
 import firrtl.options.Dependency
-import logger.{LogLevel, LogLevelAnnotation}
 
 sealed trait FormalEngineAnnotation extends NoTargetAnnotation
 
@@ -37,17 +35,20 @@ private[chiseltest] object Maltese {
     require(kMax > 0)
     require(resetLength >= 0)
     val targetDir = Compiler.requireTargetDir(annos)
-    val sysInfo = toTransitionSystem(circuit, DefRandomAnnos ++: annos)
+    val modelUndef = !annos.contains(DoNotModelUndef)
+    val sysAnnos: AnnotationSeq = if (modelUndef) { DefRandomAnnos ++: annos }
+    else { annos }
+    val sysInfo = toTransitionSystem(circuit, sysAnnos)
     val checkers = makeCheckers(annos)
     assert(checkers.size == 1, "Parallel checking not supported atm!")
-    checkers.head.check(sysInfo.sys, kMax = (kMax + resetLength)) match {
+    checkers.head.check(sysInfo.sys, kMax = kMax + resetLength) match {
       case ModelCheckFail(witness) =>
         val writeVcd = annos.contains(WriteVcdAnnotation)
         if (writeVcd) {
           val sim = new TransitionSystemSimulator(sysInfo.sys)
           sim.run(witness, vcdFileName = Some((targetDir / s"${circuit.main}.bmc.vcd").toString))
           val trace = witnessToTrace(sysInfo, witness)
-          val treadleState = prepTreadle(circuit, annos)
+          val treadleState = prepTreadle(circuit, annos, modelUndef)
           val treadleDut = TreadleBackendAnnotation.getSimulator.createContext(treadleState)
           Trace.replayOnSim(trace, treadleDut)
         }
@@ -59,12 +60,15 @@ private[chiseltest] object Maltese {
 
   // compile low firrtl circuit into a version with all DefRandom registers so that treadle can use it to replay the
   // counter example
-  private def prepTreadle(circuit: ir.Circuit, annos: AnnotationSeq): CircuitState = {
-    val res = firrtlStage.execute(
-      Array("--start-from", "low", "-E", "low"),
-      FirrtlCircuitAnnotation(circuit) +: annos ++: DefRandomTreadleAnnos
-    )
-    Compiler.annosToState(res)
+  private def prepTreadle(circuit: ir.Circuit, annos: AnnotationSeq, modelUndef: Boolean): CircuitState = {
+    if (!modelUndef) { CircuitState(circuit, annos) }
+    else {
+      val res = firrtlStage.execute(
+        Array("--start-from", "low", "-E", "low"),
+        FirrtlCircuitAnnotation(circuit) +: annos ++: DefRandomTreadleAnnos
+      )
+      Compiler.annosToState(res)
+    }
   }
 
   private val LoweringAnnos: AnnotationSeq = Seq(

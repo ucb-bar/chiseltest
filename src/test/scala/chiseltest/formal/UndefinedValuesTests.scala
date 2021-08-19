@@ -23,6 +23,11 @@ class UndefinedValuesTests extends AnyFlatSpec with ChiselScalatestTester with F
     }
   }
 
+  "division by zero" should "normally result in all 1s when not modelling undef values" taggedAs FormalTag in {
+    // WARN: it is not recommended to turn of undef modelling and it is not guaranteed that this test won't break
+    verify(new DivisionByZeroIsEq(3), Seq(BoundedCheck(2), DoNotModelUndef))
+  }
+
   "invalid signals" should "have an arbitrary values" taggedAs FormalTag in {
     (0 until 4).foreach { ii =>
       val e = intercept[FailedBoundedCheckException] {
@@ -30,6 +35,11 @@ class UndefinedValuesTests extends AnyFlatSpec with ChiselScalatestTester with F
       }
       assert(e.failAt == 0)
     }
+  }
+
+  "invalid signals" should "normally be zero when not modelling undef values" taggedAs FormalTag in {
+    // WARN: it is not recommended to turn of undef modelling and it is not guaranteed that this test won't break
+    verify(new InvalidSignalIs(0), Seq(BoundedCheck(2), DoNotModelUndef))
   }
 }
 
