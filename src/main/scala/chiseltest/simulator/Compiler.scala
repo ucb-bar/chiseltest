@@ -57,7 +57,7 @@ private[chiseltest] object Compiler {
     val annosWithoutCircuit = state.annotations.filterNot(_.isInstanceOf[FirrtlCircuitAnnotation])
     FirrtlCircuitAnnotation(state.circuit) +: annosWithoutCircuit
   }
-  private def annosToState(annos: AnnotationSeq): firrtl.CircuitState = {
+  def annosToState(annos: AnnotationSeq): firrtl.CircuitState = {
     val circuit = annos.collectFirst { case FirrtlCircuitAnnotation(c) => c }.get
     val filteredAnnos = annos.filterNot(isInternalAnno)
     firrtl.CircuitState(circuit, filteredAnnos)
