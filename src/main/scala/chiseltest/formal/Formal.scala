@@ -35,6 +35,9 @@ trait Formal { this: HasTestName =>
   }
 }
 
+/** An _escape hatch_ to disable more pessimistic modelling of undefined values. */
+case object DoNotModelUndef extends NoTargetAnnotation
+
 private object Formal {
   def verify[T <: Module](dutGen: => T, annos: AnnotationSeq): Unit = {
     val ops = getOps(annos)

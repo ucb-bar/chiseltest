@@ -2,8 +2,7 @@
 
 package chiseltest.formal.backends
 
-import chiseltest.simulator.{Compiler, TreadleBackendAnnotation}
-import firrtl._
+import chiseltest.simulator.SimulatorContext
 
 /** Represents the inputs and starting state needed to re-create an execution trace. */
 private case class Trace(
@@ -12,9 +11,9 @@ private case class Trace(
   memInit: Seq[(String, Seq[BigInt])])
 
 private object Trace {
-  def replayOnTreadle(trace: Trace, circuit: ir.Circuit, annos: AnnotationSeq): Unit = {
-    val dut = TreadleBackendAnnotation.getSimulator.createContext(CircuitState(circuit, annos))
 
+  /** Currently this only works with treadle since other simulators do not allow poking state. */
+  def replayOnSim(trace: Trace, dut: SimulatorContext): Unit = {
     // initialize
     trace.regInit.foreach { case (name, value) => dut.poke(name, value) }
     trace.memInit.foreach { case (name, values) =>
