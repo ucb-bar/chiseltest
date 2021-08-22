@@ -74,8 +74,10 @@ In this file:
     ```scala
     c.in.poke(0.U)
     c.out.expect(0.U)
+    c.clock.step(1)
     c.in.poke(42.U)
     c.out.expect(42.U)
+    c.clock.step(1)
     ```
 6.  With your test case complete, you can run all the test cases in your project by invoking ScalaTest.
     If you're using [sbt](http://scala-sbt.org), you can either run `sbt test` from the command line, or `test` from the sbt console.
