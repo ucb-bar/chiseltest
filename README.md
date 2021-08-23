@@ -45,7 +45,7 @@ class MyModule extend Module {
         val out = Output(UInt(16.W))
     })
 
-    io.out := io.in
+    io.out := RegNext(io.in)
 }
 ```
 
@@ -87,11 +87,11 @@ In this file:
 5.  In the test body, use `poke`, `step`, and `expect` operations to write the test:
     ```scala
     c.io.in.poke(0.U)
+    c.clock.step()
     c.io.out.expect(0.U)
-    c.clock.step(1)
     c.io.in.poke(42.U)
+    c.clock.step()
     c.io.out.expect(42.U)
-    c.clock.step(1)
     println("Last output value :" + c.io.out.peek())
     ```
 6.  With your test case complete, you can run all the test cases in your project by invoking ScalaTest.
