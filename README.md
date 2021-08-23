@@ -92,7 +92,7 @@ In this file:
     c.io.in.poke(42.U)
     c.clock.step()
     c.io.out.expect(42.U)
-    println("Last output value :" + c.io.out.peek())
+    println("Last output value :" + c.io.out.peek().litValue)
     ```
 6.  With your test case complete, you can run all the test cases in your project by invoking ScalaTest.
     If you're using [sbt](http://scala-sbt.org), you can either run `sbt test` from the command line, or `test` from the sbt console.
