@@ -70,7 +70,6 @@ scalacOptions ++= Seq(
 libraryDependencies ++= Seq(
   "edu.berkeley.cs" %% "chisel3"       % defaultVersions("chisel3"),
   "edu.berkeley.cs" %% "treadle"       % defaultVersions("treadle"),
-  "edu.berkeley.cs" %% "maltese-smt"   % "0.5-SNAPSHOT",
   "org.scalatest"   %% "scalatest"     % "3.1.4",
   "com.lihaoyi"     %% "utest"         % "0.7.9",
   "net.java.dev.jna" % "jna" % "5.9.0",
