@@ -5,7 +5,11 @@ package chiseltest.formal.backends
 import firrtl.options.Dependency
 import firrtl.stage.Forms
 import firrtl._
+import firrtl.annotations._
 import firrtl.backends.experimental.smt.random._
+import firrtl.transforms.DontTouchAnnotation
+
+import scala.collection.mutable
 
 /** Turns (experimental) `DefRandom` statements into registers in order to be able
   * to replay verification results on a simulator like treadle
@@ -25,15 +29,24 @@ private object DefRandToRegisterPass extends Transform with DependencyAPIMigrati
   override def invalidates(a: Transform): Boolean = false
 
   override protected def execute(state: firrtl.CircuitState): firrtl.CircuitState = {
-    val circuit = state.circuit.mapModule(onModule)
-    state.copy(circuit = circuit)
+    val c = CircuitTarget(state.circuit.main)
+    val modsAndAnnos = state.circuit.modules.map(onModule(c, _))
+    val circuit = state.circuit.copy(modules = modsAndAnnos.map(_._1))
+    val newAnnos = modsAndAnnos.flatMap(_._2)
+    state.copy(circuit = circuit, annotations = newAnnos ++: state.annotations)
   }
 
-  private def onModule(dm: ir.DefModule): ir.DefModule = dm match {
+  private def onModule(cTarget: CircuitTarget, dm: ir.DefModule): (ir.DefModule, Seq[Annotation]) = dm match {
     case m: ir.Module =>
       val clock = findClock(m)
-      m.mapStmt(onStmt(_, clock))
-    case other => other
+      val defRandNames = mutable.ListBuffer[String]()
+      val newM = m.mapStmt(onStmt(_, clock, defRandNames))
+      val mTarget = cTarget.module(m.name)
+      // We need to add do not touch annotations, since we intend to access the registers through the simulator
+      // interface. They would have a constant value if they were real hardware.
+      val annos = defRandNames.toList.map(n => DontTouchAnnotation(mTarget.ref(n)))
+      (newM, annos)
+    case other => (other, List())
   }
 
   private def findClock(m: ir.Module): Option[ir.Expression] = {
@@ -43,10 +56,13 @@ private object DefRandToRegisterPass extends Transform with DependencyAPIMigrati
     } else { None }
   }
 
-  private def onStmt(s: ir.Statement, clock: Option[ir.Expression]): ir.Statement = s match {
-    case r: DefRandom => toRegister(r, clock)
-    case other => other.mapStmt(onStmt(_, clock))
-  }
+  private def onStmt(s: ir.Statement, clock: Option[ir.Expression], names: mutable.ListBuffer[String]): ir.Statement =
+    s match {
+      case r: DefRandom =>
+        names.append(r.name)
+        toRegister(r, clock)
+      case other => other.mapStmt(onStmt(_, clock, names))
+    }
 
   private def toRegister(r: DefRandom, defaultClock: Option[ir.Expression]): ir.DefRegister = ir.DefRegister(
     r.info,
