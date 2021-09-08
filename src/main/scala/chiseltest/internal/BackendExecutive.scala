@@ -3,10 +3,9 @@
 package chiseltest.internal
 
 import chisel3.experimental.{BaseModule, DataMirror}
-import chisel3.internal.firrtl.Circuit
 import chisel3.{Data, Element, Module, Record, Vec}
 import chiseltest.coverage.Coverage
-import chiseltest.simulator.{Compiler, Simulator}
+import chiseltest.simulator.{Compiler, DebugPrintWrapper, Simulator}
 import firrtl.AnnotationSeq
 import firrtl.annotations.ReferenceTarget
 import firrtl.transforms.{CheckCombLoops, CombinationalPath}
@@ -36,7 +35,12 @@ object BackendExecutive {
     val sim = Simulator.getSimulator(testersAnnotationSeq)
     val tester = sim.createContext(lowFirrtl)
 
-    new GenericBackend(dut, portNames, pathsAsData, tester, coverageAnnotations)
+    // wrap the simulation in case we want to debug simulator interactions
+    val finalTester = if (testersAnnotationSeq.contains(PrintPeekPoke)) {
+      new DebugPrintWrapper(tester)
+    } else { tester }
+
+    new GenericBackend(dut, portNames, pathsAsData, finalTester, coverageAnnotations)
   }
 
   private def componentToName(component: ReferenceTarget): String = component.name

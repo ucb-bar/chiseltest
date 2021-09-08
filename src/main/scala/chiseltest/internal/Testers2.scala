@@ -10,6 +10,9 @@ import scala.util.DynamicVariable
 
 case object CachingAnnotation extends NoTargetAnnotation
 
+/** use this option to have all simulator interactions printed to stdout */
+case object PrintPeekPoke extends NoTargetAnnotation
+
 object Context {
   class Instance(val backend: BackendInterface, val env: TestEnvInterface) {}
 
