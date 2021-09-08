@@ -87,37 +87,22 @@ class SyncMemTestModule(readUnderWrite: ReadUnderWrite) extends Module {
   m.write(writeAddr, in)
   val readValue = m.read(readAddr, true.B)
   out := readValue
-
-  val cycle = RegInit(0.U(8.W))
-  cycle := Mux(cycle === 100.U, 100.U, cycle + 1.U)
 }
 
 class ReadFirstMemoryReturnsDataAfterTwoCycles extends SyncMemTestModule(ReadUnderWrite.Old) {
-  val pastWriteAddr = RegNext(writeAddr)
-  when(cycle >= 1.U) {
-    // we assume the we read from the address that we last wrote to
-    verification.assume(readAddr === pastWriteAddr)
-  }
-  val pastPastIn = RegNext(RegNext(in))
-  when(cycle >= 2.U) {
-    verification.assert(out === pastPastIn)
-  }
+  // we assume the we read from the address that we last wrote to
+  verification.assume(readAddr === past(writeAddr))
+  verification.assert(out === past(in, 2))
 }
 
 class ReadFirstMemoryReturnsDataAfterOneCycle extends SyncMemTestModule(ReadUnderWrite.Old) {
   verification.assume(readAddr === writeAddr)
-  val pastIn = RegNext(in)
-  when(cycle >= 1.U) {
-    verification.assert(out === pastIn)
-  }
+  verification.assert(out === past(in))
 }
 
 class WriteFirstMemoryReturnsDataAfterOneCycle extends SyncMemTestModule(ReadUnderWrite.New) {
   verification.assume(readAddr === writeAddr)
-  val pastIn = RegNext(in)
-  when(cycle >= 1.U) {
-    verification.assert(out === pastIn)
-  }
+  verification.assert(out === past(in))
 }
 
 class ReadOnlyMemModule extends Module {
@@ -164,19 +149,10 @@ class MemoryCollisionModule extends Module {
   when(aEn) { m.write(addr, data) }
   when(bEn) { m.write(addr, data) }
 
-  // track cycles to know when delayed "past" values become usable
-  val cycle = RegInit(0.U(8.W))
-  cycle := Mux(cycle === 100.U, 100.U, cycle + 1.U)
-
   // the read port is used to verify the written value
   // we use it to check that we always read the last written value
-  val pastAddr = RegNext(addr)
-  val pastData = RegNext(data)
-  val pastEn = RegNext(aEn || bEn)
-  when(cycle >= 1.U) {
-    when(pastEn) {
-      verification.assert(m.read(pastAddr) === pastData)
-    }
+  when(past(aEn || bEn)) {
+    verification.assert(m.read(past(addr)) === past(data))
   }
 }
 
@@ -185,10 +161,8 @@ class MutuallyExclusiveWritesShouldNotCollide extends MemoryCollisionModule {
 }
 
 class ReadEnableSyncMemModule extends Module {
-  val firstCycle = RegNext(false.B, init=true.B)
-  val even = RegInit(false.B)
-  val odd = !even
-  even := odd
+  val en = RegInit(false.B)
+  en := !en
 
   val m = SyncReadMem(4, UInt(8.W))
   // init with all zeros
@@ -196,17 +170,17 @@ class ReadEnableSyncMemModule extends Module {
     override def toFirrtl = MemoryScalarInitAnnotation(m.toTarget, 0)
   })
   // the read port is enabled in even cycles
-  val data = m.read(0.U, even)
+  val data = m.read(0.U, en)
 }
 
 class ReadEnableMemValidDataAfterEnTrue extends ReadEnableSyncMemModule {
-  when(!firstCycle && odd) {
+  when(past(en)) {
     verification.assert(data === 0.U)
   }
 }
 
 class ReadEnableMemInvalidDataAfterEnFalse extends ReadEnableSyncMemModule {
-  when(!firstCycle && even) {
+  when(past(!en)) {
     verification.assert(data === 0.U)
   }
 }

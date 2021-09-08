@@ -66,7 +66,6 @@ private class TreadleContext(tester: TreadleTester, toplevel: TopmoduleInfo) ext
       case Some(_) =>
       case None    => throw NoClockException(tester.topName)
     }
-
     try {
       tester.step(n = n)
     } catch {
