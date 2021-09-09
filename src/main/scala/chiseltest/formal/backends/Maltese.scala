@@ -2,14 +2,14 @@
 
 package chiseltest.formal.backends
 
+import chiseltest.formal.backends.smt._
 import chiseltest.formal.{DoNotModelUndef, FailedBoundedCheckException}
 import firrtl._
 import firrtl.annotations._
-import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlStage, RunFirrtlTransformAnnotation}
-import maltese.mc._
-import maltese.smt.solvers._
-import chiseltest.simulator.{Compiler, TreadleBackendAnnotation, WriteVcdAnnotation}
-import firrtl.backends.experimental.smt.random.{InvalidToRandomPass, UndefinedMemoryBehaviorPass}
+import firrtl.stage._
+import firrtl.backends.experimental.smt.random._
+import firrtl.backends.experimental.smt._
+import chiseltest.simulator._
 import firrtl.options.Dependency
 
 sealed trait FormalEngineAnnotation extends NoTargetAnnotation
@@ -95,7 +95,7 @@ private[chiseltest] object Maltese {
     )
     val stateMap = FlattenPass.getStateMap(circuit.main, res)
     val memDepths = FlattenPass.getMemoryDepths(circuit.main, res)
-    val sys = firrtl.backends.experimental.smt.ExpressionConverter.toMaltese(res).get
+    val sys = res.collectFirst { case TransitionSystemAnnotation(s) => s }.get
 
     // print the system, convenient for debugging, might disable once we have done more testing
     if (true) {
@@ -114,7 +114,7 @@ private[chiseltest] object Maltese {
     engines.map {
       case CVC4EngineAnnotation   => new SMTModelChecker(new CVC4SMTLib)
       case Z3EngineAnnotation     => new SMTModelChecker(new Z3SMTLib)
-      case BtormcEngineAnnotation => new BtormcModelChecker
+      case BtormcEngineAnnotation => throw new NotImplementedError("btor2 backends are not yet supported!")
     }
   }
 
