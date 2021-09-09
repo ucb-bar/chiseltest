@@ -112,8 +112,8 @@ private[chiseltest] object Maltese {
     val engines = annos.collect { case a: FormalEngineAnnotation => a }
     assert(engines.nonEmpty, "You need to provide at least one formal engine annotation!")
     engines.map {
-      case CVC4EngineAnnotation   => new SMTModelChecker(new CVC4SMTLib)
-      case Z3EngineAnnotation     => new SMTModelChecker(new Z3SMTLib)
+      case CVC4EngineAnnotation   => new SMTModelChecker(CVC4SMTLib)
+      case Z3EngineAnnotation     => new SMTModelChecker(Z3SMTLib)
       case BtormcEngineAnnotation => throw new NotImplementedError("btor2 backends are not yet supported!")
     }
   }

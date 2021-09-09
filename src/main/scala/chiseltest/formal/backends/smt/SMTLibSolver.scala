@@ -5,35 +5,35 @@ package chiseltest.formal.backends.smt
 
 import firrtl.backends.experimental.smt._
 
-class Yices2SMTLib extends SMTLibSolver(List("yices-smt2", "--incremental")) {
+object Yices2SMTLib extends Solver {
+  private val cmd = List("yices-smt2", "--incremental")
   override def name = "yices2-smtlib"
   override def supportsConstArrays = false
   override def supportsUninterpretedFunctions = true
   override def supportsQuantifiers = false
+  override def createContext(): SolverContext = new SMTLibSolverContext(cmd, this)
 }
 
-class CVC4SMTLib extends SMTLibSolver(List("cvc4", "--incremental", "--produce-models", "--lang", "smt2")) {
+object CVC4SMTLib extends Solver {
+  private val cmd = List("cvc4", "--incremental", "--produce-models", "--lang", "smt2")
   override def name = "cvc4-smtlib"
   override def supportsConstArrays = true
   override def supportsUninterpretedFunctions = true
   override def supportsQuantifiers = true
+  override def createContext(): SolverContext = new SMTLibSolverContext(cmd, this)
 }
 
-class Z3SMTLib extends SMTLibSolver(List("z3", "-in")) {
+object Z3SMTLib extends Solver {
+  private val cmd = List("z3", "-in")
   override def name = "z3-smtlib"
   override def supportsConstArrays = true
   override def supportsUninterpretedFunctions = true
   override def supportsQuantifiers = true
-
-  // Z3 only supports array (as const ...) when the logic is set to ALL
-  override protected def doSetLogic(logic: String): Unit = getLogic match {
-    case None    => writeCommand("(set-logic ALL)")
-    case Some(_) => // ignore
-  }
+  override def createContext(): SolverContext = new SMTLibSolverContext(cmd, this)
 }
 
 /** provides basic facilities to interact with any SMT solver that supports a SMTLib base textual interface */
-abstract class SMTLibSolver(cmd: List[String]) extends Solver {
+private class SMTLibSolverContext(cmd: List[String], val solver: Solver) extends SolverContext {
   protected val debug: Boolean = false
 
   private var _stackDepth: Int = 0
@@ -56,7 +56,7 @@ abstract class SMTLibSolver(cmd: List[String]) extends Solver {
     writeCommand(cmd)
     readResponse() match {
       case Some(strModel) => SMTLibResponseParser.parseValue(strModel.trim)
-      case None           => throw new RuntimeException(s"Solver $name did not reply to $cmd")
+      case None           => throw new RuntimeException(s"Solver ${solver.name} did not reply to $cmd")
     }
   }
   override def getValue(e: ArrayExpr): Seq[(Option[BigInt], BigInt)] = {
@@ -64,7 +64,7 @@ abstract class SMTLibSolver(cmd: List[String]) extends Solver {
     writeCommand(cmd)
     readResponse() match {
       case Some(strModel) => SMTLibResponseParser.parseMemValue(strModel.trim)
-      case None           => throw new RuntimeException(s"Solver $name did not reply to $cmd")
+      case None           => throw new RuntimeException(s"Solver ${solver.name} did not reply to $cmd")
     }
   }
   override def runCommand(cmd: SMTCommand): Unit = cmd match {
@@ -94,7 +94,13 @@ abstract class SMTLibSolver(cmd: List[String]) extends Solver {
         res.stripLineEnd match {
           case "sat"   => IsSat
           case "unsat" => IsUnSat
-          case other   => throw new RuntimeException(s"Unexpected result from SMT solver: $other")
+          case other =>
+            if (other.startsWith("(error")) {
+              val error = other.drop("(error ".length).dropRight(1).trim
+              throw new RuntimeException(s"${solver.name} encountered an error: $error")
+            } else {
+              throw new RuntimeException(s"Unexpected result from ${solver.name}: $other")
+            }
         }
       case None =>
         throw new RuntimeException("Unexpected EOF result from SMT solver.")

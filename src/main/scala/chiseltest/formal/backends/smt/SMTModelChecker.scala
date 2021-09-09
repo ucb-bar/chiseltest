@@ -18,7 +18,7 @@ object SMTModelCheckerOptions {
 
 /** SMT based bounded model checking as an alternative to dispatching to a btor2 based external solver */
 class SMTModelChecker(
-  val solver:    Solver,
+  solver:        Solver,
   options:       SMTModelCheckerOptions = SMTModelCheckerOptions.Performance,
   printProgress: Boolean = false)
     extends IsModelChecker {
@@ -30,17 +30,19 @@ class SMTModelChecker(
     require(kMax > 0 && kMax <= 2000, s"unreasonable kMax=$kMax")
     if (fileName.nonEmpty) println("WARN: dumping to file is not supported at the moment.")
 
-    val logic = if (solver.name == "z3") { "ALL" }
+    val ctx = solver.createContext()
+    // z3 only supports the non-standard as-const array syntax when the logic is set to ALL
+    val logic = if (solver.name.contains("z3")) { "ALL" }
     else { "QF_AUFBV" }
-    solver.setLogic(logic)
+    ctx.setLogic(logic)
 
     // create new context
-    solver.push()
+    ctx.push()
 
     // declare/define functions and encode the transition system
     val enc = new CompactEncoding(sys)
-    enc.defineHeader(solver)
-    enc.init(solver)
+    enc.defineHeader(ctx)
+    enc.init(ctx)
 
     val constraints = sys.signals.filter(_.lbl == IsConstraint).map(_.name)
     val assertions = sys.signals.filter(_.lbl == IsBad).map(_.name)
@@ -49,11 +51,11 @@ class SMTModelChecker(
       if (printProgress) println(s"Step #$k")
 
       // assume all constraints hold in this step
-      constraints.foreach(c => solver.assert(enc.getConstraint(c)))
+      constraints.foreach(c => ctx.assert(enc.getConstraint(c)))
 
       // make sure the constraints are not contradictory
       if (options.checkConstraints) {
-        val res = solver.check(produceModel = false)
+        val res = ctx.check(produceModel = false)
         assert(res.isSat, s"Found unsatisfiable constraints in cycle $k")
       }
 
@@ -62,51 +64,55 @@ class SMTModelChecker(
         assertions.zipWithIndex.foreach { case (b, bi) =>
           if (printProgress) print(s"- b$bi? ")
 
-          solver.push()
-          solver.assert(BVNot(enc.getAssertion(b)))
-          val res = solver.check(produceModel = false)
+          ctx.push()
+          ctx.assert(BVNot(enc.getAssertion(b)))
+          val res = ctx.check(produceModel = false)
 
           // did we find an assignment for which the bad state is true?
           if (res.isSat) {
             if (printProgress) println("❌")
-            val w = getWitness(sys, enc, k, Seq(b))
-            solver.pop()
-            solver.pop()
-            assert(solver.stackDepth == 0, s"Expected solver stack to be empty, not: ${solver.stackDepth}")
+            val w = getWitness(ctx, sys, enc, k, Seq(b))
+            ctx.pop()
+            ctx.pop()
+            assert(ctx.stackDepth == 0, s"Expected solver stack to be empty, not: ${ctx.stackDepth}")
+            ctx.close()
             return ModelCheckFail(w)
           } else {
             if (printProgress) println("✅")
           }
-          solver.pop()
+          ctx.pop()
         }
       } else {
         val anyBad = BVNot(BVAnd(assertions.map(enc.getAssertion)))
-        solver.push()
-        solver.assert(anyBad)
-        val res = solver.check(produceModel = false)
+        ctx.push()
+        ctx.assert(anyBad)
+        val res = ctx.check(produceModel = false)
 
         // did we find an assignment for which at least one bad state is true?
         if (res.isSat) {
-          val w = getWitness(sys, enc, k)
-          solver.pop()
-          solver.pop()
-          assert(solver.stackDepth == 0, s"Expected solver stack to be empty, not: ${solver.stackDepth}")
+          val w = getWitness(ctx, sys, enc, k)
+          ctx.pop()
+          ctx.pop()
+          assert(ctx.stackDepth == 0, s"Expected solver stack to be empty, not: ${ctx.stackDepth}")
+          ctx.close()
           return ModelCheckFail(w)
         }
-        solver.pop()
+        ctx.pop()
       }
 
       // advance
-      enc.unroll(solver)
+      enc.unroll(ctx)
     }
 
     // clean up
-    solver.pop()
-    assert(solver.stackDepth == 0, s"Expected solver stack to be empty, not: ${solver.stackDepth}")
+    ctx.pop()
+    assert(ctx.stackDepth == 0, s"Expected solver stack to be empty, not: ${ctx.stackDepth}")
+    ctx.close()
     ModelCheckSuccess()
   }
 
   private def getWitness(
+    ctx:             SolverContext,
     sys:             TransitionSystem,
     enc:             CompactEncoding,
     kMax:            Int,
@@ -115,12 +121,12 @@ class SMTModelChecker(
     // btor2 numbers states in the order that they are declared in starting at zero
     val stateInit = sys.states.zipWithIndex.map {
       case (State(sym: BVSymbol, _, _), ii) =>
-        solver.getValue(enc.getSignalAt(sym, 0)) match {
+        ctx.getValue(enc.getSignalAt(sym, 0)) match {
           case Some(value) => (Some(ii -> value), None)
           case None        => (None, None)
         }
       case (State(sym: ArraySymbol, _, _), ii) =>
-        val value = solver.getValue(enc.getSignalAt(sym, 0))
+        val value = ctx.getValue(enc.getSignalAt(sym, 0))
         (None, Some(ii -> value))
     }
 
@@ -129,7 +135,7 @@ class SMTModelChecker(
 
     val inputs = (0 to kMax).map { k =>
       sys.inputs.zipWithIndex.flatMap { case (input, i) =>
-        solver.getValue(enc.getSignalAt(input, k)).map(value => i -> value)
+        ctx.getValue(enc.getSignalAt(input, k)).map(value => i -> value)
       }.toMap
     }
 
@@ -147,26 +153,26 @@ class CompactEncoding(sys: TransitionSystem) {
 
   private val states = mutable.ArrayBuffer[UTSymbol]()
 
-  def defineHeader(solver: Solver): Unit = encode(sys).foreach(solver.runCommand)
+  def defineHeader(ctx: SolverContext): Unit = encode(sys).foreach(ctx.runCommand)
 
-  private def appendState(solver: Solver): UTSymbol = {
+  private def appendState(ctx: SolverContext): UTSymbol = {
     val s = UTSymbol(s"s${states.length}", stateType)
-    solver.runCommand(DeclareUninterpretedSymbol(s.name, s.tpe))
+    ctx.runCommand(DeclareUninterpretedSymbol(s.name, s.tpe))
     states.append(s)
     s
   }
 
-  def init(solver: Solver): Unit = {
+  def init(ctx: SolverContext): Unit = {
     assert(states.isEmpty)
-    val s0 = appendState(solver)
-    solver.assert(BVFunctionCall(stateInitFun, List(s0), 1))
+    val s0 = appendState(ctx)
+    ctx.assert(BVFunctionCall(stateInitFun, List(s0), 1))
   }
 
-  def unroll(solver: Solver): Unit = {
+  def unroll(ctx: SolverContext): Unit = {
     assert(states.nonEmpty)
-    appendState(solver)
+    appendState(ctx)
     val tStates = states.takeRight(2).toList
-    solver.assert(BVFunctionCall(stateTransitionFun, tStates, 1))
+    ctx.assert(BVFunctionCall(stateTransitionFun, tStates, 1))
   }
 
   /** returns an expression representing the constraint in the current state */
