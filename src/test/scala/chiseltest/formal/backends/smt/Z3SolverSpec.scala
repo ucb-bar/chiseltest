@@ -7,7 +7,7 @@ import firrtl.backends.experimental.smt._
 
 class Z3SolverSpec extends AnyFlatSpec {
 
-  private def makeSolver() = new Z3SMTLib
+  private def makeSolver() = Z3SMTLib.createContext()
 
   // simple sanity check of the SMTLib based interface to z3
   it should "check a small bitvector example" taggedAs FormalTag in {

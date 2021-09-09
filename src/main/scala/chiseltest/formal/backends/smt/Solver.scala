@@ -13,12 +13,18 @@ private[chiseltest] trait Solver {
   def supportsConstArrays:            Boolean
   def supportsUninterpretedFunctions: Boolean
 
+  def createContext(): SolverContext
+}
+
+private[chiseltest] trait SolverContext {
+  def solver: Solver
+
   // basic API
   def setLogic(logic: String): Unit = {
     val quantifierFree = logic.startsWith("QF_")
-    require(supportsQuantifiers || quantifierFree, s"$name does not support quantifiers!")
+    require(solver.supportsQuantifiers || quantifierFree, s"${solver.name} does not support quantifiers!")
     val ufs = logic.contains("UF")
-    require(supportsUninterpretedFunctions || !ufs, s"$name does not support uninterpreted functions!")
+    require(solver.supportsUninterpretedFunctions || !ufs, s"${solver.name} does not support uninterpreted functions!")
     doSetLogic(logic)
     pLogic = Some(logic)
   }
