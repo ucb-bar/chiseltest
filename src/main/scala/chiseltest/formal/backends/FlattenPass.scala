@@ -31,6 +31,7 @@ private object StateAnnotation {
       case TargetToken.Instance(i) => Some(i)
       case TargetToken.Field(f)    => Some(f)
       case _: TargetToken.OfModule => None
+      case other => throw new RuntimeException(s"Unexpected token $other")
     }.mkString(".")
   }
 }
