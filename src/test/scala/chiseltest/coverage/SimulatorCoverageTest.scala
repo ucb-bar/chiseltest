@@ -27,7 +27,7 @@ abstract class SimulatorCoverageTest(name: String, backend: SimulatorAnnotation,
     assert(cov.keys.toList == List("SIM"))
 
     // since we executed one step and all inputs are zero by default, we expect the count to be 3
-    assert(cov("SIM") == 2)
+    assert(cov("SIM") == 1)
   }
 
   it should "report count for all user cover points (with submodules)" taggedAs tag in {
@@ -40,7 +40,7 @@ abstract class SimulatorCoverageTest(name: String, backend: SimulatorAnnotation,
     assert(cov.keys.toList.sorted == List("SIM", "c0.SIM", "c1.SIM"))
 
     // since we executed one step and all inputs are zero by default, we expect the count to be 3
-    assert(cov("SIM") == 2)
+    assert(cov("SIM") == 1)
     assert(cov("c0.SIM") == 0)
     assert(cov("c1.SIM") == 0)
   }
