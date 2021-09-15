@@ -4,7 +4,7 @@ package chiseltest.internal
 
 import chiseltest.{ClockResolutionException, Region, TimeoutException}
 import chisel3._
-import chiseltest.coverage.{Coverage, TestCoverage}
+import chiseltest.coverage.TestCoverage
 import chiseltest.simulator.SimulatorContext
 import firrtl.AnnotationSeq
 
@@ -147,7 +147,7 @@ class GenericBackend[T <: Module](
     val mainThread = new TesterThread(
       () => {
         tester.poke("reset", 1)
-        tester.step(1)
+        tester.step()
         tester.poke("reset", 0)
 
         testFn(dut)
@@ -191,7 +191,9 @@ class GenericBackend[T <: Module](
           }
         }
 
-        tester.step(1)
+        if (!mainThread.done) {
+          tester.step()
+        }
       }
     } finally {
       rootTimescope = None
