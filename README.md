@@ -36,7 +36,21 @@ You can also build ChiselTest locally with `publishLocal`.
 ### Writing a Test
 ChiselTest integrates with the [ScalaTest](http://scalatest.org) framework, which provides a framework for detection and execution of unit tests.
 
-Assuming a typical Chisel project, create a new file in `src/test/scala/`, for example, `BasicTest.scala`.
+Assuming a typical Chisel project with `MyModule` defined in `src/main/scala/MyModule.scala`:
+
+```scala
+class MyModule extend Module {
+    val io = IO(new Bundle {
+        val in = Input(UInt(16.W))
+        val out = Output(UInt(16.W))
+    })
+
+    io.out := RegNext(io.in)
+}
+```
+
+Create a new file in `src/test/scala/`, for example, `BasicTest.scala`.
+
 
 In this file:
 1.  Add the necessary imports:
@@ -72,10 +86,13 @@ In this file:
     The argument to the test stimulus block (`c` in this case) is a handle to the module under test.
 5.  In the test body, use `poke`, `step`, and `expect` operations to write the test:
     ```scala
-    c.in.poke(0.U)
-    c.out.expect(0.U)
-    c.in.poke(42.U)
-    c.out.expect(42.U)
+    c.io.in.poke(0.U)
+    c.clock.step()
+    c.io.out.expect(0.U)
+    c.io.in.poke(42.U)
+    c.clock.step()
+    c.io.out.expect(42.U)
+    println("Last output value :" + c.io.out.peek().litValue)
     ```
 6.  With your test case complete, you can run all the test cases in your project by invoking ScalaTest.
     If you're using [sbt](http://scala-sbt.org), you can either run `sbt test` from the command line, or `test` from the sbt console.
@@ -97,8 +114,7 @@ See the test cases for examples:
 - [VerilatorBasicTests](src/test/scala/chiseltest/experimental/tests/VerilatorBasicTests.scala) shows an example using Verilator as the simulator.
   - Note: the simulator is selected by passing an annotation into the `test` function, which requires experimental imports:
     ```scala
-    import chiseltest.experimental.TestOptionBuilder._
-    import chiseltest.internal.VerilatorBackendAnnotation
+    import chiseltest._
     ```
     ```scala
     test(new MyModule).withAnnotations(Seq(VerilatorBackendAnnotation)) { c =>
@@ -130,6 +146,15 @@ To dump VCDs (into the test_run_dir subfolder) using sbt:
 testOnly chiseltest.tests.BasicTest -- -DwriteVcd=1
 ```
 
+## Verilator Backend
+
+We currently support the following versions of the [verilator](https://www.veripool.org/wiki/verilator) simulator:
+- `v4.028`: [Ubuntu 20.04](https://packages.ubuntu.com/focal/verilator), [Fedora 32](https://src.fedoraproject.org/rpms/verilator)
+- `v4.032`: [Fedora 33](https://src.fedoraproject.org/rpms/verilator)
+- `v4.034`: [Chipyard](https://chipyard.readthedocs.io/en/latest/Chipyard-Basics/Initial-Repo-Setup.html#requirements)
+- `v4.038`: [Ubuntu 20.10](https://packages.ubuntu.com/groovy/verilator)
+- `v4.108`: [Fedora 34](https://src.fedoraproject.org/rpms/verilator)
+- `v4.202`
 
 ## Stability
 These APIs may be considered stable and are unlikely to change significantly:

@@ -1,0 +1,207 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - 0.3.x
+
+jobs:
+  test:
+    name: sbt test on ubuntu
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        scala: [2.12.13, 2.13.5]
+        jvm: [adopt@1.8, adopt@1.11]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: ${{ matrix.jvm }}
+      - name: Test
+        run: sbt ++${{ matrix.scala }} "testOnly -- -l RequiresVcs -l RequiresVerilator -l Formal -l RequiresIcarus"
+
+  test-mac:
+    name: sbt test on mac
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11
+      - name: Test
+        run: sbt "testOnly -- -l RequiresVcs -l RequiresVerilator -l Formal -l RequiresIcarus"
+
+  icarus:
+    name: icarus verilog
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-20.04, macos-latest ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Icarus Verilog for Ubuntu
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y iverilog
+          iverilog -v || true
+      - name: Install Icarus Verilog for MacOS
+        if: runner.os == 'macOS'
+        run: |
+          brew install icarus-verilog
+          iverilog -v || true
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11
+      - name: Test
+        run: sbt ++${{ matrix.scala }} "testOnly -- -n RequiresIcarus"
+
+  verilator-mac:
+    name: verilator regression on mac
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Verilator
+        run: |
+          brew install verilator
+          verilator --version
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11
+      - name: Test
+        run: sbt "testOnly -- -n RequiresVerilator"
+
+  verilator:
+    name: verilator regressions
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        # 4.028: Ubuntu 20.04, Fedora 32
+        # 4.032: Fedora 33
+        # 4.034: Chipyard
+        # 4.038: Ubuntu 20.10
+        # 4.108: Fedora 34
+        # 4.200: currently the latest version on brew (MacOS)
+        # 4.202: added "forcePerInstance" to support our coverage flow
+        version: ["4.028", "4.032", "4.034", "4.038", "4.108", "4.200", "4.202"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Verilator Build Dependencies
+        run: sudo apt-get install -y git make autoconf g++ flex bison libfl2 libfl-dev
+      - name: Cache Verilator ${{ matrix.version }}
+        uses: actions/cache@v2
+        id: cache-verilator
+        with:
+          path: verilator-${{ matrix.version }}
+          key: ${{ runner.os }}-verilator-${{ matrix.version }}
+      - name: Compile Verilator ${{ matrix.version }}
+        if: steps.cache-verilator.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/verilator/verilator/archive/refs/tags/v${{ matrix.version }}.zip
+          unzip v${{ matrix.version }}.zip
+          cd verilator-${{ matrix.version }}
+          autoconf
+          ./configure
+          make
+      - name: Install Verilator ${{ matrix.version }}
+        run: |
+          cd verilator-${{ matrix.version }}
+          sudo make install
+          verilator --version
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8
+      - name: Test
+        run: sbt "testOnly -- -n RequiresVerilator"
+
+  formal:
+    name: formal verification tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, macos-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Z3 and CVC4 for Ubuntu
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y z3 cvc4
+          z3 --version
+          cvc4 --version
+      - name: Install Z3 and CVC4 for MacOS
+        if: runner.os == 'macOS'
+        run: |
+          brew install z3
+          brew tap cvc4/cvc4
+          brew install cvc4/cvc4/cvc4
+          z3 --version
+          cvc4 --version
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11
+      - name: Test
+        run: sbt "testOnly -- -n Formal"
+
+  doc:
+    name: Documentation and Formatting
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+      - name: Documentation
+        id: doc
+        run: sbt doc
+      - name: Check Formatting
+        run: sbt scalafmtCheckAll
+
+  # Sentinel job to simplify how we specify which checks need to pass in branch
+  # protection and in Mergify
+  #
+  # When adding new jobs, please add them to `needs` below
+  all_tests_passed:
+    name: "all tests passed"
+    needs: [test, doc, verilator, verilator-mac, formal, icarus, test-mac]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo Success!
+
+  # sbt ci-release publishes all cross versions so this job needs to be
+  # separate from a Scala versions build matrix to avoid duplicate publishing
+  publish:
+    needs: [all_tests_passed]
+    runs-on: ubuntu-20.04
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8
+      - name: Setup GPG (for Publish)
+        uses: olafurpg/setup-gpg@v3
+      - name: Publish
+        run: sbt ci-release
+        env:
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}

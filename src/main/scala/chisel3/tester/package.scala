@@ -51,15 +51,7 @@ package object tester {
 
   // Subpackages
   object experimental {
-    type TesterOptions = chiseltest.experimental.TesterOptions
-    val TesterOptions = chiseltest.experimental.TesterOptions
-
     def sanitizeFileName(name: String): String = chiseltest.experimental.sanitizeFileName(name)
-
-    object TestOptionBuilder {
-      implicit class ChiselScalatestOptionBuilder[T <: MultiIOModule](x: ChiselScalatestTester#TestBuilder[T])
-          extends chiseltest.experimental.TestOptionBuilder.ChiselScalatestOptionBuilder[T](x)
-    }
 
     object UncheckedClockPeek {
       implicit class PeekableClock(signal: Clock)

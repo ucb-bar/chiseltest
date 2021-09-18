@@ -5,6 +5,7 @@ import chiseltest.internal._
 import chisel3._
 import chisel3.experimental.{DataMirror, Direction, EnumType, FixedPoint, Interval}
 import chisel3.experimental.BundleLiterals._
+import chisel3.experimental.VecLiterals._
 import chisel3.util._
 
 /** Basic interfaces and implicit conversions for testers2
@@ -24,20 +25,18 @@ package object chiseltest {
       */
     def pokePartial(value: T): Unit = {
       require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
-      x.elements.filter {
-        case (k, v) =>
-          DataMirror.directionOf(v) != ActualDirection.Output && {
-            value.elements(k) match {
-              case _:    Record => true
-              case data: Data   => data.isLit()
-            }
+      x.elements.filter { case (k, v) =>
+        DataMirror.directionOf(v) != ActualDirection.Output && {
+          value.elements(k) match {
+            case _:    Record => true
+            case data: Data   => data.isLit()
           }
-      }.foreach {
-        case (k, v) =>
-          v match {
-            case record: Record => record.pokePartial(value.elements(k).asInstanceOf[Record])
-            case data:   Data   => data.poke(value.elements(k))
-          }
+        }
+      }.foreach { case (k, v) =>
+        v match {
+          case record: Record => record.pokePartial(value.elements(k).asInstanceOf[Record])
+          case data:   Data   => data.poke(value.elements(k))
+        }
       }
     }
 
@@ -46,18 +45,62 @@ package object chiseltest {
       */
     def expectPartial(value: T): Unit = {
       require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
-      x.elements.filter {
-        case (k, v) =>
-          value.elements(k) match {
-            case _: Record => true
-            case d: Data   => d.isLit()
+      x.elements.filter { case (k, v) =>
+        value.elements(k) match {
+          case _: Record => true
+          case d: Data   => d.isLit()
+        }
+      }.foreach { case (k, v) =>
+        v match {
+          case record: Record => record.expectPartial(value.elements(k).asInstanceOf[Record])
+          case data:   Data   => data.expect(value.elements(k))
+        }
+      }
+    }
+  }
+
+  implicit class testableVec[T <: Vec[_]](x: T) {
+
+    /** Poke the given signal with a [[Vec.litValue()]]
+      * Literals of this Record can be instantiated with
+      * {{{
+      *   someVec.Lit(_.elements("foo") -> 4.U)
+      * }}}
+      * `pokePartial` will only poke [[Input]] signals of `x`,
+      * and elements of `x` which contain no literal will be ignored.
+      */
+    def pokePartial(value: T): Unit = {
+      require(DataMirror.checkTypeEquivalence(x, value), s"Vec type mismatch")
+      x.getElements.zipWithIndex.filter { case (v, index) =>
+        DataMirror.directionOf(v) != ActualDirection.Output && {
+          value.getElements(index) match {
+            case _:    T    => true
+            case data: Data => data.isLit()
           }
-      }.foreach {
-        case (k, v) =>
-          v match {
-            case record: Record => record.expectPartial(value.elements(k).asInstanceOf[Record])
-            case data:   Data   => data.expect(value.elements(k))
-          }
+        }
+      }.foreach { case (v, index) =>
+        v match {
+          case vec:  T    => vec.pokePartial(value.getElements(index).asInstanceOf[T])
+          case data: Data => data.poke(value.getElements(index))
+        }
+      }
+    }
+
+    /** Check the given signal with a [[Vec.litValue()]];
+      * elements of `x` which contain no literal will be ignored.
+      */
+    def expectPartial(value: T): Unit = {
+      require(DataMirror.checkTypeEquivalence(x, value), s"Vec type mismatch")
+      x.getElements.zipWithIndex.filter { case (v, index) =>
+        value.getElements(index) match {
+          case _: T    => true
+          case d: Data => d.isLit()
+        }
+      }.foreach { case (v, index) =>
+        v match {
+          case vec:  T    => vec.expectPartial(value.getElements(index).asInstanceOf[T])
+          case data: Data => data.expect(value.getElements(index))
+        }
       }
     }
   }
@@ -114,9 +157,14 @@ package object chiseltest {
         pokeBits(x, value.litValue)
       case (x: Record, value: Record) => {
         require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
-        (x.elements.zip(value.elements)).foreach {
-          case ((_, x), (_, value)) =>
-            x.poke(value)
+        (x.elements.zip(value.elements)).foreach { case ((_, x), (_, value)) =>
+          x.poke(value)
+        }
+      }
+      case (x: Vec[_], value: Vec[_]) => {
+        require(DataMirror.checkTypeEquivalence(x, value), s"Vec type mismatch")
+        (x.getElements.zip(value.getElements)).foreach { case (x, value) =>
+          x.poke(value)
         }
       }
       case (x: EnumType, value: EnumType) => {
@@ -143,12 +191,16 @@ package object chiseltest {
       case x: Interval =>
         Context().backend.peekBits(x, stale).I(x.binaryPoint).asInstanceOf[T]
       case (x: Record) => {
-        val elementValueFns = x.elements.map {
-          case (name: String, elt: Data) =>
-            (y: Record) => (y.elements(name), elt.peekWithStale(stale))
+        val elementValueFns = x.elements.map { case (name: String, elt: Data) =>
+          (y: Record) => (y.elements(name), elt.peekWithStale(stale))
         }.toSeq
         chiselTypeOf(x).Lit(elementValueFns: _*).asInstanceOf[T]
       }
+      case (x: Vec[_]) =>
+        val elementValueFns = x.getElements.map { case elt: Data =>
+          elt.peekWithStale(stale)
+        }
+        Vec.Lit(elementValueFns: _*).asInstanceOf[T]
       case (x: EnumType) => {
         throw new NotImplementedError(s"peeking enums ($x) not yet supported, need programmatic enum construction")
       }
@@ -177,9 +229,14 @@ package object chiseltest {
         Context().backend.expectBits(x, value.litValue, message, Some(BitsDecoders.fixedToString(x.binaryPoint)), stale)
       case (x: Record, value: Record) => {
         require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
-        (x.elements.zip(value.elements)).foreach {
-          case ((_, x), (_, value)) =>
-            x.expectWithStale(value, message, stale)
+        (x.elements.zip(value.elements)).foreach { case ((_, x), (_, value)) =>
+          x.expectWithStale(value, message, stale)
+        }
+      }
+      case (x: Vec[_], value: Vec[_]) => {
+        require(DataMirror.checkTypeEquivalence(x, value), s"Vec type mismatch")
+        (x.getElements.zip(value.getElements)).foreach { case (x, value) =>
+          x.expectWithStale(value, message, stale)
         }
       }
       case (x: EnumType, value: EnumType) => {
@@ -266,4 +323,15 @@ package object chiseltest {
   implicit def decoupledToDriver[T <: Data](x: ReadyValidIO[T]) = new DecoupledDriver(x)
 
   implicit def validToDriver[T <: Data](x: ValidIO[T]) = new ValidDriver(x)
+
+  // expose public flags
+  val VerilatorBackendAnnotation = simulator.VerilatorBackendAnnotation
+  val TreadleBackendAnnotation = simulator.TreadleBackendAnnotation
+  val VcsBackendAnnotation = simulator.VcsBackendAnnotation
+  val IcarusBackendAnnotation = simulator.IcarusBackendAnnotation
+  val WriteVcdAnnotation = simulator.WriteVcdAnnotation
+  val WriteVpdAnnotation = simulator.WriteVpdAnnotation
+  val WriteLxtAnnotation = simulator.WriteLxtAnnotation
+  type WriteLxtAnnotation = simulator.WriteLxtAnnotation
+  val WriteFstAnnotation = simulator.WriteFstAnnotation
 }

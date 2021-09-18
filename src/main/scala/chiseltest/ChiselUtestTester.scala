@@ -5,12 +5,12 @@ package chiseltest
 import chiseltest.internal._
 import chiseltest.experimental.sanitizeFileName
 import utest.TestSuite
-import chisel3.MultiIOModule
+import chisel3.Module
+import chiseltest.internal.TestEnvInterface.addDefaultTargetDir
 import firrtl.AnnotationSeq
 import utest.framework.Formatter
 
-/**
-  * Using utest as test framework
+/** Using utest as test framework
   * {{{
   *   // define test spec in trait
   *   trait HasTestChipSpec {
@@ -43,8 +43,7 @@ trait ChiselUtestTester extends TestSuite with TestEnvInterface {
     }
   }
 
-  /**
-    * Since [[utest.test]] collides with [[chisel3.tester.RawTester.test]], it is renamed to [[testCircuit]],
+  /** Since [[utest.test]] collides with [[chisel3.tester.RawTester.test]], it is renamed to [[testCircuit]],
     * Here is a example to constructs a unit test harness for the Chisel Module PlusOne generated as dutGen.
     * {{{
     *   testCircuit(new PlusOne) { c =>
@@ -68,15 +67,15 @@ trait ChiselUtestTester extends TestSuite with TestEnvInterface {
     *
     * @note This API is experimental and forward compatibility is not yet guaranteed
     * @param dutGen A generator of a Chisel Module
-    * @tparam T The DUT type, must be a subclass of MultiIOModule
+    * @tparam T The DUT type, must be a subclass of Module
     */
-  def testCircuit[T <: MultiIOModule](
+  def testCircuit[T <: Module](
     dutGen:        => T,
     annotationSeq: AnnotationSeq = Seq.empty
   )(testFn:        T => Unit
   )(
     implicit testPath: utest.framework.TestPath
-  ): Unit = {
+  ): TestResult = {
     def testName = s"${testPath.value.reduce(_ + _)}"
 
     val newAnnos = addDefaultTargetDir(sanitizeFileName(testName), annotationSeq)

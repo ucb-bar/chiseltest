@@ -4,12 +4,13 @@ import mill._
 import mill.scalalib._
 import mill.scalalib.scalafmt._
 import mill.scalalib.publish._
+import coursier.maven.MavenRepository
 
-object chiseltest extends mill.Cross[chiseltestCrossModule]("2.11.12", "2.12.10")
+object chiseltest extends mill.Cross[chiseltestCrossModule]("2.12.13")
 
 val defaultVersions = Map(
   "chisel3" -> "3.5-SNAPSHOT",
-  "treadle" -> "1.5-SNAPSHOT"
+  "treadle" -> "1.5-SNAPSHOT",
 )
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
@@ -18,6 +19,12 @@ def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
 }
 
 class chiseltestCrossModule(val crossScalaVersion: String) extends CrossSbtModule with PublishModule with ScalafmtModule {
+  override def repositoriesTask = T.task {
+    super.repositoriesTask() ++ Seq(
+      MavenRepository("https://oss.sonatype.org/content/repositories/snapshots")
+    )
+  }
+
   def chisel3Module: Option[PublishModule] = None
 
   def chisel3IvyDeps = if (chisel3Module.isEmpty) Agg(
@@ -37,34 +44,25 @@ class chiseltestCrossModule(val crossScalaVersion: String) extends CrossSbtModul
 
   def publishVersion = "0.5-SNAPSHOT"
 
-  private def javacCrossOptions = majorVersion match {
-    case i if i < 12 => Seq("-source", "1.7", "-target", "1.7")
-    case _ => Seq("-source", "1.8", "-target", "1.8")
-  }
-
-  private def scalacCrossOptions = majorVersion match {
-    case i if i < 12 => Seq()
-    case _ => Seq("-Xsource:2.11")
-  }
-
   override def scalacOptions = T {
     super.scalacOptions() ++ Seq(
       "-deprecation",
       "-feature",
       "-language:reflectiveCalls" // required by SemanticDB compiler plugin
-    ) ++ scalacCrossOptions
+    )
   }
 
   override def javacOptions = T {
-    super.javacOptions() ++ javacCrossOptions
+    super.javacOptions() ++ Seq("-source", "1.8", "-target", "1.8")
   }
 
   override def moduleDeps = super.moduleDeps ++ chisel3Module ++ treadleModule
 
   override def ivyDeps = T {
     Agg(
-      ivy"org.scalatest::scalatest:3.2.0",
-      ivy"com.lihaoyi::utest:0.7.4"
+      ivy"org.scalatest::scalatest:3.1.4",
+      ivy"com.lihaoyi::utest:0.7.9",
+      ivy"net.java.dev.jna:jna:5.9.0",
     ) ++ chisel3IvyDeps ++ treadleIvyDeps
   }
 
@@ -72,7 +70,7 @@ class chiseltestCrossModule(val crossScalaVersion: String) extends CrossSbtModul
     override def ivyDeps = T {
       Agg(
         ivy"org.scalatest::scalatest:3.0.8",
-        ivy"com.lihaoyi::utest:0.7.4"
+        ivy"com.lihaoyi::utest:0.7.9",
       ) ++ chisel3IvyDeps ++ treadleIvyDeps
     }
 
@@ -81,12 +79,6 @@ class chiseltestCrossModule(val crossScalaVersion: String) extends CrossSbtModul
         "org.scalatest.tools.Framework",
         "utest.runner.Framework"
       )
-    }
-
-    // a sbt-like testOnly command.
-    // for example, mill -i "chiseltest[2.12.12].test.testOnly" "chiseltest.tests.AsyncClockTest"
-    def testOnly(args: String*) = T.command {
-      super.runMain("org.scalatest.run", args: _*)
     }
   }
 

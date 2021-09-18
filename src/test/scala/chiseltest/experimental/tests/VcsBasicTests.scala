@@ -3,9 +3,7 @@ package chiseltest.experimental.tests
 
 import chisel3._
 import chiseltest._
-import chiseltest.experimental.TestOptionBuilder._
-import chiseltest.internal.VcsBackendAnnotation
-import org.scalatest._
+import chiseltest.simulator.RequiresVcs
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -14,9 +12,7 @@ class VcsBasicTests extends AnyFlatSpec with ChiselScalatestTester with Matchers
 
   val annos = Seq(VcsBackendAnnotation)
 
-  it should "build and simulate a basic test with input and output" in {
-    assume(firrtl.FileUtils.isVCSAvailable)
-
+  it should "build and simulate a basic test with input and output" taggedAs(RequiresVcs) in {
     test(new Module {
       val io = IO(new Bundle {
         val in = Input(UInt(8.W))
