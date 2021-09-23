@@ -26,7 +26,7 @@ abstract class SimulatorCoverageTest(name: String, backend: SimulatorAnnotation,
     // the cover point in the main module are not prefixed
     assert(cov.keys.toList == List("user_cov"))
 
-    // since we executed one step and all inputs are zero by default, we expect the count to be 3
+    // since we executed one step and all inputs are zero by default, we expect the count to be 1
     assert(cov("user_cov") == 1)
   }
 
