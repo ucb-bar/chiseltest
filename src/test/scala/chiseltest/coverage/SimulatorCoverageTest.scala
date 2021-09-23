@@ -24,10 +24,10 @@ abstract class SimulatorCoverageTest(name: String, backend: SimulatorAnnotation,
     val cov = getCoverage(r)
 
     // the cover point in the main module are not prefixed
-    assert(cov.keys.toList == List("SIM"))
+    assert(cov.keys.toList == List("user_cov"))
 
-    // since we executed one step and all inputs are zero by default, we expect the count to be 3
-    assert(cov("SIM") == 1)
+    // since we executed one step and all inputs are zero by default, we expect the count to be 1
+    assert(cov("user_cov") == 1)
   }
 
   it should "report count for all user cover points (with submodules)" taggedAs tag in {
@@ -37,12 +37,12 @@ abstract class SimulatorCoverageTest(name: String, backend: SimulatorAnnotation,
     val cov = getCoverage(r)
 
     // the cover point in the main module are not prefixed, but the one in the child module are
-    assert(cov.keys.toList.sorted == List("SIM", "c0.SIM", "c1.SIM"))
+    assert(cov.keys.toList.sorted == List("c0.user_cov_2", "c1.user_cov_2", "user_cov"))
 
     // since we executed one step and all inputs are zero by default, we expect the count to be 3
-    assert(cov("SIM") == 1)
-    assert(cov("c0.SIM") == 0)
-    assert(cov("c1.SIM") == 0)
+    assert(cov("user_cov") == 1)
+    assert(cov("c0.user_cov_2") == 0)
+    assert(cov("c1.user_cov_2") == 0)
   }
 
   // this is an integration test that uses chisel3.experimental.verification.cover to estimate PI
@@ -57,8 +57,8 @@ abstract class SimulatorCoverageTest(name: String, backend: SimulatorAnnotation,
     }
 
     val cov = getCoverage(r)
-    val inCircle = cov("SIM")
-    val inRectangle = cov("SIM_1")
+    val inCircle = cov("inCircleCover")
+    val inRectangle = cov("inRectangleCover")
     val pi = 4.0 * inCircle.toDouble / inRectangle.toDouble
     val error = math.abs(pi - math.Pi)
     assert(error < 0.0329)
@@ -81,6 +81,6 @@ private class PiEstimator extends Module {
   val radius = 100
   inCircle := (x * x + y * y) <= (radius * radius).S
   inRectangle := (x <= radius.S && x >= -radius.S) && (y <= radius.S && y >= -radius.S)
-  chisel3.experimental.verification.cover(inCircle)
-  chisel3.experimental.verification.cover(inRectangle)
+  cover(inCircle).suggestName("inCircleCover")
+  cover(inRectangle).suggestName("inRectangleCover")
 }

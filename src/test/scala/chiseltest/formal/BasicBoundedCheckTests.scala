@@ -5,8 +5,7 @@ package chiseltest.formal
 import org.scalatest.flatspec.AnyFlatSpec
 import chiseltest._
 import chisel3._
-import chisel3.util._
-import chisel3.experimental.verification
+
 
 class BasicBoundedCheckTests extends AnyFlatSpec with ChiselScalatestTester with Formal {
   behavior of "verify command"
@@ -46,8 +45,8 @@ class AssumeAssertTestModule extends Module {
   val in = IO(Input(UInt(8.W)))
   val out = IO(Output(UInt(8.W)))
   out := in + 1.U
-  verification.assume(in > 12.U && in < 255.U)
-  verification.assert(out > 13.U)
+  assume(in > 12.U && in < 255.U)
+  assert(out > 13.U)
 }
 
 class NestedAssertAssumeTestModule extends Module {
@@ -79,7 +78,7 @@ class DanielModuleWithBadAssertion extends Module {
     bReg := true.B
   }
 
-  verification.assert(aReg && bReg)
+  assert(aReg && bReg)
 }
 
 // from Daniel Kasza's dank-formal library
@@ -103,5 +102,5 @@ class DanielModuleWithGoodAssertion extends Module {
     bReg := true.B
   }
 
-  verification.assert(aReg ^ bReg)
+  assert(aReg ^ bReg)
 }

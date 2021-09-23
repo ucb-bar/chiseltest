@@ -3,7 +3,6 @@ package chiseltest.formal.examples
 
 import chisel3.SyncReadMem.{ReadFirst, ReadUnderWrite, Undefined, WriteFirst}
 import chisel3._
-import chisel3.experimental.verification
 import chiseltest._
 import chiseltest.formal._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -83,9 +82,9 @@ class ZipCpuQuizzes extends AnyFlatSpec with ChiselScalatestTester with Formal {
 class Quiz1(withAssume: Boolean) extends Module {
   val counter = RegInit(0.U(16.W))
   counter := counter + 1.U
-  verification.assert(counter <= 10.U) // reduced from 100 -> 10 to make it fail faster
+  assert(counter <= 10.U) // reduced from 100 -> 10 to make it fail faster
   if(withAssume) {
-    verification.assume(counter <= 9.U)
+    assume(counter <= 9.U)
   }
 }
 
@@ -102,7 +101,7 @@ class Quiz2(withInit: Boolean) extends Module {
     counter := counter - 1.U
   }
   oBusy := counter =/= 0.U
-  verification.assert(counter < MaxAmount)
+  assert(counter < MaxAmount)
 }
 
 /** http://zipcpu.com/quiz/2019/08/19/quiz03.html */
@@ -118,18 +117,18 @@ class Quiz4(style: Int) extends Module {
     counter := counter - 1.U
   }
 
-  verification.assert(counter < 4.U) // reduced from 24 -> 4
+  assert(counter < 4.U) // reduced from 24 -> 4
 
   style match {
     case 0 => // similar to the original ZipCPU example
-      verification.assume(!iStartSignal)
-      verification.assert(RegNext(counter === 0.U))
+      assume(!iStartSignal)
+      assert(RegNext(counter === 0.U))
     case 1 => // using chisel past
-      verification.assume(!iStartSignal)
-      verification.assert(past(counter === 0.U))
+      assume(!iStartSignal)
+      assert(past(counter === 0.U))
     case 2 => // the solution suggested by ZipCPU (implemented with Chisel past)
       when(past(counter === 0.U && !iStartSignal)) {
-        verification.assert(counter === 0.U)
+        assert(counter === 0.U)
       }
   }
 }
@@ -154,11 +153,11 @@ class Quiz7(fixed: Boolean) extends Module {
 
   if(fixed) {
     when(past(iStartSignal) && past(counter === 0.U)) {
-      verification.assert(counter === 3.U) // reduced from 21 -> 3 for faster checking
+      assert(counter === 3.U) // reduced from 21 -> 3 for faster checking
     }
   } else {
     when(RegNext(iStartSignal)) {
-      verification.assert(counter === 3.U) // reduced from 21 -> 3 for faster checking
+      assert(counter === 3.U) // reduced from 21 -> 3 for faster checking
     }
   }
 }
@@ -178,8 +177,8 @@ class Quiz10 extends Module {
   // Using the Chisel past function, this example is safe and will automatically be disabled
   // in the first cycle after reset.
   when(past(oRequest) && past(iStall)) {
-    verification.assert(oRequest)
-    verification.assert(stable(oRequestDetails))
+    assert(oRequest)
+    assert(stable(oRequestDetails))
   }
 }
 
@@ -191,12 +190,12 @@ class Quiz13(xWidth: Int) extends Module {
   require(xWidth > 0)
   val x = IO(Input(UInt(xWidth.W)))
 
-  verification.assert(stable(x) === (x === past(x)))
-  verification.assert(changed(x) === (x =/= past(x)))
+  assert(stable(x) === (x === past(x)))
+  assert(changed(x) === (x =/= past(x)))
   // Chisel's rose function only operates on Bool, not on UInt of arbitrary sizes!
   // => thus we cannot (easily) make the same mistake as in the original question
-  verification.assert(rose(x(0)) === (x(0) && !past(x(0))))
-  verification.assert(fell(x(0)) === (!x(0) && past(x(0))))
+  assert(rose(x(0)) === (x(0) && !past(x(0))))
+  assert(fell(x(0)) === (!x(0) && past(x(0))))
 }
 
 /** http://zipcpu.com/quiz/2020/12/24/quiz14.html */
@@ -220,7 +219,7 @@ class Quiz15(readUnderWrite: ReadUnderWrite) extends Module {
   // arbitrary value to be read (the write is still performed and available
   // a cycle later).
   when(past(iWrite && iRead && iWAddr === iRAddr)) {
-    verification.assert(oData === past(iData))
+    assert(oData === past(iData))
   }
 }
 
