@@ -2,7 +2,6 @@
 package chiseltest.formal.examples
 
 import chisel3._
-import chisel3.experimental.verification
 import chiseltest._
 import chiseltest.formal._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -32,5 +31,5 @@ class KeepMax(width: Int) extends Module {
   out := max
 
   // get the value of io.out from 1 cycle in the past
-  verification.assert(out >= past(out))
+  assert(out >= past(out))
 }

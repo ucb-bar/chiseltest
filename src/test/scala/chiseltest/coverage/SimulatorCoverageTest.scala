@@ -81,6 +81,6 @@ private class PiEstimator extends Module {
   val radius = 100
   inCircle := (x * x + y * y) <= (radius * radius).S
   inRectangle := (x <= radius.S && x >= -radius.S) && (y <= radius.S && y >= -radius.S)
-  chisel3.experimental.verification.cover(inCircle)
-  chisel3.experimental.verification.cover(inRectangle)
+  cover(inCircle)
+  cover(inRectangle)
 }

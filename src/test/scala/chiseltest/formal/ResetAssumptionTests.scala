@@ -6,7 +6,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import chiseltest._
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{ChiselAnnotation, annotate, verification}
+import chisel3.experimental.{ChiselAnnotation, annotate}
 import firrtl.annotations.PresetAnnotation
 
 // very similar to the firrtl example in the backend tests, but in this case we rely on the fact
@@ -14,7 +14,7 @@ import firrtl.annotations.PresetAnnotation
 class FailAfterModule(n: Int) extends Module {
   val counter = RegInit(0.U(log2Ceil(n + 1).W))
   counter := counter + 1.U
-  verification.assert(counter < n.U)
+  assert(counter < n.U)
 }
 
 // in order to make sure that our reset assumptions pass respects preset annotated resets
@@ -25,7 +25,7 @@ class FailAfterPresetModule(n: Int) extends Module with RequireAsyncReset {
   val counter = RegInit(0.U(log2Ceil(n + 1).W))
   counter := counter + 1.U
   withReset(false.B) {
-    verification.assert(counter < n.U)
+    assert(counter < n.U)
   }
 }
 
@@ -42,7 +42,7 @@ class ResetCountCheckModule(resetCycles: Int) extends Module {
   val resetCount = withReset(preset) { RegInit(0.U(8.W)) }
   resetCount := Mux(resetCount === 255.U, 255.U, resetCount + 1.U)
   // we should always **at least** reset for `resetCycles` cycles
-  verification.assert(resetCount >= resetCycles.U)
+  assert(resetCount >= resetCycles.U)
 }
 
 class ResetAssumptionTests extends AnyFlatSpec with ChiselScalatestTester with Formal {

@@ -2,7 +2,6 @@
 package chiseltest.formal.examples
 
 import chisel3._
-import chisel3.experimental.verification
 import chiseltest._
 import chiseltest.formal._
 import chiseltest.iotesters.DecoupledGcd
@@ -28,26 +27,26 @@ class DecoupledGcdSpec(makeDut: => DecoupledGcd) extends Module with Observer {
 
   // do not accept new inputs while busy
   when(busy) {
-    verification.assert(!input.fire())
+    assert(!input.fire())
   }
 
   // only release outputs when busy
   when(output.fire()) {
-    verification.assert(output.fire())
+    assert(output.fire())
   }
 
   // when there was no transactions, busy should not change
   when(past(!input.fire() && !output.fire())) {
-    verification.assert(stable(busy))
+    assert(stable(busy))
   }
 
   // when busy changed from 0 to 1, an input was accepted
   when(rose(busy)) {
-    verification.assert(past(input.fire()))
+    assert(past(input.fire()))
   }
 
   // when busy changed from 1 to 0, an output was transmitted
   when(fell(busy)) {
-    verification.assert(past(output.fire()))
+    assert(past(output.fire()))
   }
 }

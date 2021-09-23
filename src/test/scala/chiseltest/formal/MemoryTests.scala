@@ -6,7 +6,7 @@ import chisel3.SyncReadMem.ReadUnderWrite
 import org.scalatest.flatspec.AnyFlatSpec
 import chiseltest._
 import chisel3._
-import chisel3.experimental.{ChiselAnnotation, annotate, verification}
+import chisel3.experimental.{ChiselAnnotation, annotate}
 import firrtl.annotations.{Annotation, MemoryArrayInitAnnotation, MemoryScalarInitAnnotation, ReferenceTarget}
 import firrtl.ir.ReadUnderWrite
 
@@ -91,18 +91,18 @@ class SyncMemTestModule(readUnderWrite: ReadUnderWrite) extends Module {
 
 class ReadFirstMemoryReturnsDataAfterTwoCycles extends SyncMemTestModule(ReadUnderWrite.Old) {
   // we assume the we read from the address that we last wrote to
-  verification.assume(readAddr === past(writeAddr))
-  verification.assert(out === past(in, 2))
+  assume(readAddr === past(writeAddr))
+  assert(out === past(in, 2))
 }
 
 class ReadFirstMemoryReturnsDataAfterOneCycle extends SyncMemTestModule(ReadUnderWrite.Old) {
-  verification.assume(readAddr === writeAddr)
-  verification.assert(out === past(in))
+  assume(readAddr === writeAddr)
+  assert(out === past(in))
 }
 
 class WriteFirstMemoryReturnsDataAfterOneCycle extends SyncMemTestModule(ReadUnderWrite.New) {
-  verification.assume(readAddr === writeAddr)
-  verification.assert(out === past(in))
+  assume(readAddr === writeAddr)
+  assert(out === past(in))
 }
 
 class ReadOnlyMemModule extends Module {
@@ -119,23 +119,23 @@ class ReadOnlyMemModule extends Module {
 
 class ReadOnlyMemoryAlwaysReturnZero extends ReadOnlyMemModule {
   annoMem(MemoryScalarInitAnnotation(_, 0))
-  verification.assert(out === 0.U)
+  assert(out === 0.U)
 }
 
 class ReadOnlyMemoryAlwaysReturnOneFail extends ReadOnlyMemModule {
   annoMem(MemoryScalarInitAnnotation(_, 0))
-  verification.assert(out === 1.U)
+  assert(out === 1.U)
 }
 
 class ReadOnlyMemoryAlwaysReturnOneOrTwo extends ReadOnlyMemModule {
   annoMem(MemoryArrayInitAnnotation(_, Seq(1, 2, 2, 1)))
-  verification.assert(out === 1.U || out === 2.U)
+  assert(out === 1.U || out === 2.U)
 }
 
 class ReadOnlyMemoryAlwaysReturnOneOrTwoFail extends ReadOnlyMemModule {
   // we add a three to the initialization to make the assertion fail
   annoMem(MemoryArrayInitAnnotation(_, Seq(1, 2, 2, 3)))
-  verification.assert(out === 1.U || out === 2.U)
+  assert(out === 1.U || out === 2.U)
 }
 
 class MemoryCollisionModule extends Module {
@@ -152,12 +152,12 @@ class MemoryCollisionModule extends Module {
   // the read port is used to verify the written value
   // we use it to check that we always read the last written value
   when(past(aEn || bEn)) {
-    verification.assert(m.read(past(addr)) === past(data))
+    assert(m.read(past(addr)) === past(data))
   }
 }
 
 class MutuallyExclusiveWritesShouldNotCollide extends MemoryCollisionModule {
-  verification.assume(!(aEn && bEn)) // only one port writes at a time
+  assume(!(aEn && bEn)) // only one port writes at a time
 }
 
 class ReadEnableSyncMemModule extends Module {
@@ -175,12 +175,12 @@ class ReadEnableSyncMemModule extends Module {
 
 class ReadEnableMemValidDataAfterEnTrue extends ReadEnableSyncMemModule {
   when(past(en)) {
-    verification.assert(data === 0.U)
+    assert(data === 0.U)
   }
 }
 
 class ReadEnableMemInvalidDataAfterEnFalse extends ReadEnableSyncMemModule {
   when(past(!en)) {
-    verification.assert(data === 0.U)
+    assert(data === 0.U)
   }
 }

@@ -5,7 +5,6 @@ package chiseltest.formal
 import org.scalatest.flatspec.AnyFlatSpec
 import chiseltest._
 import chisel3._
-import chisel3.experimental.verification
 
 // most of the tests are inspired by the UndefinedFirrtlSpec in firrtl.backends.experimental.smt.end2end
 class UndefinedValuesTests extends AnyFlatSpec with ChiselScalatestTester with Formal {
@@ -47,12 +46,12 @@ class DivisionByZeroIsEq(to: Int) extends Module {
   val a = IO(Input(UInt(2.W)))
   val b = IO(Input(UInt(2.W)))
   val d = a / b
-  verification.assume(b === 0.U)
-  verification.assert(d === to.U)
+  assume(b === 0.U)
+  assert(d === to.U)
 }
 
 class InvalidSignalIs(value: Int) extends Module {
   val a = Wire(UInt(2.W))
   a := DontCare
-  verification.assert(a === value.U)
+  assert(a === value.U)
 }
