@@ -23,10 +23,6 @@ class DualPortNewDataRAMBundle(Width: Int, addressBits: Int) extends Bundle {
   val ram_re2 = Input(Bool())
   val ram_dout2 = Output(UInt(Width.W))
   val ram_rd_addr2 = Input(UInt(addressBits.W))
-  override def cloneType(): this.type = {
-    new DualPortNewDataRAMBundle(Width, addressBits)
-      .asInstanceOf[this.type]
-  }
 }
 
 class DualPortNewDataRAM(Width: Int, addressBits: Int)
@@ -52,10 +48,6 @@ class DoohickeyBundle() extends Bundle {
   val writeAddress = Input(UInt(4.W))
   val writeEnable = Input(Bool())
   val writeData = Input(UInt(64.W))
-
-  override def cloneType(): this.type = {
-    new DoohickeyBundle().asInstanceOf[this.type]
-  }
 }
 
 class Doohickey() extends Module {
