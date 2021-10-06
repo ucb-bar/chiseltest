@@ -14,9 +14,6 @@ class PeekPokeBundleSpec extends AnyFlatSpec with Matchers {
   // Define some data types to be used in the circuit.
   class ABundle extends Bundle {
     val aBool = Bool()
-
-    // Since this bundle is defined within a class, we need an explicit cloneType method.
-    override def cloneType: ABundle.this.type = new ABundle().asInstanceOf[ABundle.this.type]
   }
 
   object MyEnum extends ChiselEnum {
@@ -29,9 +26,6 @@ class PeekPokeBundleSpec extends AnyFlatSpec with Matchers {
    val aBundle = new ABundle()
    val aBottomBool = Bool()
    val anEnum = MyEnum()
-
-   // Since this bundle is defined within a class, we need an explicit cloneType method.
-   override def cloneType: MyBundle.this.type = new MyBundle().asInstanceOf[MyBundle.this.type]
  }
 
   // A trivial circuit that copies its input to its output.
