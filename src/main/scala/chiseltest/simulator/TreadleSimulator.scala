@@ -61,16 +61,23 @@ private class TreadleContext(tester: TreadleTester, toplevel: TopmoduleInfo) ext
 
   require(toplevel.clocks.size <= 1, "Currently only single clock circuits are supported!")
   private def defaultClock = toplevel.clocks.headOption
-  override def step(n: Int): Unit = {
+  override def step(n: Int): StepResult = {
     defaultClock match {
       case Some(_) =>
       case None    => throw NoClockException(tester.topName)
     }
+    var delta: Int = 0
     try {
-      tester.step(n = n)
+      (0 until n).foreach { _ =>
+        delta += 1
+        tester.step()
+      }
+      StepOk
     } catch {
-      case _: StopException =>
-      // TODO: throw exception!
+      case s: StopException =>
+        val infos = s.stops.map(_.name)
+        val isFailure = s.stops.exists(_.ret > 0)
+        StepInterrupted(delta, isFailure, infos)
     }
   }
 

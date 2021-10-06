@@ -15,7 +15,9 @@ class IcarusPeekPokeCompliance extends PeekPokeCompliance(IcarusSimulator, Requi
 class IcarusWaveformCompliance extends WaveformCompliance(IcarusSimulator, RequiresIcarus)
 class IcarusCoverageCompliance extends CoverageCompliance(IcarusSimulator, RequiresIcarus)
 class IcarusMemoryCompliance extends MemoryCompliance(IcarusSimulator, RequiresIcarus)
-
+// VPI based simulators are currently not Stop compliant, they will just exit once they encounter a stop
+// or a failed assertion
+//class IcarusStopCompliance extends StopCompliance(IcarusSimulator, RequiresIcarus)
 
 class IcarusSpecificTests extends AnyFlatSpec {
   behavior of "iverilog"

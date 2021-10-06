@@ -7,11 +7,12 @@ package chiseltest.simulator
 class DebugPrintWrapper(inner: SimulatorContext) extends SimulatorContext {
   private var cycle: Long = 0
   override def sim = inner.sim
-  override def step(n: Int): Unit = {
+  override def step(n: Int): StepResult = {
     val start = cycle
     cycle += n
-    inner.step(n)
+    val res = inner.step(n)
     println(s"step $start -> $cycle")
+    res
   }
   override def peek(signal: String) = {
     val res = inner.peek(signal)

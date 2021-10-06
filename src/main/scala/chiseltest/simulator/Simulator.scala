@@ -11,8 +11,10 @@ trait SimulatorContext {
   /** Returns a reference the [[Simulator]] that created this context. */
   def sim: Simulator
 
-  /** Step the main clock `n` times. Throws a [[NoClockException]] if the circuit does not have a clock input. */
-  def step(n: Int = 1): Unit
+  /** Step the main clock `n` times. Throws a [[NoClockException]] if the circuit does not have a clock input.
+    * @return [[StepInterrupted]] if a stop/assert/assume statement fired during execution, [[StepOk]] otherwise.
+    */
+  def step(n: Int = 1): StepResult
 
   /** Returns the latest value of an output or input port on the top-level module.
     * @note the simulator has to take care of recomputing signals after any change
@@ -53,6 +55,16 @@ trait SimulatorContext {
   def resetCoverage(): Unit =
     throw new NotImplementedError(s"${sim.name} does not support coverage!")
 }
+
+sealed trait StepResult
+case object StepOk extends StepResult
+
+/** Indicates that an interrupt (active stop or assertion failure) was raised during the execution of a `step`.
+  * @param after number of steps after which the execution was stopped. Always > 0 and <= `n`.
+  * @param isFailure true if the interrupt involved a stop with non-zero return code or an assertion/assumption violation.
+  * @param sources optional list of hierarchical names of stop/assert/assume statements that were triggered.
+  */
+case class StepInterrupted(after: Int, isFailure: Boolean, sources: Seq[String]) extends StepResult
 
 /** Thrown by [[SimulatorContext.step]] if the circuit has no clock input */
 case class NoClockException(toplevel: String)

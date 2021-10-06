@@ -14,3 +14,9 @@ class TimeoutException(message: String) extends Exception(message)
 
 // when interfacing with the testdriver before stepping the clock after moving to an earlier region
 class TemporalParadox(message: String) extends Exception(message)
+
+/** Indicates that a Chisel `stop()` statement was triggered. */
+class StopException(message: String) extends Exception(message)
+
+/** Indicates that a Chisel `assert(...)` or `assume(...)` statement has failed. */
+class ChiselAssertionError(message: String) extends Exception(message)
