@@ -16,33 +16,48 @@ trait Observer { this: Module =>
     * Usage:
     *
     * {{{
-    * import chiseltest.experimental.Observer
+    * import chisel3._
     *
-    * // This is the module to be tested
+    * // This is the module and submodule to be tested
     * class SubModule extends Module {
-    *     val reg  = Reg(UInt(6.W))
-    *     reg := 42.U
-    *   }
+    *   val reg  = Reg(UInt(6.W))
+    *   reg := 42.U
+    * }
     *
-    *   // Top module which instantiates the submodule
-    *   class Top extends Module {
-    *     val submodule = Module(new SubModule)
-    *   }
+    * // Top module which instantiates the submodule
+    * class Top extends Module {
+    *   val submodule = Module(new SubModule)
+    * }
     *
-    *   // Here we create a wrapper extending the Top module adding the observer
-    *   class TopWrapper extends Top with Observer {
-    *     val observed_reg  = observe(submodule.reg)
-    *   }
-    *
+    * // Generate the main project Verilog
+    * object Proj extends App {
+    *  (new chisel3.stage.ChiselStage).emitVerilog(
+    *    new Top()
+    *  )}
     * }}}
     *
-    * The `Top` module can be tested with `chiseltest` and `scalatest` like:
+    * Then in your spec, test the `Top` module with `chiseltest` and `scalatest` while being
+    *      able to observe the submodule:
     * {{{
-    *   it should "observe a submodule Reg by using BoringUtils" in {
-    *     test(new TopWrapper) { c =>
-    *       c.observed_reg.expect(42.U)
-    *     }
+    * import chisel3._
+    * import chiseltest._
+    * import org.scalatest._
+    *
+    * import flatspec._
+    * import matchers.should._
+    * import chiseltest.experimental.Observer
+    *
+    * // Here we create a wrapper extending the Top module to add the `Observer` trait
+    * class TopWrapper extends Top with Observer {
+    *   // Observe the submodule "reg" Register
+    *   val observed_reg  = observe(submodule.reg)
+    * }
+    *
+    * it should "observe a submodule Reg by using BoringUtils" in {
+    *   test(new TopWrapper) { c =>
+    *     c.observed_reg.expect(42.U)
     *   }
+    * }
     * }}}
     *
     * @param signal
