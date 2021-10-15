@@ -39,6 +39,16 @@ class BasicBoundedCheckTests extends AnyFlatSpec with ChiselScalatestTester with
   it should "verify DanielModuleWithGoodAssertion" taggedAs FormalTag in {
     verify(new DanielModuleWithGoodAssertion, Seq(BoundedCheck(kMax = 4)))
   }
+
+  it should "support simple bmc with the RawTester" taggedAs FormalTag in {
+    RawTester.verify(new FailAfterModule(2), Seq(BoundedCheck(kMax = 1)))
+  }
+
+  it should "support simple bmc with a failing check with the RawTester" taggedAs FormalTag in {
+    assertThrows[FailedBoundedCheckException] {
+      RawTester.verify(new FailAfterModule(2), Seq(BoundedCheck(kMax = 2)))
+    }
+  }
 }
 
 class AssumeAssertTestModule extends Module {
