@@ -231,7 +231,6 @@ static sim_state* create_sim_state() {
                          |    Verilated::traceEverOn(true);
                          |#endif
                          |#if VM_TRACE
-                         |    VL_PRINTF(\"Enabling waves..\\n\");
                          |    *tfp = new VERILATED_C;
                          |    top->trace(*tfp, 99);
                          |    (*tfp)->open(dumpfile.c_str());
