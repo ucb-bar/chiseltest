@@ -28,6 +28,7 @@ private[chiseltest] class JNASimulatorContext(
 
   private var isStale = true
   private val signalToId = (toplevel.inputs ++ toplevel.outputs).map(_._1).zipWithIndex.toMap
+  private val idToMask = (toplevel.inputs ++ toplevel.outputs).map(_._2).map(w => (BigInt(1) << w) - 1).toIndexedSeq
 
   private def update(): Unit = {
     assert(isRunning)
@@ -45,18 +46,20 @@ private[chiseltest] class JNASimulatorContext(
 
   override def poke(signal: String, value: BigInt): Unit = {
     assert(isRunning)
+    val signalId = getId(signal)
+    val mask = idToMask(signalId)
+    val maskedValue = value & mask
     if (isWide(signal)) {
       val width = signalWidth(signal)
       val words = (width + 63) / 64
-      val signalId = getId(signal)
-      var remaining = value
+      var remaining = maskedValue
       (0 until words).foreach { ii =>
         val part = (remaining & mask64).toLong
         so.pokeWide(signalId, ii, part)
         remaining = remaining >> 64
       }
     } else {
-      so.poke(getId(signal), (value & mask64).toLong)
+      so.poke(signalId, maskedValue.toLong)
     }
     isStale = true
   }
