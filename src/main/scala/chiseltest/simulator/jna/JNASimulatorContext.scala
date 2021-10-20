@@ -24,11 +24,12 @@ private[chiseltest] class JNASimulatorContext(
   private val allSignals = toplevel.inputs ++ toplevel.outputs
   private val isWide = allSignals.filter(_._2 > 64).map(_._1).toSet
   private val mask64 = (BigInt(1) << 64) - 1
-  private val signalWidth = allSignals.toMap
+  private val signalWidth = allSignals.map(s => s._1 -> s._2).toMap
 
   private var isStale = true
   private val signalToId = (toplevel.inputs ++ toplevel.outputs).map(_._1).zipWithIndex.toMap
   private val idToMask = (toplevel.inputs ++ toplevel.outputs).map(_._2).map(w => (BigInt(1) << w) - 1).toIndexedSeq
+  private val idIsSigned = (toplevel.inputs ++ toplevel.outputs).map(_._3).toIndexedSeq
 
   private def update(): Unit = {
     assert(isRunning)
@@ -67,10 +68,10 @@ private[chiseltest] class JNASimulatorContext(
   override def peek(signal: String): BigInt = {
     assert(isRunning)
     if (isStale) { update() }
-    if (isWide(signal)) {
-      val width = signalWidth(signal)
+    val signalId = getId(signal)
+    val width = signalWidth(signal)
+    val unsigned = if (isWide(signal)) {
       val words = (width + 63) / 64
-      val signalId = getId(signal)
       var value = BigInt(0)
       (0 until words).foreach { ii =>
         val word = BigInt(so.peekWide(signalId, ii)) & mask64
@@ -78,8 +79,19 @@ private[chiseltest] class JNASimulatorContext(
       }
       value
     } else {
-      so.peek(getId(signal)) & mask64
+      so.peek(signalId) & mask64
     }
+    if (idIsSigned(signalId)) { toSigned(unsigned, width) }
+    else { unsigned }
+  }
+
+  private def toSigned(v: BigInt, width: Int): BigInt = {
+    val isNegative = ((v >> (width - 1)) & 1) == 1
+    if (isNegative) {
+      val mask = (BigInt(1) << width) - 1
+      val twosComp = ((~v) + 1) & mask
+      -twosComp
+    } else { v }
   }
 
   private def defaultClock = toplevel.clocks.headOption

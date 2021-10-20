@@ -155,8 +155,8 @@ private[chiseltest] object Simulator {
 /** Contains information about the top-level module in the circuit being simulated. */
 private[chiseltest] case class TopmoduleInfo(
   name:    String,
-  inputs:  Seq[(String, Int)],
-  outputs: Seq[(String, Int)],
+  inputs:  Seq[(String, Int, Boolean)],
+  outputs: Seq[(String, Int, Boolean)],
   clocks:  Seq[String]) {
   require(inputs.forall(_._2 > 0), s"Inputs need to be at least 1-bit!\n$inputs")
   require(outputs.forall(_._2 > 0), s"Outputs need to be at least 1-bit!\n$outputs")
@@ -175,18 +175,18 @@ private[chiseltest] object TopmoduleInfo {
 
     new TopmoduleInfo(
       name = main.name,
-      inputs = in.map(portNameAndWidth),
-      outputs = out.map(portNameAndWidth),
+      inputs = in.map(portNameAndWidthAndIsSigned),
+      outputs = out.map(portNameAndWidthAndIsSigned),
       clocks = clock.map(_.name)
     )
   }
 
-  private def portNameAndWidth(p: ir.Port): (String, Int) = {
+  private def portNameAndWidthAndIsSigned(p: ir.Port): (String, Int, Boolean) = {
     require(
       p.tpe.isInstanceOf[ir.GroundType],
       s"Port ${p.serialize} is not of ground type! Please make sure to provide LowFirrtl to this API!"
     )
-    p.name -> bitWidth(p.tpe).toInt
+    (p.name, bitWidth(p.tpe).toInt, p.tpe.isInstanceOf[ir.SIntType])
   }
 }
 

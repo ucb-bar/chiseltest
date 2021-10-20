@@ -101,7 +101,7 @@ abstract class PeekPokeCompliance(sim: Simulator, tag: Tag = DefaultTag) extends
       Widths.map( w => s"    out$w <= in$w") ++ Seq("")
     val src = lines.mkString("\n")
     // println(src)
-    val dut = load(src) //, Seq(WriteVcdAnnotation))
+    val dut = load(src, Seq(WriteVcdAnnotation))
 
     val rand = new Random(0)
     Widths.foreach { w =>

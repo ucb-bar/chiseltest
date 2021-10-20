@@ -28,7 +28,7 @@ private[chiseltest] class IPCSimulatorContext(
 
   // Construct maps for the input and output
   private val (inputsNameToChunkSizeMap, outputsNameToChunkSizeMap) = {
-    def genChunk(port: (String, Int)): (String, Int) = port._1 -> ((port._2 - 1) / 64 + 1)
+    def genChunk(port: (String, Int, Boolean)): (String, Int) = port._1 -> ((port._2 - 1) / 64 + 1)
     (
       ListMap(toplevel.inputs.map(genChunk):  _*),
       ListMap(toplevel.outputs.map(genChunk): _*)
