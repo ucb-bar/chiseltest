@@ -183,6 +183,12 @@ static sim_state* create_sim_state() {
                          |#define VM_TRACE_FST 0
                          |#endif
                          |
+                         |#ifdef TEST_VERBOSE
+                         |static const bool verbose = true;
+                         |#else
+                         |static const bool verbose = false;
+                         |#endif
+                         |
                          |#if VM_TRACE
                          |#if VM_TRACE_FST
                          |  #include "verilated_fst_c.h"
@@ -231,7 +237,7 @@ static sim_state* create_sim_state() {
                          |    Verilated::traceEverOn(true);
                          |#endif
                          |#if VM_TRACE
-                         |    VL_PRINTF(\"Enabling waves..\\n\");
+                         |    if (verbose) VL_PRINTF(\"Enabling waves..\\n\");
                          |    *tfp = new VERILATED_C;
                          |    top->trace(*tfp, 99);
                          |    (*tfp)->open(dumpfile.c_str());

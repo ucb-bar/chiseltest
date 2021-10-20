@@ -25,6 +25,14 @@ case class VerilatorLinkFlags(flags: Seq[String]) extends VerilatorOption
 private object VerilatorSimulator extends Simulator {
   override def name: String = "verilator"
 
+  //
+  // Debug utility functions
+  //
+  val verbose: Boolean = false // hard-coded debug flag
+  def debugLog(str: => String): Unit = {
+    if (verbose) println(str)
+  }
+
   /** is this simulator installed on the local machine? */
   override def isAvailable: Boolean = {
     val binaryFound = os.proc("which", "verilator").call().exitCode == 0
@@ -39,7 +47,7 @@ private object VerilatorSimulator extends Simulator {
   def findVersions(): Unit = {
     if (isAvailable) {
       val (maj, min) = version
-      println(s"Found Verilator $maj.$min")
+      debugLog(s"Found Verilator $maj.$min")
     }
   }
 
@@ -53,7 +61,7 @@ private object VerilatorSimulator extends Simulator {
     val Array(majStr, minStr) = versionSplitted(1).split('.').map(_.trim)
     assert(majStr.length == 1 && minStr.length == 3, s"$majStr.$minStr is not of the expected format: D.DDD")
     val (maj, min) = (majStr.toInt, minStr.toInt)
-    // println(s"Detected Verilator version $maj.$min")
+    debugLog(s"Detected Verilator version $maj.$min")
     (maj, min)
   }
 
@@ -169,7 +177,7 @@ private object VerilatorSimulator extends Simulator {
 
   private def removeOldCode(verilatedDir: os.Path): Unit = {
     if (os.exists(verilatedDir)) {
-      println(s"Deleting stale Verilator object directory: $verilatedDir")
+      debugLog(s"Deleting stale Verilator object directory: $verilatedDir")
       os.remove.all(verilatedDir)
     }
   }
