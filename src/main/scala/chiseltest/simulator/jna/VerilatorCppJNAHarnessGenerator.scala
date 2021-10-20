@@ -13,7 +13,8 @@ private[chiseltest] object VerilatorCppJNAHarnessGenerator {
     vcdFilePath:  os.Path,
     targetDir:    os.Path,
     majorVersion: Int,
-    minorVersion: Int
+    minorVersion: Int,
+    verbose:      Boolean
   ): String = {
     val pokeable = toplevel.inputs.zipWithIndex
     val peekable = (toplevel.inputs ++ toplevel.outputs).zipWithIndex
@@ -142,14 +143,15 @@ static sim_state* create_sim_state() {
 """)
 
     val jnaCode = JNAUtils.genJNACppCode(codeBuffer.toString())
-    commonCodeGen(toplevel, targetDir, majorVersion, minorVersion) + jnaCode
+    commonCodeGen(toplevel, targetDir, majorVersion, minorVersion, verbose) + jnaCode
   }
 
   private def commonCodeGen(
     toplevel:     TopmoduleInfo,
     targetDir:    os.Path,
     majorVersion: Int,
-    minorVersion: Int
+    minorVersion: Int,
+    verbose:      Boolean
   ): String = {
     val dutName = toplevel.name
     val dutVerilatorClassName = "V" + dutName
@@ -182,6 +184,8 @@ static sim_state* create_sim_state() {
                          |#ifndef VM_TRACE_FST
                          |#define VM_TRACE_FST 0
                          |#endif
+                         |
+                         |static const bool verbose = $verbose;
                          |
                          |#if VM_TRACE
                          |#if VM_TRACE_FST
@@ -231,7 +235,7 @@ static sim_state* create_sim_state() {
                          |    Verilated::traceEverOn(true);
                          |#endif
                          |#if VM_TRACE
-                         |    VL_PRINTF(\"Enabling waves..\\n\");
+                         |    if (verbose) VL_PRINTF(\"Enabling waves..\\n\");
                          |    *tfp = new VERILATED_C;
                          |    top->trace(*tfp, 99);
                          |    (*tfp)->open(dumpfile.c_str());

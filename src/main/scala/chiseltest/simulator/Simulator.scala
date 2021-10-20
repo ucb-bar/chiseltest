@@ -118,6 +118,11 @@ case object WriteVpdAnnotation extends WriteWaveformAnnotation {
   override def format: String = "vpd"
 }
 
+/** enables more verbose print outs from the simulator creation and execution
+  * that might be helpful in debugging simulator behavior
+  */
+case object SimulatorDebugAnnotation extends NoTargetAnnotation
+
 /** contains some common code that is used by the various simulator backends */
 private[chiseltest] object Simulator {
   def getWavformFormat(annos: AnnotationSeq): String = {
