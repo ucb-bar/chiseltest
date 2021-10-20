@@ -182,7 +182,8 @@ private object VerilatorSimulator extends Simulator {
     if (verbose) {
       // print the command and pipe the output to stdout
       println(cmd.mkString(" "))
-      os.proc(cmd).call(cwd = cwd, stdout = os.Inherit)
+      os.proc(cmd)
+        .call(cwd = cwd, stdout = os.ProcessOutput.Readlines(println), stderr = os.ProcessOutput.Readlines(println))
     } else {
       os.proc(cmd).call(cwd = cwd)
     }

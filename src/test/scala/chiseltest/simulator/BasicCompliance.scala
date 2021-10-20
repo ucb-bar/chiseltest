@@ -2,6 +2,7 @@
 
 package chiseltest.simulator
 
+import chiseltest.utils.CaptureStdout
 import firrtl.options.TargetDirAnnotation
 import org.scalatest.Tag
 
@@ -11,16 +12,7 @@ abstract class BasicCompliance(sim: Simulator, tag: Tag = DefaultTag, skipSimRef
     assert(sim.isAvailable)
   }
 
-  private val standardCircuit =
-    """circuit Foo :
-      |  module Foo :
-      |    input clock : Clock
-      |    input reset : UInt<1>
-      |    output io : { flip in : UInt<1>, out : UInt<1>}
-      |
-      |    node _io_out_T = not(io.in) @[main.scala 12:13]
-      |    io.out <= _io_out_T @[main.scala 12:10]
-      |""".stripMargin
+  private val standardCircuit = ComplianceTest.StandardInverter
 
   it should "be able to load and execute a simple combinatorial inverter generated from Chisel" taggedAs(tag)in {
     val dut = load(standardCircuit)
@@ -144,5 +136,21 @@ abstract class BasicCompliance(sim: Simulator, tag: Tag = DefaultTag, skipSimRef
       // JNI library copies
       .filterNot(_.last.startsWith("TesterSharedLib"))
     assert(unexpected.isEmpty, s"${sim.name} generated unexpected file(s):\n" + unexpected.mkString("\n"))
+  }
+
+  it should "not print anything to stdout under normal conditions" taggedAs(tag) in {
+    // TODO: icarus and vcs still print out some spam in non-debug mode
+    val isIcarusOrVcs = sim == IcarusSimulator || sim == VcsSimulator
+    assume(!isIcarusOrVcs)
+
+    val (_, out) = CaptureStdout {
+      val dut = load(standardCircuit)
+      dut.poke("io_in", 1)
+      assert(dut.peek("io_out") == 0)
+      dut.poke("io_in", 0)
+      assert(dut.peek("io_out") == 1)
+      dut.finish()
+    }
+    assert(out.trim.isEmpty)
   }
 }
