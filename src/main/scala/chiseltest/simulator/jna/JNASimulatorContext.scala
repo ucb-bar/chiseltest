@@ -22,14 +22,14 @@ private[chiseltest] class JNASimulatorContext(
     with LazyLogging {
   require(toplevel.clocks.length <= 1, "Multi clock circuits are currently not supported!")
   private val allSignals = toplevel.inputs ++ toplevel.outputs
-  private val isWide = allSignals.filter(_._2 > 64).map(_._1).toSet
+  private val isWide = allSignals.filter(_.width > 64).map(_.name).toSet
   private val mask64 = (BigInt(1) << 64) - 1
-  private val signalWidth = allSignals.map(s => s._1 -> s._2).toMap
+  private val signalWidth = allSignals.map(s => s.name -> s.width).toMap
 
   private var isStale = true
-  private val signalToId = (toplevel.inputs ++ toplevel.outputs).map(_._1).zipWithIndex.toMap
-  private val idToMask = (toplevel.inputs ++ toplevel.outputs).map(_._2).map(w => (BigInt(1) << w) - 1).toIndexedSeq
-  private val idIsSigned = (toplevel.inputs ++ toplevel.outputs).map(_._3).toIndexedSeq
+  private val signalToId = (toplevel.inputs ++ toplevel.outputs).map(_.name).zipWithIndex.toMap
+  private val idToMask = (toplevel.inputs ++ toplevel.outputs).map(_.width).map(w => (BigInt(1) << w) - 1).toIndexedSeq
+  private val idIsSigned = (toplevel.inputs ++ toplevel.outputs).map(_.signed).toIndexedSeq
 
   private def update(): Unit = {
     assert(isRunning)

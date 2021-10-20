@@ -2,7 +2,7 @@
 
 package chiseltest.simulator.jna
 
-import chiseltest.simulator.TopmoduleInfo
+import chiseltest.simulator.{PinInfo, TopmoduleInfo}
 
 /** Generates the Module specific verilator harness cpp file for verilator compilation.
   *  This version generates a harness that can be called into through the JNI.
@@ -18,7 +18,7 @@ private[chiseltest] object VerilatorCppJNAHarnessGenerator {
   ): String = {
     val pokeable = toplevel.inputs.zipWithIndex
     val peekable = (toplevel.inputs ++ toplevel.outputs).zipWithIndex
-    def fitsIn64Bits(s: ((String, Int, Boolean), Int)): Boolean = s._1._2 <= 64
+    def fitsIn64Bits(s: (PinInfo, Int)): Boolean = s._1.width <= 64
 
     val codeBuffer = new StringBuilder
     // generate Verilator specific "sim_state" class
@@ -51,7 +51,7 @@ struct sim_state {
     // std::cout << "poking: " << std::hex << u << std::endl;
     switch(id) {
 """)
-    pokeable.filter(fitsIn64Bits).foreach { case ((name, _, _), id) =>
+    pokeable.filter(fitsIn64Bits).foreach { case (PinInfo(name, _, _), id) =>
       codeBuffer.append(s"      case $id : dut->$name = u; break;\n")
     }
     codeBuffer.append(s"""
@@ -65,7 +65,7 @@ struct sim_state {
     uint64_t value = 0;
     switch(id) {
 """)
-    peekable.filter(fitsIn64Bits).foreach { case ((name, _, _), id) =>
+    peekable.filter(fitsIn64Bits).foreach { case (PinInfo(name, _, _), id) =>
       codeBuffer.append(s"      case $id : value = dut->$name; break;\n")
     }
     codeBuffer.append(s"""
@@ -83,7 +83,7 @@ struct sim_state {
     size_t words = 0;
     switch(id) {
 """)
-    pokeable.filterNot(fitsIn64Bits).foreach { case ((name, width, _), id) =>
+    pokeable.filterNot(fitsIn64Bits).foreach { case (PinInfo(name, width, _), id) =>
       val numWords = (width - 1) / 32 + 1
       codeBuffer.append(s"      case $id : data = dut->$name; words = $numWords; break;\n")
     }
@@ -110,7 +110,7 @@ struct sim_state {
     size_t words = 0;
     switch(id) {
 """)
-    peekable.filterNot(fitsIn64Bits).foreach { case ((name, width, _), id) =>
+    peekable.filterNot(fitsIn64Bits).foreach { case (PinInfo(name, width, _), id) =>
       val numWords = (width - 1) / 32 + 1
       codeBuffer.append(s"      case $id : data = dut->$name; words = $numWords; break;\n")
     }
