@@ -18,10 +18,13 @@ package object defaults {
     * @return                a backend for the dut type
     */
   def createDefaultTester[T <: Module](dutGen: () => T, annotationSeq: AnnotationSeq): BackendInstance[T] = {
+    BackendExecutive.start(dutGen, addDefaultSimulator(annotationSeq))
+  }
+
+  private[chiseltest] def addDefaultSimulator(annotationSeq: AnnotationSeq): AnnotationSeq = {
     // if there is not backend specified, use treadle
     val hasSimulator = annotationSeq.exists(_.isInstanceOf[SimulatorAnnotation])
-    val annos: AnnotationSeq = if (hasSimulator) { annotationSeq }
+    if (hasSimulator) { annotationSeq }
     else { TreadleBackendAnnotation +: annotationSeq }
-    BackendExecutive.start(dutGen, annos)
   }
 }
