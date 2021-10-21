@@ -36,7 +36,16 @@ struct sim_state {
     // std::cout << "Allocating! " << ((long long) dut) << std::endl;
   }
 
-  inline int64_t step() { return _step(tfp, dut, main_time); }
+  inline int64_t step(int32_t cycles) {
+    for(int32_t i = 0; i < cycles; i++) {
+      const int64_t status = _step(tfp, dut, main_time);
+      if(status > 0) {
+        // early exit on failure
+        return (status << 32) | ((int64_t)(i + 1));
+      }
+    }
+    return (int64_t)cycles;
+  }
   inline void update() { dut->eval(); }
   inline void finish() {
     dut->eval();

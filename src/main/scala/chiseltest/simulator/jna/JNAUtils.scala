@@ -35,7 +35,7 @@ object JNAUtils {
 
   /** needs to match up with [[TesterSharedLibInterface]]! */
   val Methods = Seq(
-    ("long", "step", Seq()),
+    ("long", "step", Seq("cycles" -> "int")),
     ("void", "update", Seq()),
     ("void", "finish", Seq()),
     ("void", "resetCoverage", Seq()),
@@ -111,7 +111,7 @@ object JNAUtils {
 
 class TesterSharedLibInterface(so: NativeLibrary, sPtr: Pointer) {
   private val stepFoo = so.getFunction("step")
-  def step(): Long = { stepFoo.invokeLong(Array(sPtr)) }
+  def step(cycles: Int): Long = { stepFoo.invokeLong(Array(sPtr, Integer.valueOf(cycles))) }
   private val updateFoo = so.getFunction("update")
   def update(): Unit = { updateFoo.invoke(Array(sPtr)) }
   private val finishFoo = so.getFunction("finish")

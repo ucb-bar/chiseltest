@@ -37,9 +37,10 @@ private[chiseltest] class JNASimulatorContext(
     isStale = false
   }
 
-  private def takeStep(): Long = {
+  private def takeSteps(cycles: Int): Long = {
     assert(isRunning)
-    so.step()
+    require(cycles > 0)
+    so.step(cycles)
   }
 
   private def getId(signal: String): Int =
@@ -102,16 +103,15 @@ private[chiseltest] class JNASimulatorContext(
       case None    => throw NoClockException(toplevel.name)
     }
     update()
-    var delta: Int = 0
-    (0 until n).foreach { _ =>
-      delta += 1
-      val r = takeStep()
-      if (r != 0) {
-        val isFailure = r != 1
-        return StepInterrupted(delta, isFailure, List())
-      }
+    val r = takeSteps(n)
+    val status = (r >> 32) & 3
+    if (status == 0) {
+      StepOk
+    } else {
+      val isFailure = status != 1
+      val after = r & 0xffffffffL
+      StepInterrupted(after.toInt, isFailure, List())
     }
-    StepOk
   }
 
   private var isRunning = true
