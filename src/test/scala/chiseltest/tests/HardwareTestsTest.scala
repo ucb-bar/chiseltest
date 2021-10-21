@@ -59,6 +59,10 @@ class HardwareTestsTest extends AnyFlatSpec with ChiselScalatestTester {
       test(new AssertCanFailTester).runUntilStop(timeout = 0)
     }
   }
+
+  it should "create a wrapper and call the finish method if the circuit extends BasicTester" in {
+    test(new FinishTester).runUntilStop()
+  }
 }
 
 // from the chisel3 unittests: src/test/scala/chiselTests/Counter.scala
@@ -80,5 +84,31 @@ class AssertCanFailTester extends BasicTester {
   val (_, done) = Counter(true.B, 2)
   when(done) {
     stop()
+  }
+}
+
+/** Extend BasicTester with a simple circuit and finish method.
+  * from chisel3 tests: src/test/scala/chiselTests/TesterDriverSpec.scala
+  */
+class FinishTester extends BasicTester {
+  val test_wire_width = 2
+  val test_wire_override_value = 3
+
+  val counter = Counter(1)
+  when(counter.inc()) {
+    stop()
+  }
+
+  val test_wire = WireDefault(1.U(test_wire_width.W))
+
+  // though we just set test_wire to 1, the assert below will pass because
+  // the finish will change its value
+  assert(test_wire === test_wire_override_value.asUInt)
+
+  /** In finish we use last connect semantics to alter the test_wire in the circuit
+    * with a new value
+    */
+  override def finish(): Unit = {
+    test_wire := test_wire_override_value.asUInt
   }
 }

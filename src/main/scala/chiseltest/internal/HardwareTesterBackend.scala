@@ -1,6 +1,7 @@
 package chiseltest.internal
 
 import chisel3.Module
+import chisel3.testers.BasicTester
 import chiseltest.{defaults, ChiselAssertionError, StopException, TimeoutException}
 import chiseltest.coverage.{Coverage, TestCoverage}
 import chiseltest.simulator.{Compiler, DebugPrintWrapper, Simulator, SimulatorContext, StepInterrupted, StepOk}
@@ -8,11 +9,12 @@ import firrtl.AnnotationSeq
 
 /** Backend that allows us to run hardware testers in the style of `chisel3.testers.BasicTester` efficiently.
   * @warn this is an internal API, use the wrappers from the chiseltest module instead.
+  * @note if the dut extends [[chisel3.testers.BasicTester]] the `finish` method will be called
   */
 object HardwareTesterBackend {
   def run[T <: Module](dutGen: () => T, annos: AnnotationSeq, timeout: Int, expectFail: Boolean): AnnotationSeq = {
     require(timeout >= 0, s"Negative timeout $timeout is not supported! Use 0 to disable the timeout.")
-    val (tester, covAnnos) = createTester(dutGen, defaults.addDefaultSimulator(annos))
+    val (tester, covAnnos) = createTester(addFinishToBasicTester(dutGen), defaults.addDefaultSimulator(annos))
 
     // we always perform a reset
     tester.poke("reset", 1)
@@ -78,6 +80,16 @@ object HardwareTesterBackend {
     if (tester.sim.supportsCoverage) {
       TestCoverage(tester.getCoverage()) +: covAnnos
     } else { Seq() }
+  }
+
+  /** creates a wrapper function that calls the finish method iff the generated module extends [[chisel3.testers.BasicTester]] */
+  private def addFinishToBasicTester[T <: Module](dutGen: () => T): () => T = () => {
+    val tester = dutGen()
+    tester match {
+      case basic: BasicTester => basic.finish()
+      case _ =>
+    }
+    tester
   }
 
   private def createTester[T <: Module](dutGen: () => T, annos: AnnotationSeq): (SimulatorContext, AnnotationSeq) = {
