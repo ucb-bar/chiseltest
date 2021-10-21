@@ -2,7 +2,7 @@
 
 package chiseltest.simulator.ipc
 
-import chiseltest.simulator.TopmoduleInfo
+import chiseltest.simulator.{PinInfo, TopmoduleInfo}
 
 /** Generates the Module specific Verilog harness file for a VPI based interface */
 private[chiseltest] object VpiVerilogHarnessGenerator {
@@ -24,10 +24,10 @@ private[chiseltest] object VpiVerilogHarnessGenerator {
     val codeBuffer = new StringBuilder
     codeBuffer.append(s"module $testbenchName;\n")
     codeBuffer.append(s"  reg $clockName = 1;\n")
-    toplevel.inputs.foreach { case (name, width) =>
+    toplevel.inputs.foreach { case PinInfo(name, width, _) =>
       codeBuffer.append(s"  reg[${width - 1}:0] $name = 0;\n")
     }
-    toplevel.outputs.foreach { case (name, width) =>
+    toplevel.outputs.foreach { case PinInfo(name, width, _) =>
       codeBuffer.append(s"  wire[${width - 1}:0] $name;\n")
     }
 
@@ -38,14 +38,14 @@ private[chiseltest] object VpiVerilogHarnessGenerator {
     codeBuffer.append("\n  /*** DUT instantiation ***/\n")
     codeBuffer.append(s"  $dutName $dutName(\n")
     codeBuffer.append(toplevel.clocks.map(c => s"    .$c($c),\n").mkString(""))
-    val ioNames = (toplevel.inputs ++ toplevel.outputs).map(_._1)
+    val ioNames = (toplevel.inputs ++ toplevel.outputs).map(_.name)
     codeBuffer.append(ioNames.map(name => s"    .$name($name)").mkString(",\n"))
     codeBuffer.append("  );\n\n")
 
     codeBuffer.append("  initial begin\n")
-    val inputNames = toplevel.inputs.map(_._1)
+    val inputNames = toplevel.inputs.map(_.name)
     codeBuffer.append(s"    $$init_ins(${inputNames.mkString(", ")});\n")
-    val outputNames = toplevel.outputs.map(_._1)
+    val outputNames = toplevel.outputs.map(_.name)
     codeBuffer.append(s"    $$init_outs(${outputNames.mkString(", ")});\n")
     codeBuffer.append(s"    $$init_sigs($dutName);\n")
 

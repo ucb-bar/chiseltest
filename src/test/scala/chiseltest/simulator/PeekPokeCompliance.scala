@@ -93,4 +93,28 @@ abstract class PeekPokeCompliance(sim: Simulator, tag: Tag = DefaultTag) extends
     }
   }
 
+  it should "propagate SInt values of variable widths through the circuit" taggedAs(tag) in {
+    val Widths = Seq(1, 2, 3, 5, 7, 8, 9, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 129,
+      300, 400, 500, 600, 1023, 1024, 1025)
+    val lines = Seq("circuit test:", "  module test:", "    input clock: Clock") ++
+      Widths.flatMap(w => Seq(s"    input in$w : SInt<$w>",   s"    output out$w : SInt<$w>")) ++ Seq("") ++
+      Widths.map( w => s"    out$w <= in$w") ++ Seq("")
+    val src = lines.mkString("\n")
+    // println(src)
+    val dut = load(src, Seq(WriteVcdAnnotation))
+
+    val rand = new Random(0)
+    Widths.foreach { w =>
+      val positiveValues = Seq.fill(20)(BigInt(w-1, rand))
+      val values = positiveValues ++ positiveValues.map(v => -v)
+      val res = values.map { in =>
+        dut.poke(s"in$w", in)
+        dut.step()
+        dut.peek(s"out$w")
+      }
+      if(res != values) { dut.finish() }
+      assert(res == values, s"width = $w")
+    }
+  }
+
 }
