@@ -44,6 +44,24 @@ class VerilatorBasicTests extends AnyFlatSpec with ChiselScalatestTester with Ma
     }.getMessage should include ("user-defined failure message =(")
   }
 
+  it should "fail on chisel3 assertions firing" taggedAs RequiresVerilator in {
+    a[ChiselAssertionError] shouldBe thrownBy {
+      test(new Module {
+        val success = IO(Output(Bool()))
+        success := true.B
+        chisel3.assert(false.B)
+      }).withAnnotations(annos) { c =>
+        c.reset.poke(true.B)
+        c.clock.step(1)
+        c.reset.poke(false.B)
+        while (c.success.peek().litToBoolean == false) {
+          c.clock.step(1)
+        }
+        c.success.expect(true.B)
+      }
+    }
+  }
+
   it should "test inputless sequential circuits" taggedAs RequiresVerilator in {
     test(new Module {
       val io = IO(new Bundle {
