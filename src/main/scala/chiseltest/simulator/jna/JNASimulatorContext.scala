@@ -107,6 +107,10 @@ private[chiseltest] class JNASimulatorContext(
     val status = (r >> 32) & 3
     if (status == 0) {
       StepOk
+    } else if (status == 3) {
+      val msg = "The simulator has encountered an unrecoverable error.\n" +
+        "Please consult the standard output and error for more details."
+      throw new RuntimeException(msg)
     } else {
       val isFailure = status != 1
       val after = r & 0xffffffffL
