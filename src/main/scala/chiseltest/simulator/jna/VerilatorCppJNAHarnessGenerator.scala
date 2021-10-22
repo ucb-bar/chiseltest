@@ -220,10 +220,11 @@ static sim_state* create_sim_state() {
                          |}
                          |
                          |
+                         |static bool encounteredFatal = false;
                          |void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg) {
-                         |  std::cerr << "unexpected call to vl_fatal, please file an issue" << std::endl;
-                         |  std::cerr << "fatal! (" << filename << ", " << linenum << ", " << hier << ")" << std::endl;
+                         |  std::cerr << "fatal! (" << filename << ", " << linenum << ", " << hier << ", " << msg << ")" << std::endl;
                          |  $verilatorRunFlushCallback
+                         |  encounteredFatal = true;
                          |}
                          |
                          |
@@ -273,6 +274,9 @@ static sim_state* create_sim_state() {
                          |      // vl_finish is called by verilator when a finish command is executed (stop(0))
                          |      encounteredFinish = false;
                          |      return 1;
+                         |    } else if(encounteredFatal) {
+                         |      encounteredFatal = false;
+                         |      return 3;
                          |    }
                          |    return 0;
                          |}
