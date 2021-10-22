@@ -10,6 +10,7 @@ import logger.LazyLogging
   * @param targetDir simulation target directory
   * @param toplevel information about the interface exposed by the module at the top of the RTL hierarchy
   * @param sim simulator that generated the binary
+  * @param args command line arguments to the simulator (eg. Verilog plusargs)
   * @param readCoverageFile function that parses the coverage file and returns the list of counts
   */
 private[chiseltest] class JNASimulatorContext(
@@ -17,6 +18,7 @@ private[chiseltest] class JNASimulatorContext(
   targetDir:        os.Path,
   toplevel:         TopmoduleInfo,
   override val sim: Simulator,
+  args:             Array[String],
   readCoverageFile: Option[() => List[(String, Long)]] = None)
     extends SimulatorContext
     with LazyLogging {
@@ -30,6 +32,9 @@ private[chiseltest] class JNASimulatorContext(
   private val signalToId = (toplevel.inputs ++ toplevel.outputs).map(_.name).zipWithIndex.toMap
   private val idToMask = (toplevel.inputs ++ toplevel.outputs).map(_.width).map(w => (BigInt(1) << w) - 1).toIndexedSeq
   private val idIsSigned = (toplevel.inputs ++ toplevel.outputs).map(_.signed).toIndexedSeq
+
+  // Pass command line arguments to the simulator
+  so.setArgs(args)
 
   private def update(): Unit = {
     assert(isRunning)

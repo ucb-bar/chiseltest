@@ -69,6 +69,10 @@ private object VerilatorSimulator extends Simulator {
     Caching.cacheSimulationBin(simName, state, createContextFromScratch, recreateCachedContext)
   }
 
+  private def getSimulatorArgs(state: CircuitState): Array[String] = {
+    state.annotations.view.collect { case PlusArgsAnnotation(args) => args }.flatten.toArray
+  }
+
   private def recreateCachedContext(state: CircuitState): SimulatorContext = {
     // we will create the simulation in the target directory
     val targetDir = Compiler.requireTargetDir(state.annotations)
@@ -83,8 +87,9 @@ private object VerilatorSimulator extends Simulator {
       VerilatorCoverage.loadCoverage(coverageAnnos, coverageFile)
     }
 
+    val args = getSimulatorArgs(state)
     val lib = JNAUtils.compileAndLoadJNAClass(libPath)
-    new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, Some(readCoverage))
+    new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, args, Some(readCoverage))
   }
 
   private def createContextFromScratch(state: CircuitState): SimulatorContext = {
@@ -126,8 +131,9 @@ private object VerilatorSimulator extends Simulator {
       VerilatorCoverage.loadCoverage(coverageAnnos, coverageFile)
     }
 
+    val args = getSimulatorArgs(state)
     val lib = JNAUtils.compileAndLoadJNAClass(libPath)
-    new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, Some(readCoverage))
+    new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, args, Some(readCoverage))
   }
 
   private def saveCoverageAnnos(targetDir: os.Path, annos: AnnotationSeq): Unit = {
