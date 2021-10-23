@@ -141,6 +141,10 @@ struct sim_state {
       return (((uint64_t)data[secondWord]) << 32) | ((uint64_t)data[firstWord]);
     }
   }
+
+  inline void set_args(int32_t argc, const char** argv) {
+    Verilated::commandArgs(argc, argv);
+  }
 };
 
 static sim_state* create_sim_state() {
