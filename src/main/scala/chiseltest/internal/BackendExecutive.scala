@@ -12,7 +12,7 @@ import firrtl.transforms.{CheckCombLoops, CombinationalPath}
 
 object BackendExecutive {
 
-  def start[T <: Module](dutGen: () => T, testersAnnotationSeq: AnnotationSeq): GenericBackend[T] = {
+  def start[T <: Module](dutGen: () => T, testersAnnotationSeq: AnnotationSeq): BackendInstance[T] = {
 
     // elaborate the design
     val (highFirrtl, dut: T) = Compiler.elaborate[T](dutGen, testersAnnotationSeq)
@@ -40,7 +40,12 @@ object BackendExecutive {
       new DebugPrintWrapper(tester)
     } else { tester }
 
-    new GenericBackend(dut, portNames, pathsAsData, finalTester, coverageAnnotations)
+    val noThreading = testersAnnotationSeq.contains(NoThreadingAnnotation)
+    if (noThreading) {
+      new SingleThreadBackend(dut, portNames, pathsAsData, tester, coverageAnnotations)
+    } else {
+      new GenericBackend(dut, portNames, pathsAsData, finalTester, coverageAnnotations)
+    }
   }
 
   private def componentToName(component: ReferenceTarget): String = component.name
