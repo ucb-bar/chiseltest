@@ -126,7 +126,7 @@ private object VcsSimulator extends Simulator {
     val cFlags = DefaultCFlags(targetDir) ++ userCFlags
 
     // combine all flags
-    val userFlags = annos.collectFirst { case VcsCFlags(f) => f }.getOrElse(Seq.empty)
+    val userFlags = annos.collectFirst { case VcsFlags(f) => f }.getOrElse(Seq.empty)
     val flags = DefaultFlags(topName, cFlags) ++ userFlags
     flags
   }
