@@ -73,8 +73,6 @@ class AssertTest extends AnyFreeSpec with ChiselScalatestTester with Matchers {
   "should fail on values other than 3 when using treadle directly" in {
     val firrtlSource = ChiselStage.emitFirrtl(new AssertFail)
 
-    firrtlSource should contain("assert(")
-
     println(s"Firrtl Source:\n$firrtlSource")
 
     for (i <- 2 to 4) {
@@ -110,6 +108,9 @@ class AssertTest extends AnyFreeSpec with ChiselScalatestTester with Matchers {
            |    when _T_2 : @[AssertTest.scala 22:9]
            |      assert(clock, _T, UInt<1>("h1"), "This is an assertion that input value $i != 3\\n") : assert @[AssertTest.scala 22:9]
            |""".stripMargin
+
+      firrtlSource should include("assert(")
+      firrtlSource should not include("printf(")
 
       val tester = TreadleTester(Seq(FirrtlSourceAnnotation(firrtlSource)))
 
