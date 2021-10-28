@@ -117,7 +117,7 @@ private object VcsSimulator extends Simulator {
     assert(ret.exitCode == 0, s"vcs command failed on circuit ${topName} in work dir $targetDir")
     val simBinary = targetDir / topName
     assert(os.exists(simBinary), s"Failed to generate simulation binary: $simBinary")
-    Seq("./" + topName)
+    Seq(simBinary.toString)
   }
 
   private def generateFlags(topName: String, targetDir: os.Path, annos: AnnotationSeq): Seq[String] = {
