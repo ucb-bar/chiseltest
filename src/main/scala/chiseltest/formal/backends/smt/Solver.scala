@@ -32,7 +32,8 @@ private[chiseltest] trait SolverContext {
   def stackDepth: Int // returns the size of the push/pop stack
   def push():     Unit
   def pop():      Unit
-  def assert(expr: BVExpr): Unit
+  def assert(expr:     BVExpr): Unit
+  def softAssert(expr: BVExpr, weight: Int = 1): Unit
   final def check(produceModel: Boolean): SolverResult = {
     require(pLogic.isDefined, "Use `setLogic` to select the logic.")
     pCheckCount += 1
