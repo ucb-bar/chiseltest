@@ -2,7 +2,7 @@
 
 package chiseltest.experimental.tests
 
-import chiseltest.experimental.Observer
+import chiseltest.experimental.{expose}
 
 import chisel3._
 import chiseltest._
@@ -12,7 +12,7 @@ import flatspec._
 import matchers.should._
 
 class ObserverTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
-  behavior of "Observer"
+  behavior of "Expose"
 
   class SubModule extends Module {
     val reg  = Reg(UInt(6.W))
@@ -30,29 +30,29 @@ class ObserverTest extends AnyFlatSpec with ChiselScalatestTester with Matchers 
     val submodule = Module(new SubModule)
   }
 
-  class TopWrapper extends Top with Observer {
-    val observed_reg  = observe(submodule.reg)
-    val observed_wire = observe(submodule.wire)
-    val observed_vec  = observe(submodule.vec)
+  class TopWrapper extends Top {
+    val exposed_reg  = expose(submodule.reg)
+    val exposed_wire = expose(submodule.wire)
+    val exposed_vec  = expose(submodule.vec)
   }
 
-  it should "observe a submodule Reg by using BoringUtils" in {
+  it should "expose a submodule Reg by using BoringUtils" in {
     test(new TopWrapper) { c =>
-      c.observed_reg.expect(42.U)
+      c.exposed_reg.expect(42.U)
     }
   }
-  it should "observe a submodule Wire by using BoringUtils" in {
+  it should "expose a submodule Wire by using BoringUtils" in {
     test(new TopWrapper) { c =>
-      c.observed_wire.expect(42.U)
+      c.exposed_wire.expect(42.U)
     }
   }
-  it should "observe a submodule Vector by using BoringUtils" in {
+  it should "expose a submodule Vector by using BoringUtils" in {
     test(new TopWrapper) { c =>
       c.clock.step()
-      c.observed_vec(0).expect(1.S)
-      c.observed_vec(10).expect(10.S)
-      c.observed_vec(20).expect(-25.S)
-      c.observed_vec(31).expect(150.S)
+      c.exposed_vec(0).expect(1.S)
+      c.exposed_vec(10).expect(10.S)
+      c.exposed_vec(20).expect(-25.S)
+      c.exposed_vec(31).expect(150.S)
     }
   }
 }

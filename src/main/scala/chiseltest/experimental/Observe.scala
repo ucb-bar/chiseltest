@@ -4,14 +4,21 @@ package chiseltest.experimental
 
 import chisel3._
 import chisel3.util.experimental._
+import chisel3.experimental.IO
 
-/** Add this trait to your wrapper module to observe on submodule signals using the `observe` method. This avoids
-  * cluttering the original module with signals that would be used only by the test harness.
-  */
-trait Observer { this: Module =>
+object observe {
+  def apply[T <: Data](signal: T): T = {
+    val wire = WireInit(0.U.asTypeOf(chiselTypeOf(signal)))
+    BoringUtils.bore(signal, Seq(wire))
+    wire
+  }
+}
 
-  /** The method `observe` allows one to bring to the wrapped module (top), signals from instantiated sub-modules so
-    * they can be tested by peek/poke chiseltest.
+object expose {
+
+  /** The method `expose` allows one to bring to a wrapped module, signals from instantiated sub-modules so
+    * they can be tested by peek/poke chiseltest. This avoid cluttering the original module with signals that
+    * would be used only by the test harness.
     *
     * Usage:
     *
@@ -45,17 +52,17 @@ trait Observer { this: Module =>
     *
     * import flatspec._
     * import matchers.should._
-    * import chiseltest.experimental.Observer
+    * import chiseltest.experimental._
     *
-    * // Here we create a wrapper extending the Top module to add the `Observer` trait
+    * // Here we create a wrapper extending the Top module adding the exposed signals
     * class TopWrapper extends Top with Observer {
-    *   // Observe the submodule "reg" Register
-    *   val observed_reg  = observe(submodule.reg)
+    *   // Expose the submodule "reg" Register
+    *   val exposed_reg  = expose(submodule.reg)
     * }
     *
     * it should "observe a submodule Reg by using BoringUtils" in {
     *   test(new TopWrapper) { c =>
-    *     c.observed_reg.expect(42.U)
+    *     c.exposed_reg.expect(42.U)
     *   }
     * }
     * }}}
@@ -65,7 +72,7 @@ trait Observer { this: Module =>
     * @return
     *   a signal with the same format to be tested on Top module's spec.
     */
-  protected def observe[T <: Data](signal: T): T = {
+  def apply[T <: Data](signal: T): T = {
     val ob = IO(Output(chiselTypeOf(signal)))
     ob := 0.U.asTypeOf(chiselTypeOf(signal))
     BoringUtils.bore(signal, Seq(ob))
