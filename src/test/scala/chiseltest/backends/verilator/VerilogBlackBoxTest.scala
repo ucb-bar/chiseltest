@@ -5,7 +5,7 @@ package chiseltest.backends.verilator
 import chisel3._
 import chisel3.util._
 import chiseltest._
-import chiseltest.simulator.RequiresVerilator
+import chiseltest.simulator.{PlusArgsAnnotation, RequiresVerilator}
 import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.util.Random
@@ -33,7 +33,32 @@ class BlackBoxAdderWrapper extends Module {
   m.io <> io
 }
 
-class VerilogBlackBoxTest extends AnyFlatSpec with ChiselScalatestTester {
+// Inspired by plusarg_reader in rocket-chip
+class PlusArgReader extends BlackBox with HasBlackBoxInline {
+  val io = IO(new Bundle {
+    val out = Output(UInt(32.W))
+  })
+  setInline("PlusArgReader.v",
+  """module PlusArgReader(
+    |  output [31:0] out
+    |);
+    |  reg [32:0] argument;
+    |  assign out = argument;
+    |  initial begin
+    |    if (!$value$plusargs("ARGUMENT=%d", argument)) begin
+    |      argument = 32'hdeadbeef;
+    |    end
+    |  end
+    |endmodule
+    |""".stripMargin)
+}
+
+class PlusArgReaderWrapper(expected: Int) extends Module {
+  val reader = Module(new PlusArgReader)
+  assert(reader.io.out === expected.U, s"Expected $expected, got %x.\n", reader.io.out)
+}
+
+class VerilogBlackBoxTests extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Verilator Backend"
 
   val annos = Seq(VerilatorBackendAnnotation)
@@ -49,6 +74,18 @@ class VerilogBlackBoxTest extends AnyFlatSpec with ChiselScalatestTester {
         dut.io.a.poke(a.U)
         dut.io.b.poke(b.U)
         dut.io.q.expect(q.U)
+      }
+    }
+  }
+
+  it should "support reading Verilog plusargs" taggedAs RequiresVerilator in {
+    for (plusarg <- List(0, 123, 456)) {
+      val allAnnos = annos :+ PlusArgsAnnotation(s"+ARGUMENT=$plusarg" :: Nil)
+      test(new PlusArgReaderWrapper(plusarg)).withAnnotations(allAnnos) { dut =>
+        dut.reset.poke(true.B)
+        dut.clock.step()
+        dut.reset.poke(false.B)
+        dut.clock.step()
       }
     }
   }

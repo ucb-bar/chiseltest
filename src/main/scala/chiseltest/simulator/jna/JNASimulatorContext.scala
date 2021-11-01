@@ -10,6 +10,7 @@ import logger.LazyLogging
   * @param targetDir simulation target directory
   * @param toplevel information about the interface exposed by the module at the top of the RTL hierarchy
   * @param sim simulator that generated the binary
+  * @param args command line arguments to the simulator (eg. Verilog plusargs)
   * @param readCoverageFile function that parses the coverage file and returns the list of counts
   */
 private[chiseltest] class JNASimulatorContext(
@@ -17,6 +18,7 @@ private[chiseltest] class JNASimulatorContext(
   targetDir:        os.Path,
   toplevel:         TopmoduleInfo,
   override val sim: Simulator,
+  args:             Array[String],
   readCoverageFile: Option[() => List[(String, Long)]] = None)
     extends SimulatorContext
     with LazyLogging {
@@ -31,15 +33,19 @@ private[chiseltest] class JNASimulatorContext(
   private val idToMask = (toplevel.inputs ++ toplevel.outputs).map(_.width).map(w => (BigInt(1) << w) - 1).toIndexedSeq
   private val idIsSigned = (toplevel.inputs ++ toplevel.outputs).map(_.signed).toIndexedSeq
 
+  // Pass command line arguments to the simulator
+  so.setArgs(args)
+
   private def update(): Unit = {
     assert(isRunning)
     so.update()
     isStale = false
   }
 
-  private def takeStep(): Long = {
+  private def takeSteps(cycles: Int): Long = {
     assert(isRunning)
-    so.step()
+    require(cycles > 0)
+    so.step(cycles)
   }
 
   private def getId(signal: String): Int =
@@ -102,16 +108,19 @@ private[chiseltest] class JNASimulatorContext(
       case None    => throw NoClockException(toplevel.name)
     }
     update()
-    var delta: Int = 0
-    (0 until n).foreach { _ =>
-      delta += 1
-      val r = takeStep()
-      if (r != 0) {
-        val isFailure = r != 1
-        return StepInterrupted(delta, isFailure, List())
-      }
+    val r = takeSteps(n)
+    val status = (r >> 32) & 3
+    if (status == 0) {
+      StepOk
+    } else if (status == 3) {
+      val msg = "The simulator has encountered an unrecoverable error.\n" +
+        "Please consult the standard output and error for more details."
+      throw new RuntimeException(msg)
+    } else {
+      val isFailure = status != 1
+      val after = r & 0xffffffffL
+      StepInterrupted(after.toInt, isFailure, List())
     }
-    StepOk
   }
 
   private var isRunning = true

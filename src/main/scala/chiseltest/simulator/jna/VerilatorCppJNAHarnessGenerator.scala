@@ -36,7 +36,16 @@ struct sim_state {
     // std::cout << "Allocating! " << ((long long) dut) << std::endl;
   }
 
-  inline int64_t step() { return _step(tfp, dut, main_time); }
+  inline int64_t step(int32_t cycles) {
+    for(int32_t i = 0; i < cycles; i++) {
+      const int64_t status = _step(tfp, dut, main_time);
+      if(status > 0) {
+        // early exit on failure
+        return (status << 32) | ((int64_t)(i + 1));
+      }
+    }
+    return (int64_t)cycles;
+  }
   inline void update() { dut->eval(); }
   inline void finish() {
     dut->eval();
@@ -132,6 +141,10 @@ struct sim_state {
       return (((uint64_t)data[secondWord]) << 32) | ((uint64_t)data[firstWord]);
     }
   }
+
+  inline void set_args(int32_t argc, const char** argv) {
+    Verilated::commandArgs(argc, argv);
+  }
 };
 
 static sim_state* create_sim_state() {
@@ -211,10 +224,11 @@ static sim_state* create_sim_state() {
                          |}
                          |
                          |
+                         |static bool encounteredFatal = false;
                          |void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg) {
-                         |  std::cerr << "unexpected call to vl_fatal, please file an issue" << std::endl;
-                         |  std::cerr << "fatal! (" << filename << ", " << linenum << ", " << hier << ")" << std::endl;
+                         |  std::cerr << "fatal! (" << filename << ", " << linenum << ", " << hier << ", " << msg << ")" << std::endl;
                          |  $verilatorRunFlushCallback
+                         |  encounteredFatal = true;
                          |}
                          |
                          |
@@ -264,6 +278,9 @@ static sim_state* create_sim_state() {
                          |      // vl_finish is called by verilator when a finish command is executed (stop(0))
                          |      encounteredFinish = false;
                          |      return 1;
+                         |    } else if(encounteredFatal) {
+                         |      encounteredFatal = false;
+                         |      return 3;
                          |    }
                          |    return 0;
                          |}
