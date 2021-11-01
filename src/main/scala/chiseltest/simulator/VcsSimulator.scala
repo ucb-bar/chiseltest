@@ -111,7 +111,8 @@ private object VcsSimulator extends Simulator {
     annos:          AnnotationSeq
   ): Seq[String] = {
     val flags = generateFlags(topName, targetDir, annos)
-    val cmd = List("vcs") ++ flags ++ List("-o", topName, s"$topName.sv", verilogHarness, "vpi.cpp")
+    val cmd = List("vcs") ++ flags ++ List("-o", topName) ++
+      BlackBox.fFileFlags(targetDir) ++ List(s"$topName.sv", verilogHarness, "vpi.cpp")
     val ret = os.proc(cmd).call(cwd = targetDir)
 
     assert(ret.exitCode == 0, s"vcs command failed on circuit ${topName} in work dir $targetDir")
