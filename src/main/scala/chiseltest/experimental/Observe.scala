@@ -55,7 +55,7 @@ object expose {
     * import chiseltest.experimental._
     *
     * // Here we create a wrapper extending the Top module adding the exposed signals
-    * class TopWrapper extends Top with Observer {
+    * class TopWrapper extends Top {
     *   // Expose the submodule "reg" Register
     *   val exposed_reg  = expose(submodule.reg)
     * }

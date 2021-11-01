@@ -8,6 +8,7 @@ import chisel3.experimental._
 import chisel3.util.experimental.BoringUtils
 import chiseltest._
 import chiseltest.formal._
+import chiseltest.experimental._
 import org.scalatest.flatspec.AnyFlatSpec
 
 /** Chisel port of the "Verification Gentleman" blog post on formal vs. simulation.
@@ -23,7 +24,7 @@ class VGBComparisonOfFormalAndSimulation extends AnyFlatSpec with ChiselScalates
   // TODO: unfortunately we currently do not support cover statements
 }
 
-class ShapeProcessorProps extends Module with Observer {
+class ShapeProcessorProps extends Module {
   import ShapeProcessorModelling._
   import ShapeEnum._
   import OperationEnum._
@@ -157,14 +158,6 @@ class ShapeProcessorProps extends Module with Observer {
   // Check that illegal CTRL writes don't update the SFR fields. This catches all cases of illegal
   // writes under one 'assert', instead of having them spread out over many.
   assert(IfThen(past(io.write && !isLegalCtrlWriteData), stable(sfr)))
-}
-
-trait Observer { this: Module =>
-  protected def observe[T <: Data](signal: T): T = {
-    val wire = WireInit(0.U.asTypeOf(chiselTypeOf(signal)))
-    BoringUtils.bore(signal, Seq(wire))
-    wire
-  }
 }
 
 object ShapeProcessorModelling {
