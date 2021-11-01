@@ -43,8 +43,8 @@ object expose {
     *  )}
     * }}}
     *
-    * Then in your spec, test the `Top` module with `chiseltest` and `scalatest` while being
-    *      able to observe the submodule:
+    * Then in your spec, test the `Top` module with `chiseltest` and `scalatest` while exposing the signal from
+    * the submodule to the testbench:
     * {{{
     * import chisel3._
     * import chiseltest._
@@ -60,7 +60,7 @@ object expose {
     *   val exposed_reg  = expose(submodule.reg)
     * }
     *
-    * it should "observe a submodule Reg by using BoringUtils" in {
+    * it should "expose a submodule Reg by using BoringUtils" in {
     *   test(new TopWrapper) { c =>
     *     c.exposed_reg.expect(42.U)
     *   }
@@ -68,7 +68,7 @@ object expose {
     * }}}
     *
     * @param signal
-    *   the signal to be observed
+    *   the signal to be exposed
     * @return
     *   a signal with the same format to be tested on Top module's spec.
     */

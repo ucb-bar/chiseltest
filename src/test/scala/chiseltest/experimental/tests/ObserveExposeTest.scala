@@ -11,7 +11,7 @@ import org.scalatest._
 import flatspec._
 import matchers.should._
 
-class ObserverTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
+class ObserveExposeTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Expose"
 
   class SubModule extends Module {
