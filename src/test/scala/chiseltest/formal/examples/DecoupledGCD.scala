@@ -4,6 +4,7 @@ package chiseltest.formal.examples
 import chisel3._
 import chiseltest._
 import chiseltest.formal._
+import chiseltest.experimental._
 import chiseltest.iotesters.DecoupledGcd
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -14,7 +15,7 @@ class FormalGcdSpec extends AnyFlatSpec with ChiselScalatestTester with Formal {
 }
 
 /** check formal properties of the DecoupledGcd implementation */
-class DecoupledGcdSpec(makeDut: => DecoupledGcd) extends Module with Observer {
+class DecoupledGcdSpec(makeDut: => DecoupledGcd) extends Module {
   // create an instance of our DUT and expose its I/O
   val dut = Module(makeDut)
   val input = IO(chiselTypeOf(dut.input))

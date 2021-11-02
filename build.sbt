@@ -7,7 +7,7 @@ version := "0.5-SNAPSHOT"
 
 scalaVersion := "2.12.15"
 
-crossScalaVersions := Seq("2.12.15", "2.13.5")
+crossScalaVersions := Seq("2.12.15", "2.13.7")
 
 resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
@@ -23,7 +23,7 @@ pomIncludeRepository := { x => false }
 
 // scm is set by sbt-ci-release
 pomExtra := (
-<url>http://chisel.eecs.berkeley.edu/</url>
+  <url>http://chisel.eecs.berkeley.edu/</url>
   <licenses>
     <license>
       <name>apache_v2</name>
@@ -68,19 +68,19 @@ scalacOptions ++= Seq(
 }
 
 libraryDependencies ++= Seq(
-  "edu.berkeley.cs" %% "chisel3"       % defaultVersions("chisel3"),
-  "edu.berkeley.cs" %% "treadle"       % defaultVersions("treadle"),
-  "org.scalatest"   %% "scalatest"     % "3.1.4",
-  "com.lihaoyi"     %% "utest"         % "0.7.9",
+  "edu.berkeley.cs" %% "chisel3" % defaultVersions("chisel3"),
+  "edu.berkeley.cs" %% "treadle" % defaultVersions("treadle"),
+  "org.scalatest" %% "scalatest" % "3.1.4",
+  "com.lihaoyi" %% "utest" % "0.7.9",
   "net.java.dev.jna" % "jna" % "5.9.0",
-  "org.scala-lang"   % "scala-reflect" % scalaVersion.value,
-  compilerPlugin("edu.berkeley.cs" % "chisel3-plugin"    % defaultVersions("chisel3") cross CrossVersion.full)
+  "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+  compilerPlugin(("edu.berkeley.cs" % "chisel3-plugin" % defaultVersions("chisel3")).cross(CrossVersion.full))
 ) ++ {
   CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, n)) if n >= 13 => Nil
     case _ =>
       Seq(
-        compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full)
+        compilerPlugin(("org.scalamacros" % "paradise" % "2.1.1").cross(CrossVersion.full))
       )
   }
 }
