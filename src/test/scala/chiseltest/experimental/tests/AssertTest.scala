@@ -5,7 +5,7 @@ package chiseltest.experimental.tests
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.tester._
-import chiseltest.simulator.VerilatorBackendAnnotation
+import chiseltest.simulator.{RequiresVerilator, VerilatorBackendAnnotation}
 import chiseltest.{ChiselAssertionError, TreadleBackendAnnotation}
 import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.freespec.AnyFreeSpec
@@ -34,7 +34,7 @@ class AssertTest extends AnyFreeSpec with ChiselScalatestTester with Matchers {
     }
   }
 
-  "Should not fail on value 3 with verilator" in {
+  "Should not fail on value 3 with verilator" taggedAs RequiresVerilator in {
     test(new AssertFail).withAnnotations(Seq(VerilatorBackendAnnotation)) { dut =>
       dut.io.input.poke(3.U)
       dut.clock.step()
@@ -53,7 +53,7 @@ class AssertTest extends AnyFreeSpec with ChiselScalatestTester with Matchers {
     }
   }
 
-  "Should not fail on 2 and 4 using verilator" in {
+  "Should not fail on 2 and 4 using verilator" taggedAs RequiresVerilator in {
     for (i <- Seq(2, 4)) {
       val e = intercept[ChiselAssertionError] {
         test(new AssertFail).withAnnotations(Seq(VerilatorBackendAnnotation)) { dut =>
