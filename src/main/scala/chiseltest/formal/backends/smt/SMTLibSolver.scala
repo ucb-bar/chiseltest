@@ -48,7 +48,13 @@ private class SMTLibSolverContext(cmd: List[String], val solver: Solver) extends
     _stackDepth -= 1
   }
   override def assert(expr: BVExpr): Unit = {
+    require(expr.width == 1, s"$expr is not a boolean")
     writeCommand(s"(assert ${serialize(expr)})")
+  }
+  override def softAssert(expr: BVExpr, weight: Int): Unit = {
+    require(weight >= 0, "weight should be non-negative")
+    require(expr.width == 1, s"$expr is not a boolean")
+    writeCommand(s"(assert-soft ${serialize(expr)} :weight $weight)")
   }
   override def queryModel(e: BVSymbol): Option[BigInt] = getValue(e)
   override def getValue(e: BVExpr): Option[BigInt] = {
