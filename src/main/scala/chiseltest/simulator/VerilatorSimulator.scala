@@ -242,16 +242,10 @@ private object VerilatorSimulator extends Simulator {
       case other => throw new RuntimeException(s"Unsupported waveform format: $other")
     }
     val flags =
-      DefaultFlags(topName, verilatedDir, cFlags, ldFlags) ++ waveformFlags ++ fFileFlags(targetDir) ++ userFlags
+      DefaultFlags(topName, verilatedDir, cFlags, ldFlags) ++ waveformFlags ++ BlackBox.fFileFlags(
+        targetDir
+      ) ++ userFlags
     flags
-  }
-
-  // add the `.f` file containing the names of all blackbox verilog files, if it exists
-  private def fFileFlags(targetDir: os.Path): Seq[String] = {
-    val fFile = targetDir / firrtl.transforms.BlackBoxSourceHelper.defaultFileListName
-    if (os.exists(fFile)) {
-      Seq("-f", fFile.toString())
-    } else { Seq() }
   }
 
   private def generateHarness(
