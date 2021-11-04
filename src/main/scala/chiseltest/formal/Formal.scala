@@ -38,6 +38,12 @@ trait Formal { this: HasTestName =>
 /** An _escape hatch_ to disable more pessimistic modelling of undefined values. */
 case object DoNotModelUndef extends NoTargetAnnotation
 
+/** Disables firrtl optimizations when converting to a SMT/Btor2 system.
+  * This is an escape hatch in case you suspect optimizations of doing something wrong!
+  * Normally this annotation should *not* be needed!
+  */
+case object DoNotOptimizeFormal extends NoTargetAnnotation
+
 private object Formal {
   def verify[T <: Module](dutGen: => T, annos: AnnotationSeq): Unit = {
     val ops = getOps(annos)
