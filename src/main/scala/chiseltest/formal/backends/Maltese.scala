@@ -3,7 +3,7 @@
 package chiseltest.formal.backends
 
 import chiseltest.formal.backends.smt._
-import chiseltest.formal.{DoNotModelUndef, FailedBoundedCheckException}
+import chiseltest.formal.{DoNotModelUndef, DoNotOptimizeFormal, FailedBoundedCheckException}
 import firrtl._
 import firrtl.annotations._
 import firrtl.stage._
@@ -77,6 +77,12 @@ private[chiseltest] object Maltese {
     RunFirrtlTransformAnnotation(Dependency[firrtl.passes.InlineInstances])
   )
 
+  private val Optimizations: AnnotationSeq = Seq(
+    RunFirrtlTransformAnnotation(Dependency[firrtl.transforms.ConstantPropagation]),
+    RunFirrtlTransformAnnotation(Dependency(passes.CommonSubexpressionElimination)),
+    RunFirrtlTransformAnnotation(Dependency[firrtl.transforms.DeadCodeElimination])
+  )
+
   private val DefRandomAnnos: AnnotationSeq = Seq(
     RunFirrtlTransformAnnotation(Dependency(UndefinedMemoryBehaviorPass)),
     RunFirrtlTransformAnnotation(Dependency(InvalidToRandomPass))
@@ -89,9 +95,10 @@ private[chiseltest] object Maltese {
 
   private def toTransitionSystem(circuit: ir.Circuit, annos: AnnotationSeq): SysInfo = {
     val logLevel = Seq() // Seq("-ll", "info")
+    val opts: AnnotationSeq = if (annos.contains(DoNotOptimizeFormal)) Seq() else Optimizations
     val res = firrtlStage.execute(
       Array("--start-from", "low", "-E", "smt2") ++ logLevel,
-      FirrtlCircuitAnnotation(circuit) +: annos ++: LoweringAnnos
+      FirrtlCircuitAnnotation(circuit) +: annos ++: LoweringAnnos ++: opts
     )
     val stateMap = FlattenPass.getStateMap(circuit.main, res)
     val memDepths = FlattenPass.getMemoryDepths(circuit.main, res)
