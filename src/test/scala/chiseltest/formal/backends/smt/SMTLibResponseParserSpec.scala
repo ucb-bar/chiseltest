@@ -56,4 +56,17 @@ class SMTLibResponseParserSpec extends AnyFlatSpec {
     assert(SMTLibResponseParser.parseValue(z3Answer(1234567)).get == 1234567)
   }
 
+  it should "parse an array with default value in the (_ bvX X) format" taggedAs FormalTag in {
+    // we got this from CVC4
+    val array = "((as const (Array (_ BitVec 2) (_ BitVec 8))) (_ bv0 8))"
+    val expected = Seq((None, BigInt(0)))
+    assert(SMTLibResponseParser.parseMemValue(in(array)) == expected)
+  }
+
+  it should "parse a store with a value in the (_ bvX X) format" taggedAs FormalTag in {
+    // we got this from CVC4
+    val array = "(store ((as const (Array (_ BitVec 5) (_ BitVec 8))) (_ bv0 8)) (_ bv0 5) (_ bv1 8))"
+    val expected = Seq((None, BigInt(0)), (Some(BigInt(0)), BigInt(1)))
+    assert(SMTLibResponseParser.parseMemValue(in(array)) == expected)
+  }
 }
