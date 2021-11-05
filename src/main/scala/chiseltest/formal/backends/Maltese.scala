@@ -34,11 +34,20 @@ private[chiseltest] object Maltese {
   def bmc(circuit: ir.Circuit, annos: AnnotationSeq, kMax: Int, resetLength: Int = 0): Unit = {
     require(kMax > 0)
     require(resetLength >= 0)
+
+    // convert to transition system
     val targetDir = Compiler.requireTargetDir(annos)
     val modelUndef = !annos.contains(DoNotModelUndef)
     val sysAnnos: AnnotationSeq = if (modelUndef) { DefRandomAnnos ++: annos }
     else { annos }
     val sysInfo = toTransitionSystem(circuit, sysAnnos)
+
+    // if the system has no bad states => success!
+    if (noBadStates(sysInfo.sys)) {
+      return // proven correct by the compiler!
+    }
+
+    // perform check
     val checkers = makeCheckers(annos)
     assert(checkers.size == 1, "Parallel checking not supported atm!")
     checkers.head.check(sysInfo.sys, kMax = kMax + resetLength) match {
@@ -112,6 +121,9 @@ private[chiseltest] object Maltese {
 
     SysInfo(sys, stateMap, memDepths)
   }
+
+  private def noBadStates(sys: TransitionSystem): Boolean =
+    sys.signals.count(_.lbl == IsBad) == 0
 
   private def firrtlStage = new FirrtlStage
 
