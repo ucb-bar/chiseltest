@@ -11,67 +11,67 @@ import firrtl.annotations.{Annotation, MemoryArrayInitAnnotation, MemoryScalarIn
 import firrtl.ir.ReadUnderWrite
 
 // most of the tests are inspired by the MemorySpec in firrtl.backends.experimental.smt.end2end
-class MemoryTests extends AnyFlatSpec with ChiselScalatestTester with Formal {
+class MemoryTests extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption {
   "Registered read-first memory" should "return written data after two cycles" taggedAs FormalTag in {
-    verify(new ReadFirstMemoryReturnsDataAfterTwoCycles, Seq(BoundedCheck(2)))
+    verify(new ReadFirstMemoryReturnsDataAfterTwoCycles, Seq(BoundedCheck(2), DefaultBackend))
   }
   "Registered read-first memory" should "not return written data after one cycle" taggedAs FormalTag in {
     val e = intercept[FailedBoundedCheckException] {
-      verify(new ReadFirstMemoryReturnsDataAfterOneCycle, Seq(BoundedCheck(2)))
+      verify(new ReadFirstMemoryReturnsDataAfterOneCycle, Seq(BoundedCheck(2), DefaultBackend))
     }
     assert(e.failAt == 1)
   }
   "Registered write-first memory" should "return written data after one cycle" taggedAs FormalTag in {
-    verify(new ReadFirstMemoryReturnsDataAfterTwoCycles, Seq(BoundedCheck(2)))
+    verify(new ReadFirstMemoryReturnsDataAfterTwoCycles, Seq(BoundedCheck(2), DefaultBackend))
   }
   "read-only memory" should "always return 0" taggedAs FormalTag in {
-    verify(new ReadOnlyMemoryAlwaysReturnZero, Seq(BoundedCheck(1)))
+    verify(new ReadOnlyMemoryAlwaysReturnZero, Seq(BoundedCheck(1), DefaultBackend))
   }
   "read-only memory" should "not always return 1" taggedAs FormalTag in {
     val e = intercept[FailedBoundedCheckException] {
-      verify(new ReadOnlyMemoryAlwaysReturnOneFail, Seq(BoundedCheck(1)))
+      verify(new ReadOnlyMemoryAlwaysReturnOneFail, Seq(BoundedCheck(1), DefaultBackend))
     }
     assert(e.failAt == 0)
   }
   "read-only memory" should "always return 1 or 2" taggedAs FormalTag in {
-    verify(new ReadOnlyMemoryAlwaysReturnOneOrTwo, Seq(BoundedCheck(1)))
+    verify(new ReadOnlyMemoryAlwaysReturnOneOrTwo, Seq(BoundedCheck(1), DefaultBackend))
   }
   "read-only memory" should "not always return 1 or 2 when initialized with a 3" taggedAs FormalTag in {
     val e = intercept[FailedBoundedCheckException] {
-      verify(new ReadOnlyMemoryAlwaysReturnOneOrTwoFail, Seq(BoundedCheck(1)))
+      verify(new ReadOnlyMemoryAlwaysReturnOneOrTwoFail, Seq(BoundedCheck(1), DefaultBackend))
     }
     assert(e.failAt == 0)
   }
   "memory with two write ports" should "not have collisions when enables are mutually exclusive" taggedAs FormalTag in {
-    verify(new MutuallyExclusiveWritesShouldNotCollide, Seq(BoundedCheck(4)))
+    verify(new MutuallyExclusiveWritesShouldNotCollide, Seq(BoundedCheck(4), DefaultBackend))
   }
   "memory with two write ports" should "can have collisions when enables are unconstrained" taggedAs FormalTag in {
     val e = intercept[FailedBoundedCheckException] {
-      verify(new MemoryCollisionModule, Seq(BoundedCheck(2)))
+      verify(new MemoryCollisionModule, Seq(BoundedCheck(2), DefaultBackend))
     }
     assert(e.failAt == 1)
   }
   "a memory with read enable" should "supply valid data one cycle after en=1" taggedAs FormalTag in {
-    verify(new ReadEnableMemValidDataAfterEnTrue, Seq(BoundedCheck(4)))
+    verify(new ReadEnableMemValidDataAfterEnTrue, Seq(BoundedCheck(4), DefaultBackend))
   }
   "a memory with read enable" should "supply invalid data one cycle after en=0" taggedAs FormalTag in {
     val e = intercept[FailedBoundedCheckException] {
-      verify(new ReadEnableMemInvalidDataAfterEnFalse, Seq(BoundedCheck(2)))
+      verify(new ReadEnableMemInvalidDataAfterEnFalse, Seq(BoundedCheck(2), DefaultBackend))
     }
     assert(e.failAt == 1)
   }
   "a memory with read enable" should "just ignore the read enable when not modelling undef values" taggedAs FormalTag in {
     // WARN: it is not recommended to turn of undef modelling and it is not guaranteed that this test won't break
-    verify(new ReadEnableMemInvalidDataAfterEnFalse, Seq(BoundedCheck(3), DoNotModelUndef))
+    verify(new ReadEnableMemInvalidDataAfterEnFalse, Seq(BoundedCheck(3), DoNotModelUndef, DefaultBackend))
   }
   "memory with two write ports" should "always have one write win in a collision when not modelling undef values" taggedAs FormalTag in {
     // WARN: it is not recommended to turn of undef modelling and it is not guaranteed that this test won't break
-    verify(new MemoryCollisionModule, Seq(BoundedCheck(3), DoNotModelUndef))
+    verify(new MemoryCollisionModule, Seq(BoundedCheck(3), DoNotModelUndef, DefaultBackend))
   }
   "read-only memory" should "not always return 1 even when not modelling undef values" taggedAs FormalTag in {
     // this test does not rely on any undefined values and thus it should always fail
     val e = intercept[FailedBoundedCheckException] {
-      verify(new ReadOnlyMemoryAlwaysReturnOneFail, Seq(BoundedCheck(1), DoNotModelUndef))
+      verify(new ReadOnlyMemoryAlwaysReturnOneFail, Seq(BoundedCheck(1), DoNotModelUndef, DefaultBackend))
     }
     assert(e.failAt == 0)
   }

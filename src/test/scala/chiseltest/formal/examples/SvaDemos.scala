@@ -16,10 +16,10 @@ import firrtl.annotations.PresetAnnotation
   * All demos are based on the awesome SVA tutorial from SymbioticEDA:
   * https://github.com/SymbioticEDA/sva-demos
   */
-class SvaDemos extends AnyFlatSpec with ChiselScalatestTester with Formal {
+class SvaDemos extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption {
   "Demo1" should "fail a bounded check 17 cycles after reset" taggedAs FormalTag in {
     val e = intercept[FailedBoundedCheckException] {
-      verify(new SvaDemo1, Seq(BoundedCheck(20)))
+      verify(new SvaDemo1, Seq(BoundedCheck(20), DefaultBackend))
     }
     assert(e.failAt == 17)
   }
@@ -28,7 +28,7 @@ class SvaDemos extends AnyFlatSpec with ChiselScalatestTester with Formal {
   .foreach { case (n, gen) =>
     s"Demo2$n" should "fail a bounded check 15 cycles after reset" taggedAs FormalTag in {
       val e = intercept[FailedBoundedCheckException] {
-        verify(gen(), Seq(BoundedCheck(20)))
+        verify(gen(), Seq(BoundedCheck(20), DefaultBackend))
       }
       assert(e.failAt == 15)
     }
@@ -36,7 +36,7 @@ class SvaDemos extends AnyFlatSpec with ChiselScalatestTester with Formal {
 
   "Demo3" should "fail a bounded check 16 cycles after reset" taggedAs FormalTag in {
     val e = intercept[FailedBoundedCheckException] {
-      verify(new SvaDemo3, Seq(BoundedCheck(20)))
+      verify(new SvaDemo3, Seq(BoundedCheck(20), DefaultBackend))
     }
     assert(e.failAt == 16)
   }

@@ -8,9 +8,9 @@ import chiseltest.experimental._
 import chiseltest.iotesters.DecoupledGcd
 import org.scalatest.flatspec.AnyFlatSpec
 
-class FormalGcdSpec extends AnyFlatSpec with ChiselScalatestTester with Formal {
+class FormalGcdSpec extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption {
   "GCD" should "pass" taggedAs FormalTag in {
-    verify(new DecoupledGcdSpec(new DecoupledGcd(4)), Seq(BoundedCheck(20)))
+    verify(new DecoupledGcdSpec(new DecoupledGcd(4)), Seq(BoundedCheck(20), DefaultBackend))
   }
 }
 

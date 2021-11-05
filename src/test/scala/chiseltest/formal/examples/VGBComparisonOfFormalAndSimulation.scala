@@ -15,10 +15,10 @@ import org.scalatest.flatspec.AnyFlatSpec
   * src: https://github.com/verification-gentleman-blog/comparison-of-formal-and-simulation
   * blog: https://blog.verificationgentleman.com/2020/11/comparison-of-formal-and-simulation-part-1.html
   * */
-class VGBComparisonOfFormalAndSimulation extends AnyFlatSpec with ChiselScalatestTester with Formal {
+class VGBComparisonOfFormalAndSimulation extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption {
   "ShapeProcessorProp" should "pass" taggedAs FormalTag in {
-    // note: CVC4 seems to be significantly faster on this example than the default Z3
-    verify(new ShapeProcessorProps, Seq(BoundedCheck(4), CVC4EngineAnnotation))
+    assume(DefaultBackend != Z3EngineAnnotation, "Z3 is too slow on this example!")
+    verify(new ShapeProcessorProps, Seq(BoundedCheck(4), DefaultBackend))
   }
 
   // TODO: unfortunately we currently do not support cover statements

@@ -17,6 +17,7 @@ abstract class FlatSpecWithTargetDir extends AnyFlatSpec {
 
   // Provide test fixture data as part of 'global' context during test runs
   private val scalaTestContext = new DynamicVariable[Option[NoArgTest]](None)
+  protected def configMap: org.scalatest.ConfigMap = scalaTestContext.value.get.configMap
 
   override def withFixture(test: NoArgTest): Outcome = {
     require(scalaTestContext.value.isEmpty)

@@ -6,13 +6,13 @@ import chiseltest._
 import chiseltest.formal._
 import org.scalatest.flatspec.AnyFlatSpec
 
-class KeepMaxVerify extends AnyFlatSpec with ChiselScalatestTester with Formal {
+class KeepMaxVerify extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption {
   "KeppMax(1)" should "have a monotonically increasing output" taggedAs FormalTag in {
-    verify(new KeepMax(1), Seq(BoundedCheck(4)))
+    verify(new KeepMax(1), Seq(BoundedCheck(4), DefaultBackend))
   }
 
   "KeppMax(8)" should "have a monotonically increasing output" taggedAs FormalTag in {
-    verify(new KeepMax(8), Seq(BoundedCheck(4)))
+    verify(new KeepMax(8), Seq(BoundedCheck(4), DefaultBackend))
   }
 }
 

@@ -10,71 +10,71 @@ import org.scalatest.flatspec.AnyFlatSpec
 /** Chisel versions of the quizzes from ZipCPU:
   * http://zipcpu.com/quiz/quizzes.html
   */
-class ZipCpuQuizzes extends AnyFlatSpec with ChiselScalatestTester with Formal {
+class ZipCpuQuizzes extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption {
   "Quiz1" should "pass with assumption" taggedAs FormalTag in {
-    verify(new Quiz1(true), Seq(BoundedCheck(11)))
+    verify(new Quiz1(true), Seq(BoundedCheck(11), DefaultBackend))
   }
   "Quiz1" should "fail without assumption" taggedAs FormalTag in {
     val e = intercept[FailedBoundedCheckException] {
-      verify(new Quiz1(false), Seq(BoundedCheck(11)))
+      verify(new Quiz1(false), Seq(BoundedCheck(11), DefaultBackend))
     }
     assert(e.failAt == 11)
   }
 
   "Quiz2" should "fail without counter reset value" taggedAs FormalTag in {
     val e = intercept[FailedBoundedCheckException] {
-      verify(new Quiz2(false), Seq(BoundedCheck(5)))
+      verify(new Quiz2(false), Seq(BoundedCheck(5), DefaultBackend))
     }
     assert(e.failAt == 0)
   }
   "Quiz2" should "pass with counter reset value" taggedAs FormalTag in {
-    verify(new Quiz2(true), Seq(BoundedCheck(5)))
+    verify(new Quiz2(true), Seq(BoundedCheck(5), DefaultBackend))
   }
 
   "Quiz4" should "fail when using a RegNext to delay the signal" taggedAs FormalTag in {
     val e = intercept[FailedBoundedCheckException] {
-      verify(new Quiz4(0), Seq(BoundedCheck(5)))
+      verify(new Quiz4(0), Seq(BoundedCheck(5), DefaultBackend))
     }
     assert(e.failAt == 0)
   }
   "Quiz4" should "pass when using the Chisel past function" taggedAs FormalTag in {
-    verify(new Quiz4(1), Seq(BoundedCheck(5)))
+    verify(new Quiz4(1), Seq(BoundedCheck(5), DefaultBackend))
   }
   "Quiz4" should "pass when using the guarded assumption + Chisel past function" taggedAs FormalTag in {
-    verify(new Quiz4(2), Seq(BoundedCheck(5)))
+    verify(new Quiz4(2), Seq(BoundedCheck(5), DefaultBackend))
   }
 
   "Quiz7" should "fail when using a RegNext to delay the signal" taggedAs FormalTag in {
     val e = intercept[FailedBoundedCheckException] {
-      verify(new Quiz7(false), Seq(BoundedCheck(5)))
+      verify(new Quiz7(false), Seq(BoundedCheck(5), DefaultBackend))
     }
     assert(e.failAt == 0)
   }
   "Quiz7" should "pass when using the Chisel past function" taggedAs FormalTag in {
-    verify(new Quiz7(true), Seq(BoundedCheck(5)))
+    verify(new Quiz7(true), Seq(BoundedCheck(5), DefaultBackend))
   }
 
   "Quiz13" should "pass when x is 1 wide" taggedAs FormalTag in {
-    verify(new Quiz13(1), Seq(BoundedCheck(4)))
+    verify(new Quiz13(1), Seq(BoundedCheck(4), DefaultBackend))
   }
   "Quiz13" should "pass when x is 8 wide" taggedAs FormalTag in {
-    verify(new Quiz13(8), Seq(BoundedCheck(4)))
+    verify(new Quiz13(8), Seq(BoundedCheck(4), DefaultBackend))
   }
 
   "Quiz15" should "fail when using ReadFirst" taggedAs FormalTag in {
     val e = intercept[FailedBoundedCheckException] {
-      verify(new Quiz15(ReadFirst), Seq(BoundedCheck(5)))
+      verify(new Quiz15(ReadFirst), Seq(BoundedCheck(5), DefaultBackend))
     }
     assert(e.failAt == 1)
   }
   "Quiz15" should "fail when using Undefined" taggedAs FormalTag in {
     val e = intercept[FailedBoundedCheckException] {
-      verify(new Quiz15(Undefined), Seq(BoundedCheck(5)))
+      verify(new Quiz15(Undefined), Seq(BoundedCheck(5), DefaultBackend))
     }
     assert(e.failAt == 1)
   }
   "Quiz15" should "pass when using WriteFirst" taggedAs FormalTag in {
-    verify(new Quiz15(WriteFirst), Seq(BoundedCheck(5)))
+    verify(new Quiz15(WriteFirst), Seq(BoundedCheck(5), DefaultBackend))
   }
 }
 

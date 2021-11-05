@@ -2,6 +2,7 @@
 
 package chiseltest.formal.backends
 
+import chiseltest.formal.backends.btor.BtormcModelChecker
 import chiseltest.formal.backends.smt._
 import chiseltest.formal.{DoNotModelUndef, DoNotOptimizeFormal, FailedBoundedCheckException}
 import firrtl._
@@ -27,7 +28,7 @@ case object Z3EngineAnnotation extends FormalEngineAnnotation
 /** Uses the btormc model checker from the boolector code base.
   * @note btormc is generally faster than Z3 or CVC4 but needs to be built from source
   */
-private case object BtormcEngineAnnotation extends FormalEngineAnnotation
+case object BtormcEngineAnnotation extends FormalEngineAnnotation
 
 /** Formal Verification based on the firrtl compiler's SMT backend and the maltese SMT libraries solver bindings. */
 private[chiseltest] object Maltese {
@@ -48,7 +49,7 @@ private[chiseltest] object Maltese {
     }
 
     // perform check
-    val checkers = makeCheckers(annos)
+    val checkers = makeCheckers(annos, targetDir)
     assert(checkers.size == 1, "Parallel checking not supported atm!")
     checkers.head.check(sysInfo.sys, kMax = kMax + resetLength) match {
       case ModelCheckFail(witness) =>
@@ -127,13 +128,13 @@ private[chiseltest] object Maltese {
 
   private def firrtlStage = new FirrtlStage
 
-  private def makeCheckers(annos: AnnotationSeq): Seq[IsModelChecker] = {
+  private def makeCheckers(annos: AnnotationSeq, targetDir: os.Path): Seq[IsModelChecker] = {
     val engines = annos.collect { case a: FormalEngineAnnotation => a }
     assert(engines.nonEmpty, "You need to provide at least one formal engine annotation!")
     engines.map {
       case CVC4EngineAnnotation   => new SMTModelChecker(CVC4SMTLib)
       case Z3EngineAnnotation     => new SMTModelChecker(Z3SMTLib)
-      case BtormcEngineAnnotation => throw new NotImplementedError("btor2 backends are not yet supported!")
+      case BtormcEngineAnnotation => new BtormcModelChecker(targetDir)
     }
   }
 
