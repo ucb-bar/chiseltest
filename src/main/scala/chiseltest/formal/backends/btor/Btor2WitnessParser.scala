@@ -46,7 +46,7 @@ object Btor2WitnessParser {
       Assignment(ii, value, index, symbol = parts.last, is_array)
     }
 
-    def parse_line(line: String): Unit = {
+    def parseLine(line: String): Unit = {
       if (line.isEmpty) {
         /* skip blank lines */
         return
@@ -140,7 +140,7 @@ object Btor2WitnessParser {
     breakable {
       lines.foreach { ll =>
         //println(ll.trim)
-        parse_line(ll.trim)
+        parseLine(ll.trim)
         if (done) break()
       }
     }
