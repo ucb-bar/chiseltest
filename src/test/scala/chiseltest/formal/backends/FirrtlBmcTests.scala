@@ -2,7 +2,7 @@
 
 package chiseltest.formal.backends
 
-import chiseltest.formal.{FailedBoundedCheckException, FormalTag}
+import chiseltest.formal.{FailedBoundedCheckException, FormalBackendOption, FormalTag}
 import firrtl.annotations._
 import chiseltest.utils.FlatSpecWithTargetDir
 import chiseltest.simulator.{Compiler, WriteVcdAnnotation}
@@ -11,6 +11,7 @@ import firrtl._
 class FirrtlBmcTests extends FlatSpecWithTargetDir {
   behavior of "maltese bmc"
 
+  private def DefaultBackend: FormalEngineAnnotation = FormalBackendOption.getEngine(configMap)
   private val mRef = CircuitTarget("test").module("test")
 
   private def failAfter(n: Int): String =
@@ -33,12 +34,11 @@ class FirrtlBmcTests extends FlatSpecWithTargetDir {
   private def loadFirrtl(src: String): CircuitState =
     loadFirrtl(src, withTargetDir(Seq(PresetAnno)))
 
-  private val CVC4 = CVC4EngineAnnotation
   private val VCD = WriteVcdAnnotation
 
   it should "succeed for a limited amount of cycles" taggedAs FormalTag in {
     val state = loadFirrtl(failAfter(2))
-    Maltese.bmc(state.circuit, CVC4 +: state.annotations, kMax = 1)
+    Maltese.bmc(state.circuit, DefaultBackend +: state.annotations, kMax = 1)
   }
 
   it should "fail after the appropriate amount of cycles" taggedAs FormalTag in {
@@ -46,7 +46,7 @@ class FirrtlBmcTests extends FlatSpecWithTargetDir {
       val state = loadFirrtl(failAfter(ii))
 
       val e = intercept[FailedBoundedCheckException] {
-        Maltese.bmc(state.circuit, VCD +: CVC4 +: state.annotations, kMax = 101)
+        Maltese.bmc(state.circuit, VCD +: DefaultBackend +: state.annotations, kMax = 101)
       }
       assert(e.failAt == ii)
     }
@@ -77,11 +77,11 @@ class FirrtlBmcTests extends FlatSpecWithTargetDir {
     val state = loadFirrtl(nestedSrc(5))
 
     // this should not fail
-    Maltese.bmc(state.circuit, CVC4 +: state.annotations, kMax = 4)
+    Maltese.bmc(state.circuit, DefaultBackend +: state.annotations, kMax = 4)
 
     // this should fail
     val e = intercept[FailedBoundedCheckException] {
-      Maltese.bmc(state.circuit, CVC4 +: state.annotations, kMax = 6)
+      Maltese.bmc(state.circuit, DefaultBackend +: state.annotations, kMax = 6)
     }
     assert(e.failAt == 5)
 
@@ -89,7 +89,7 @@ class FirrtlBmcTests extends FlatSpecWithTargetDir {
     val vcdFile = targetDir / "test.vcd"
     if(os.exists(vcdFile)) { os.remove(vcdFile) }
     assertThrows[FailedBoundedCheckException] {
-      Maltese.bmc(state.circuit, VCD +: CVC4 +: state.annotations, kMax = 6)
+      Maltese.bmc(state.circuit, VCD +: DefaultBackend +: state.annotations, kMax = 6)
     }
     assert(os.exists(vcdFile))
   }

@@ -47,20 +47,20 @@ class PastMemTestModule extends Module {
   assert(m.read(past(addr)) === RegNext(data))
 }
 
-class SafePastSpec extends AnyFlatSpec with ChiselScalatestTester with Formal {
+class SafePastSpec extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption {
   behavior of "Safe Past"
 
   (0 until 3).foreach { ii =>
     it should s"guard the assertions appropriately (style=$ii)" taggedAs FormalTag in {
-      verify(new PastTestModule(ii), Seq(BoundedCheck(4)))
+      verify(new PastTestModule(ii), Seq(BoundedCheck(4), DefaultBackend))
     }
   }
 
   it should "guard the assertion appropriately even when past is used in a surrounding when statement" taggedAs FormalTag in {
-    verify(new PastWhenTestModule, Seq(BoundedCheck(4)))
+    verify(new PastWhenTestModule, Seq(BoundedCheck(4), DefaultBackend))
   }
 
   it should "correctly propagate delay information through a combinatorial read port" taggedAs FormalTag in {
-    verify(new PastMemTestModule, Seq(BoundedCheck(4)))
+    verify(new PastMemTestModule, Seq(BoundedCheck(4), DefaultBackend))
   }
 }

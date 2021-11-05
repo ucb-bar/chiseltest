@@ -7,7 +7,7 @@ import chiseltest._
 import chisel3._
 
 
-class BasicBoundedCheckTests extends AnyFlatSpec with ChiselScalatestTester with Formal {
+class BasicBoundedCheckTests extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption {
   behavior of "verify command"
 
   it should "support modules that do not have any asserts (trivial pass!)"  taggedAs FormalTag in {
@@ -16,41 +16,41 @@ class BasicBoundedCheckTests extends AnyFlatSpec with ChiselScalatestTester with
 
   it should "support simple bmc with a passing check" taggedAs FormalTag in {
     // this one should pass since we only check one step
-    verify(new FailAfterModule(2), Seq(BoundedCheck(kMax = 1)))
+    verify(new FailAfterModule(2), Seq(BoundedCheck(kMax = 1), DefaultBackend))
   }
 
   it should "support simple bmc with a failing check" taggedAs FormalTag in {
     // this one will fail
     assertThrows[FailedBoundedCheckException] {
-      verify(new FailAfterModule(2), Seq(BoundedCheck(kMax = 2)))
+      verify(new FailAfterModule(2), Seq(BoundedCheck(kMax = 2), DefaultBackend))
     }
   }
 
   it should "support assumption" taggedAs FormalTag in {
-    verify(new AssumeAssertTestModule, Seq(BoundedCheck(kMax = 1)))
+    verify(new AssumeAssertTestModule, Seq(BoundedCheck(kMax = 1), DefaultBackend))
   }
 
   it should "support assumption in nested modules" taggedAs FormalTag in {
-    verify(new NestedAssertAssumeTestModule, Seq(BoundedCheck(kMax = 1)))
+    verify(new NestedAssertAssumeTestModule, Seq(BoundedCheck(kMax = 1), DefaultBackend))
   }
 
   it should "detect a failure in DanielModuleWithBadAssertion" taggedAs FormalTag in {
     assertThrows[FailedBoundedCheckException] {
-      verify(new DanielModuleWithBadAssertion, Seq(BoundedCheck(kMax = 4)))
+      verify(new DanielModuleWithBadAssertion, Seq(BoundedCheck(kMax = 4), DefaultBackend))
     }
   }
 
   it should "verify DanielModuleWithGoodAssertion" taggedAs FormalTag in {
-    verify(new DanielModuleWithGoodAssertion, Seq(BoundedCheck(kMax = 4)))
+    verify(new DanielModuleWithGoodAssertion, Seq(BoundedCheck(kMax = 4), DefaultBackend))
   }
 
   it should "support simple bmc with the RawTester" taggedAs FormalTag in {
-    RawTester.verify(new FailAfterModule(2), Seq(BoundedCheck(kMax = 1)))
+    RawTester.verify(new FailAfterModule(2), Seq(BoundedCheck(kMax = 1), DefaultBackend))
   }
 
   it should "support simple bmc with a failing check with the RawTester" taggedAs FormalTag in {
     assertThrows[FailedBoundedCheckException] {
-      RawTester.verify(new FailAfterModule(2), Seq(BoundedCheck(kMax = 2)))
+      RawTester.verify(new FailAfterModule(2), Seq(BoundedCheck(kMax = 2), DefaultBackend))
     }
   }
 }
