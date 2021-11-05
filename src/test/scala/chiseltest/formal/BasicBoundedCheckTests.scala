@@ -10,6 +10,10 @@ import chisel3._
 class BasicBoundedCheckTests extends AnyFlatSpec with ChiselScalatestTester with Formal {
   behavior of "verify command"
 
+  it should "support modules that do not have any asserts (trivial pass!)"  taggedAs FormalTag in {
+    verify(new AdderWithoutAsserts, Seq(BoundedCheck(1)))
+  }
+
   it should "support simple bmc with a passing check" taggedAs FormalTag in {
     // this one should pass since we only check one step
     verify(new FailAfterModule(2), Seq(BoundedCheck(kMax = 1)))
@@ -49,6 +53,13 @@ class BasicBoundedCheckTests extends AnyFlatSpec with ChiselScalatestTester with
       RawTester.verify(new FailAfterModule(2), Seq(BoundedCheck(kMax = 2)))
     }
   }
+}
+
+class AdderWithoutAsserts extends Module {
+  val a = IO(Input(UInt(8.W)))
+  val b = IO(Input(UInt(8.W)))
+  val r = IO(Output(UInt(8.W)))
+  r := a + b
 }
 
 class AssumeAssertTestModule extends Module {
