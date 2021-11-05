@@ -11,7 +11,7 @@ class BasicBoundedCheckTests extends AnyFlatSpec with ChiselScalatestTester with
   behavior of "verify command"
 
   it should "support modules that do not have any asserts (trivial pass!)"  taggedAs FormalTag in {
-    verify(new AdderWithoutAsserts, Seq(BoundedCheck(1)))
+    verify(new AdderWithoutAsserts, Seq(BoundedCheck(1), DefaultBackend))
   }
 
   it should "support simple bmc with a passing check" taggedAs FormalTag in {
