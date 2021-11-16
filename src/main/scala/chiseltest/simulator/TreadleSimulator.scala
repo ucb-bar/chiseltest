@@ -67,18 +67,14 @@ private class TreadleContext(tester: TreadleTester, toplevel: TopmoduleInfo) ext
       case Some(_) =>
       case None    => throw NoClockException(tester.topName)
     }
-    var delta: Int = 0
     try {
-      (0 until n).foreach { _ =>
-        delta += 1
-        tester.step()
-      }
+      tester.step(n)
       StepOk
     } catch {
       case s: StopException =>
         val infos = s.stops.map(_.name)
         val isFailure = s.stops.exists(_.ret > 0)
-        StepInterrupted(delta, isFailure, infos)
+        StepInterrupted(tester.cycleCount.toInt, isFailure, infos)
     }
   }
 

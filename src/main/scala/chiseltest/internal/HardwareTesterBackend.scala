@@ -8,7 +8,7 @@ import chiseltest.simulator.{Compiler, DebugPrintWrapper, Simulator, SimulatorCo
 import firrtl.AnnotationSeq
 
 /** Backend that allows us to run hardware testers in the style of `chisel3.testers.BasicTester` efficiently.
-  * @warn this is an internal API, use the wrappers from the chiseltest module instead.
+  * warn this is an internal API, use the wrappers from the chiseltest module instead.
   * @note if the dut extends [[chisel3.testers.BasicTester]] the `finish` method will be called
   */
 object HardwareTesterBackend {
@@ -18,13 +18,57 @@ object HardwareTesterBackend {
 
     // we always perform a reset
     tester.poke("reset", 1)
-    tester.step(1)
+    tester.step()
     tester.poke("reset", 0)
 
     if (timeout > 0) {
       runWithTimeout(tester, timeout, expectFail)
     } else {
       runWithoutTimeout(tester, expectFail)
+    }
+
+    // if we get here we were successful!
+    finish(tester, covAnnos)
+  }
+
+  /** Lower level generic access to a simulation run. Allows caller to detect ChiselAssertions at the test level
+    * Here are the possible outcomes
+    * Precedence of outcomes (for events occurring on the same cycl)e is, highest to lowest,
+    * ChiselAssertionError
+    * stop() => user desired exit
+    * TIMEOUT exception
+    * if there are no problems and no timeout annotation Seq is returned
+    * see HardwareTestsTest for examples of precedence between stop(0),timeouts, and asserts
+    * @param dutGen      device under test
+    * @param annos       additional annotations
+    * @param timeout     throw timeout exception when cycles reaches this number,
+    *                    0 means no timeout, timeout is incremented by 2 internally because of initial reset
+    * @tparam T          the module type
+    * @return            annotations
+    */
+  def runReturningExceptions[T <: Module](dutGen: () => T, annos: AnnotationSeq, timeout: Int = 1000): AnnotationSeq = {
+    require(timeout >= 0, s"Negative timeout $timeout is not supported! Use 0 to disable the timeout.")
+
+    val (tester, covAnnos) = createTester(addFinishToBasicTester(dutGen), defaults.addDefaultSimulator(annos))
+    // The + 2 adjusts so timeout matches count since reset
+    val adjustedTimeout = if (timeout == 0) Int.MaxValue else timeout + 2
+
+    // we always perform a reset
+    tester.poke("reset", 1)
+    tester.step()
+    tester.poke("reset", 0)
+
+    tester.step(adjustedTimeout) match {
+      case StepOk =>
+        tester.finish() // close resources before exit with exception
+        throw new TimeoutException(s"Simulator timed out after $adjustedTimeout cycles.")
+      case i: StepInterrupted =>
+        tester.finish() // close resources before exit with exception
+        if (i.isFailure) {
+          throw new ChiselAssertionError(
+            s"There were ${i.sources.length} assert failures (" + i.sources.mkString(", ") + ")"
+          )
+        }
     }
 
     // if we get here we were successful!

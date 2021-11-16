@@ -65,6 +65,14 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     def runUntilAssertFail(timeout: Int = 1000): TestResult = {
       new TestResult(HardwareTesterBackend.run(dutGen, finalAnnos, timeout = timeout, expectFail = true))
     }
+
+    /** Resets and then executes the circuit until a timeout or a stop or assertion failure.
+      * Throws an exception if the timeout is reached or a normal stop is encountered.
+      * @param timeout number of cycles after which to timeout; set to 0 for no timeout
+      */
+    def runReturningExceptions(timeout: Int = 1000): TestResult = {
+      new TestResult(HardwareTesterBackend.runReturningExceptions(dutGen, finalAnnos, timeout = timeout))
+    }
   }
 
   // Provide test fixture data as part of 'global' context during test runs

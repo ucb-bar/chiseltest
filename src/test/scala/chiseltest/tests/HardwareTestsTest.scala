@@ -63,6 +63,71 @@ class HardwareTestsTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "create a wrapper and call the finish method if the circuit extends BasicTester" in {
     test(new FinishTester).runUntilStop()
   }
+
+  behavior of "HardwareTester.runReturningExceptions() using the StopFailTimeoutDut dut"
+
+  it should "pass a test when stop() is called before timeout or assrt" in {
+    test(new StopFailTimeoutDut(stopAtCount = 3, failAtCount = 10)).runReturningExceptions(timeout = 100)
+  }
+
+  it should "throw TimeoutException when dut times out before stop or assert thrown" in {
+    intercept[TimeoutException] {
+      test(new StopFailTimeoutDut(stopAtCount = 30, failAtCount = 400)).runReturningExceptions(timeout = 15)
+    }
+  }
+
+  it should "throw ChiselAssertionError when assert thrown before timeout or stop" in {
+    intercept[ChiselAssertionError] {
+      test(new StopFailTimeoutDut(stopAtCount = 300, failAtCount = 250)).runReturningExceptions(timeout = 450)
+    }
+  }
+
+  it should " stop takes precedence when stop and timeout occur at same cycle" in {
+    intercept[TimeoutException] {
+      test(new StopFailTimeoutDut(stopAtCount = 300, failAtCount = 550)).runReturningExceptions(timeout = 299)
+    }
+
+    test(new StopFailTimeoutDut(stopAtCount = 300, failAtCount = 550)).runReturningExceptions(timeout = 300)
+  }
+
+  it should " assertion takes precedence when fail and timeout occur at same cycle" in {
+    intercept[ChiselAssertionError] {
+      test(new StopFailTimeoutDut(stopAtCount = 300, failAtCount = 55)).runReturningExceptions(timeout = 55)
+    }
+
+    val t = intercept[TimeoutException] {
+      test(new StopFailTimeoutDut(stopAtCount = 300, failAtCount = 55)).runReturningExceptions(timeout = 54)
+    }
+    println(s"t : $t ${t.getMessage}")
+  }
+
+  it should "have ChiselAssertionError takes precedence when fail and stop occur at same cycle" in {
+    intercept[ChiselAssertionError] {
+      test(new StopFailTimeoutDut(stopAtCount = 77, failAtCount = 77)).runReturningExceptions(timeout = 299)
+    }
+
+    test(new StopFailTimeoutDut(stopAtCount = 77, failAtCount = 78)).runReturningExceptions(timeout = 300)
+
+    intercept[ChiselAssertionError] {
+      test(new StopFailTimeoutDut(stopAtCount = 78, failAtCount = 77)).runReturningExceptions(timeout = 300)
+    }
+  }
+
+  it should "have ChiselAssertionError takes precedence when timeout, fail, and stop occur at same cycle" in {
+    intercept[ChiselAssertionError] {
+      test(new StopFailTimeoutDut(stopAtCount = 77, failAtCount = 77)).runReturningExceptions(timeout = 77)
+    }
+
+    test(new StopFailTimeoutDut(stopAtCount = 76, failAtCount = 77)).runReturningExceptions(timeout = 77)
+
+    intercept[ChiselAssertionError] {
+      test(new StopFailTimeoutDut(stopAtCount = 77, failAtCount = 76)).runReturningExceptions(timeout = 77)
+    }
+
+    intercept[TimeoutException] {
+      test(new StopFailTimeoutDut(stopAtCount = 77, failAtCount = 77)).runReturningExceptions(timeout = 76)
+    }
+  }
 }
 
 // from the chisel3 unittests: src/test/scala/chiselTests/Counter.scala
@@ -84,6 +149,25 @@ class AssertCanFailTester extends BasicTester {
   val (_, done) = Counter(true.B, 2)
   when(done) {
     stop()
+  }
+}
+
+// from the chisel3 unittests: src/test/scala/chiselTests/MultiClockSpec.scala
+class StopFailTimeoutDut(stopAtCount: Int = 0, failAtCount: Int = 0) extends BasicTester {
+  val counter = RegInit(0.U(33.W))
+  counter := counter + 1.U
+
+  withClockAndReset(clock, reset) {
+    if (stopAtCount > 0) {
+      when(counter > stopAtCount.U) {
+        stop()
+      }
+    }
+    if (failAtCount > 0) {
+      when(counter > failAtCount.U) {
+        assert(0.U === 1.U)
+      }
+    }
   }
 }
 
