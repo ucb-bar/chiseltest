@@ -3,9 +3,9 @@ package chiseltest.iotesters
 // SPDX-License-Identifier: Apache-2.0
 
 import chisel3._
+import chiseltest._
 import chiseltest.simulator.RequiresVerilator
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
 class MyZeroWidthDut extends chisel3.Module {
   val out0 = IO(Output(UInt(1.W)))
@@ -26,23 +26,18 @@ class ZeroWidthIOTester(c: MyZeroWidthDut) extends PeekPokeTester(c) {
   expect(c.out1, 1)
 }
 
-class ZeroWidthIOSpec extends AnyFlatSpec with Matchers {
+class ZeroWidthIOSpec extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Zero Width IOs"
 
-  def test(args: Array[String]): Boolean =
-    Driver.execute(args, () => new MyZeroWidthDut) {
-      c => new ZeroWidthIOTester(c)
-    }
-
   it should "work with firrtl backend" in {
-    test(Array("-tbn", "firrtl")) should be (true)
+    test(new MyZeroWidthDut).withAnnotations(Seq(TreadleBackendAnnotation)).runPeekPoke(new ZeroWidthIOTester(_))
   }
 
   it should "work with treadle backend" in {
-    test(Array("-tbn", "treadle")) should be (true)
+    test(new MyZeroWidthDut).withAnnotations(Seq(TreadleBackendAnnotation)).runPeekPoke(new ZeroWidthIOTester(_))
   }
 
   it should "work with verilator backend" taggedAs RequiresVerilator in {
-    test(Array("-tbn", "verilator")) should be (true)
+    test(new MyZeroWidthDut).withAnnotations(Seq(VerilatorBackendAnnotation)).runPeekPoke(new ZeroWidthIOTester(_))
   }
 }

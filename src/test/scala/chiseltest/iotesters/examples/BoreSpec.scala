@@ -3,9 +3,9 @@
 package chiseltest.iotesters.examples
 
 import chisel3._
+import chiseltest.ChiselScalatestTester
 import chiseltest.iotesters._
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
 class Constant extends Module {
   val x = Reg(UInt(6.W))
@@ -26,12 +26,10 @@ class BoreTop extends Module {
   util.experimental.BoringUtils.bore(constant.x, Seq(expect.y))
 }
 
-class BoreSpec extends AnyFreeSpec with Matchers {
+class BoreSpec extends AnyFreeSpec with ChiselScalatestTester {
   "Boring utils should work in io.testers" in {
-    Driver(() => new BoreTop) { c =>
-      new PeekPokeTester(c) {
-        expect(c.y, expected = 42)
-      }
-    } should be(true)
+    test(new BoreTop).runPeekPoke(new PeekPokeTester(_) {
+      expect(dut.y, expected = 42)
+    })
   }
 }

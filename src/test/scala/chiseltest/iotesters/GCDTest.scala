@@ -2,6 +2,7 @@
 package chiseltest.iotesters
 
 import treadle.chronometry.Timer
+import chiseltest._
 
 class IoTestersGcd(gcd: DecoupledGcd, testValues: Seq[(Int, Int, Int)]) extends PeekPokeTester(gcd) {
   reset(2)
@@ -44,7 +45,14 @@ object GcdRegression {
     val testValues = (for {x <- 2 to 100; y <- 2 to 100} yield (x, y, computeGcd(x, y)))
 
     val backendName = "verilator" // if (args.nonEmpty) { "verilator" } else { "treadle" }
+    val options = backendName match {
+      case "verilator" => Seq(VerilatorBackendAnnotation)
+      case "treadle" => Seq(TreadleBackendAnnotation)
+      case other => throw new RuntimeException(s"Unknown backend: $other")
+    }
 
+    // TODO
+    /*
     Driver.execute(Array(
       "--target-dir", "test_run_dir/iotesters_gcd",
       "--top-name", "iotesters_gcd",
@@ -72,6 +80,7 @@ object GcdRegression {
         new IoTestersGcd(dut, testValues)
       }
     }
+   */
 
     println(t.report())
   }

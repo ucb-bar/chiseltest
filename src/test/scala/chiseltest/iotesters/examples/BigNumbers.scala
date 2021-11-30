@@ -3,9 +3,9 @@
 package chiseltest.iotesters.examples
 
 import chisel3._
+import chiseltest._
 import chiseltest.iotesters._
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
 class PassOn extends Module {
   val io = IO(new Bundle {
@@ -30,11 +30,8 @@ class BigNumbersTester(c: PassOn) extends PeekPokeTester(c) {
   expect (c.io.out, 0x0000000080000000L)
 }
 
-class BigNumbersSpec extends AnyFreeSpec with Matchers {
-  "big numbers should work with interpreter backend" in {
-    Driver.execute(() => new PassOn) { c =>
-      new BigNumbersTester(c)
-    } should be(true)
-
+class BigNumbersSpec extends AnyFreeSpec with ChiselScalatestTester {
+  "big numbers should work with treadle backend" in {
+    test(new PassOn).runPeekPoke(new BigNumbersTester(_))
   }
 }
