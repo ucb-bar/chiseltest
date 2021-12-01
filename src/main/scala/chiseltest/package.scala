@@ -136,6 +136,39 @@ package object chiseltest {
       Context().backend.pokeBits(signal, maskedValue)
     }
 
+    // Throw an exception if the value cannot fit into the signal.
+    // For backwards compatibility reasons, we only perform this check
+    // when a BigInt or Boolean is poked (not for Chisel types!).
+    // We will also skip the check if the width is not known.
+    private def ensureFits(signal: Data, value: BigInt): Unit = {
+      (signal.widthOption, signal) match {
+        case (Some(w), _: SInt) =>
+          val m = BigInt(1) << (w - 1)
+          ensureInRange(signal, value, -m, m - 1)
+        case (Some(w), _: Bits) =>
+          ensureInRange(signal, value, 0, (BigInt(1) << w) - 1)
+        case _ => // ignore
+      }
+    }
+    private def ensureInRange(signal: Data, value: BigInt, min: BigInt, max: BigInt): Unit = {
+      if (value < min || value > max) {
+        throw new ChiselException(s"Value $value does not fit into the range of $signal ($min ... $max)")
+      }
+    }
+    private def toBigInt(b: Boolean): BigInt = if (b) BigInt(1) else BigInt(0)
+    def poke(value:         Boolean): Unit = poke(toBigInt(value))
+    def poke(value:         BigInt): Unit = x match {
+      case _: Bits | _: SInt =>
+        ensureFits(x, value)
+        pokeBits(x, value)
+      case other =>
+        val tpe = other.getClass.getName
+        throw new LiteralTypeException(
+          s"Cannot convert BigInt $value to $tpe!\n" +
+            "Consider building a matching Chisel literal value."
+        )
+    }
+
     def poke(value: T): Unit = (x, value) match {
       case (x: Bool, value: Bool) => pokeBits(x, value.litValue)
       // TODO can't happen because of type parameterization
@@ -206,6 +239,20 @@ package object chiseltest {
     }
 
     def peek(): T = peekWithStale(false)
+
+    protected def expectWithStale(value: BigInt, message: Option[String], stale: Boolean): Unit = x match {
+      case _: Bits | _: SInt =>
+        ensureFits(x, value)
+        Context().backend.expectBits(x, value, message, None, stale)
+      case other =>
+        val tpe = other.getClass.getName
+        throw new LiteralTypeException(s"Cannot convert BigInt $value to $tpe!")
+    }
+
+    def expect(value: Boolean): Unit = expect(toBigInt(value))
+    def expect(value: Boolean, message: String): Unit = expect(toBigInt(value), message)
+    def expect(value: BigInt): Unit = expectWithStale(value, None, false)
+    def expect(value: BigInt, message: String): Unit = expectWithStale(value, Some(message), false)
 
     protected def expectWithStale(value: T, message: Option[String], stale: Boolean): Unit = (x, value) match {
       case (x: Bool, value: Bool) =>
