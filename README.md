@@ -55,9 +55,9 @@ Create a new file in `src/test/scala/`, for example, `BasicTest.scala`.
 In this file:
 1.  Add the necessary imports:
     ```scala
-   import chisel3._
-   import chiseltest._
-   import org.scalatest.flatspec.AnyFlatSpec
+    import chisel3._
+    import chiseltest._
+    import org.scalatest.flatspec.AnyFlatSpec
     ```
 2.  Create a test class:
     ```scala
