@@ -28,26 +28,26 @@ class DecoupledGcdSpec(makeDut: => DecoupledGcd) extends Module {
 
   // do not accept new inputs while busy
   when(busy) {
-    assert(!input.fire())
+    assert(!input.fire)
   }
 
   // only release outputs when busy
-  when(output.fire()) {
-    assert(output.fire())
+  when(output.fire) {
+    assert(output.fire)
   }
 
   // when there was no transactions, busy should not change
-  when(past(!input.fire() && !output.fire())) {
+  when(past(!input.fire && !output.fire)) {
     assert(stable(busy))
   }
 
   // when busy changed from 0 to 1, an input was accepted
   when(rose(busy)) {
-    assert(past(input.fire()))
+    assert(past(input.fire))
   }
 
   // when busy changed from 1 to 0, an output was transmitted
   when(fell(busy)) {
-    assert(past(output.fire()))
+    assert(past(output.fire))
   }
 }

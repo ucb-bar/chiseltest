@@ -73,9 +73,9 @@ class EnumVecPeekPokeTester(c: EnumVecPassThrough) extends PeekPokeTester(c) {
   // When poking Vecs directly, enums must be converted to their literal values. This is because there is currently no
   // implicit conversion between IndexedSeq[EnumType] and IndexedSeq[BigInt].
 
-  poke(c.io.in, MyEnum.all.toIndexedSeq.map(_.litValue()))
+  poke(c.io.in, MyEnum.all.toIndexedSeq.map(_.litValue))
   step(1)
-  expect(c.io.out, MyEnum.all.toIndexedSeq.map(_.litValue()))
+  expect(c.io.out, MyEnum.all.toIndexedSeq.map(_.litValue))
 }
 
 class EnumMemPeekPokeTester(c: EnumMem) extends PeekPokeTester(c) {
