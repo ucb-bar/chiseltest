@@ -12,9 +12,10 @@ import firrtl.AnnotationSeq
   * @note if the dut extends [[chisel3.testers.BasicTester]] the `finish` method will be called
   */
 object HardwareTesterBackend {
+  import TesterUtils._
   def run[T <: Module](dutGen: () => T, annos: AnnotationSeq, timeout: Int, expectFail: Boolean): AnnotationSeq = {
     require(timeout >= 0, s"Negative timeout $timeout is not supported! Use 0 to disable the timeout.")
-    val (tester, covAnnos) = createTester(addFinishToBasicTester(dutGen), defaults.addDefaultSimulator(annos))
+    val (tester, covAnnos, _) = createTester(addFinishToBasicTester(dutGen), defaults.addDefaultSimulator(annos))
 
     // we always perform a reset
     tester.poke("reset", 1)
@@ -72,16 +73,6 @@ object HardwareTesterBackend {
     }
   }
 
-  private def finish(tester: SimulatorContext, covAnnos: AnnotationSeq): AnnotationSeq = {
-    // dump VCD and/or coverage files
-    tester.finish()
-
-    // if the simulator supports it, we return coverage numbers
-    if (tester.sim.supportsCoverage) {
-      TestCoverage(tester.getCoverage()) +: covAnnos
-    } else { Seq() }
-  }
-
   /** creates a wrapper function that calls the finish method iff the generated module extends [[chisel3.testers.BasicTester]] */
   private def addFinishToBasicTester[T <: Module](dutGen: () => T): () => T = () => {
     val tester = dutGen()
@@ -91,10 +82,23 @@ object HardwareTesterBackend {
     }
     tester
   }
+}
 
-  private def createTester[T <: Module](dutGen: () => T, annos: AnnotationSeq): (SimulatorContext, AnnotationSeq) = {
+/** Contains helper functions shared by [[HardwareTesterBackend]] and [[PeekPokeTesterBackend]] */
+private object TesterUtils {
+  def finish(tester: SimulatorContext, covAnnos: AnnotationSeq): AnnotationSeq = {
+    // dump VCD and/or coverage files
+    tester.finish()
+
+    // if the simulator supports it, we return coverage numbers
+    if (tester.sim.supportsCoverage) {
+      TestCoverage(tester.getCoverage()) +: covAnnos
+    } else { Seq() }
+  }
+
+  def createTester[T <: Module](dutGen: () => T, annos: AnnotationSeq): (SimulatorContext, AnnotationSeq, T) = {
     // elaborate the design and compile to low firrtl
-    val (highFirrtl, _) = Compiler.elaborate(dutGen, annos)
+    val (highFirrtl, dut) = Compiler.elaborate(dutGen, annos)
     val lowFirrtl = Compiler.toLowFirrtl(highFirrtl)
 
     // extract coverage information
@@ -108,6 +112,7 @@ object HardwareTesterBackend {
     val t = if (annos.contains(PrintPeekPoke)) {
       new DebugPrintWrapper(tester)
     } else { tester }
-    (t, coverageAnnotations)
+
+    (t, coverageAnnotations, dut)
   }
 }

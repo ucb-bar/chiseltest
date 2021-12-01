@@ -125,6 +125,7 @@ private[chiseltest] class JNASimulatorContext(
 
   private var isRunning = true
   override def finish(): Unit = {
+    assert(isRunning, "Simulator is already stopped! Are you trying to call finish twice?")
     so.finish()
     isRunning = false
   }

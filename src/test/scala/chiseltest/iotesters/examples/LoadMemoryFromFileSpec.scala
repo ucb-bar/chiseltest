@@ -2,15 +2,14 @@
 
 package chiseltest.iotesters.examples
 
-import java.nio.file.{Files, Paths}
-import java.nio.file.StandardCopyOption.REPLACE_EXISTING
+
 import chisel3._
 import chiseltest.iotesters._
 import chisel3.util.experimental.loadMemoryFromFileInline
+import chiseltest._
 import chiseltest.simulator.RequiresVerilator
-import firrtl.FileUtils
+import firrtl.options.TargetDirAnnotation
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
 
 class UsesMem(memoryDepth: Int, memoryType: Bits) extends Module {
@@ -55,16 +54,12 @@ class LoadMemoryFromFileTester(c: UsesMem) extends PeekPokeTester(c) {
   }
 }
 
-class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
+class LoadMemoryFromFileSpec extends AnyFreeSpec with ChiselScalatestTester {
   "Users can specify a source file to load memory from"  taggedAs RequiresVerilator in {
 
-    val targetDirName = "test_run_dir/load_mem_test"
-
-    Driver.execute(
-      args = Array("--backend-name", "verilator", "--target-dir", targetDirName, "--top-name", "load_mem_test"),
-      dut = () => new UsesMem(memoryDepth = 8, memoryType = UInt(16.W))
-    ) { c =>
-      new LoadMemoryFromFileTester(c)
-    } should be (true)
+    val targetDir = TargetDirAnnotation("test_run_dir/load_mem_test")
+    test(new UsesMem(memoryDepth = 8, memoryType = UInt(16.W)))
+      .withAnnotations(Seq(VerilatorBackendAnnotation, targetDir))
+      .runPeekPoke(new LoadMemoryFromFileTester(_))
   }
 }

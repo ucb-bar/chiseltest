@@ -8,9 +8,10 @@ import chisel3._
 import chiseltest.iotesters._
 import chisel3.util.experimental.loadMemoryFromFileInline
 import chisel3.util.log2Ceil
+import chiseltest._
 import firrtl.FileUtils
+import firrtl.options.TargetDirAnnotation
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
 class MemoryShape extends Bundle {
   val a = UInt(8.W)
@@ -45,11 +46,12 @@ class HasComplexMemoryTester(c: HasComplexMemory) extends PeekPokeTester(c) {
 }
 
 
-class ComplexMemoryLoadingSpec extends AnyFreeSpec with Matchers {
+class ComplexMemoryLoadingSpec extends AnyFreeSpec with ChiselScalatestTester {
   "memory loading should be possible with complex memories" ignore { // TODO: make loadMemoryInline work with non-ground type memories
 
     val targetDirName = "test_run_dir/complex_mem_test"
     FileUtils.makeDirectory(targetDirName)
+    val targetDirOption = TargetDirAnnotation(targetDirName)
 
     val path1 = Paths.get(targetDirName + "/mem_a")
     val path2 = Paths.get(targetDirName + "/mem_b")
@@ -60,21 +62,13 @@ class ComplexMemoryLoadingSpec extends AnyFreeSpec with Matchers {
     Files.copy(getClass.getResourceAsStream("/iotesters/mem3.txt"), path3, REPLACE_EXISTING)
 
     "should work with treadle" in {
-      Driver.execute(
-        args = Array("--backend-name", "treadle", "--target-dir", targetDirName, "--top-name", "complex_mem_test"),
-        dut = () => new HasComplexMemory(memoryDepth = 8)
-      ) { c =>
-        new HasComplexMemoryTester(c)
-      } should be(true)
+      test(new HasComplexMemory(memoryDepth = 8)).withAnnotations(Seq(targetDirOption))
+        .runPeekPoke(new HasComplexMemoryTester(_))
     }
 
     "should work with verilator" in {
-      Driver.execute(
-        args = Array("--backend-name", "verilator", "--target-dir", targetDirName, "--top-name", "complex_mem_test"),
-        dut = () => new HasComplexMemory(memoryDepth = 8)
-      ) { c =>
-        new HasComplexMemoryTester(c)
-      } should be(true)
+      test(new HasComplexMemory(memoryDepth = 8)).withAnnotations(Seq(targetDirOption, VerilatorBackendAnnotation))
+        .runPeekPoke(new HasComplexMemoryTester(_))
     }
   }
 }

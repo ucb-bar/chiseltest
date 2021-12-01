@@ -4,10 +4,10 @@ package chiseltest.iotesters.examples
 
 import chisel3._
 import chisel3.experimental.FixedPoint
+import chiseltest._
 import chiseltest.iotesters._
 import chiseltest.simulator.RequiresVerilator
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
 class Adder(val w: Int) extends Module {
   val io = IO(new Bundle {
@@ -43,17 +43,13 @@ class SignedAdderTester(c: SignedAdder) extends PeekPokeTester(c) {
   }
 }
 
-class SignedAdderSpec extends AnyFreeSpec with Matchers {
-  "tester should returned signed values with interpreter" in {
-    Driver.execute(Array("--backend-name", "firrtl", "--target-dir", "test_run_dir"), () => new SignedAdder(16)) { c =>
-      new SignedAdderTester(c)
-    } should be (true)
+class SignedAdderSpec extends AnyFreeSpec with ChiselScalatestTester {
+  "tester should returned signed values with treadle" in {
+    test(new SignedAdder(16)).runPeekPoke(new SignedAdderTester(_))
   }
 
   "tester should returned signed values with verilator" taggedAs RequiresVerilator in {
-    Driver.execute(Array("--backend-name", "verilator", "--target-dir", "test_run_dir"), () => new SignedAdder(16)) { c =>
-      new SignedAdderTester(c)
-    } should be (true)
+    test(new SignedAdder(16)).withAnnotations(Seq(VerilatorBackendAnnotation)).runPeekPoke(new SignedAdderTester(_))
   }
 }
 
@@ -84,18 +80,15 @@ class FixedPointAdderTester(c: FixedPointAdder) extends PeekPokeTester(c) {
 
 }
 
-class FixedPointAdderSpec extends AnyFreeSpec with Matchers {
-  "tester should returned signed values with interpreter" in {
-    Driver.execute(Array("--backend-name", "firrtl", "--target-dir", "test_run_dir"), () => new FixedPointAdder(16)) { c =>
-      new FixedPointAdderTester(c)
-    } should be (true)
+class FixedPointAdderSpec extends AnyFreeSpec with ChiselScalatestTester {
+  "tester should returned signed values with treadle" in {
+    test(new FixedPointAdder(16)).runPeekPoke(new FixedPointAdderTester(_))
   }
 
   //TODO: make this work
-  "tester should returned signed values" ignore {
-    Driver.execute(Array("--backend-name", "verilator", "--target-dir", "test_run_dir"), () => new FixedPointAdder(16)) { c =>
-      new FixedPointAdderTester(c)
-    } should be (true)
+  "tester should returned signed values" taggedAs RequiresVerilator ignore {
+    test(new FixedPointAdder(16)).withAnnotations(Seq(VerilatorBackendAnnotation))
+      .runPeekPoke(new FixedPointAdderTester(_))
   }
 }
 

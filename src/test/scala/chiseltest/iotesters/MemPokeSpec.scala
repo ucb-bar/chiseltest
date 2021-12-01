@@ -4,6 +4,7 @@ package chiseltest.iotesters
 
 import chisel3._
 import chisel3.util.log2Ceil
+import chiseltest.ChiselScalatestTester
 import org.scalatest.flatspec.AnyFlatSpec
 
 /**
@@ -73,12 +74,10 @@ class MemPokeTester(m: OuterMemModule) extends PeekPokeTester(m) {
 
 }
 
-class MemPokeSpec extends AnyFlatSpec {
+class MemPokeSpec extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Peeking and Poking straight into underlying memory, in interpreter"
 
   it should "return peek values exactly as poked" in {
-    assert(
-      Driver.execute(Array("--backend-name", "treadle"), () => new OuterMemModule) { m => new MemPokeTester(m) }
-    )
+    test(new OuterMemModule).runPeekPoke(new MemPokeTester(_))
   }
 }

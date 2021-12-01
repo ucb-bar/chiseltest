@@ -3,8 +3,11 @@ package chiseltest.iotesters
 import chisel3._
 import chisel3.experimental._
 import chisel3.internal.firrtl.KnownBinaryPoint
+import chiseltest.ChiselAssertionError
+import chiseltest.internal.{Context, FailedExpectException}
 import chiseltest.simulator.SimulatorContext
 import logger.LazyLogging
+import org.scalatest.exceptions.TestFailedException
 
 import scala.collection.immutable
 import scala.collection.mutable
@@ -38,32 +41,24 @@ object Pokeable {
 abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
   implicit def longToInt(x: Long): Int = x.toInt
 
-  private val ctx = Driver.ctx.getOrElse(
-    throw new RuntimeException("PeekPokeTester needs to be instantiated by the Driver!")
-  )
-
-  implicit val _verbose: Boolean = ctx.isVerbose
-  implicit val _base:    Int = ctx.base
-
   def println(msg: String = ""): Unit = {
     logger.info(msg)
   }
 
-  /** *************************
-    */
-  /** * Simulation Interface **
-    */
-  /** *************************
-    */
+  // retrieve context
+  private val ctx = chiseltest.internal.PeekPokeTesterBackend.ctx.getOrElse {
+    val testerName = this.getClass.getName
+    val dutName = dut.name
+    val msg = s"PeekPokeTester $testerName for $dutName was created outside a test context.\n" +
+      "PeekPokeTesters need to be launched through the `test` interface, like:\n" +
+      "test(new DUT).runPeekPoke(new Tester(_))"
+    throw new RuntimeException(msg)
+  }
+
+  // Simulation Interface
   val backend:   SimulatorContext = ctx.backend
   val dataNames: Map[Data, String] = ctx.dataNames
 
-  /** *****************************
-    */
-  /** * Classic Tester Interface **
-    */
-  /** *****************************
-    */
   /* Simulation Time */
   private var simTime: Long = 0L
   protected[iotesters] def incTime(n: Int): Unit = { simTime += n }
@@ -77,16 +72,11 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
     ok = false
   }
 
-  val rnd = new Random()
-  ///val rnd = backend.rnd
-  //rnd.setSeed(optionsManager.testerOptions.testerSeed)
-  //println(s"SEED ${optionsManager.testerOptions.testerSeed}")
-
   /** Convert a Boolean to BigInt */
   implicit def int(x: Boolean): BigInt = if (x) 1 else 0
 
   /** Convert Pokeables to BigInt */
-  implicit def int[E <: Element: Pokeable](x: E): BigInt = x.litValue()
+  implicit def int[E <: Element: Pokeable](x: E): BigInt = x.litValue
 
   def reset(n: Int = 1): Unit = {
     backend.poke("reset", 1)
@@ -98,7 +88,6 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
   reset(5)
 
   def step(n: Int): Unit = {
-    if (_verbose) println(s"STEP $simTime -> ${simTime + n}")
     backend.step(n)
     incTime(n)
   }
@@ -114,7 +103,7 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
     mem.pathName.split("""\.""").tail.mkString(".")
 
   def poke[T <: Element: Pokeable](signal: T, value: BigInt): Unit = {
-    if (!signal.isLit()) {
+    if (!signal.isLit) {
       backend.poke(fullSignalName(signal), maskedBigInt(value, signal.widthOption.getOrElse(256)))
     }
     // TODO: Warn if signal.isLit
@@ -136,22 +125,22 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
   }
 
   def pokeFixedPoint(signal: FixedPoint, value: Double): Unit = {
-    val bigInt = value.F(getFirrtlWidth(signal), signal.binaryPoint).litValue()
+    val bigInt = value.F(getFirrtlWidth(signal), signal.binaryPoint).litValue
     poke(signal, bigInt)
   }
 
   def pokeFixedPointBig(signal: FixedPoint, value: BigDecimal): Unit = {
-    val bigInt = value.F(getFirrtlWidth(signal), signal.binaryPoint).litValue()
+    val bigInt = value.F(getFirrtlWidth(signal), signal.binaryPoint).litValue
     poke(signal, bigInt)
   }
 
   def pokeInterval(signal: Interval, value: Double): Unit = {
-    val bigInt = value.I(getFirrtlWidth(signal), signal.binaryPoint).litValue()
+    val bigInt = value.I(getFirrtlWidth(signal), signal.binaryPoint).litValue
     poke(signal, bigInt)
   }
 
   def pokeIntervalBig(signal: Interval, value: BigDecimal): Unit = {
-    val bigInt = value.I(getFirrtlWidth(signal), signal.binaryPoint).litValue()
+    val bigInt = value.I(getFirrtlWidth(signal), signal.binaryPoint).litValue
     poke(signal, bigInt)
   }
 
@@ -224,22 +213,19 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
   }
 
   def peek[E <: Element: Pokeable](signal: E): BigInt = {
-    if (!signal.isLit()) {
+    if (!signal.isLit) {
       val bits = backend.peek(fullSignalName(signal))
       if (signal.isInstanceOf[SInt] || signal.isInstanceOf[Interval]) {
         signExtend(bits, signal.widthOption.getOrElse(256))
       } else {
         bits
       }
-    } else { signal.litValue() }
+    } else { signal.litValue }
   }
 
   /** Returns the value signal as a Double. Double may not be big enough to contain the
     * value without precision loss. This situation will Throw ChiselException
     * Consider using the more reliable [[peekFixedPointBig]]
-    *
-    * @param signal
-    * @return
     */
   def peekFixedPoint(signal: FixedPoint): Double = {
     val bigInt = peek(signal)
@@ -249,11 +235,7 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
     }
   }
 
-  /** returns the value of signal as BigDecimal
-    *
-    * @param signal
-    * @return
-    */
+  /** returns the value of signal as BigDecimal */
   def peekFixedPointBig(signal: FixedPoint): BigDecimal = {
     val bigInt = peek(signal)
     signal.binaryPoint match {
@@ -265,9 +247,6 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
   /** Returns the value signal as a Double. Double may not be big enough to contain the
     * value without precision loss. This situation will Throw ChiselException
     * Consider using the more reliable [[peekIntervalBig]]
-    *
-    * @param signal
-    * @return
     */
   def peekInterval(signal: Interval): Double = {
     val bigInt = peek(signal)
@@ -277,11 +256,7 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
     }
   }
 
-  /** returns the value of signal as BigDecimal
-    *
-    * @param signal
-    * @return
-    */
+  /** returns the value of signal as BigDecimal */
   def peekIntervalBig(signal: Interval): BigDecimal = {
     val bigInt = peek(signal)
     signal.binaryPoint match {
@@ -347,9 +322,6 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
   }
 
   def expect(good: Boolean, msg: => String): Boolean = {
-    if (good && _verbose) {
-      logger.info(s"EXPECT AT $simTime $msg PASS")
-    }
     if (!good) {
       logger.error(s"EXPECT AT $simTime $msg FAIL")
       fail()
@@ -359,12 +331,12 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
   }
 
   def expect[E <: Element: Pokeable](signal: E, expected: BigInt, msg: => String = ""): Boolean = {
-    if (!signal.isLit()) {
+    if (!signal.isLit) {
       val actual = peek(signal)
       val good = expect(actual == expected, msg)
       if (!good) fail()
       good
-    } else expect(signal.litValue() == expected, s"${signal.litValue()} == $expected")
+    } else expect(signal.litValue == expected, s"${signal.litValue} == $expected")
   }
 
   def expect[E <: Element: Pokeable](signal: E, expected: Int, msg: => String): Boolean = {
@@ -466,14 +438,16 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
     }
   }
 
-  def finish: Boolean = {
-    backend.finish()
+  def finish: Unit = {
     if (ok) {
       logger.info(s"RAN $simTime CYCLES PASSED")
     } else {
-      logger.error(s"RAN $simTime CYCLES FAILED FIRST AT CYCLE $failureTime")
+      val msg = s"RAN $simTime CYCLES FAILED FIRST AT CYCLE $failureTime"
+      logger.error(msg)
+      throw new PeekPokeFailure(msg, simTime, failureTime)
     }
-    //logger.report()
-    ok
   }
 }
+
+/** Indicates that a PeekPoke test has failed. */
+class PeekPokeFailure(message: String, val simTime: Long, val failureTime: Long) extends Exception(message)
