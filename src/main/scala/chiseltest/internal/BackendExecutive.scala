@@ -15,7 +15,7 @@ object BackendExecutive {
   def start[T <: Module](dutGen: () => T, testersAnnotationSeq: AnnotationSeq): BackendInstance[T] = {
 
     // elaborate the design
-    val (highFirrtl, dut: T) = Compiler.elaborate[T](dutGen, testersAnnotationSeq)
+    val (highFirrtl, dut) = Compiler.elaborate(dutGen, testersAnnotationSeq)
 
     // extract port names
     val portNames = DataMirror.modulePorts(dut).flatMap { case (name, data) => getDataNames(name, data).toList }.toMap
