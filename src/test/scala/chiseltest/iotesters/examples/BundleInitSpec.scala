@@ -9,9 +9,9 @@ package chiseltest.iotesters.examples
   */
 
 import chisel3._
+import chiseltest._
 import chiseltest.iotesters._
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
 class MyBundle extends Bundle {
   val x = UInt(8.W)
@@ -161,10 +161,8 @@ class UseMyBundleTester(c: UseMyBundle) extends PeekPokeTester(c) {
   expect(c.io.outC.y, 5)
 }
 
-class BundleInitSpec extends AnyFreeSpec with Matchers {
+class BundleInitSpec extends AnyFreeSpec with ChiselScalatestTester {
   "does this work" in {
-    Driver.execute(Array(), () => new UseMyBundle) { c =>
-      new UseMyBundleTester(c)
-    } should be (true)
+    test(new UseMyBundle).runPeekPoke(new UseMyBundleTester(_))
   }
 }

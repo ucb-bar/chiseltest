@@ -3,9 +3,9 @@
 package chiseltest.iotesters.examples
 
 import chisel3._
+import chiseltest._
 import chiseltest.iotesters._
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 import chiseltest.simulator.RequiresVerilator
 
 
@@ -28,19 +28,14 @@ class MultiIOAdderTester(c: MultiIOAdder) extends PeekPokeTester(c) {
   }
 }
 
-class ModuleSpec extends AnyFlatSpec with Matchers {
+class ModuleSpec extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "MuiltiIOAdder"
 
   it should "test correctly for every i/o combination with verilator" taggedAs RequiresVerilator in {
-    val args = Array("--backend-name", "verilator")
-    Driver.execute(args, () => new MultiIOAdder) { c =>
-      new MultiIOAdderTester(c)
-    } should be (true)
+    test(new MultiIOAdder).withAnnotations(Seq(VerilatorBackendAnnotation)).runPeekPoke(new MultiIOAdderTester(_))
   }
-  it should "test correctly for every i/o combination with firrtl" in {
-    val args = Array("--backend-name", "firrtl")
-    Driver.execute(args, () => new MultiIOAdder) { c =>
-      new MultiIOAdderTester(c)
-    } should be (true)
+
+  it should "test correctly for every i/o combination with treadle" in {
+    test(new MultiIOAdder).runPeekPoke(new MultiIOAdderTester(_))
   }
 }

@@ -6,6 +6,7 @@ import chiseltest.internal._
 import chiseltest.experimental.sanitizeFileName
 import chisel3.Module
 import chiseltest.internal.TestEnvInterface.addDefaultTargetDir
+import chiseltest.iotesters.PeekPokeTester
 import firrtl.AnnotationSeq
 import org.scalatest._
 import org.scalatest.exceptions.TestFailedException
@@ -64,6 +65,11 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
       */
     def runUntilAssertFail(timeout: Int = 1000): TestResult = {
       new TestResult(HardwareTesterBackend.run(dutGen, finalAnnos, timeout = timeout, expectFail = true))
+    }
+
+    /** Executes a tester extending [[chiseltest.iotesters.PeekPokeTester]]. */
+    def runPeekPoke(tester: T => PeekPokeTester[T]): Unit = {
+      new TestResult(PeekPokeTesterBackend.run(dutGen, tester, finalAnnos))
     }
   }
 

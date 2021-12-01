@@ -5,12 +5,12 @@ package chiseltest.iotesters.examples
 import chisel3._
 import chiseltest.iotesters._
 import chisel3.util.Counter
+import chiseltest.{ChiselScalatestTester, VerilatorBackendAnnotation}
 import chiseltest.simulator.RequiresVerilator
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
 
-class SecondClockDrivesRegisterSpec extends AnyFreeSpec with Matchers {
+class SecondClockDrivesRegisterSpec extends AnyFreeSpec with ChiselScalatestTester {
   class SecondClock extends Module {
     val inClock = IO(Input(Bool()))
     val out = IO(Output(UInt(8.W)))
@@ -51,15 +51,11 @@ class SecondClockDrivesRegisterSpec extends AnyFreeSpec with Matchers {
   "poking a clock should flip register" - {
 
     "should work with Treadle" in {
-      Driver.execute(Array(), () => new SecondClock) { c =>
-        new SecondClockTester(c)
-      } should be(true)
+      test(new SecondClock).runPeekPoke(new SecondClockTester(_))
     }
 
     "should work with Verilator" taggedAs RequiresVerilator in {
-      Driver.execute(Array("--backend-name", "verilator"), () => new SecondClock) { c =>
-        new SecondClockTester(c)
-      } should be(true)
+      test(new SecondClock).withAnnotations(Seq(VerilatorBackendAnnotation)).runPeekPoke(new SecondClockTester(_))
     }
   }
 }

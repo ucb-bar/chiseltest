@@ -5,9 +5,9 @@ package chiseltest.iotesters.examples
 import chisel3._
 import chisel3.util._
 import chiseltest.iotesters._
+import chiseltest._
 import chiseltest.simulator.{DefaultTag, RequiresVerilator}
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers._
 
 object AluOpCode {
   val Add                   = 1.U
@@ -201,25 +201,20 @@ class ALUBizarreInputTester (c: ALU) extends PeekPokeTester (c) {
   */
 }
 
-class ALUTester extends AnyFlatSpec {
+class ALUTester extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "ALU"
 
-  private val backendNames = Array[String] ("firrtl", "verilator")
-  for (backendName <- backendNames) {
-    val tag = backendName match {
-      case "firrtl" => DefaultTag
-      case "verilator" => RequiresVerilator
-    }
+  Seq(
+    VerilatorBackendAnnotation -> RequiresVerilator,
+    TreadleBackendAnnotation -> DefaultTag
+  ).foreach { case (backend, tag) =>
+    val backendName = backend.getSimulator.name
     it should s"compute data output according to alu_opcode (with  $backendName)" taggedAs tag in {
-      Driver(() => new ALU, backendName) {
-        c => new ALUBasicFunctionTester(c)
-      } should be(true)
+      test(new ALU).withAnnotations(Seq(backend)).runPeekPoke(new ALUBasicFunctionTester(_))
     }
 
     it should s"not compute data with incorrect alu_opcode (with $backendName)" taggedAs tag in {
-      Driver(() => new ALU, backendName) {
-        c => new ALUBizarreInputTester(c)
-      } should be(true)
+      test(new ALU).withAnnotations(Seq(backend)).runPeekPoke(new ALUBizarreInputTester(_))
     }
   }
 }
