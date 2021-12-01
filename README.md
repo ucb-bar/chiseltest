@@ -55,20 +55,20 @@ Create a new file in `src/test/scala/`, for example, `BasicTest.scala`.
 In this file:
 1.  Add the necessary imports:
     ```scala
-    import org.scalatest._
-    import chiseltest._
     import chisel3._
+    import chiseltest._
+    import org.scalatest.flatspec.AnyFlatSpec
     ```
 2.  Create a test class:
     ```scala
-    class BasicTest extends FlatSpec with ChiselScalatestTester with Matchers {
+    class BasicTest extends AnyFlatSpec with ChiselScalatestTester {
       behavior of "MyModule"
       // test class body here
     }
     ```
-    - `FlatSpec` is the [default and recommended ScalaTest style for unit testing](http://www.scalatest.org/user_guide/selecting_a_style).
+    - `AnyFlatSpec` is the [default and recommended ScalaTest style for unit testing](http://www.scalatest.org/user_guide/selecting_a_style).
     - `ChiselScalatestTester` provides testdriver functionality and integration (like signal value assertions) within the context of a ScalaTest environment.
-    - `Matchers` provides [additional syntax options](http://www.scalatest.org/user_guide/using_matchers) for writing ScalaTest tests. Potentially optional, since it's mainly for Scala-land assertions and does not inter-operate with circuit operations.
+    - For those interested in additional ScalaTest assertion expressibility, `Matchers` provides additional [assertion syntax options](http://www.scalatest.org/user_guide/using_matchers). `Matchers` is optional as it's mainly for Scala-land assertions and does not inter-operate with circuit operations.
 3.  In the test class, define a test case:
     ```scala
     it should "do something" in {
