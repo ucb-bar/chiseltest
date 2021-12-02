@@ -205,7 +205,38 @@ package object chiseltest {
       case x => throw new LiteralTypeException(s"don't know how to peek $x")
     }
 
+    protected def peekWithStaleLit(stale: Boolean): Any = x match {
+      case (x: Bool) =>
+        Context().backend.peekBits(x, stale) match {
+          case x: BigInt if x == 0 => false
+          case x: BigInt if x == 1 => true
+          case x => throw new LiteralTypeException(s"peeked Bool with value $x not 0 or 1")
+        }
+      case (x: UInt) => Context().backend.peekBits(x, stale)
+      case (x: SInt) => Context().backend.peekBits(x, stale)
+      case (x: FixedPoint) => {
+        val multiplier = BigDecimal(2).pow(x.binaryPoint.get)
+        BigDecimal(Context().backend.peekBits(x, stale)) / multiplier
+      }
+      case x: Interval =>
+        throw new LiteralTypeException(s"peeking literal Interval type is not yet supported")
+      case (x: Record) => {
+        throw new LiteralTypeException(s"peeking literal Record type is not yet supported")
+      }
+      case (x: Vec[_]) =>
+        val elementValueFns = x.getElements.map { case elt: Data =>
+          elt.peekWithStaleLit(stale)
+        }
+        Seq(elementValueFns: _*)
+      case (x: EnumType) => {
+        throw new NotImplementedError(s"peeking enums ($x) not yet supported, need programmatic enum construction")
+      }
+      case x => throw new LiteralTypeException(s"don't know how to peek $x")
+    }
+
     def peek(): T = peekWithStale(false)
+
+    def litPeek(): Any = peekWithStaleLit(false)
 
     protected def expectWithStale(value: T, message: Option[String], stale: Boolean): Unit = (x, value) match {
       case (x: Bool, value: Bool) =>
