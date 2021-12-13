@@ -55,15 +55,17 @@ class LiteralTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
 
   it should "test literal Boolean" in {
     test(new StaticModule(true.B)) { c =>
-      c.out.litPeek() should equal (true)
+      // Multiple ways to check the literal value
       // c.out.litPeek() should be (true) // <-- scalatest doesn't like this one
+      c.out.litPeek() should equal (true)
       c.out.litPeek() should === (true)
       c.out.litPeek() shouldBe true
       assert(c.out.litPeek() == true)
     }
     test(new StaticModule(false.B)) { c =>
-      c.out.litPeek() should equal (false)
+      // Multiple ways to check the literal value
       // c.out.litPeek() should be (false) // <-- scalatest doesn't like this one
+      c.out.litPeek() should equal (false)
       c.out.litPeek() should === (false)
       c.out.litPeek() shouldBe false
       assert(c.out.litPeek() == false)

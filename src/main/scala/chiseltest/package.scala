@@ -205,7 +205,7 @@ package object chiseltest {
       case x => throw new LiteralTypeException(s"don't know how to peek $x")
     }
 
-    protected def peekWithStaleLit(stale: Boolean): Any = x match {
+    protected def peekWithStaleNative(stale: Boolean): Any = x match {
       case (x: Bool) =>
         Context().backend.peekBits(x, stale) match {
           case x: BigInt if x == 0 => false
@@ -225,7 +225,7 @@ package object chiseltest {
       }
       case (x: Vec[_]) =>
         val elementValueFns = x.getElements.map { case elt: Data =>
-          elt.peekWithStaleLit(stale)
+          elt.peekWithStaleNative(stale)
         }
         Seq(elementValueFns: _*)
       case (x: EnumType) => {
@@ -236,7 +236,7 @@ package object chiseltest {
 
     def peek(): T = peekWithStale(false)
 
-    def litPeek(): Any = peekWithStaleLit(false)
+    def asNative(): Any = peekWithStaleNative(false)
 
     protected def expectWithStale(value: T, message: Option[String], stale: Boolean): Unit = (x, value) match {
       case (x: Bool, value: Bool) =>
