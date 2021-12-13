@@ -205,38 +205,57 @@ package object chiseltest {
       case x => throw new LiteralTypeException(s"don't know how to peek $x")
     }
 
-    protected def peekWithStaleNative(stale: Boolean): Any = x match {
+    protected def peekWithStaleBool(stale: Boolean): Boolean = x match {
       case (x: Bool) =>
         Context().backend.peekBits(x, stale) match {
           case x: BigInt if x == 0 => false
           case x: BigInt if x == 1 => true
           case x => throw new LiteralTypeException(s"peeked Bool with value $x not 0 or 1")
         }
+    }
+
+    protected def peekWithStaleInt(stale: Boolean): BigInt = x match {
       case (x: UInt) => Context().backend.peekBits(x, stale)
       case (x: SInt) => Context().backend.peekBits(x, stale)
+    }
+
+    protected def peekWithStaleDec(stale: Boolean): BigDecimal = x match {
       case (x: FixedPoint) => {
         val multiplier = BigDecimal(2).pow(x.binaryPoint.get)
         BigDecimal(Context().backend.peekBits(x, stale)) / multiplier
       }
-      case x: Interval =>
-        throw new LiteralTypeException(s"peeking literal Interval type is not yet supported")
-      case (x: Record) => {
-        throw new LiteralTypeException(s"peeking literal Record type is not yet supported")
-      }
-      case (x: Vec[_]) =>
-        val elementValueFns = x.getElements.map { case elt: Data =>
-          elt.peekWithStaleNative(stale)
-        }
-        Seq(elementValueFns: _*)
-      case (x: EnumType) => {
-        throw new NotImplementedError(s"peeking enums ($x) not yet supported, need programmatic enum construction")
-      }
-      case x => throw new LiteralTypeException(s"don't know how to peek $x")
     }
 
-    def peek(): T = peekWithStale(false)
+    protected def peekWithStaleVecInt(stale: Boolean): Seq[BigInt] = x match {
+      case (x: Vec[UInt]) => {
+        val elementValueFns = x.getElements.map { case elt: Data =>
+          elt.peekWithStaleInt(stale)
+        }
+        Seq(elementValueFns: _*)
+      }
+      case (x: Vec[SInt]) => {
+        val elementValueFns = x.getElements.map { case elt: Data =>
+          elt.peekWithStaleInt(stale)
+        }
+        Seq(elementValueFns: _*)
+      }
+    }
 
-    def asNative(): Any = peekWithStaleNative(false)
+    protected def peekWithStaleVecBool(stale: Boolean): Seq[Boolean] = x match {
+      case (x: Vec[Bool]) => {
+        val elementValueFns = x.getElements.map { case elt: Data =>
+          elt.peekWithStaleBool(stale)
+        }
+        Seq(elementValueFns: _*)
+      }
+    }
+
+    def peek():           T = peekWithStale(false)
+    def peekBool():       Boolean = peekWithStaleBool(false)
+    def peekInt():        BigInt = peekWithStaleInt(false)
+    def peekDecimal():    BigDecimal = peekWithStaleDec(false)
+    def peekVectorInt():  Seq[BigInt] = peekWithStaleVecInt(false)
+    def peekVectorBool(): Seq[Boolean] = peekWithStaleVecBool(false)
 
     protected def expectWithStale(value: T, message: Option[String], stale: Boolean): Unit = (x, value) match {
       case (x: Bool, value: Bool) =>

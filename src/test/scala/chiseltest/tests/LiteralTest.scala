@@ -29,72 +29,58 @@ class LiteralVecB extends Module {
 class LiteralTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2"
 
-  it should "test literal UInt" in {
+  it should "test literal UInt as BigInt" in {
     test(new StaticModule(42.U)) { c =>
-      c.out.litPeek() should be (42)
-      c.out.litPeek() should be (BigInt(42))
-      c.out.litPeek() should be (42.toLong)
-      assert(c.out.litPeek() == 42)
+      c.out.peekInt() should be (42)
+      c.out.peekInt() should be (BigInt(42))
+      c.out.peekInt() should be (42.toLong)
+      assert(c.out.peekInt() == 42)
     }
   }
 
-  it should "test literal SInt" in {
+  it should "test literal SInt as BigInt" in {
     test(new StaticModule(-42.S)) { c =>
-      c.out.litPeek() should be (-42)
-      c.out.litPeek() should be (BigInt(-42))
-      c.out.litPeek() should be (-42.toLong)
-      assert(c.out.litPeek() == -42)
+      c.out.peekInt() should be (-42)
+      c.out.peekInt() should be (BigInt(-42))
+      c.out.peekInt() should be (-42.toLong)
+      assert(c.out.peekInt() == -42)
     }
   }
 
-  it should "test literal FixedPoint" in {
+  it should "test literal FixedPoint as BigDecimal" in {
     test(new StaticModule(10.F(2.BP))) { c =>
-      c.out.litPeek() should be (BigDecimal(10))
+      c.out.peekDecimal() should be (BigDecimal(10))
     }
   }
 
-  it should "test literal Boolean" in {
+  it should "test literal Bool as Boolean" in {
     test(new StaticModule(true.B)) { c =>
-      // Multiple ways to check the literal value
-      // c.out.litPeek() should be (true) // <-- scalatest doesn't like this one
-      c.out.litPeek() should equal (true)
-      c.out.litPeek() should === (true)
-      c.out.litPeek() shouldBe true
-      assert(c.out.litPeek() == true)
+      // Multiple ways to check the value
+      c.out.peekBool() should be (true)
+      assert(c.out.peekBool() == true)
     }
     test(new StaticModule(false.B)) { c =>
-      // Multiple ways to check the literal value
-      // c.out.litPeek() should be (false) // <-- scalatest doesn't like this one
-      c.out.litPeek() should equal (false)
-      c.out.litPeek() should === (false)
-      c.out.litPeek() shouldBe false
-      assert(c.out.litPeek() == false)
+      // Multiple ways to check the value
+      c.out.peekBool() should be (false)
+      assert(c.out.peekBool() == false)
     }
   }
 
-  it should "test literal Vector of UInt" in {
+  it should "test literal Vector of UInt as Seq[BigInt]" in {
     test(new LiteralVecU) { c =>
-      c.out.litPeek() should be (Seq(1, 2, 4, 8))
+      c.out.peekVectorInt() should be (Seq(1, 2, 4, 8))
     }
   }
 
-  it should "test literal Vector of SInt" in {
+  it should "test literal Vector of SInt as Seq[BigInt]" in {
     test(new LiteralVecS) { c =>
-      c.out.litPeek() should be (Seq(1, -2, 4, -8))
+      c.out.peekVectorInt() should be (Seq(1, -2, 4, -8))
     }
   }
 
-  it should "test literal Vector of Bool" in {
+  it should "test literal Vector of Bool as Seq[Boolean]" in {
     test(new LiteralVecB) { c =>
-      c.out.litPeek() should be (Seq(true, false, true, false))
-    }
-  }
-
-  it should "test literal Interval thrown exception" in {
-    test(new StaticModule(1.I)) { c =>
-      val ex = intercept[LiteralTypeException] {
-        c.out.litPeek()
-      }
+      c.out.peekVectorBool() should be (Seq(true, false, true, false))
     }
   }
 
