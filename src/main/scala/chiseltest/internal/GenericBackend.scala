@@ -200,7 +200,7 @@ class GenericBackend[T <: Module](
         idleLimits.foreach { case (clock, limit) =>
           idleCycles.put(clock, idleCycles.getOrElse(clock, -1) + 1)
           if (idleCycles(clock) >= limit) {
-            throw new TimeoutException(s"timeout on $clock at $limit idle cycles")
+            throw new TimeoutException(s"timeout on $clock at $limit idle cycles.")
           }
         }
 
