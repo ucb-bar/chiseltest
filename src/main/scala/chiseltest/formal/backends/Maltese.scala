@@ -73,9 +73,12 @@ private[chiseltest] object Maltese {
   private def prepTreadle(circuit: ir.Circuit, annos: AnnotationSeq, modelUndef: Boolean): CircuitState = {
     if (!modelUndef) { CircuitState(circuit, annos) }
     else {
-      val res = firrtlStage.execute(
-        Array("--start-from", "low", "-E", "low"),
-        FirrtlCircuitAnnotation(circuit) +: annos ++: DefRandomTreadleAnnos
+      val res = firrtlPhase.transform(
+        Seq(
+          RunFirrtlTransformAnnotation(new LowFirrtlEmitter),
+          new CurrentFirrtlStateAnnotation(Forms.LowForm),
+          FirrtlCircuitAnnotation(circuit)
+        ) ++: annos ++: DefRandomTreadleAnnos
       )
       Compiler.annosToState(res)
     }
@@ -106,9 +109,12 @@ private[chiseltest] object Maltese {
   private def toTransitionSystem(circuit: ir.Circuit, annos: AnnotationSeq): SysInfo = {
     val logLevel = Seq() // Seq("-ll", "info")
     val opts: AnnotationSeq = if (annos.contains(DoNotOptimizeFormal)) Seq() else Optimizations
-    val res = firrtlStage.execute(
-      Array("--start-from", "low", "-E", "smt2") ++ logLevel,
-      FirrtlCircuitAnnotation(circuit) +: annos ++: LoweringAnnos ++: opts
+    val res = firrtlPhase.transform(
+      Seq(
+        RunFirrtlTransformAnnotation(Dependency(SMTLibEmitter)),
+        new CurrentFirrtlStateAnnotation(Forms.LowForm),
+        FirrtlCircuitAnnotation(circuit)
+      ) ++: logLevel ++: annos ++: LoweringAnnos ++: opts
     )
     val stateMap = FlattenPass.getStateMap(circuit.main, res)
     val memDepths = FlattenPass.getMemoryDepths(circuit.main, res)
@@ -126,7 +132,7 @@ private[chiseltest] object Maltese {
   private def noBadStates(sys: TransitionSystem): Boolean =
     sys.signals.count(_.lbl == IsBad) == 0
 
-  private def firrtlStage = new FirrtlStage
+  private def firrtlPhase = new FirrtlPhase
 
   private def makeCheckers(annos: AnnotationSeq, targetDir: os.Path): Seq[IsModelChecker] = {
     val engines = annos.collect { case a: FormalEngineAnnotation => a }
