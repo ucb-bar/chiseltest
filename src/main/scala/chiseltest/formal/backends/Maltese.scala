@@ -156,8 +156,18 @@ private[chiseltest] object Maltese {
   }
 
   private def witnessToTrace(sysInfo: SysInfo, w: Witness): Trace = {
-    val inputNames = sysInfo.sys.inputs.map(_.name).toIndexedSeq
-    val stateNames = sysInfo.sys.states.map(_.name).map(sysInfo.stateMap).toIndexedSeq
+    val inputNames = sysInfo.sys.inputs
+      .map(_.name)
+      // DefRand nodes are modelled as inputs for the formal engine,
+      // but will be turned into registers for the replay on treadle
+      // thus we need to translate them to a non-flattened path
+      .map(name => sysInfo.stateMap.getOrElse(name, name))
+      .toIndexedSeq
+    val stateNames = sysInfo.sys.states
+      .map(_.name)
+      // translate flattened state name to hierarchical path
+      .map(sysInfo.stateMap)
+      .toIndexedSeq
 
     Trace(
       inputs = w.inputs.map(_.toSeq.map { case (i, value) => inputNames(i) -> value }),

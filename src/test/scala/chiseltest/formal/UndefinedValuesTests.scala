@@ -40,6 +40,18 @@ class UndefinedValuesTests extends AnyFlatSpec with ChiselScalatestTester with F
     // WARN: it is not recommended to turn of undef modelling and it is not guaranteed that this test won't break
     verify(new InvalidSignalIs(0), Seq(BoundedCheck(2), DoNotModelUndef, DefaultBackend))
   }
+
+  "invalid signal" should "fail correctly even when it is in a submodule" taggedAs FormalTag in {
+    // this is a regression test for a bug where we failed to replay failures when the
+    // random (i.e. arbitrary value) signal was in a submodule
+    val e = intercept[FailedBoundedCheckException] {
+      verify(new Module {
+        val inst = Module(new InvalidSignalIs(0))
+      }, Seq(BoundedCheck(1), DefaultBackend))
+    }
+    assert(e.failAt == 0)
+  }
+
 }
 
 class DivisionByZeroIsEq(to: Int) extends Module {
