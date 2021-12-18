@@ -2,10 +2,10 @@
 
 package chiseltest.internal
 
-import chiseltest.{ClockResolutionException, Region, TimeoutException}
+import chiseltest.{ChiselAssertionError, ClockResolutionException, Region, StopException, TimeoutException}
 import chisel3._
 import chiseltest.coverage.TestCoverage
-import chiseltest.simulator.SimulatorContext
+import chiseltest.simulator.{SimulatorContext, StepInterrupted, StepOk}
 import firrtl.AnnotationSeq
 
 import scala.collection.mutable
@@ -142,12 +142,25 @@ class GenericBackend[T <: Module](
     }
   }
 
+  private def stepMainClock(): Unit = {
+    tester.step() match {
+      case StepOk => // all right
+      case StepInterrupted(_, true, _) =>
+        val msg = s"An assertion in ${dut.name} failed.\n" +
+          "Please consult the standard output for more details."
+        throw new ChiselAssertionError(msg)
+      case StepInterrupted(_, false, _) =>
+        val msg = s"A stop() statement was triggered in ${dut.name}."
+        throw new StopException(msg)
+    }
+  }
+
   override def run(testFn: T => Unit): AnnotationSeq = {
     rootTimescope = Some(new RootTimescope)
     val mainThread = new TesterThread(
       () => {
         tester.poke("reset", 1)
-        tester.step()
+        stepMainClock()
         tester.poke("reset", 0)
 
         testFn(dut)
@@ -187,12 +200,12 @@ class GenericBackend[T <: Module](
         idleLimits.foreach { case (clock, limit) =>
           idleCycles.put(clock, idleCycles.getOrElse(clock, -1) + 1)
           if (idleCycles(clock) >= limit) {
-            throw new TimeoutException(s"timeout on $clock at $limit idle cycles")
+            throw new TimeoutException(s"timeout on $clock at $limit idle cycles.")
           }
         }
 
         if (!mainThread.done) {
-          tester.step()
+          stepMainClock()
         }
       }
     } finally {

@@ -8,22 +8,23 @@ import chisel3.experimental._
 import chisel3.util.experimental.BoringUtils
 import chiseltest._
 import chiseltest.formal._
+import chiseltest.experimental._
 import org.scalatest.flatspec.AnyFlatSpec
 
 /** Chisel port of the "Verification Gentleman" blog post on formal vs. simulation.
   * src: https://github.com/verification-gentleman-blog/comparison-of-formal-and-simulation
   * blog: https://blog.verificationgentleman.com/2020/11/comparison-of-formal-and-simulation-part-1.html
   * */
-class VGBComparisonOfFormalAndSimulation extends AnyFlatSpec with ChiselScalatestTester with Formal {
+class VGBComparisonOfFormalAndSimulation extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption {
   "ShapeProcessorProp" should "pass" taggedAs FormalTag in {
-    // note: CVC4 seems to be significantly faster on this example than the default Z3
-    verify(new ShapeProcessorProps, Seq(BoundedCheck(4), CVC4EngineAnnotation))
+    assume(DefaultBackend != Z3EngineAnnotation, "Z3 is too slow on this example!")
+    verify(new ShapeProcessorProps, Seq(BoundedCheck(4), DefaultBackend))
   }
 
   // TODO: unfortunately we currently do not support cover statements
 }
 
-class ShapeProcessorProps extends Module with Observer {
+class ShapeProcessorProps extends Module {
   import ShapeProcessorModelling._
   import ShapeEnum._
   import OperationEnum._
@@ -39,32 +40,32 @@ class ShapeProcessorProps extends Module with Observer {
   //------------------------------------------------------------------------------------------------
   // Check that we never see any reserved values in the SFR. This ensures that the DUT will have
   // some kind of handling in place to reject such values.
-  verification.assert(!isReservedShape(shapeInSfr))
-  verification.assert(!isReservedOperation(operationInSfr))
+  assert(!isReservedShape(shapeInSfr))
+  assert(!isReservedOperation(operationInSfr))
 
   //------------------------------------------------------------------------------------------------
   // Check that we never see any KEEP_* values in the SFR. This ensures that the DUT will have
   // some kind of special handling in place for these values.
-  verification.assert(shapeInSfr =/= KeepShape.asUInt())
-  verification.assert(operationInSfr =/= KeepOperation.asUInt())
+  assert(shapeInSfr =/= KeepShape.asUInt())
+  assert(operationInSfr =/= KeepOperation.asUInt())
 
   //------------------------------------------------------------------------------------------------
   // Check that we only see legal shape/operation combinations in the SFR. This ensures that the
   // DUT has some kind of mechanism to block illegal combinations from being written.
-  verification.assert(isLegalCombination(shapeInSfr, operationInSfr))
+  assert(isLegalCombination(shapeInSfr, operationInSfr))
 
   //------------------------------------------------------------------------------------------------
   // Cover that we can see each shape. This way we know that the DUT can, in principle, update the
   // 'SHAPE' field. Using this property we can flag errors if the design ignores this field
   // completely when writing.
-  verification.cover(shapeInSfr === Circle.asUInt())
-  verification.cover(shapeInSfr === Rectangle.asUInt())
-  verification.cover(shapeInSfr === Triangle.asUInt())
+  cover(shapeInSfr === Circle.asUInt())
+  cover(shapeInSfr === Rectangle.asUInt())
+  cover(shapeInSfr === Triangle.asUInt())
 
   //------------------------------------------------------------------------------------------------
   // Cover that we can see each operation. The same comments as for 'SHAPE' apply.
   OperationEnum.all.foreach { op =>
-    verification.cover(operationInSfr === op.asUInt())
+    cover(operationInSfr === op.asUInt())
   }
 
   //------------------------------------------------------------------------------------------------
@@ -74,13 +75,13 @@ class ShapeProcessorProps extends Module with Observer {
 
   //------------------------------------------------------------------------------------------------
   // Check that the SFR values are delivered as read data at bus reads.
-  verification.assert(IfThen(io.read, shapeOnReadBus === shapeInSfr))
-  verification.assert(IfThen(io.read, operationOnReadBus === operationInSfr))
+  assert(IfThen(io.read, shapeOnReadBus === shapeInSfr))
+  assert(IfThen(io.read, operationOnReadBus === operationInSfr))
 
   //------------------------------------------------------------------------------------------------
   // Check that only updates the SFR on a bus write. Ensures that there are no sporadic updates
   // caused by other events.
-  verification.assert(IfThen(past(!io.write), stable(sfr)))
+  assert(IfThen(past(!io.write), stable(sfr)))
 
   //------------------------------------------------------------------------------------------------
   val writeDataAsCtrlSfr = io.writeData.asTypeOf(new CtrlSfrReg)
@@ -90,10 +91,10 @@ class ShapeProcessorProps extends Module with Observer {
   //------------------------------------------------------------------------------------------------
   // Check that KEEP_* properly keep the values of their corresponding fields. This satisfies the
   // first part of the requirement for these values.
-  verification.assert(IfThen(
+  assert(IfThen(
     past(io.write && shapeOnWriteBus === KeepShape.asUInt()), stable(shapeInSfr)
   ))
-  verification.assert(IfThen(
+  assert(IfThen(
     past(io.write && operationOnWriteBus === KeepOperation.asUInt()), stable(operationInSfr)
   ))
 
@@ -101,29 +102,29 @@ class ShapeProcessorProps extends Module with Observer {
   // Cover that we can see the operation change whenever we write KEEP_SHAPE (and vice-versa). This
   // way we know that the DUT can, in principle, satisfy the second part of the requirement for
   // KEEP_* values.
-  verification.cover(past(io.write && shapeOnWriteBus === KeepShape.asUInt()) && changed(operationInSfr))
-  verification.cover(past(io.write && operationOnWriteBus === KeepOperation.asUInt()) && changed(shapeInSfr))
+  cover(past(io.write && shapeOnWriteBus === KeepShape.asUInt()) && changed(operationInSfr))
+  cover(past(io.write && operationOnWriteBus === KeepOperation.asUInt()) && changed(shapeInSfr))
 
   //------------------------------------------------------------------------------------------------
   // Check that writes with reserved values are completely ignored. This ensures that the DUT
   // doesn't treat reserved values as 'KEEP_*' by mistake.
-  verification.assert(IfThen(
+  assert(IfThen(
     past(io.write && isReservedShape(shapeOnWriteBus)), stable(sfr)
   ))
-  verification.assert(IfThen(
+  assert(IfThen(
     past(io.write && isReservedOperation(operationOnWriteBus)), stable(sfr)
   ))
 
   //------------------------------------------------------------------------------------------------
   // Check that writes of illegal combinations of proper modes are completely ignored. This ensures
   // that the DUT doesn't, for example, write some default combination of modes in such cases.
-  verification.assert(IfThen(
+  assert(IfThen(
     past(io.write && shapeOnWriteBus === KeepShape.asUInt() &&
       !isLegalCombination(shapeInSfr, operationOnWriteBus)),
     stable(sfr)
   ))
 
-  verification.assert(IfThen(
+  assert(IfThen(
     past(io.write && operationOnWriteBus === KeepOperation.asUInt() &&
       !isLegalCombination(shapeOnWriteBus, operationInSfr)),
     stable(sfr)
@@ -143,12 +144,12 @@ class ShapeProcessorProps extends Module with Observer {
       !isReservedOperation(operationOnWriteBus) &&
       isLegalCtrlWriteDataCombination
 
-  verification.assert(IfThen(
+  assert(IfThen(
     past(io.write && isLegalCtrlWriteData && shapeOnWriteBus =/= KeepShape.asUInt()),
     shapeInSfr === past(shapeOnWriteBus)
   ))
 
-  verification.assert(IfThen(
+  assert(IfThen(
     past(io.write && isLegalCtrlWriteData && operationOnWriteBus =/= KeepOperation.asUInt()),
     operationInSfr === past(operationOnWriteBus)
   ))
@@ -156,15 +157,7 @@ class ShapeProcessorProps extends Module with Observer {
   //------------------------------------------------------------------------------------------------
   // Check that illegal CTRL writes don't update the SFR fields. This catches all cases of illegal
   // writes under one 'assert', instead of having them spread out over many.
-  verification.assert(IfThen(past(io.write && !isLegalCtrlWriteData), stable(sfr)))
-}
-
-trait Observer { this: Module =>
-  protected def observe[T <: Data](signal: T): T = {
-    val wire = WireInit(0.U.asTypeOf(chiselTypeOf(signal)))
-    BoringUtils.bore(signal, Seq(wire))
-    wire
-  }
+  assert(IfThen(past(io.write && !isLegalCtrlWriteData), stable(sfr)))
 }
 
 object ShapeProcessorModelling {
@@ -175,8 +168,8 @@ object ShapeProcessorModelling {
   def isReservedOperation(value: UInt): Bool = !OperationEnum.safe(value)._2
   def isLegalCombination(shapeUInt: UInt, operationUInt: UInt): Bool = {
     // nested asserts in chisel do not work the same as they would in SystemVerilog
-    // verification.assert(shape =/= KeepShape)
-    // verification.assert(operation =/= KeepOperation)
+    // assert(shape =/= KeepShape)
+    // assert(operation =/= KeepOperation)
     val ((shape, shapeValid), (operation, opValid)) = (ShapeEnum.safe(shapeUInt), OperationEnum.safe(operationUInt))
     MuxCase(false.B, Seq(
       (!(shapeValid && opValid)) -> false.B,

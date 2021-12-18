@@ -11,8 +11,10 @@ trait SimulatorContext {
   /** Returns a reference the [[Simulator]] that created this context. */
   def sim: Simulator
 
-  /** Step the main clock `n` times. Throws a [[NoClockException]] if the circuit does not have a clock input. */
-  def step(n: Int = 1): Unit
+  /** Step the main clock `n` times. Throws a [[NoClockException]] if the circuit does not have a clock input.
+    * @return [[StepInterrupted]] if a stop/assert/assume statement fired during execution, [[StepOk]] otherwise.
+    */
+  def step(n: Int = 1): StepResult
 
   /** Returns the latest value of an output or input port on the top-level module.
     * @note the simulator has to take care of recomputing signals after any change
@@ -53,6 +55,16 @@ trait SimulatorContext {
   def resetCoverage(): Unit =
     throw new NotImplementedError(s"${sim.name} does not support coverage!")
 }
+
+sealed trait StepResult
+case object StepOk extends StepResult
+
+/** Indicates that an interrupt (active stop or assertion failure) was raised during the execution of a `step`.
+  * @param after number of steps after which the execution was stopped. Always > 0 and <= `n`.
+  * @param isFailure true if the interrupt involved a stop with non-zero return code or an assertion/assumption violation.
+  * @param sources optional list of hierarchical names of stop/assert/assume statements that were triggered.
+  */
+case class StepInterrupted(after: Int, isFailure: Boolean, sources: Seq[String]) extends StepResult
 
 /** Thrown by [[SimulatorContext.step]] if the circuit has no clock input */
 case class NoClockException(toplevel: String)
@@ -106,6 +118,13 @@ case object WriteVpdAnnotation extends WriteWaveformAnnotation {
   override def format: String = "vpd"
 }
 
+case class PlusArgsAnnotation(plusArgs: Seq[String]) extends NoTargetAnnotation
+
+/** enables more verbose print outs from the simulator creation and execution
+  * that might be helpful in debugging simulator behavior
+  */
+case object SimulatorDebugAnnotation extends NoTargetAnnotation
+
 /** contains some common code that is used by the various simulator backends */
 private[chiseltest] object Simulator {
   def getWavformFormat(annos: AnnotationSeq): String = {
@@ -138,13 +157,15 @@ private[chiseltest] object Simulator {
 /** Contains information about the top-level module in the circuit being simulated. */
 private[chiseltest] case class TopmoduleInfo(
   name:    String,
-  inputs:  Seq[(String, Int)],
-  outputs: Seq[(String, Int)],
+  inputs:  Seq[PinInfo],
+  outputs: Seq[PinInfo],
   clocks:  Seq[String]) {
-  require(inputs.forall(_._2 > 0), s"Inputs need to be at least 1-bit!\n$inputs")
-  require(outputs.forall(_._2 > 0), s"Outputs need to be at least 1-bit!\n$outputs")
-  def portNames: Seq[String] = inputs.map(_._1) ++ outputs.map(_._1) ++ clocks
+  require(inputs.forall(_.width > 0), s"Inputs need to be at least 1-bit!\n$inputs")
+  require(outputs.forall(_.width > 0), s"Outputs need to be at least 1-bit!\n$outputs")
+  def portNames: Seq[String] = inputs.map(_.name) ++ outputs.map(_.name) ++ clocks
 }
+
+private[chiseltest] case class PinInfo(name: String, width: Int, signed: Boolean)
 
 private[chiseltest] object TopmoduleInfo {
   def apply(circuit: ir.Circuit): TopmoduleInfo = {
@@ -158,18 +179,18 @@ private[chiseltest] object TopmoduleInfo {
 
     new TopmoduleInfo(
       name = main.name,
-      inputs = in.map(portNameAndWidth),
-      outputs = out.map(portNameAndWidth),
+      inputs = in.map(portNameAndWidthAndIsSigned),
+      outputs = out.map(portNameAndWidthAndIsSigned),
       clocks = clock.map(_.name)
     )
   }
 
-  private def portNameAndWidth(p: ir.Port): (String, Int) = {
+  private def portNameAndWidthAndIsSigned(p: ir.Port): PinInfo = {
     require(
       p.tpe.isInstanceOf[ir.GroundType],
       s"Port ${p.serialize} is not of ground type! Please make sure to provide LowFirrtl to this API!"
     )
-    p.name -> bitWidth(p.tpe).toInt
+    PinInfo(p.name, bitWidth(p.tpe).toInt, p.tpe.isInstanceOf[ir.SIntType])
   }
 }
 

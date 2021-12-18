@@ -3,10 +3,11 @@
 package chiseltest.iotesters.examples
 
 import chisel3._
+import chiseltest._
 import chiseltest.iotesters._
 import chiseltest.simulator.RequiresVerilator
+import firrtl.transforms.DontCheckCombLoopsAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
 class HasCycle extends Module {
   val io = IO( new Bundle {
@@ -25,22 +26,17 @@ class HasCycleTester( c:HasCycle) extends PeekPokeTester(c) {
   step(1)
 }
 
-class HasCycleTest extends AnyFlatSpec with Matchers {
+class HasCycleTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "HasCycle"
 
-  it should "work in the interpreter" in {
-    Driver.execute(
-      // interpreter has it's own loop detector that needs to be disabled as well with --fr-allow-cycles
-      Array( "--no-check-comb-loops", "--backend-name", "firrtl", "--fr-allow-cycles"),
-      () => new HasCycle) { c =>
-      new HasCycleTester( c)
-    } should be ( true)
+  it should "work in treadle" in {
+    // for treadle we need to use a treadle specific annotation: AllowCyclesAnnotation
+    test(new HasCycle)
+      .withAnnotations(Seq(DontCheckCombLoopsAnnotation, TreadleBackendAnnotation, treadle.AllowCyclesAnnotation))
+      .runPeekPoke(new HasCycleTester(_))
   }
   it should "work in verilator" taggedAs RequiresVerilator in {
-    Driver.execute(
-              Array( "--no-check-comb-loops", "--backend-name", "verilator"),
-      () => new HasCycle) { c =>
-      new HasCycleTester( c)
-    } should be ( true)
+    test(new HasCycle).withAnnotations(Seq(DontCheckCombLoopsAnnotation, VerilatorBackendAnnotation))
+      .runPeekPoke(new HasCycleTester(_))
   }
 }

@@ -120,7 +120,8 @@ private object IcarusSimulator extends Simulator {
     val simBinary = relTargetDir / "icarus" / topName
     val cmd = List("iverilog") ++ flags ++ List(
       "-o",
-      simBinary.toString(),
+      simBinary.toString()
+    ) ++ BlackBox.fFileFlags(targetDir) ++ List(
       (relTargetDir / s"$topName.sv").toString(),
       (relTargetDir / "icarus" / verilogHarness).toString()
     )

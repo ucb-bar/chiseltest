@@ -132,7 +132,13 @@ private[chiseltest] object SMTExprEval {
     case Op.Add        => (a + b) & mask(width)
     case Op.Mul        => (a * b) & mask(width)
     case Op.Sub        => sub(a, b, width)
-    case other         => throw new NotImplementedError(other.toString)
+    case Op.UnsignedDiv =>
+      if (b == 0) { mask(width) }
+      else { (a / b) & mask(width) }
+    case Op.UnsignedRem =>
+      if (b == 0) { a }
+      else { (a % b) & mask(width) }
+    case other => throw new NotImplementedError(other.toString)
   }
   private def doBVConcat(a: BigInt, b: BigInt, bWidth: Int): BigInt = (a << bWidth) | b
 

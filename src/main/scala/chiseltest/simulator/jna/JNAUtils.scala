@@ -35,7 +35,7 @@ object JNAUtils {
 
   /** needs to match up with [[TesterSharedLibInterface]]! */
   val Methods = Seq(
-    ("void", "step", Seq()),
+    ("long", "step", Seq("cycles" -> "int")),
     ("void", "update", Seq()),
     ("void", "finish", Seq()),
     ("void", "resetCoverage", Seq()),
@@ -43,7 +43,8 @@ object JNAUtils {
     ("void", "poke", Seq("id" -> "int", "value" -> "long")),
     ("long", "peek", Seq("id" -> "int")),
     ("void", "poke_wide", Seq("id" -> "int", "offset" -> "int", "value" -> "long")),
-    ("long", "peek_wide", Seq("id" -> "int", "offset" -> "int"))
+    ("long", "peek_wide", Seq("id" -> "int", "offset" -> "int")),
+    ("void", "set_args", Seq("argc" -> "int", "argv" -> "const char**"))
   )
 
   private var idCounter = 123
@@ -111,7 +112,7 @@ object JNAUtils {
 
 class TesterSharedLibInterface(so: NativeLibrary, sPtr: Pointer) {
   private val stepFoo = so.getFunction("step")
-  def step(): Unit = { stepFoo.invoke(Array(sPtr)) }
+  def step(cycles: Int): Long = { stepFoo.invokeLong(Array(sPtr, Integer.valueOf(cycles))) }
   private val updateFoo = so.getFunction("update")
   def update(): Unit = { updateFoo.invoke(Array(sPtr)) }
   private val finishFoo = so.getFunction("finish")
@@ -142,5 +143,9 @@ class TesterSharedLibInterface(so: NativeLibrary, sPtr: Pointer) {
   private val peekWideFoo = so.getFunction("peek_wide")
   def peekWide(id: Int, offset: Int): Long = {
     peekWideFoo.invokeLong(Array(sPtr, Integer.valueOf(id), Integer.valueOf(offset)))
+  }
+  private val setArgsFoo = so.getFunction("set_args")
+  def setArgs(args: Array[String]): Unit = {
+    setArgsFoo.invoke(Array(sPtr, Integer.valueOf(args.size), args))
   }
 }

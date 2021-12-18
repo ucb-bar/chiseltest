@@ -87,19 +87,20 @@ private object VcsSimulator extends Simulator {
     val userSimFlags = state.annotations.collectFirst { case VcsSimFlags(f) => f }.getOrElse(Seq.empty)
     val simCmd = compileSimulation(toplevel.name, targetDir, verilogHarness, state.annotations) ++
       userSimFlags ++
-      waveformFlags(toplevel.name, state.annotations)
+      waveformFlags(targetDir, toplevel.name, state.annotations)
 
     // the binary we created communicates using our standard IPC interface
     new IPCSimulatorContext(simCmd, toplevel, VcsSimulator)
   }
 
-  private def waveformFlags(topName: String, annos: AnnotationSeq): Seq[String] = {
+  private def waveformFlags(targetDir: os.Path, topName: String, annos: AnnotationSeq): Seq[String] = {
     val ext = Simulator.getWavformFormat(annos)
+    val dumpfile = targetDir.relativeTo(os.pwd) / s"$topName.$ext"
     if (ext.isEmpty) { Seq("-none") }
     else if (ext == "vpd") {
-      Seq(s"+vcdplusfile=$topName.$ext")
+      Seq(s"+vcdplusfile=${dumpfile.toString()}")
     } else {
-      Seq(s"+dumpfile=$topName.$ext")
+      Seq(s"+dumpfile=${dumpfile.toString()}")
     }
   }
 
@@ -110,14 +111,16 @@ private object VcsSimulator extends Simulator {
     verilogHarness: String,
     annos:          AnnotationSeq
   ): Seq[String] = {
+    val relTargetDir = targetDir.relativeTo(os.pwd)
     val flags = generateFlags(topName, targetDir, annos)
-    val cmd = List("vcs") ++ flags ++ List("-o", topName, s"$topName.sv", verilogHarness, "vpi.cpp")
+    val cmd = List("vcs") ++ flags ++ List("-o", topName) ++
+      BlackBox.fFileFlags(targetDir) ++ List(s"$topName.sv", verilogHarness, "vpi.cpp")
     val ret = os.proc(cmd).call(cwd = targetDir)
 
     assert(ret.exitCode == 0, s"vcs command failed on circuit ${topName} in work dir $targetDir")
-    val simBinary = targetDir / topName
-    assert(os.exists(simBinary), s"Failed to generate simulation binary: $simBinary")
-    Seq("./" + topName)
+    val simBinary = relTargetDir / topName
+    assert(os.exists(os.pwd / simBinary), s"Failed to generate simulation binary: $simBinary")
+    Seq("./" + simBinary.toString())
   }
 
   private def generateFlags(topName: String, targetDir: os.Path, annos: AnnotationSeq): Seq[String] = {
@@ -126,7 +129,7 @@ private object VcsSimulator extends Simulator {
     val cFlags = DefaultCFlags(targetDir) ++ userCFlags
 
     // combine all flags
-    val userFlags = annos.collectFirst { case VcsCFlags(f) => f }.getOrElse(Seq.empty)
+    val userFlags = annos.collectFirst { case VcsFlags(f) => f }.getOrElse(Seq.empty)
     val flags = DefaultFlags(topName, cFlags) ++ userFlags
     flags
   }

@@ -3,8 +3,9 @@
 package chiseltest.iotesters
 
 import chisel3._
+import chiseltest._
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
+
 
 /**
   * Passes a Vec of elements with one cycle delay
@@ -187,27 +188,19 @@ class Bundle2 extends Bundle {
   val u1 = UInt(4.W)
 }
 
-class AggregateOrderingSpec extends AnyFreeSpec with Matchers {
+class AggregateOrderingSpec extends AnyFreeSpec with ChiselScalatestTester {
   "the following examples illustrate the poking Vectors and Bundles with an array of BigInt" - {
     "Poking a 5 element Vec shows" in {
-      Driver.execute(() => new AggregatePassThrough(Vec(5, UInt(4.W)))) { c =>
-        new AggregateOrderingTester(c, 5)
-      } should be(true)
+      test(new AggregatePassThrough(Vec(5, UInt(4.W)))).runPeekPoke(new AggregateOrderingTester(_, 5))
     }
     "Poking a 5 element bundle" in {
-      Driver.execute(() => new AggregatePassThrough(new Bundle5)) { c =>
-        new AggregateOrderingTester(c, 5)
-      } should be(true)
+      test(new AggregatePassThrough(new Bundle5)).runPeekPoke(new AggregateOrderingTester(_, 5))
     }
     "Poking a bundle of 3 vecs of 2 uints each" in {
-      Driver.execute(() => new AggregatePassThrough(new BundleOfVecs)) { c =>
-        new AggregateOrderingTester(c, 6)
-      } should be(true)
+      test(new AggregatePassThrough(new BundleOfVecs)).runPeekPoke(new AggregateOrderingTester(_, 6))
     }
     "Poking a 3 vec of bundles of 2 uints each" in {
-      Driver.execute(() => new AggregatePassThrough(Vec(3, new Bundle2))) { c =>
-        new AggregateOrderingTester(c, 6)
-      } should be(true)
+      test(new AggregatePassThrough(Vec(3, new Bundle2))).runPeekPoke(new AggregateOrderingTester(_, 6))
     }
   }
 
@@ -216,16 +209,12 @@ class AggregateOrderingSpec extends AnyFreeSpec with Matchers {
     |a vec with an array of BigInts, currently poking reverse the order, but peeking does not
     |leading to a big inconsistency""".stripMargin - {
     "Poking vectors should be same as poking all elements" in {
-      Driver.execute(() => new VecPassThrough(10, UInt(16.W))) { c =>
-        new VecPeekPokeTester(c)
-      } should be(true)
+      test(new VecPassThrough(10, UInt(16.W))).runPeekPoke(new VecPeekPokeTester(_))
     }
   }
   "The following illustrates that bundle ordering is " - {
     "Poking bundles should be same as poking all elements" in {
-      Driver.execute(() => new BundlePassThrough) { c =>
-        new BundlePeekPokeTester(c)
-      } should be(true)
+      test(new BundlePassThrough).runPeekPoke(new BundlePeekPokeTester(_))
     }
   }
 

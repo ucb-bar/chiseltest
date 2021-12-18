@@ -5,8 +5,8 @@ package chiseltest.iotesters.examples
 import chisel3._
 import chisel3.experimental.FixedPoint
 import chiseltest.iotesters._
+import chiseltest._
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
 class FixedPointReduce(val fixedType: FixedPoint, val size: Int) extends Module {
   val io = IO(new Bundle {
@@ -62,30 +62,28 @@ class FixedPointDivideTester(c: FixedPointDivide) extends PeekPokeTester(c) {
   }
 }
 
-class FixedPointSpec extends AnyFreeSpec with Matchers {
+class FixedPointSpec extends AnyFreeSpec with ChiselScalatestTester {
   val useBigDecimal = true
   "fixed point reduce should work with BigDecimal" in {
-    Driver.execute(Array.empty[String], () => new FixedPointReduce(FixedPoint(70.W, 60.BP), 10)) { c =>
-      new FixedPointReduceTester(c, useBigDecimal)
-    } should be (true)
+    test(new FixedPointReduce(FixedPoint(70.W, 60.BP), 10))
+      .runPeekPoke(new FixedPointReduceTester(_, useBigDecimal))
   }
 
   "fixed point reduce should fail without BigDecimal" in {
-    (the[ChiselException] thrownBy {
-      Driver.execute(Array.empty[String], () => new FixedPointReduce(FixedPoint(70.W, 60.BP), 10)) { c =>
-        new FixedPointReduceTester(c, !useBigDecimal)
-      }
-    }).getMessage should include ("is too big, precision lost with > 53 bits")
+    val e = intercept[ChiselException] {
+      test(new FixedPointReduce(FixedPoint(70.W, 60.BP), 10))
+        .runPeekPoke(new FixedPointReduceTester(_, !useBigDecimal))
+    }
+    assert(e.getMessage.contains("is too big, precision lost with > 53 bits"))
   }
 
   "with enough bits fixed point pseudo divide should work" in {
-    Driver.execute(Array.empty[String], () => new FixedPointDivide(FixedPoint(64.W, 32.BP), 2)) { c =>
-      new FixedPointDivideTester(c)
-    } should be (true)
+    test(new FixedPointDivide(FixedPoint(64.W, 32.BP), 2)).runPeekPoke(new FixedPointDivideTester(_))
   }
+
   "not enough bits and fixed point pseudo divide will not work" in {
-    Driver.execute(Array.empty[String], () => new FixedPointDivide(FixedPoint(10.W, 4.BP), 2)) { c =>
-      new FixedPointDivideTester(c)
-    } should be (false)
+    assertThrows[PeekPokeFailure] {
+      test(new FixedPointDivide(FixedPoint(10.W, 4.BP), 2)).runPeekPoke(new FixedPointDivideTester(_))
+    }
   }
 }

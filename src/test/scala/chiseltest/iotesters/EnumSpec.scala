@@ -5,9 +5,10 @@ package chiseltest.iotesters
 import chisel3._
 import chisel3.experimental.ChiselEnum
 import chisel3.util._
+import chiseltest._
 import chiseltest.simulator.RequiresVerilator
+import firrtl.AnnotationSeq
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
 object MyEnum extends ChiselEnum {
   val e0, e1, e3, e4 = Value
@@ -72,9 +73,9 @@ class EnumVecPeekPokeTester(c: EnumVecPassThrough) extends PeekPokeTester(c) {
   // When poking Vecs directly, enums must be converted to their literal values. This is because there is currently no
   // implicit conversion between IndexedSeq[EnumType] and IndexedSeq[BigInt].
 
-  poke(c.io.in, MyEnum.all.toIndexedSeq.map(_.litValue()))
+  poke(c.io.in, MyEnum.all.toIndexedSeq.map(_.litValue))
   step(1)
-  expect(c.io.out, MyEnum.all.toIndexedSeq.map(_.litValue()))
+  expect(c.io.out, MyEnum.all.toIndexedSeq.map(_.litValue))
 }
 
 class EnumMemPeekPokeTester(c: EnumMem) extends PeekPokeTester(c) {
@@ -111,34 +112,29 @@ class ReadyValidEnumShifter(val delay: Int) extends Module {
   io.in.ready := cnt === 0.U
 }
 
-class EnumSpec extends AnyFlatSpec with Matchers {
-  def testPeekPoke(args: Array[String], skip_mem: Boolean = false) = {
-    Driver.execute(args, () => new EnumPassThrough) { c =>
-      new EnumPeekPokeTester(c)
-    } &&
-    !Driver.execute(args, () => new EnumPassThrough) { c =>
-      new IncorrectEnumPeekPokeTester(c)
-    } &&
-    Driver.execute(args, () => new EnumVecPassThrough(256)) { c =>
-      new EnumVecPeekPokeTester(c)
-    } &&
-    (skip_mem || Driver.execute(args, () => new EnumMem(256)) { c =>
-      new EnumMemPeekPokeTester(c)
-    })
+class EnumSpec extends AnyFlatSpec with ChiselScalatestTester {
+  def testPeekPoke(options: AnnotationSeq, skipMem: Boolean) = {
+    test(new EnumPassThrough).withAnnotations(options).runPeekPoke(new EnumPeekPokeTester(_))
+
+    assertThrows[PeekPokeFailure] {
+      test(new EnumPassThrough).withAnnotations(options).runPeekPoke(new IncorrectEnumPeekPokeTester(_))
+    }
+
+    test(new EnumVecPassThrough(256)).withAnnotations(options).runPeekPoke(new EnumVecPeekPokeTester(_))
+
+    if(!skipMem) {
+      test(new EnumMem(256)).withAnnotations(options).runPeekPoke(new EnumMemPeekPokeTester(_))
+    }
   }
 
   behavior of "Enum PeekPokeTesters"
 
-  it should "work with a firrtl backend" in {
-    testPeekPoke(Array("--backend-name", "firrtl")) should be(true)
-  }
-
   it should "work with a treadle backend" in {
-    testPeekPoke(Array("--backend-name", "treadle")) should be(true)
+    testPeekPoke(Seq(TreadleBackendAnnotation), skipMem = false)
   }
 
   // pokeAt and peekAt seem to be broken when using Verilator, so we skip the memory tests
   it should "work with a verilator backend" taggedAs RequiresVerilator in {
-    testPeekPoke(Array("--backend-name", "verilator"), true) should be(true)
+    testPeekPoke(Seq(VerilatorBackendAnnotation), skipMem = true)
   }
 }

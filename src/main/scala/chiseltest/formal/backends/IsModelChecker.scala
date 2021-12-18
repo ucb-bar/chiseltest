@@ -17,7 +17,7 @@ private[chiseltest] trait IsModelChecker {
   def name: String
   val prefix:        String
   val fileExtension: String
-  def check(sys: TransitionSystem, kMax: Int = -1, fileName: Option[String] = None): ModelCheckResult
+  def check(sys: TransitionSystem, kMax: Int = -1): ModelCheckResult
 }
 
 private[chiseltest] case class Witness(

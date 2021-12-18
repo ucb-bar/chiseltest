@@ -9,6 +9,7 @@ import firrtl.options.Dependency
 import firrtl.passes.InlineAnnotation
 import firrtl.stage.Forms
 import firrtl._
+import firrtl.backends.experimental.smt.random.DefRandom
 
 private case class DoNotInlineAnnotation(target: ModuleTarget) extends SingleTargetAnnotation[ModuleTarget] {
   override def duplicate(n: ModuleTarget) = copy(target = n)
@@ -94,10 +95,11 @@ private object FlattenPass extends Transform with DependencyAPIMigration {
   }
 
   private def findStates(m: IsModule, s: ir.Statement): Seq[StateAnnotation] = s match {
-    case reg: ir.DefRegister   => List(StateAnnotation(m.ref(reg.name), reg.tpe))
-    case mem: ir.DefMemory     => List(StateAnnotation(m.ref(mem.name), mem.dataType, mem.depth))
-    case b:   ir.Block         => b.stmts.flatMap(findStates(m, _))
-    case _:   ir.Conditionally => throw new RuntimeException("Not low form!")
+    case reg:  ir.DefRegister   => List(StateAnnotation(m.ref(reg.name), reg.tpe))
+    case rand: DefRandom        => List(StateAnnotation(m.ref(rand.name), rand.tpe))
+    case mem:  ir.DefMemory     => List(StateAnnotation(m.ref(mem.name), mem.dataType, mem.depth))
+    case b:    ir.Block         => b.stmts.flatMap(findStates(m, _))
+    case _:    ir.Conditionally => throw new RuntimeException("Not low form!")
     case _ => List()
   }
 

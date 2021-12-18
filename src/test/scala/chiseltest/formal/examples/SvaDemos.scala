@@ -4,7 +4,7 @@ package chiseltest.formal.examples
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{ChiselAnnotation, annotate, verification}
+import chisel3.experimental.{ChiselAnnotation, annotate}
 import chiseltest._
 import chiseltest.formal._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -16,10 +16,10 @@ import firrtl.annotations.PresetAnnotation
   * All demos are based on the awesome SVA tutorial from SymbioticEDA:
   * https://github.com/SymbioticEDA/sva-demos
   */
-class SvaDemos extends AnyFlatSpec with ChiselScalatestTester with Formal {
+class SvaDemos extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption {
   "Demo1" should "fail a bounded check 17 cycles after reset" taggedAs FormalTag in {
     val e = intercept[FailedBoundedCheckException] {
-      verify(new SvaDemo1, Seq(BoundedCheck(20)))
+      verify(new SvaDemo1, Seq(BoundedCheck(20), DefaultBackend))
     }
     assert(e.failAt == 17)
   }
@@ -28,7 +28,7 @@ class SvaDemos extends AnyFlatSpec with ChiselScalatestTester with Formal {
   .foreach { case (n, gen) =>
     s"Demo2$n" should "fail a bounded check 15 cycles after reset" taggedAs FormalTag in {
       val e = intercept[FailedBoundedCheckException] {
-        verify(gen(), Seq(BoundedCheck(20)))
+        verify(gen(), Seq(BoundedCheck(20), DefaultBackend))
       }
       assert(e.failAt == 15)
     }
@@ -36,7 +36,7 @@ class SvaDemos extends AnyFlatSpec with ChiselScalatestTester with Formal {
 
   "Demo3" should "fail a bounded check 16 cycles after reset" taggedAs FormalTag in {
     val e = intercept[FailedBoundedCheckException] {
-      verify(new SvaDemo3, Seq(BoundedCheck(20)))
+      verify(new SvaDemo3, Seq(BoundedCheck(20), DefaultBackend))
     }
     assert(e.failAt == 16)
   }
@@ -51,7 +51,7 @@ class SvaDemo1 extends SvaDemoModule {
   )
 
   // we can replace the a |=> b with our past operator
-  when(past(a)) { verification.assert(b) }
+  when(past(a)) { assert(b) }
 }
 
 class SvaDemo2 extends SvaDemoModule {
@@ -63,7 +63,7 @@ class SvaDemo2 extends SvaDemoModule {
   )
 
   // we need to manually express the two different possibilities
-  verification.assert(IfThen(past(a, 2), b) || past(IfThen(past(a), b)))
+  assert(IfThen(past(a, 2), b) || past(IfThen(past(a), b)))
 }
 
 /** This version changes the trace to test the (allowed) possibility of b going high the cycle after a */
@@ -76,7 +76,7 @@ class SvaDemo2B extends SvaDemoModule {
   )
 
   // we need to manually express the two different possibilities
-  verification.assert(IfThen(past(a, 2), b) || past(IfThen(past(a), b)))
+  assert(IfThen(past(a, 2), b) || past(IfThen(past(a), b)))
 }
 
 /** This version shows that b can be high independent from a */
@@ -90,7 +90,7 @@ class SvaDemo2C extends SvaDemoModule {
 
   // we need to manually express the two different possibilities
   // assert property (a |-> ##[1:2] b);
-  verification.assert(IfThen(past(a, 2), b) || past(IfThen(past(a), b)))
+  assert(IfThen(past(a, 2), b) || past(IfThen(past(a), b)))
 }
 
 class SvaDemo3 extends SvaDemoModule {
@@ -106,7 +106,7 @@ class SvaDemo3 extends SvaDemoModule {
   // note that our translation will fail 2 cycles later than the original
   // assert property ($rose(a) |=> b[*2] ##1 c);
   when(past(rose(a), 3)) {
-    verification.assert(past(b, 2) && past(b) && c)
+    assert(past(b, 2) && past(b) && c)
   }
 }
 
@@ -130,7 +130,7 @@ class SvaDemoModule extends Module {
   private def seqs_p(rStr: String, aStr: String, bStr: String, cStr: String): Unit = {
     val r = seq(rStr)
     withReset(false.B) {
-      verification.assume(reset.asBool() === r)
+      assume(reset.asBool() === r)
     }
     if(aStr.nonEmpty) a := seq(aStr)
     if(bStr.nonEmpty) b := seq(bStr)

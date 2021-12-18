@@ -4,10 +4,10 @@ package chiseltest.iotesters.examples
 
 import chisel3._
 import chisel3.experimental._
+import chiseltest._
 import chiseltest.iotesters._
 import chiseltest.simulator.RequiresVerilator
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
 class IntervalReduce(val intervalType: Interval, val size: Int) extends Module {
   val io = IO(new Bundle {
@@ -61,50 +61,42 @@ class IntervalDivideTester(c: IntervalDivide) extends PeekPokeTester(c) {
   }
 }
 
-class IntervalSpec extends AnyFreeSpec with Matchers {
+class IntervalSpec extends AnyFreeSpec with ChiselScalatestTester {
   val useBigDecimal = true
-  val flags = Array("--backend-name", "treadle")
   "interval reduce should work with BigDecimal" in {
-    Driver.execute(flags, () => new IntervalReduce(Interval(70.W, 60.BP), 10)) { c =>
-      new IntervalReduceTester(c, useBigDecimal)
-    } should be (true)
+    test(new IntervalReduce(Interval(70.W, 60.BP), 10)).runPeekPoke(new IntervalReduceTester(_, useBigDecimal))
   }
 
   "interval reduce should fail without BigDecimal" in {
-    (the[ChiselException] thrownBy {
-      Driver.execute(flags, () => new IntervalReduce(Interval(70.W, 60.BP), 10)) { c =>
-        new IntervalReduceTester(c, !useBigDecimal)
-      }
-    }).getMessage should include ("is too big, precision lost with > 53 bits")
+    val e = intercept[ChiselException] {
+      test(new IntervalReduce(Interval(70.W, 60.BP), 10)).runPeekPoke(new IntervalReduceTester(_, !useBigDecimal))
+    }
+    assert(e.getMessage.contains("is too big, precision lost with > 53 bits"))
   }
 
   "with enough bits interval pseudo divide should work" in {
-    Driver.execute(flags, () => new IntervalDivide(Interval(64.W, 32.BP), 2)) { c =>
-      new IntervalDivideTester(c)
-    } should be (true)
+    test(new IntervalDivide(Interval(64.W, 32.BP), 2)).runPeekPoke(new IntervalDivideTester(_))
   }
   "not enough bits and interval pseudo divide will not work" in {
-    Driver.execute(flags, () => new IntervalDivide(Interval(10.W, 4.BP), 2)) { c =>
-      new IntervalDivideTester(c)
-    } should be (false)
+    assertThrows[PeekPokeFailure] {
+      test(new IntervalDivide(Interval(10.W, 4.BP), 2)).runPeekPoke(new IntervalDivideTester(_))
+    }
   }
 
   "negative numbers can be read back from verilator" taggedAs RequiresVerilator in {
-    Driver.execute(
-      Array("--backend-name", "verilator"),
-      () => new Module {
-        val in  = IO(Input(Interval(range"[-64.0,64.0).2")))
-        val out = IO(Output(Interval(range"[-64.0,64.0).2")))
-        out := in
-      }
-    ) { c =>
-      new PeekPokeTester(c) {
-        for(bd <- BigDecimal(-64.0) until BigDecimal(64.0) by 0.25) {
-          pokeInterval(c.in, bd.toDouble)
-          step(1)
-          expectInterval(c.out, bd.toDouble, "pass through values should be the same")
-        }
-      }
-    } should be (true)
+    test(new Module {
+      val in = IO(Input(Interval(range"[-64.0,64.0).2")))
+      val out = IO(Output(Interval(range"[-64.0,64.0).2")))
+      out := in
+    }
+    ).withAnnotations(Seq(VerilatorBackendAnnotation))
+      .runPeekPoke(
+        new PeekPokeTester(_) {
+          for (bd <- BigDecimal(-64.0) until BigDecimal(64.0) by 0.25) {
+            pokeInterval(dut.in, bd.toDouble)
+            step(1)
+            expectInterval(dut.out, bd.toDouble, "pass through values should be the same")
+          }
+        })
   }
 }

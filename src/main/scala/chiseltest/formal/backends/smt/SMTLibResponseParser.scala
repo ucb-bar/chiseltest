@@ -6,14 +6,20 @@ package chiseltest.formal.backends.smt
 import scala.annotation.tailrec
 
 private object SMTLibResponseParser {
-  def parseValue(v: String): Option[BigInt] = parseValue(SExprParser.parse(v))
+  def parseValue(v: String): Option[BigInt] = {
+    val expr = SExprParser.parse(v)
+    expr match {
+      // this is the assignment, something like ((in #b00000))
+      case SExprNode(List(SExprNode(List(_, value)))) => parseValue(value)
+      case _                                          => throw new NotImplementedError(s"Unexpected response: $expr")
+    }
+  }
 
   @tailrec
   private def parseValue(e: SExpr): Option[BigInt] = e match {
-    case SExprNode(List(SExprNode(List(_, SExprLeaf(valueStr))))) => parseBVLiteral(valueStr)
+    case SExprLeaf(valueStr) => parseBVLiteral(valueStr)
     // example: (_ bv0 32)
-    case SExprNode(List(SExprNode(List(_, SExprNode(List(SExprLeaf("_"), SExprLeaf(value), SExprLeaf(width)))))))
-        if value.startsWith("bv") =>
+    case SExprNode(List(SExprLeaf("_"), SExprLeaf(value), SExprLeaf(width))) if value.startsWith("bv") =>
       Some(BigInt(value.drop(2)))
     case SExprNode(List(one)) => parseValue(one)
     case _                    => throw new NotImplementedError(s"Unexpected response: $e")
@@ -30,11 +36,11 @@ private object SMTLibResponseParser {
   }
 
   private def parseMem(value: SExpr, ctx: Map[String, MemInit]): MemInit = value match {
-    case SExprNode(List(SExprNode(List(SExprLeaf("as"), SExprLeaf("const"), tpe)), SExprLeaf(valueStr))) =>
+    case SExprNode(List(SExprNode(List(SExprLeaf("as"), SExprLeaf("const"), tpe)), value)) =>
       // initialize complete memory to value
-      List((None, parseBVLiteral(valueStr).get))
-    case SExprNode(List(SExprLeaf("store"), array, SExprLeaf(indexStr), SExprLeaf(valueStr))) =>
-      val (index, value) = (parseBVLiteral(indexStr), parseBVLiteral(valueStr))
+      List((None, parseValue(value).get))
+    case SExprNode(List(SExprLeaf("store"), array, indexExpr, valueExpr)) =>
+      val (index, value) = (parseValue(indexExpr), parseValue(valueExpr))
       parseMem(array, ctx) :+ (Some(index.get), value.get)
     case SExprNode(List(SExprLeaf("let"), SExprNode(List(SExprNode(List(SExprLeaf(variable), array0)))), array1)) =>
       val newCtx = ctx ++ Seq(variable -> parseMem(array0, ctx))

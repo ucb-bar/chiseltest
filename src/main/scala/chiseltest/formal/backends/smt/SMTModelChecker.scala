@@ -26,9 +26,8 @@ class SMTModelChecker(
   override val prefix:        String = solver.name
   override val fileExtension: String = ".smt2"
 
-  override def check(sys: TransitionSystem, kMax: Int, fileName: Option[String] = None): ModelCheckResult = {
+  override def check(sys: TransitionSystem, kMax: Int): ModelCheckResult = {
     require(kMax > 0 && kMax <= 2000, s"unreasonable kMax=$kMax")
-    if (fileName.nonEmpty) println("WARN: dumping to file is not supported at the moment.")
 
     val ctx = solver.createContext()
     // z3 only supports the non-standard as-const array syntax when the logic is set to ALL

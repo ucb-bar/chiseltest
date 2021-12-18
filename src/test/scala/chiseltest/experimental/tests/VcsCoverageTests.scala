@@ -14,7 +14,7 @@ private class TestModule extends Module {
   val in = IO(Input(Bool()))
   val reg = RegNext(~in)
   val out = IO(Output(Bool()))
-  chisel3.experimental.verification.cover(out && in)
+  cover(out && in)
   out := reg
 }
 

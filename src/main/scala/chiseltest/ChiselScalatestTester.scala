@@ -6,6 +6,7 @@ import chiseltest.internal._
 import chiseltest.experimental.sanitizeFileName
 import chisel3.Module
 import chiseltest.internal.TestEnvInterface.addDefaultTargetDir
+import chiseltest.iotesters.PeekPokeTester
 import firrtl.AnnotationSeq
 import org.scalatest._
 import org.scalatest.exceptions.TestFailedException
@@ -27,14 +28,16 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     }
 
     def apply(testFn: T => Unit): TestResult = {
-      val finalAnnos = addDefaultTargetDir(getTestName, annotationSeq) ++
+      runTest(defaults.createDefaultTester(dutGen, finalAnnos))(testFn)
+    }
+
+    private def finalAnnos: AnnotationSeq = {
+      addDefaultTargetDir(getTestName, annotationSeq) ++
         (if (scalaTestContext.value.get.configMap.contains("writeVcd")) {
            Seq(WriteVcdAnnotation)
          } else {
            Seq.empty
          })
-
-      runTest(defaults.createDefaultTester(dutGen, finalAnnos))(testFn)
     }
 
     def run(testFn: T => Unit, annotations: AnnotationSeq): TestResult = {
@@ -46,6 +49,27 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
 
     def withAnnotations(annotationSeq: AnnotationSeq): TestBuilder[T] = {
       new TestBuilder[T](dutGen, this.annotationSeq ++ annotationSeq)
+    }
+
+    /** Resets and then executes the circuit until a timeout or a stop or assertion failure.
+      * Throws an exception if the timeout is reached or an assertion failure is encountered.
+      * @param timeout number of cycles after which to timeout; set to 0 for no timeout
+      */
+    def runUntilStop(timeout: Int = 1000): TestResult = {
+      new TestResult(HardwareTesterBackend.run(dutGen, finalAnnos, timeout = timeout, expectFail = false))
+    }
+
+    /** Resets and then executes the circuit until a timeout or a stop or assertion failure.
+      * Throws an exception if the timeout is reached or a normal stop is encountered.
+      * @param timeout number of cycles after which to timeout; set to 0 for no timeout
+      */
+    def runUntilAssertFail(timeout: Int = 1000): TestResult = {
+      new TestResult(HardwareTesterBackend.run(dutGen, finalAnnos, timeout = timeout, expectFail = true))
+    }
+
+    /** Executes a tester extending [[chiseltest.iotesters.PeekPokeTester]]. */
+    def runPeekPoke(tester: T => PeekPokeTester[T]): Unit = {
+      new TestResult(PeekPokeTesterBackend.run(dutGen, tester, finalAnnos))
     }
   }
 

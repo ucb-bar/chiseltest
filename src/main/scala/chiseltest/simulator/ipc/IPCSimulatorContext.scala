@@ -28,7 +28,7 @@ private[chiseltest] class IPCSimulatorContext(
 
   // Construct maps for the input and output
   private val (inputsNameToChunkSizeMap, outputsNameToChunkSizeMap) = {
-    def genChunk(port: (String, Int)): (String, Int) = port._1 -> ((port._2 - 1) / 64 + 1)
+    def genChunk(port: PinInfo): (String, Int) = port.name -> ((port.width - 1) / 64 + 1)
     (
       ListMap(toplevel.inputs.map(genChunk):  _*),
       ListMap(toplevel.outputs.map(genChunk): _*)
@@ -41,6 +41,11 @@ private[chiseltest] class IPCSimulatorContext(
   private val mask64 = (BigInt(1) << 64) - 1
   private def int(x: Int):  BigInt = BigInt(x) & mask32
   private def int(x: Long): BigInt = BigInt(x) & mask64
+
+  private val allSignals = toplevel.inputs ++ toplevel.outputs
+  private val signalMask = allSignals.map(s => s.name -> ((BigInt(1) << s.width) - 1)).toMap
+  private val signalWidth = allSignals.map(s => s.name -> s.width).toMap
+  private val isSignalSigned = allSignals.filter(_.signed).map(_.name).toSet
 
   private var isStale = false
   private val _pokeMap = mutable.HashMap[String, BigInt]()
@@ -306,7 +311,8 @@ private[chiseltest] class IPCSimulatorContext(
     } else {
       val id = _signalMap.getOrElseUpdate(signal, getId(signal))
       if (id >= 0) {
-        poke(id, _chunks.getOrElseUpdate(signal, getChunk(id)), value)
+        val masked = signalMask(signal) & value
+        poke(id, _chunks.getOrElseUpdate(signal, getChunk(id)), masked)
         isStale = true
       } else {
         logger.info(s"Can't find $signal in the emulator...")
@@ -335,21 +341,37 @@ private[chiseltest] class IPCSimulatorContext(
         None
       }
     }
-    r.getOrElse(throw new RuntimeException(s"Could not find signal $signal"))
+    val unsigned = r.getOrElse(throw new RuntimeException(s"Could not find signal $signal"))
+    if (isSignalSigned(signal)) { toSigned(unsigned, signalWidth(signal)) }
+    else { unsigned }
+  }
+
+  private def toSigned(v: BigInt, width: Int): BigInt = {
+    val isNegative = ((v >> (width - 1)) & 1) == 1
+    if (isNegative) {
+      val mask = (BigInt(1) << width) - 1
+      val twosComp = ((~v) + 1) & mask
+      -twosComp
+    } else { v }
   }
 
   private def defaultClock = toplevel.clocks.headOption
-  override def step(n: Int): Unit = {
+  override def step(n: Int): StepResult = {
     defaultClock match {
       case Some(value) =>
       case None        => throw NoClockException(toplevel.name)
     }
+    var delta: Int = 0
     try {
       update()
-      (0 until n).foreach(_ => takeStep())
+      (0 until n).foreach { _ =>
+        delta += 1
+        takeStep()
+      }
+      StepOk
     } catch {
       case TestApplicationException(exit, msg) =>
-      // TODO: throw exception
+        StepInterrupted(delta, exit != 0, List())
     }
   }
 

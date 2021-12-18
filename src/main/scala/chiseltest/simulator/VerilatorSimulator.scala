@@ -69,6 +69,10 @@ private object VerilatorSimulator extends Simulator {
     Caching.cacheSimulationBin(simName, state, createContextFromScratch, recreateCachedContext)
   }
 
+  private def getSimulatorArgs(state: CircuitState): Array[String] = {
+    state.annotations.view.collect { case PlusArgsAnnotation(args) => args }.flatten.toArray
+  }
+
   private def recreateCachedContext(state: CircuitState): SimulatorContext = {
     // we will create the simulation in the target directory
     val targetDir = Compiler.requireTargetDir(state.annotations)
@@ -83,8 +87,9 @@ private object VerilatorSimulator extends Simulator {
       VerilatorCoverage.loadCoverage(coverageAnnos, coverageFile)
     }
 
+    val args = getSimulatorArgs(state)
     val lib = JNAUtils.compileAndLoadJNAClass(libPath)
-    new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, Some(readCoverage))
+    new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, args, Some(readCoverage))
   }
 
   private def createContextFromScratch(state: CircuitState): SimulatorContext = {
@@ -92,15 +97,18 @@ private object VerilatorSimulator extends Simulator {
     val targetDir = Compiler.requireTargetDir(state.annotations)
     val toplevel = TopmoduleInfo(state.circuit)
 
+    // verbose output to stdout if we are in debug mode
+    val verbose = state.annotations.contains(SimulatorDebugAnnotation)
+
     // Create the header files that verilator needs + a custom harness
     val waveformExt = Simulator.getWavformFormat(state.annotations)
-    val cppHarness = generateHarness(targetDir, toplevel, waveformExt)
+    val cppHarness = generateHarness(targetDir, toplevel, waveformExt, verbose)
 
     // compile low firrtl to System Verilog for verilator to use
     val verilogState = Compiler.lowFirrtlToSystemVerilog(state, VerilatorCoverage.CoveragePasses)
 
     // turn SystemVerilog into C++ simulation
-    val verilatedDir = runVerilator(toplevel.name, targetDir, cppHarness, state.annotations)
+    val verilatedDir = runVerilator(toplevel.name, targetDir, cppHarness, state.annotations, verbose)
 
     // patch the coverage cpp provided with verilator only if Verilator is older than 4.202
     // Starting with Verilator 4.202, the whole patch coverage hack is no longer necessary
@@ -110,7 +118,7 @@ private object VerilatorSimulator extends Simulator {
       VerilatorPatchCoverageCpp(verilatedDir, majorVersion, minorVersion)
     }
 
-    val libPath = compileSimulation(topName = toplevel.name, verilatedDir)
+    val libPath = compileSimulation(topName = toplevel.name, verilatedDir, verbose)
 
     // the binary we created communicates using our standard IPC interface
     val coverageAnnos = VerilatorCoverage.collectCoverageAnnotations(verilogState.annotations)
@@ -123,8 +131,9 @@ private object VerilatorSimulator extends Simulator {
       VerilatorCoverage.loadCoverage(coverageAnnos, coverageFile)
     }
 
+    val args = getSimulatorArgs(state)
     val lib = JNAUtils.compileAndLoadJNAClass(libPath)
-    new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, Some(readCoverage))
+    new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, args, Some(readCoverage))
   }
 
   private def saveCoverageAnnos(targetDir: os.Path, annos: AnnotationSeq): Unit = {
@@ -135,10 +144,10 @@ private object VerilatorSimulator extends Simulator {
     JsonProtocol.deserialize((targetDir / "coverageAnnotations.json").toIO)
   }
 
-  private def compileSimulation(topName: String, verilatedDir: os.Path): os.Path = {
+  private def compileSimulation(topName: String, verilatedDir: os.Path, verbose: Boolean): os.Path = {
     val target = s"V$topName"
     val cmd = Seq("make", "-C", verilatedDir.toString(), "-j", "-f", s"V$topName.mk", target)
-    val ret = os.proc(cmd).call()
+    val ret = run(cmd, null, verbose)
     assert(
       ret.exitCode == 0,
       s"Compilation of verilator generated code failed for circuit $topName in work dir $verilatedDir"
@@ -153,29 +162,43 @@ private object VerilatorSimulator extends Simulator {
     topName:    String,
     targetDir:  os.Path,
     cppHarness: String,
-    annos:      AnnotationSeq
+    annos:      AnnotationSeq,
+    verbose:    Boolean
   ): os.Path = {
     val verilatedDir = targetDir / "verilated"
 
-    removeOldCode(verilatedDir)
+    removeOldCode(verilatedDir, verbose)
     val flagAnnos = VerilatorLinkFlags(JNAUtils.ldFlags) +: VerilatorCFlags(JNAUtils.ccFlags) +: annos
     val flags = generateFlags(topName, verilatedDir, flagAnnos)
     val cmd = List("verilator", "--cc", "--exe", cppHarness) ++ flags ++ List(s"$topName.sv")
-    val ret = os.proc(cmd).call(cwd = targetDir)
+    val ret = run(cmd, targetDir, verbose)
 
     assert(ret.exitCode == 0, s"verilator command failed on circuit ${topName} in work dir $targetDir")
     verilatedDir
   }
 
-  private def removeOldCode(verilatedDir: os.Path): Unit = {
+  private def removeOldCode(verilatedDir: os.Path, verbose: Boolean): Unit = {
     if (os.exists(verilatedDir)) {
-      println(s"Deleting stale Verilator object directory: $verilatedDir")
+      if (verbose) println(s"Deleting stale Verilator object directory: $verilatedDir")
       os.remove.all(verilatedDir)
+    }
+  }
+
+  private def run(cmd: Seq[String], cwd: os.Path, verbose: Boolean): os.CommandResult = {
+    if (verbose) {
+      // print the command and pipe the output to stdout
+      println(cmd.mkString(" "))
+      os.proc(cmd)
+        .call(cwd = cwd, stdout = os.ProcessOutput.Readlines(println), stderr = os.ProcessOutput.Readlines(println))
+    } else {
+      os.proc(cmd).call(cwd = cwd)
     }
   }
 
   private def DefaultCFlags(topName: String) = List(
     "-O1",
+    "-DVL_USER_STOP",
+    "-DVL_USER_FATAL",
     "-DVL_USER_FINISH", // this is required because we ant to overwrite the vl_finish function!
     s"-DTOP_TYPE=V$topName",
     s"-include V$topName.h"
@@ -219,22 +242,17 @@ private object VerilatorSimulator extends Simulator {
       case other => throw new RuntimeException(s"Unsupported waveform format: $other")
     }
     val flags =
-      DefaultFlags(topName, verilatedDir, cFlags, ldFlags) ++ waveformFlags ++ fFileFlags(targetDir) ++ userFlags
+      DefaultFlags(topName, verilatedDir, cFlags, ldFlags) ++ waveformFlags ++ BlackBox.fFileFlags(
+        targetDir
+      ) ++ userFlags
     flags
-  }
-
-  // add the `.f` file containing the names of all blackbox verilog files, if it exists
-  private def fFileFlags(targetDir: os.Path): Seq[String] = {
-    val fFile = targetDir / firrtl.transforms.BlackBoxSourceHelper.defaultFileListName
-    if (os.exists(fFile)) {
-      Seq("-f", fFile.toString())
-    } else { Seq() }
   }
 
   private def generateHarness(
     targetDir:   os.Path,
     toplevel:    TopmoduleInfo,
-    waveformExt: String
+    waveformExt: String,
+    verbose:     Boolean
   ): String = {
     val topName = toplevel.name
 
@@ -246,7 +264,8 @@ private object VerilatorSimulator extends Simulator {
       vcdFile,
       targetDir,
       majorVersion = majorVersion,
-      minorVersion = minorVersion
+      minorVersion = minorVersion,
+      verbose = verbose
     )
     os.write.over(targetDir / cppHarnessFileName, code)
 

@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        scala: [2.12.13, 2.13.5]
+        scala: [2.12.15, 2.13.7]
         jvm: [adopt@1.8, adopt@1.11]
     steps:
       - name: Checkout
@@ -70,10 +70,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Install Verilator
-        run: |
-          brew install verilator
-          verilator --version
+      - name: Install Tabby OSS Cad Suite (from YosysHQ)
+        uses: YosysHQ/setup-oss-cad-suite@v1
+        with:
+          osscadsuite-version: '2021-11-09'
+      - name: Print Verilator Version
+        run: verilator --version
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
@@ -133,6 +135,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-20.04, macos-latest]
+        backend: [z3, cvc4, btormc]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -150,12 +153,17 @@ jobs:
           brew install cvc4/cvc4/cvc4
           z3 --version
           cvc4 --version
+      - name: Install Tabby OSS Cad Suite (from YosysHQ)
+        if: matrix.backend == 'btormc'
+        uses: YosysHQ/setup-oss-cad-suite@v1
+        with:
+          osscadsuite-version: '2021-11-09'
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
           java-version: adopt@1.11
       - name: Test
-        run: sbt "testOnly -- -n Formal"
+        run: sbt "testOnly -- -n Formal -Dformal_engine=${{ matrix.backend }}"
 
   doc:
     name: Documentation and Formatting

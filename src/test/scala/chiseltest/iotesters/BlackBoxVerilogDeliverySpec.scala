@@ -4,9 +4,10 @@ package chiseltest.iotesters
 
 import chisel3._
 import chisel3.util.{HasBlackBoxInline, HasBlackBoxResource}
+import chiseltest._
 import chiseltest.simulator.{RequiresVcs, RequiresVerilator}
+import firrtl.options.TargetDirAnnotation
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
 class BBAddOne extends HasBlackBoxInline {
   val io = IO(new Bundle {
@@ -71,18 +72,16 @@ class UsesBBAddOneTester(c: UsesBBAddOne) extends PeekPokeTester(c) {
   step(1)
 }
 
-class BlackBoxVerilogDeliverySpec extends AnyFreeSpec with Matchers {
+class BlackBoxVerilogDeliverySpec extends AnyFreeSpec with ChiselScalatestTester {
   "blackbox verilog implementation should end up accessible to verilator" taggedAs RequiresVerilator in {
-    Driver.execute(Array("--backend-name", "verilator"), () => new UsesBBAddOne) { c =>
-      new UsesBBAddOneTester(c)
-    } should be (true)
+    test(new UsesBBAddOne).withAnnotations(Seq(VerilatorBackendAnnotation)).runPeekPoke(new UsesBBAddOneTester(_))
   }
 
   "blackbox verilog implementation should end up accessible to vcs" taggedAs RequiresVcs in {
     val targetDir = "test_run_dir/blackbox_vcs_test"
-    Driver.execute(Array("--backend-name", "vcs", "--target-dir", targetDir), () => new UsesBBAddOne) { c =>
-      new UsesBBAddOneTester(c)
-    } should be(true)
-    new java.io.File(targetDir, firrtl.transforms.BlackBoxSourceHelper.defaultFileListName).exists() should be (true)
+    val options = Seq(VcsBackendAnnotation, TargetDirAnnotation(targetDir))
+
+    test(new UsesBBAddOne).withAnnotations(options).runPeekPoke(new UsesBBAddOneTester(_))
+    assert(os.exists(os.pwd / os.RelPath(targetDir) / firrtl.transforms.BlackBoxSourceHelper.defaultFileListName))
   }
 }

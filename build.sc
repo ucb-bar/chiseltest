@@ -18,7 +18,10 @@ def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
   ivy"$org::$dep:$version"
 }
 
-class chiseltestCrossModule(val crossScalaVersion: String) extends CrossSbtModule with PublishModule with ScalafmtModule {
+class chiseltestCrossModule(val crossScalaVersion: String)
+    extends CrossSbtModule
+    with PublishModule
+    with ScalafmtModule {
   override def repositoriesTask = T.task {
     super.repositoriesTask() ++ Seq(
       MavenRepository("https://oss.sonatype.org/content/repositories/snapshots")
@@ -27,15 +30,19 @@ class chiseltestCrossModule(val crossScalaVersion: String) extends CrossSbtModul
 
   def chisel3Module: Option[PublishModule] = None
 
-  def chisel3IvyDeps = if (chisel3Module.isEmpty) Agg(
-    getVersion("chisel3")
-  ) else Agg.empty[Dep]
+  def chisel3IvyDeps = if (chisel3Module.isEmpty)
+    Agg(
+      getVersion("chisel3")
+    )
+  else Agg.empty[Dep]
 
   def treadleModule: Option[PublishModule] = None
 
-  def treadleIvyDeps = if (treadleModule.isEmpty) Agg(
-    getVersion("treadle")
-  ) else Agg.empty[Dep]
+  def treadleIvyDeps = if (treadleModule.isEmpty)
+    Agg(
+      getVersion("treadle")
+    )
+  else Agg.empty[Dep]
 
   override def millSourcePath = super.millSourcePath / os.up
 
@@ -62,7 +69,7 @@ class chiseltestCrossModule(val crossScalaVersion: String) extends CrossSbtModul
     Agg(
       ivy"org.scalatest::scalatest:3.1.4",
       ivy"com.lihaoyi::utest:0.7.9",
-      ivy"net.java.dev.jna:jna:5.9.0",
+      ivy"net.java.dev.jna:jna:5.10.0"
     ) ++ chisel3IvyDeps ++ treadleIvyDeps
   }
 
@@ -70,7 +77,7 @@ class chiseltestCrossModule(val crossScalaVersion: String) extends CrossSbtModul
     override def ivyDeps = T {
       Agg(
         ivy"org.scalatest::scalatest:3.0.8",
-        ivy"com.lihaoyi::utest:0.7.9",
+        ivy"com.lihaoyi::utest:0.7.9"
       ) ++ chisel3IvyDeps ++ treadleIvyDeps
     }
 

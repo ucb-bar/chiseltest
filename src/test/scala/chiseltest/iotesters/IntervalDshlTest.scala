@@ -5,8 +5,8 @@ package chiseltest.iotesters
 import chisel3._
 import chisel3.experimental.Interval
 import chisel3.internal.firrtl.IntervalRange
+import chiseltest._
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
 class IntervalShifter(val bitWidth: Int, val binaryPoint: Int, val fixedShiftSize: Int) extends Module {
   val dynamicShifterWidth = 3
@@ -35,22 +35,11 @@ class IntervalShifter(val bitWidth: Int, val binaryPoint: Int, val fixedShiftSiz
   io.dynamicShiftRightResult := io.inValue >> io.dynamicShiftValue
 }
 
-class IntervalShiftLeftSpec extends AnyFreeSpec with Matchers {
+class IntervalShiftLeftSpec extends AnyFreeSpec with ChiselScalatestTester {
   "Shift left of interval used to create Dshlw problem in CheckTypes" in {
-    val backendName = "treadle"
     val binaryPoint = 0
     val fixedShiftSize = 1
-    Driver.execute(
-      Array(
-        "--backend-name", backendName,
-        "--target-dir", s"test_run_dir/interval-shift-test-$fixedShiftSize-$binaryPoint.BP"
-      ),
-      () => new IntervalShifter(bitWidth = 8, binaryPoint = binaryPoint, fixedShiftSize = fixedShiftSize)
-
-    ) { c =>
-      new PeekPokeTester(c) {
-
-      }
-    } should be(true)
+    test(new IntervalShifter(bitWidth = 8, binaryPoint = binaryPoint, fixedShiftSize = fixedShiftSize))
+      .runPeekPoke(new PeekPokeTester(_) { /* empty */ })
   }
 }

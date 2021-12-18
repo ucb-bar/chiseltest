@@ -11,8 +11,6 @@ import chisel3.util._
 /** Basic interfaces and implicit conversions for testers2
   */
 package object chiseltest {
-  import chisel3.internal.firrtl.{LitArg, SLit, ULit}
-
   implicit class testableRecord[T <: Record](x: T) {
 
     /** Poke the given signal with a [[Record.litValue()]]
@@ -29,7 +27,7 @@ package object chiseltest {
         DataMirror.directionOf(v) != ActualDirection.Output && {
           value.elements(k) match {
             case _:    Record => true
-            case data: Data   => data.isLit()
+            case data: Data   => data.isLit
           }
         }
       }.foreach { case (k, v) =>
@@ -48,7 +46,7 @@ package object chiseltest {
       x.elements.filter { case (k, v) =>
         value.elements(k) match {
           case _: Record => true
-          case d: Data   => d.isLit()
+          case d: Data   => d.isLit
         }
       }.foreach { case (k, v) =>
         v match {
@@ -75,7 +73,7 @@ package object chiseltest {
         DataMirror.directionOf(v) != ActualDirection.Output && {
           value.getElements(index) match {
             case _:    T    => true
-            case data: Data => data.isLit()
+            case data: Data => data.isLit
           }
         }
       }.foreach { case (v, index) =>
@@ -94,7 +92,7 @@ package object chiseltest {
       x.getElements.zipWithIndex.filter { case (v, index) =>
         value.getElements(index) match {
           case _: T    => true
-          case d: Data => d.isLit()
+          case d: Data => d.isLit
         }
       }.foreach { case (v, index) =>
         v match {

@@ -2,7 +2,7 @@
 
 package chiseltest.simulator.jna
 
-import chiseltest.simulator.TopmoduleInfo
+import chiseltest.simulator.{PinInfo, TopmoduleInfo}
 
 /** Generates the Module specific verilator harness cpp file for verilator compilation.
   *  This version generates a harness that can be called into through the JNI.
@@ -13,11 +13,12 @@ private[chiseltest] object VerilatorCppJNAHarnessGenerator {
     vcdFilePath:  os.Path,
     targetDir:    os.Path,
     majorVersion: Int,
-    minorVersion: Int
+    minorVersion: Int,
+    verbose:      Boolean
   ): String = {
     val pokeable = toplevel.inputs.zipWithIndex
     val peekable = (toplevel.inputs ++ toplevel.outputs).zipWithIndex
-    def fitsIn64Bits(s: ((String, Int), Int)): Boolean = s._1._2 <= 64
+    def fitsIn64Bits(s: (PinInfo, Int)): Boolean = s._1.width <= 64
 
     val codeBuffer = new StringBuilder
     // generate Verilator specific "sim_state" class
@@ -35,7 +36,16 @@ struct sim_state {
     // std::cout << "Allocating! " << ((long long) dut) << std::endl;
   }
 
-  inline void step() { _step(tfp, dut, main_time); }
+  inline int64_t step(int32_t cycles) {
+    for(int32_t i = 0; i < cycles; i++) {
+      const int64_t status = _step(tfp, dut, main_time);
+      if(status > 0) {
+        // early exit on failure
+        return (status << 32) | ((int64_t)(i + 1));
+      }
+    }
+    return (int64_t)cycles;
+  }
   inline void update() { dut->eval(); }
   inline void finish() {
     dut->eval();
@@ -50,7 +60,7 @@ struct sim_state {
     // std::cout << "poking: " << std::hex << u << std::endl;
     switch(id) {
 """)
-    pokeable.filter(fitsIn64Bits).foreach { case ((name, _), id) =>
+    pokeable.filter(fitsIn64Bits).foreach { case (PinInfo(name, _, _), id) =>
       codeBuffer.append(s"      case $id : dut->$name = u; break;\n")
     }
     codeBuffer.append(s"""
@@ -64,7 +74,7 @@ struct sim_state {
     uint64_t value = 0;
     switch(id) {
 """)
-    peekable.filter(fitsIn64Bits).foreach { case ((name, _), id) =>
+    peekable.filter(fitsIn64Bits).foreach { case (PinInfo(name, _, _), id) =>
       codeBuffer.append(s"      case $id : value = dut->$name; break;\n")
     }
     codeBuffer.append(s"""
@@ -82,7 +92,7 @@ struct sim_state {
     size_t words = 0;
     switch(id) {
 """)
-    pokeable.filterNot(fitsIn64Bits).foreach { case ((name, width), id) =>
+    pokeable.filterNot(fitsIn64Bits).foreach { case (PinInfo(name, width, _), id) =>
       val numWords = (width - 1) / 32 + 1
       codeBuffer.append(s"      case $id : data = dut->$name; words = $numWords; break;\n")
     }
@@ -109,7 +119,7 @@ struct sim_state {
     size_t words = 0;
     switch(id) {
 """)
-    peekable.filterNot(fitsIn64Bits).foreach { case ((name, width), id) =>
+    peekable.filterNot(fitsIn64Bits).foreach { case (PinInfo(name, width, _), id) =>
       val numWords = (width - 1) / 32 + 1
       codeBuffer.append(s"      case $id : data = dut->$name; words = $numWords; break;\n")
     }
@@ -131,6 +141,10 @@ struct sim_state {
       return (((uint64_t)data[secondWord]) << 32) | ((uint64_t)data[firstWord]);
     }
   }
+
+  inline void set_args(int32_t argc, const char** argv) {
+    Verilated::commandArgs(argc, argv);
+  }
 };
 
 static sim_state* create_sim_state() {
@@ -142,14 +156,15 @@ static sim_state* create_sim_state() {
 """)
 
     val jnaCode = JNAUtils.genJNACppCode(codeBuffer.toString())
-    commonCodeGen(toplevel, targetDir, majorVersion, minorVersion) + jnaCode
+    commonCodeGen(toplevel, targetDir, majorVersion, minorVersion, verbose) + jnaCode
   }
 
   private def commonCodeGen(
     toplevel:     TopmoduleInfo,
     targetDir:    os.Path,
     majorVersion: Int,
-    minorVersion: Int
+    minorVersion: Int,
+    verbose:      Boolean
   ): String = {
     val dutName = toplevel.name
     val dutVerilatorClassName = "V" + dutName
@@ -168,7 +183,7 @@ static sim_state* create_sim_state() {
       else ""
 
     val verilatorRunFlushCallback = if (majorVersion >= 4 && minorVersion >= 38) {
-      "Verilated::runFlushCallbacks();\n  Verilated::runExitCallbacks();"
+      "Verilated::runFlushCallbacks();" // Verilated::runExitCallbacks();
     } else {
       "Verilated::flushCall();"
     }
@@ -182,6 +197,8 @@ static sim_state* create_sim_state() {
                          |#ifndef VM_TRACE_FST
                          |#define VM_TRACE_FST 0
                          |#endif
+                         |
+                         |static const bool verbose = $verbose;
                          |
                          |#if VM_TRACE
                          |#if VM_TRACE_FST
@@ -199,10 +216,29 @@ static sim_state* create_sim_state() {
                          |
                          |// Override Verilator definition so first $$finish ends simulation
                          |// Note: VL_USER_FINISH needs to be defined when compiling Verilator code
+                         |static bool encounteredFinish = false;
                          |void vl_finish(const char* filename, int linenum, const char* hier) {
+                         |  // std::cout << "finish! (" << filename << ", " << linenum << ", " << hier << ")" << std::endl;
                          |  $verilatorRunFlushCallback
-                         |  exit(0);
+                         |  encounteredFinish = true;
                          |}
+                         |
+                         |
+                         |static bool encounteredFatal = false;
+                         |void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg) {
+                         |  std::cerr << "fatal! (" << filename << ", " << linenum << ", " << hier << ", " << msg << ")" << std::endl;
+                         |  $verilatorRunFlushCallback
+                         |  encounteredFatal = true;
+                         |}
+                         |
+                         |
+                         |static bool encounteredStop = false;
+                         |void vl_stop(const char* filename, int linenum, const char* hier) {
+                         |  // std::cout << "stop! (" << filename << ", " << linenum << ", " << hier << ")" << std::endl;
+                         |  $verilatorRunFlushCallback
+                         |  encounteredStop = true;
+                         |}
+                         |
                          |
                          |// required for asserts (until Verilator 4.200)
                          |double sc_time_stamp () { return 0; }
@@ -213,14 +249,14 @@ static sim_state* create_sim_state() {
                          |    Verilated::traceEverOn(true);
                          |#endif
                          |#if VM_TRACE
-                         |    VL_PRINTF(\"Enabling waves..\\n\");
+                         |    if (verbose) VL_PRINTF(\"Enabling waves..\\n\");
                          |    *tfp = new VERILATED_C;
                          |    top->trace(*tfp, 99);
                          |    (*tfp)->open(dumpfile.c_str());
                          |#endif
                          |}
                          |
-                         |static void _step(VERILATED_C* tfp, TOP_CLASS* top, vluint64_t& main_time) {
+                         |static int64_t _step(VERILATED_C* tfp, TOP_CLASS* top, vluint64_t& main_time) {
                          |    $clockLow
                          |    top->eval();
                          |#if VM_TRACE
@@ -233,6 +269,20 @@ static sim_state* create_sim_state() {
                          |    if (tfp) tfp->dump(main_time);
                          |#endif
                          |    main_time++;
+                         |    if(encounteredStop) {
+                         |      // vl_stop is called by verilator when an assertion fails or when the fatal command is executed
+                         |      encounteredStop = false;
+                         |      encounteredFinish = false;
+                         |      return 2;
+                         |    } else if(encounteredFinish) {
+                         |      // vl_finish is called by verilator when a finish command is executed (stop(0))
+                         |      encounteredFinish = false;
+                         |      return 1;
+                         |    } else if(encounteredFatal) {
+                         |      encounteredFatal = false;
+                         |      return 3;
+                         |    }
+                         |    return 0;
                          |}
                          |
                          |static void _finish(VERILATED_C* tfp, TOP_CLASS* top) {
@@ -243,6 +293,7 @@ static sim_state* create_sim_state() {
                          |#if VM_COVERAGE
                          |  VerilatedCov::write("$targetDir/coverage.dat");
                          |#endif
+                         |  top->final();
                          |  // TODO: re-enable!
                          |  // delete top;
                          |}

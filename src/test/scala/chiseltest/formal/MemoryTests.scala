@@ -6,72 +6,72 @@ import chisel3.SyncReadMem.ReadUnderWrite
 import org.scalatest.flatspec.AnyFlatSpec
 import chiseltest._
 import chisel3._
-import chisel3.experimental.{ChiselAnnotation, annotate, verification}
+import chisel3.experimental.{ChiselAnnotation, annotate}
 import firrtl.annotations.{Annotation, MemoryArrayInitAnnotation, MemoryScalarInitAnnotation, ReferenceTarget}
 import firrtl.ir.ReadUnderWrite
 
 // most of the tests are inspired by the MemorySpec in firrtl.backends.experimental.smt.end2end
-class MemoryTests extends AnyFlatSpec with ChiselScalatestTester with Formal {
+class MemoryTests extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption {
   "Registered read-first memory" should "return written data after two cycles" taggedAs FormalTag in {
-    verify(new ReadFirstMemoryReturnsDataAfterTwoCycles, Seq(BoundedCheck(2)))
+    verify(new ReadFirstMemoryReturnsDataAfterTwoCycles, Seq(BoundedCheck(2), DefaultBackend))
   }
   "Registered read-first memory" should "not return written data after one cycle" taggedAs FormalTag in {
     val e = intercept[FailedBoundedCheckException] {
-      verify(new ReadFirstMemoryReturnsDataAfterOneCycle, Seq(BoundedCheck(2)))
+      verify(new ReadFirstMemoryReturnsDataAfterOneCycle, Seq(BoundedCheck(2), DefaultBackend))
     }
     assert(e.failAt == 1)
   }
   "Registered write-first memory" should "return written data after one cycle" taggedAs FormalTag in {
-    verify(new ReadFirstMemoryReturnsDataAfterTwoCycles, Seq(BoundedCheck(2)))
+    verify(new ReadFirstMemoryReturnsDataAfterTwoCycles, Seq(BoundedCheck(2), DefaultBackend))
   }
   "read-only memory" should "always return 0" taggedAs FormalTag in {
-    verify(new ReadOnlyMemoryAlwaysReturnZero, Seq(BoundedCheck(1)))
+    verify(new ReadOnlyMemoryAlwaysReturnZero, Seq(BoundedCheck(1), DefaultBackend))
   }
   "read-only memory" should "not always return 1" taggedAs FormalTag in {
     val e = intercept[FailedBoundedCheckException] {
-      verify(new ReadOnlyMemoryAlwaysReturnOneFail, Seq(BoundedCheck(1)))
+      verify(new ReadOnlyMemoryAlwaysReturnOneFail, Seq(BoundedCheck(1), DefaultBackend))
     }
     assert(e.failAt == 0)
   }
   "read-only memory" should "always return 1 or 2" taggedAs FormalTag in {
-    verify(new ReadOnlyMemoryAlwaysReturnOneOrTwo, Seq(BoundedCheck(1)))
+    verify(new ReadOnlyMemoryAlwaysReturnOneOrTwo, Seq(BoundedCheck(1), DefaultBackend))
   }
   "read-only memory" should "not always return 1 or 2 when initialized with a 3" taggedAs FormalTag in {
     val e = intercept[FailedBoundedCheckException] {
-      verify(new ReadOnlyMemoryAlwaysReturnOneOrTwoFail, Seq(BoundedCheck(1)))
+      verify(new ReadOnlyMemoryAlwaysReturnOneOrTwoFail, Seq(BoundedCheck(1), DefaultBackend))
     }
     assert(e.failAt == 0)
   }
   "memory with two write ports" should "not have collisions when enables are mutually exclusive" taggedAs FormalTag in {
-    verify(new MutuallyExclusiveWritesShouldNotCollide, Seq(BoundedCheck(4)))
+    verify(new MutuallyExclusiveWritesShouldNotCollide, Seq(BoundedCheck(4), DefaultBackend))
   }
   "memory with two write ports" should "can have collisions when enables are unconstrained" taggedAs FormalTag in {
     val e = intercept[FailedBoundedCheckException] {
-      verify(new MemoryCollisionModule, Seq(BoundedCheck(2)))
+      verify(new MemoryCollisionModule, Seq(BoundedCheck(2), DefaultBackend))
     }
     assert(e.failAt == 1)
   }
   "a memory with read enable" should "supply valid data one cycle after en=1" taggedAs FormalTag in {
-    verify(new ReadEnableMemValidDataAfterEnTrue, Seq(BoundedCheck(4)))
+    verify(new ReadEnableMemValidDataAfterEnTrue, Seq(BoundedCheck(4), DefaultBackend))
   }
   "a memory with read enable" should "supply invalid data one cycle after en=0" taggedAs FormalTag in {
     val e = intercept[FailedBoundedCheckException] {
-      verify(new ReadEnableMemInvalidDataAfterEnFalse, Seq(BoundedCheck(2)))
+      verify(new ReadEnableMemInvalidDataAfterEnFalse, Seq(BoundedCheck(2), DefaultBackend))
     }
     assert(e.failAt == 1)
   }
   "a memory with read enable" should "just ignore the read enable when not modelling undef values" taggedAs FormalTag in {
     // WARN: it is not recommended to turn of undef modelling and it is not guaranteed that this test won't break
-    verify(new ReadEnableMemInvalidDataAfterEnFalse, Seq(BoundedCheck(3), DoNotModelUndef))
+    verify(new ReadEnableMemInvalidDataAfterEnFalse, Seq(BoundedCheck(3), DoNotModelUndef, DefaultBackend))
   }
   "memory with two write ports" should "always have one write win in a collision when not modelling undef values" taggedAs FormalTag in {
     // WARN: it is not recommended to turn of undef modelling and it is not guaranteed that this test won't break
-    verify(new MemoryCollisionModule, Seq(BoundedCheck(3), DoNotModelUndef))
+    verify(new MemoryCollisionModule, Seq(BoundedCheck(3), DoNotModelUndef, DefaultBackend))
   }
   "read-only memory" should "not always return 1 even when not modelling undef values" taggedAs FormalTag in {
     // this test does not rely on any undefined values and thus it should always fail
     val e = intercept[FailedBoundedCheckException] {
-      verify(new ReadOnlyMemoryAlwaysReturnOneFail, Seq(BoundedCheck(1), DoNotModelUndef))
+      verify(new ReadOnlyMemoryAlwaysReturnOneFail, Seq(BoundedCheck(1), DoNotModelUndef, DefaultBackend))
     }
     assert(e.failAt == 0)
   }
@@ -91,18 +91,18 @@ class SyncMemTestModule(readUnderWrite: ReadUnderWrite) extends Module {
 
 class ReadFirstMemoryReturnsDataAfterTwoCycles extends SyncMemTestModule(ReadUnderWrite.Old) {
   // we assume the we read from the address that we last wrote to
-  verification.assume(readAddr === past(writeAddr))
-  verification.assert(out === past(in, 2))
+  assume(readAddr === past(writeAddr))
+  assert(out === past(in, 2))
 }
 
 class ReadFirstMemoryReturnsDataAfterOneCycle extends SyncMemTestModule(ReadUnderWrite.Old) {
-  verification.assume(readAddr === writeAddr)
-  verification.assert(out === past(in))
+  assume(readAddr === writeAddr)
+  assert(out === past(in))
 }
 
 class WriteFirstMemoryReturnsDataAfterOneCycle extends SyncMemTestModule(ReadUnderWrite.New) {
-  verification.assume(readAddr === writeAddr)
-  verification.assert(out === past(in))
+  assume(readAddr === writeAddr)
+  assert(out === past(in))
 }
 
 class ReadOnlyMemModule extends Module {
@@ -119,23 +119,23 @@ class ReadOnlyMemModule extends Module {
 
 class ReadOnlyMemoryAlwaysReturnZero extends ReadOnlyMemModule {
   annoMem(MemoryScalarInitAnnotation(_, 0))
-  verification.assert(out === 0.U)
+  assert(out === 0.U)
 }
 
 class ReadOnlyMemoryAlwaysReturnOneFail extends ReadOnlyMemModule {
   annoMem(MemoryScalarInitAnnotation(_, 0))
-  verification.assert(out === 1.U)
+  assert(out === 1.U)
 }
 
 class ReadOnlyMemoryAlwaysReturnOneOrTwo extends ReadOnlyMemModule {
   annoMem(MemoryArrayInitAnnotation(_, Seq(1, 2, 2, 1)))
-  verification.assert(out === 1.U || out === 2.U)
+  assert(out === 1.U || out === 2.U)
 }
 
 class ReadOnlyMemoryAlwaysReturnOneOrTwoFail extends ReadOnlyMemModule {
   // we add a three to the initialization to make the assertion fail
   annoMem(MemoryArrayInitAnnotation(_, Seq(1, 2, 2, 3)))
-  verification.assert(out === 1.U || out === 2.U)
+  assert(out === 1.U || out === 2.U)
 }
 
 class MemoryCollisionModule extends Module {
@@ -152,12 +152,12 @@ class MemoryCollisionModule extends Module {
   // the read port is used to verify the written value
   // we use it to check that we always read the last written value
   when(past(aEn || bEn)) {
-    verification.assert(m.read(past(addr)) === past(data))
+    assert(m.read(past(addr)) === past(data))
   }
 }
 
 class MutuallyExclusiveWritesShouldNotCollide extends MemoryCollisionModule {
-  verification.assume(!(aEn && bEn)) // only one port writes at a time
+  assume(!(aEn && bEn)) // only one port writes at a time
 }
 
 class ReadEnableSyncMemModule extends Module {
@@ -175,12 +175,12 @@ class ReadEnableSyncMemModule extends Module {
 
 class ReadEnableMemValidDataAfterEnTrue extends ReadEnableSyncMemModule {
   when(past(en)) {
-    verification.assert(data === 0.U)
+    assert(data === 0.U)
   }
 }
 
 class ReadEnableMemInvalidDataAfterEnFalse extends ReadEnableSyncMemModule {
   when(past(!en)) {
-    verification.assert(data === 0.U)
+    assert(data === 0.U)
   }
 }
