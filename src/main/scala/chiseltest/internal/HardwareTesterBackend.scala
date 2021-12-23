@@ -4,7 +4,7 @@ import chisel3.Module
 import chisel3.testers.BasicTester
 import chiseltest.{defaults, ChiselAssertionError, StopException, TimeoutException}
 import chiseltest.coverage.{Coverage, TestCoverage}
-import chiseltest.simulator.{Compiler, DebugPrintWrapper, Simulator, SimulatorContext, StepInterrupted, StepOk}
+import chiseltest.simulator.{Compiler, DebugPrintWrapper, DutSpecifiesTimeout, Simulator, SimulatorContext, StepInterrupted, StepOk}
 import firrtl.AnnotationSeq
 
 /** Backend that allows us to run hardware testers in the style of `chisel3.testers.BasicTester` efficiently.
@@ -22,7 +22,9 @@ object HardwareTesterBackend {
     tester.step(1)
     tester.poke("reset", 0)
 
-    if (timeout > 0) {
+    if (tester.dutSpecifiedTimeoutOpt.nonEmpty) {
+      runWithTimeout(tester, tester.dutSpecifiedTimeoutOpt.get, expectFail)
+    } else if (timeout > 0) {
       runWithTimeout(tester, timeout, expectFail)
     } else {
       runWithoutTimeout(tester, expectFail)
@@ -112,6 +114,13 @@ private object TesterUtils {
     val t = if (annos.contains(PrintPeekPoke)) {
       new DebugPrintWrapper(tester)
     } else { tester }
+
+    // note the timeout specified by the dut, if any
+    dut match {
+      case dutWithTimeout: DutSpecifiesTimeout =>
+        t.dutSpecifiedTimeoutOpt = Some(dutWithTimeout.timeout)
+      case _ =>
+    }
 
     (t, coverageAnnotations, dut)
   }

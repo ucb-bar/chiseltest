@@ -4,6 +4,14 @@ package chiseltest.simulator
 
 import firrtl._
 import firrtl.annotations.NoTargetAnnotation
+import chisel3.Module
+
+// Include this trait to allow the DUT to specify the testing timeout
+trait DutSpecifiesTimeout {
+  self: Module =>
+
+  def timeout: Int
+}
 
 /** context for a running firrtl circuit simulation */
 trait SimulatorContext {
@@ -54,6 +62,10 @@ trait SimulatorContext {
     */
   def resetCoverage(): Unit =
     throw new NotImplementedError(s"${sim.name} does not support coverage!")
+
+  /** If not None then this timeout overrides the timeout provided to the test harness
+    */
+  var dutSpecifiedTimeoutOpt: Option[Int] = None
 }
 
 sealed trait StepResult
