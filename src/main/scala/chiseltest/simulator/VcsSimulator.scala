@@ -136,12 +136,12 @@ private object VcsSimulator extends Simulator {
     val verdiFlags = annos.collectFirst{ case WriteFsdbAnnotation =>
       // Check whether VERDI_HOME is defined in system environment
       sys.env.get("VERDI_HOME") match {
-        case Some(verdi_home) =>
+        case Some(verdiHome) =>
           Seq(
             "-kdb",
             "-P",
-            s"$verdi_home/share/PLI/VCS/LINUX64/novas.tab",
-            s"$verdi_home/share/PLI/VCS/LINUX64/pli.a"
+            s"$verdiHome/share/PLI/VCS/LINUX64/novas.tab",
+            s"$verdiHome/share/PLI/VCS/LINUX64/pli.a"
           )
         case None => require(requirement = false,
           s"FSDB waveform dump depends on VERDI_HOME, please set the system environment");Seq.empty
