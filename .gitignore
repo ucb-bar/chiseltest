@@ -16,3 +16,7 @@
 .bloop/
 .metals/
 .vscode/
+
+# Synopsys Verdi
+novas_dump.log
+ucli.key
