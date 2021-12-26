@@ -329,6 +329,7 @@ package object chiseltest {
   val IcarusBackendAnnotation = simulator.IcarusBackendAnnotation
   val WriteVcdAnnotation = simulator.WriteVcdAnnotation
   val WriteVpdAnnotation = simulator.WriteVpdAnnotation
+  val WriteFsdbAnnotation = simulator.WriteFsdbAnnotation
   val WriteLxtAnnotation = simulator.WriteLxtAnnotation
   type WriteLxtAnnotation = simulator.WriteLxtAnnotation
   val WriteFstAnnotation = simulator.WriteFstAnnotation

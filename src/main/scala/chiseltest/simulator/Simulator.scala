@@ -118,6 +118,10 @@ case object WriteVpdAnnotation extends WriteWaveformAnnotation {
   override def format: String = "vpd"
 }
 
+case object WriteFsdbAnnotation extends WriteWaveformAnnotation {
+  override def format: String = "fsdb"
+}
+
 case class PlusArgsAnnotation(plusArgs: Seq[String]) extends NoTargetAnnotation
 
 /** enables more verbose print outs from the simulator creation and execution

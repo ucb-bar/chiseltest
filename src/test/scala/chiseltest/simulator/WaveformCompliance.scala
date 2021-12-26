@@ -35,7 +35,7 @@ abstract class WaveformCompliance(sim: Simulator, tag: Tag = DefaultTag) extends
       |    io.out <= c.io.out
       |""".stripMargin
 
-  val waveformExtensions = Set("vcd", "txt", "fst", "vpd", "lxt", "lxt2")
+  val waveformExtensions = Set("vcd", "txt", "fst", "vpd", "lxt", "lxt2", "fsdb")
   it should "not create a waveform file when no WriteWaveformAnnotation is provided" taggedAs(tag) in {
     performDutTest(Seq())
     val dumps = testDirFiles().filter(f => waveformExtensions.contains(f.last.split('.').last))
@@ -91,6 +91,10 @@ abstract class WaveformCompliance(sim: Simulator, tag: Tag = DefaultTag) extends
       case "vpd" =>
         val txt = os.read(file).toString.take(3)
         assert(txt.startsWith("xV4"))
+      case "fsdb" =>
+        val txt = os.read(file)
+        assert(txt.contains("FSDB Writer"))
+        assert(txt.contains("finish"))
       case other => throw new NotImplementedError(s"TODO: add code to check $other")
     }
   }
