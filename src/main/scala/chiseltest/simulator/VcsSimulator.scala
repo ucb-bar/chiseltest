@@ -62,6 +62,7 @@ private object VcsSimulator extends Simulator {
   }
 
   private def majorVersion: Int = version._1
+
   private def minorVersion: Int = version._2
 
   override def waveformFormats = Seq(WriteVcdAnnotation, WriteVpdAnnotation, WriteFsdbAnnotation)
@@ -78,9 +79,13 @@ private object VcsSimulator extends Simulator {
     // Create the VPI files that vcs needs + a custom harness
     val waveformExt = Simulator.getWavformFormat(state.annotations)
     val moduleNames = GetModuleNames(state.circuit)
-    val verilogHarness = generateHarness(targetDir, toplevel, moduleNames,
+    val verilogHarness = generateHarness(
+      targetDir,
+      toplevel,
+      moduleNames,
       waveformExt == WriteVpdAnnotation.format,
-      waveformExt == WriteFsdbAnnotation.format)
+      waveformExt == WriteFsdbAnnotation.format
+    )
 
     // compile low firrtl to System Verilog for verilator to use
     Compiler.lowFirrtlToSystemVerilog(state, Seq())
@@ -98,10 +103,11 @@ private object VcsSimulator extends Simulator {
   private def waveformFlags(targetDir: os.Path, topName: String, annos: AnnotationSeq): Seq[String] = {
     val ext = Simulator.getWavformFormat(annos)
     val dumpfile = targetDir.relativeTo(os.pwd) / s"$topName.$ext"
-    if (ext.isEmpty) { Seq("-none") }
-    else if (ext == "vpd") {
+    if (ext.isEmpty) {
+      Seq("-none")
+    } else if (ext == "vpd") {
       Seq(s"+vcdplusfile=${dumpfile.toString()}")
-    } else if (ext == "fsdb"){
+    } else if (ext == "fsdb") {
       Seq(s"+fsdbfile=${dumpfile.toString()}")
     } else {
       Seq(s"+dumpfile=${dumpfile.toString()}")
@@ -133,7 +139,7 @@ private object VcsSimulator extends Simulator {
     val cFlags = DefaultCFlags(targetDir) ++ userCFlags
 
     // generate FSDB(Verdi) flags
-    val verdiFlags = annos.collectFirst{ case WriteFsdbAnnotation =>
+    val verdiFlags = annos.collectFirst { case WriteFsdbAnnotation =>
       // Check whether VERDI_HOME is defined in system environment
       sys.env.get("VERDI_HOME") match {
         case Some(verdiHome) =>
@@ -143,8 +149,9 @@ private object VcsSimulator extends Simulator {
             s"$verdiHome/share/PLI/VCS/LINUX64/novas.tab",
             s"$verdiHome/share/PLI/VCS/LINUX64/pli.a"
           )
-        case None => require(requirement = false,
-          s"FSDB waveform dump depends on VERDI_HOME, please set the system environment");Seq.empty
+        case None =>
+          require(requirement = false, s"FSDB waveform dump depends on VERDI_HOME, please set the system environment");
+          Seq.empty
       }
     }.getOrElse(Seq.empty)
 
@@ -161,7 +168,7 @@ private object VcsSimulator extends Simulator {
     "-std=c++11"
   )
 
-  private def DefaultFlags(topName: String, cFlags: Seq[String], verdiFlags : Seq[String]) = List(
+  private def DefaultFlags(topName: String, cFlags: Seq[String], verdiFlags: Seq[String]) = List(
     "-full64",
     "-quiet",
     "-sverilog",
@@ -184,8 +191,13 @@ private object VcsSimulator extends Simulator {
     "\"" + cFlags.mkString(" ") + "\""
   ) ++ verdiFlags
 
-  private def generateHarness(targetDir: os.Path, toplevel: TopmoduleInfo, moduleNames: Seq[String],
-                              useVpdDump : Boolean = false, useFsdbDump : Boolean = false): String = {
+  private def generateHarness(
+    targetDir:   os.Path,
+    toplevel:    TopmoduleInfo,
+    moduleNames: Seq[String],
+    useVpdDump:  Boolean = false,
+    useFsdbDump: Boolean = false
+  ): String = {
     val topName = toplevel.name
 
     // copy the VPI files + generate a custom verilog harness

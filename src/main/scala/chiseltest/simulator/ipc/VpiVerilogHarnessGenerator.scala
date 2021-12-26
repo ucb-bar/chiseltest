@@ -10,7 +10,7 @@ private[chiseltest] object VpiVerilogHarnessGenerator {
     toplevel:    TopmoduleInfo,
     moduleNames: Seq[String],
     useVpdDump:  Boolean = false,
-    useFsdbDump: Boolean = false,
+    useFsdbDump: Boolean = false
   ): String = {
     val testbenchName = firrtl.Namespace(moduleNames).newName("testbench")
 
@@ -60,7 +60,7 @@ private[chiseltest] object VpiVerilogHarnessGenerator {
     }
 
     /* Dump FSDB Waveform File*/
-    if(useFsdbDump){
+    if (useFsdbDump) {
       codeBuffer.append("    /*** Enable FSDB dump ***/\n")
       codeBuffer.append("    if ($value$plusargs(\"fsdbfile=%s\", " + dumpFileVar + ")) begin\n")
       codeBuffer.append(s"      $$fsdbDumpfile($dumpFileVar);\n")
