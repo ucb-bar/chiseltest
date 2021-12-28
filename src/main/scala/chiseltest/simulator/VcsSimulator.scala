@@ -104,7 +104,7 @@ private object VcsSimulator extends Simulator {
     val ext = Simulator.getWavformFormat(annos)
     val dumpfile = targetDir.relativeTo(os.pwd) / s"$topName.$ext"
     if (ext.isEmpty) {
-      Seq("-none")
+      Seq.empty
     } else if (ext == "vpd") {
       Seq(s"+vcdplusfile=${dumpfile.toString()}")
     } else if (ext == "fsdb") {
@@ -173,7 +173,8 @@ private object VcsSimulator extends Simulator {
     "-quiet",
     "-sverilog",
     "-timescale=1ns/1ps",
-    "-debug_pp",
+    "-debug_acc+pp+dmptf",
+    "-debug_region+cell+encrypt",
     s"-Mdir=$topName.csrc",
     "+v2k",
     "+vpi",
