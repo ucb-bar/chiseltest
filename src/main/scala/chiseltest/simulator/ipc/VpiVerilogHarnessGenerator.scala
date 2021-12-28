@@ -55,6 +55,8 @@ private[chiseltest] object VpiVerilogHarnessGenerator {
       codeBuffer.append("    /*** Enable VPD dump ***/\n")
       codeBuffer.append("    if ($value$plusargs(\"vcdplusfile=%s\", " + dumpFileVar + ")) begin\n")
       codeBuffer.append(s"      $$vcdplusfile($dumpFileVar);\n")
+      codeBuffer.append(s"      $$dumpfile($dumpFileVar);\n")
+      codeBuffer.append(s"      $$dumpvars(0, $dutName);\n")
       codeBuffer.append(s"      $$vcdpluson;\n")
       codeBuffer.append("    end\n")
     }
@@ -81,7 +83,8 @@ private[chiseltest] object VpiVerilogHarnessGenerator {
     codeBuffer.append(s"  always @(negedge $clockName)  begin\n")
     codeBuffer.append(s"    if ($dumpFileVar && !$dumpOnVar) begin\n")
     codeBuffer.append(s"      $dumpOnVar = 1;\n")
-    codeBuffer.append("      $dumpon;\n")
+    if(useFsdbDump) codeBuffer.append("      $fsdbDumpon;\n")
+    else codeBuffer.append("      $dumpon;\n")
     codeBuffer.append("    end\n")
     codeBuffer.append("    $tick();\n")
     codeBuffer.append("    $dumpflush;\n")
