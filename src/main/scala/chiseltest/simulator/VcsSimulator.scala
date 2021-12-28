@@ -169,22 +169,24 @@ private object VcsSimulator extends Simulator {
   )
 
   private def DefaultFlags(topName: String, cFlags: Seq[String], verdiFlags: Seq[String]) = List(
-    "-full64",                    /* Default using 64-bit VCS*/
-    "-quiet",                     /* Quite mode*/
-    "-sverilog",                  /* Harness is written in SystemVerilog*/
-    "-timescale=1ns/1ps",         /* Clock Period*/
-    "-debug_acc+pp+dmptf",        /* pp: registers and variables, callbacks, driver, and assertion debug capability*/
-                                  /* dmptf: debug ports and internal nodes/memories of tasks/functions*/
-    "-debug_region+cell+encrypt", /* cell: debug both real cell modules and the ports of real cell modules*/
-                                  /* encrypt: debug fully-encrypted instances*/
+    "-full64", /* Default using 64-bit VCS*/
+    "-quiet", /* Quite mode*/
+    "-sverilog", /* Harness is written in SystemVerilog*/
+    "-timescale=1ns/1ps", /* Clock Period*/
+    /* pp: registers and variables, callbacks, driver, and assertion debug capability*/
+    /* dmptf: debug ports and internal nodes/memories of tasks/functions*/
+    "-debug_acc+pp+dmptf",
+    /* cell: debug both real cell modules and the ports of real cell modules*/
+    /* encrypt: debug fully-encrypted instances*/
+    "-debug_region+cell+encrypt",
     s"-Mdir=$topName.csrc",
-    "+v2k",                       /* verilog 2000 standard*/
+    "+v2k", /* verilog 2000 standard*/
     "+vpi",
-    "+vcs+lic+wait",              /* wait for VCS license if there isn't one*/
-    "+vcs+initreg+random",        /* Randomize the register*/
-    "+define+CLOCK_PERIOD=1",     /* Define the clock period*/
-    "-P",                         /* Pass vpi.tab*/
-    "vpi.tab",                    /* like above*/
+    "+vcs+lic+wait", /* wait for VCS license if there isn't one*/
+    "+vcs+initreg+random", /* Randomize the register*/
+    "+define+CLOCK_PERIOD=1", /* Define the clock period*/
+    "-P", /* Pass vpi.tab*/
+    "vpi.tab", /* like above*/
     "-cpp",
     "g++",
     "-O2",
