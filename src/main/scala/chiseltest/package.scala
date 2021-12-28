@@ -214,7 +214,7 @@ package object chiseltest {
         }
     }
 
-    protected def peekWithStaleInt(stale: Boolean): BigInt = x match {
+    protected def peekWithStaleBigInt(stale: Boolean): BigInt = x match {
       case (x: UInt) => Context().backend.peekBits(x, stale)
       case (x: SInt) => Context().backend.peekBits(x, stale)
     }
@@ -229,13 +229,13 @@ package object chiseltest {
     protected def peekWithStaleVecInt(stale: Boolean): Seq[BigInt] = x match {
       case (x: Vec[UInt]) => {
         val elementValueFns = x.getElements.map { case elt: Data =>
-          elt.peekWithStaleInt(stale)
+          elt.peekWithStaleBigInt(stale)
         }
         Seq(elementValueFns: _*)
       }
       case (x: Vec[SInt]) => {
         val elementValueFns = x.getElements.map { case elt: Data =>
-          elt.peekWithStaleInt(stale)
+          elt.peekWithStaleBigInt(stale)
         }
         Seq(elementValueFns: _*)
       }
@@ -250,12 +250,13 @@ package object chiseltest {
       }
     }
 
-    def peek():           T = peekWithStale(false)
-    def peekBool():       Boolean = peekWithStaleBool(false)
-    def peekInt():        BigInt = peekWithStaleInt(false)
-    def peekDecimal():    BigDecimal = peekWithStaleDec(false)
-    def peekVectorInt():  Seq[BigInt] = peekWithStaleVecInt(false)
-    def peekVectorBool(): Seq[Boolean] = peekWithStaleVecBool(false)
+    def peek():          T = peekWithStale(false)
+    def peekBool():      Boolean = peekWithStaleBool(false)
+    def peekBigInt():    BigInt = peekWithStaleBigInt(false)
+    def peekInt():       Integer = peekWithStaleBigInt(false).toInt
+    def peekDecimal():   BigDecimal = peekWithStaleDec(false)
+    def peekVecBigInt(): Seq[BigInt] = peekWithStaleVecInt(false)
+    def peekVecBool():   Seq[Boolean] = peekWithStaleVecBool(false)
 
     protected def expectWithStale(value: T, message: Option[String], stale: Boolean): Unit = (x, value) match {
       case (x: Bool, value: Bool) =>
