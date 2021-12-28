@@ -250,13 +250,12 @@ package object chiseltest {
       }
     }
 
-    def peek():           T = peekWithStale(false)
-    def peekBoolean():    Boolean = peekWithStaleBool(false)
-    def peekBigInt():     BigInt = peekWithStaleBigInt(false)
-    def peekInteger():    Integer = peekWithStaleBigInt(false).toInt
-    def peekBigDecimal(): BigDecimal = peekWithStaleDec(false)
-    def peekVecBigInt():  Seq[BigInt] = peekWithStaleVecInt(false)
-    def peekVecBoolean(): Seq[Boolean] = peekWithStaleVecBool(false)
+    def peek():        T = peekWithStale(false)
+    def peekBool():    Boolean = peekWithStaleBool(false)
+    def peekInt():     BigInt = peekWithStaleBigInt(false)
+    def peekDec():     BigDecimal = peekWithStaleDec(false)
+    def peekVecInt():  Seq[BigInt] = peekWithStaleVecInt(false)
+    def peekVecBool(): Seq[Boolean] = peekWithStaleVecBool(false)
 
     protected def expectWithStale(value: T, message: Option[String], stale: Boolean): Unit = (x, value) match {
       case (x: Bool, value: Bool) =>
