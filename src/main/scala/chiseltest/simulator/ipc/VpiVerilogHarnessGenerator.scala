@@ -83,7 +83,7 @@ private[chiseltest] object VpiVerilogHarnessGenerator {
     codeBuffer.append(s"  always @(negedge $clockName)  begin\n")
     codeBuffer.append(s"    if ($dumpFileVar && !$dumpOnVar) begin\n")
     codeBuffer.append(s"      $dumpOnVar = 1;\n")
-    if(useFsdbDump) codeBuffer.append("      $fsdbDumpon;\n")
+    if (useFsdbDump) codeBuffer.append("      $fsdbDumpon;\n")
     else codeBuffer.append("      $dumpon;\n")
     codeBuffer.append("    end\n")
     codeBuffer.append("    $tick();\n")
