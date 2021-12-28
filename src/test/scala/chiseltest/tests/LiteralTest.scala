@@ -31,28 +31,28 @@ class LiteralTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
 
   it should "test literal UInt as Int" in {
     test(new StaticModule(42.U)) { c =>
-      c.out.peekInt() shouldBe a [Int]
-      c.out.peekInt() should be (42)
-      c.out.peekInt() should be (BigInt(42))
-      c.out.peekInt() should be (42.toLong)
-      assert(c.out.peekInt() == 42)
+      c.out.peekInteger() shouldBe a [Int]
+      c.out.peekInteger() should be (42)
+      c.out.peekInteger() should be (BigInt(42))
+      c.out.peekInteger() should be (42.toLong)
+      assert(c.out.peekInteger() == 42)
     }
   }
 
   it should "test literal SInt as Int" in {
     test(new StaticModule(-42.S)) { c =>
-      c.out.peekInt() shouldBe a [Int]
-      c.out.peekInt() should be (-42)
-      c.out.peekInt() should be (BigInt(-42))
-      c.out.peekInt() should be (-42.toLong)
-      assert(c.out.peekInt() == -42)
+      c.out.peekInteger() shouldBe a [Int]
+      c.out.peekInteger() should be (-42)
+      c.out.peekInteger() should be (BigInt(-42))
+      c.out.peekInteger() should be (-42.toLong)
+      assert(c.out.peekInteger() == -42)
     }
   }
 
   it should " test literal overflow SInt as a large Int" in {
     test(new StaticModule(2147483648L.S)) { c =>
-      c.out.peekInt() shouldBe a [Int]
-      c.out.peekInt() should be (-2147483648L)
+      c.out.peekInteger() shouldBe a [Int]
+      c.out.peekInteger() should be (-2147483648L)
     }
   }
 
@@ -85,20 +85,20 @@ class LiteralTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
 
   it should "test literal FixedPoint as BigDecimal" in {
     test(new StaticModule(10.F(2.BP))) { c =>
-      c.out.peekDecimal() should be (BigDecimal(10))
+      c.out.peekBigDecimal() should be (BigDecimal(10))
     }
   }
 
   it should "test literal Bool as Boolean" in {
     test(new StaticModule(true.B)) { c =>
       // Multiple ways to check the value
-      c.out.peekBool() should be (true)
-      assert(c.out.peekBool() == true)
+      c.out.peekBoolean() should be (true)
+      assert(c.out.peekBoolean() == true)
     }
     test(new StaticModule(false.B)) { c =>
       // Multiple ways to check the value
-      c.out.peekBool() should be (false)
-      assert(c.out.peekBool() == false)
+      c.out.peekBoolean() should be (false)
+      assert(c.out.peekBoolean() == false)
     }
   }
 
@@ -116,7 +116,7 @@ class LiteralTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
 
   it should "test literal Vector of Bool as Seq[Boolean]" in {
     test(new LiteralVecB) { c =>
-      c.out.peekVecBool() should be (Seq(true, false, true, false))
+      c.out.peekVecBoolean() should be (Seq(true, false, true, false))
     }
   }
 
