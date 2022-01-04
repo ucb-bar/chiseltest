@@ -3,7 +3,7 @@
 package chiseltest.experimental.tests
 
 import chisel3._
-import chisel3.tester._
+import chiseltest._
 import org.scalatest.freespec.AnyFreeSpec
 
 class AssertFail extends Module {
