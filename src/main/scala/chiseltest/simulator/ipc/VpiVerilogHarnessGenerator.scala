@@ -17,7 +17,7 @@ private[chiseltest] object VpiVerilogHarnessGenerator {
     val dutName = toplevel.name
     val namespace = firrtl.Namespace(toplevel.portNames)
 
-    require(toplevel.clocks.length <= 1, "Multi clock circuits are currently not supported!")
+    toplevel.requireNoMultiClock()
     val clockName = toplevel.clocks.headOption.getOrElse(namespace.newName("clock"))
     val dumpFileVar = namespace.newName("dumpfile")
     val dumpOnVar = namespace.newName("dumpon")

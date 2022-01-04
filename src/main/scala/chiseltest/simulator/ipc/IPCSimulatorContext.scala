@@ -24,7 +24,7 @@ private[chiseltest] class IPCSimulatorContext(
   override val sim: Simulator)
     extends SimulatorContext
     with LazyLogging {
-  require(toplevel.clocks.length <= 1, "Multi clock circuits are currently not supported!")
+  toplevel.requireNoMultiClock()
 
   // Construct maps for the input and output
   private val (inputsNameToChunkSizeMap, outputsNameToChunkSizeMap) = {

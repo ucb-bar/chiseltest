@@ -167,6 +167,14 @@ private[chiseltest] case class TopmoduleInfo(
   require(inputs.forall(_.width > 0), s"Inputs need to be at least 1-bit!\n$inputs")
   require(outputs.forall(_.width > 0), s"Outputs need to be at least 1-bit!\n$outputs")
   def portNames: Seq[String] = inputs.map(_.name) ++ outputs.map(_.name) ++ clocks
+  def requireNoMultiClock(): Unit = {
+    require(
+      clocks.size <= 1,
+      s"Circuit $name has more than one top-level clock input: " + clocks.mkString(", ") + ".\n" +
+        "Unfortunately multi-clock circuits are currently not supported.\n" +
+        "Consider creating a wrapper with a single input clock."
+    )
+  }
 }
 
 private[chiseltest] case class PinInfo(name: String, width: Int, signed: Boolean)

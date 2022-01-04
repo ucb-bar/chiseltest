@@ -22,7 +22,7 @@ private[chiseltest] class JNASimulatorContext(
   readCoverageFile: Option[() => List[(String, Long)]] = None)
     extends SimulatorContext
     with LazyLogging {
-  require(toplevel.clocks.length <= 1, "Multi clock circuits are currently not supported!")
+  toplevel.requireNoMultiClock()
   private val allSignals = toplevel.inputs ++ toplevel.outputs
   private val isWide = allSignals.filter(_.width > 64).map(_.name).toSet
   private val mask64 = (BigInt(1) << 64) - 1
