@@ -112,7 +112,10 @@ private object VerilatorSimulator extends Simulator {
 
     // patch the coverage cpp provided with verilator only if Verilator is older than 4.202
     // Starting with Verilator 4.202, the whole patch coverage hack is no longer necessary
-    require(majorVersion >= 4, "Unsupported Verilator version")
+    require(
+      majorVersion >= 4,
+      s"Unsupported Verilator version: $majorVersion.$minorVersion. Only major version 4 and up is supported."
+    )
 
     if (majorVersion == 4 && minorVersion < 202) {
       VerilatorPatchCoverageCpp(verilatedDir, majorVersion, minorVersion)
