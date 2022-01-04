@@ -13,6 +13,8 @@ private object Caching {
   // change this string everytime you update the caching mechanism in order to invalidate any old caches
   private val VersionNumber = "1"
 
+  private val debug = false
+
   def cacheSimulationBin(
     simName:  String,
     state:    CircuitState,
@@ -24,11 +26,13 @@ private object Caching {
     val targetDir = Compiler.requireTargetDir(state.annotations)
     val newHash = hashAll(simName, state)
     val oldHash = loadHash(targetDir)
-    println(
-      s"targetDir: $targetDir; oldHash: $oldHash; newHash: $newHash; oldHash.contains(newHash): ${oldHash.contains(newHash)}"
-    )
+    if (debug) {
+      println(
+        s"targetDir: $targetDir; oldHash: $oldHash; newHash: $newHash; oldHash.contains(newHash): ${oldHash.contains(newHash)}"
+      )
+    }
     if (oldHash.contains(newHash)) {
-      println(s"Re-using compiled simulation in $targetDir")
+      if (debug) { println(s"Re-using compiled simulation in $targetDir") }
       reuseBin(state)
     } else {
       val ctx = makeBin(state)
