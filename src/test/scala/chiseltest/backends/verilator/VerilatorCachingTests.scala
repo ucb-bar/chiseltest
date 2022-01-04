@@ -5,7 +5,7 @@ import chisel3._
 import chiseltest._
 import chiseltest.experimental.sanitizeFileName
 import chiseltest.internal.CachingAnnotation
-import chiseltest.simulator.RequiresVerilator
+import chiseltest.simulator.{CachingDebugAnnotation, RequiresVerilator}
 import chiseltest.utils.CaptureStdout
 import chiseltest.tests.StaticModule
 import firrtl.AnnotationSeq
@@ -16,7 +16,7 @@ class VerilatorCachingTests extends AnyFlatSpec with ChiselScalatestTester with 
   behavior of "Testers2 with Verilator and caching"
 
   val default = Seq(VerilatorBackendAnnotation)
-  val withCaching = Seq(VerilatorBackendAnnotation, CachingAnnotation)
+  val withCaching = Seq(VerilatorBackendAnnotation, CachingAnnotation, CachingDebugAnnotation)
 
   private def runTest(num: Int, annos: AnnotationSeq): Int = {
     countReuse(test(new StaticModule(num.U)).withAnnotations(annos) { c =>

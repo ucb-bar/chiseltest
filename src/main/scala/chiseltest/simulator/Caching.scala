@@ -9,11 +9,14 @@ import firrtl.annotations._
 import java.security.MessageDigest
 import scala.util.Try
 
+/** Enables debug output from the caching system.
+  * @warn this is an internal debug annotation, use at your own risk!
+  */
+case object CachingDebugAnnotation extends NoTargetAnnotation
+
 private object Caching {
   // change this string everytime you update the caching mechanism in order to invalidate any old caches
   private val VersionNumber = "1"
-
-  private val debug = false
 
   def cacheSimulationBin(
     simName:  String,
@@ -22,6 +25,7 @@ private object Caching {
     reuseBin: CircuitState => SimulatorContext
   ): SimulatorContext = {
     if (!shouldCache(state)) return makeBin(state)
+    val debug = state.annotations.contains(CachingDebugAnnotation)
 
     val targetDir = Compiler.requireTargetDir(state.annotations)
     val newHash = hashAll(simName, state)
