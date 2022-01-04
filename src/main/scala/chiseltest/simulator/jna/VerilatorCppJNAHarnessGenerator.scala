@@ -169,7 +169,7 @@ static sim_state* create_sim_state() {
     val dutName = toplevel.name
     val dutVerilatorClassName = "V" + dutName
 
-    require(toplevel.clocks.length <= 1, "Multi clock circuits are currently not supported!")
+    toplevel.requireNoMultiClock()
     val clockName = toplevel.clocks.headOption
     val clockLow = clockName.map("top->" + _ + " = 0;").getOrElse("")
     val clockHigh = clockName.map("top->" + _ + " = 1;").getOrElse("")
