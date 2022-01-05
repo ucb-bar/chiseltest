@@ -53,40 +53,16 @@ class LiteralTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
     }
   }
 
-  it should "test literal FixedPoint as BigDecimal" in {
-    test(new StaticModule(10.F(2.BP))) { c =>
-      c.out.peekDec() should be (BigDecimal(10))
-    }
-  }
-
   it should "test literal Bool as Boolean" in {
     test(new StaticModule(true.B)) { c =>
       // Multiple ways to check the value
-      c.out.peekBool() should be (true)
-      assert(c.out.peekBool() == true)
+      c.out.peekBoolean() should be (true)
+      assert(c.out.peekBoolean() == true)
     }
     test(new StaticModule(false.B)) { c =>
       // Multiple ways to check the value
-      c.out.peekBool() should be (false)
-      assert(c.out.peekBool() == false)
-    }
-  }
-
-  it should "test literal Vector of UInt as Seq[BigInt]" in {
-    test(new LiteralVecU) { c =>
-      c.out.peekVecInt() should be (Seq(1, 2, 4, 8))
-    }
-  }
-
-  it should "test literal Vector of SInt as Seq[BigInt]" in {
-    test(new LiteralVecS) { c =>
-      c.out.peekVecInt() should be (Seq(1, -2, 4, -8))
-    }
-  }
-
-  it should "test literal Vector of Bool as Seq[Boolean]" in {
-    test(new LiteralVecB) { c =>
-      c.out.peekVecBool() should be (Seq(true, false, true, false))
+      c.out.peekBoolean() should be (false)
+      assert(c.out.peekBoolean() == false)
     }
   }
 
