@@ -103,38 +103,8 @@ package object chiseltest {
     }
   }
 
-  private object BitsDecoders {
-    import chisel3.internal.firrtl.{BinaryPoint, KnownBinaryPoint, UnknownBinaryPoint}
-
-    def boolBitsToString(bits: BigInt): String = (bits != 0).toString
-
-    def fixedToString(binaryPoint: BinaryPoint): BigInt => String = {
-      def inner(bits: BigInt): String = {
-        binaryPoint match {
-          case KnownBinaryPoint(binaryPoint) =>
-            val bpInteger = 1 << binaryPoint
-            (bits.toFloat / bpInteger).toString
-          case UnknownBinaryPoint => "[unknown binary point]"
-        }
-      }
-      inner
-    }
-
-    def enumToString(record: EnumType): BigInt => String = {
-      def inner(bits: BigInt): String = "[unimplemented enum decode]"
-      inner
-    }
-  }
-
   implicit class testableData[T <: Data](x: T) {
-    protected def pokeBits(signal: Data, value: BigInt): Unit = {
-      if (DataMirror.directionOf(signal) != Direction.Input) {
-        throw new UnpokeableException("Can only poke inputs")
-      }
-      // Some backends can behave incorrectly if too many bits are poked into their inputs
-      val maskedValue = value & ((BigInt(1) << signal.widthOption.get) - 1)
-      Context().backend.pokeBits(signal, maskedValue)
-    }
+    import Utils._
 
     def poke(value: T): Unit = (x, value) match {
       case (x: Bool, value: Bool) => pokeBits(x, value.litValue)
@@ -192,15 +162,15 @@ package object chiseltest {
 
     protected def expect(value: T, message: Option[() => String]): Unit = (x, value) match {
       case (x: Bool, value: Bool) =>
-        Context().backend.expectBits(x, value.litValue, message, Some(BitsDecoders.boolBitsToString))
+        Context().backend.expectBits(x, value.litValue, message, Some(boolBitsToString))
       case (x: Bits, value: UInt) => Context().backend.expectBits(x, value.litValue, message, None)
       case (x: SInt, value: SInt) => Context().backend.expectBits(x, value.litValue, message, None)
       case (x: FixedPoint, value: FixedPoint) =>
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
-        Context().backend.expectBits(x, value.litValue, message, Some(BitsDecoders.fixedToString(x.binaryPoint)))
+        Context().backend.expectBits(x, value.litValue, message, Some(fixedToString(x.binaryPoint)))
       case (x: Interval, value: Interval) =>
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
-        Context().backend.expectBits(x, value.litValue, message, Some(BitsDecoders.fixedToString(x.binaryPoint)))
+        Context().backend.expectBits(x, value.litValue, message, Some(fixedToString(x.binaryPoint)))
       case (x: Record, value: Record) =>
         require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
         x.elements.zip(value.elements).foreach { case ((_, x), (_, value)) =>
@@ -213,7 +183,7 @@ package object chiseltest {
         }
       case (x: EnumType, value: EnumType) =>
         require(DataMirror.checkTypeEquivalence(x, value), s"EnumType mismatch")
-        Context().backend.expectBits(x, value.litValue, message, Some(BitsDecoders.enumToString(x)))
+        Context().backend.expectBits(x, value.litValue, message, Some(enumToString(x)))
       case x => throw new LiteralTypeException(s"don't know how to expect $x")
       // TODO: aggregate types
     }
@@ -237,6 +207,58 @@ package object chiseltest {
         case clock :: Nil => clock
         case clocks       => throw new ClockResolutionException(s"number of sink clocks for $x is not one: $clocks")
       }
+    }
+  }
+
+  private object Utils {
+    import chisel3.internal.firrtl.{BinaryPoint, KnownBinaryPoint, UnknownBinaryPoint}
+
+    // Throw an exception if the value cannot fit into the signal.
+    // For backwards compatibility reasons, we only perform this check
+    // when a BigInt or Boolean is poked (not for Chisel types!).
+    // We will also skip the check if the width is not known.
+    def ensureFits(signal: Data, value: BigInt): Unit = {
+      (signal.widthOption, signal) match {
+        case (Some(w), _: SInt) =>
+          val m = BigInt(1) << (w - 1)
+          ensureInRange(signal, value, -m, m - 1)
+        case (Some(w), _: Bits) =>
+          ensureInRange(signal, value, 0, (BigInt(1) << w) - 1)
+        case _ => // ignore
+      }
+    }
+    private def ensureInRange(signal: Data, value: BigInt, min: BigInt, max: BigInt): Unit = {
+      if (value < min || value > max) {
+        throw new ChiselException(s"Value $value does not fit into the range of $signal ($min ... $max)")
+      }
+    }
+
+    def boolBitsToString(bits: BigInt): String = (bits != 0).toString
+
+    def fixedToString(binaryPoint: BinaryPoint): BigInt => String = {
+      def inner(bits: BigInt): String = {
+        binaryPoint match {
+          case KnownBinaryPoint(binaryPoint) =>
+            val bpInteger = 1 << binaryPoint
+            (bits.toFloat / bpInteger).toString
+          case UnknownBinaryPoint => "[unknown binary point]"
+        }
+      }
+      inner
+    }
+
+    def enumToString(record: EnumType): BigInt => String = {
+      def inner(bits: BigInt): String = "[unimplemented enum decode]"
+      inner
+    }
+
+    def pokeBits(signal: Data, value: BigInt): Unit = {
+      if (DataMirror.directionOf(signal) != Direction.Input) {
+        throw new UnpokeableException("Can only poke inputs")
+      }
+      // Some backends can behave incorrectly if too many bits are poked into their inputs
+      val maskedValue = value & ((BigInt(1) << signal.widthOption.get) - 1)
+      Context().backend.pokeBits(signal, maskedValue)
     }
   }
 
