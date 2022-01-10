@@ -50,8 +50,8 @@ abstract class SimulatorCoverageTest(name: String, backend: SimulatorAnnotation,
     val rand = new scala.util.Random(0)
     val r = test(new PiEstimator).withAnnotations(noAutoCov) { dut =>
       (0 until 1000).foreach { _ =>
-        dut.x.poke(BigInt(8, rand).S)
-        dut.y.poke(BigInt(8, rand).S)
+        dut.xIn.poke(BigInt(8, rand).U)
+        dut.yIn.poke(BigInt(8, rand).U)
         dut.clock.step()
       }
     }
@@ -74,11 +74,12 @@ abstract class SimulatorCoverageTest(name: String, backend: SimulatorAnnotation,
 class TreadleCoverageTest extends SimulatorCoverageTest("Treadle", TreadleBackendAnnotation) {}
 
 private class PiEstimator extends Module {
-  val x = IO(Input(SInt(8.W)))
-  val y = IO(Input(SInt(8.W)))
+  val xIn = IO(Input(UInt(8.W)))
+  val yIn = IO(Input(UInt(8.W)))
   val inCircle = IO(Output(Bool()))
   val inRectangle = IO(Output(Bool()))
   val radius = 100
+  val (x, y) = (xIn.asSInt, yIn.asSInt)
   inCircle := (x * x + y * y) <= (radius * radius).S
   inRectangle := (x <= radius.S && x >= -radius.S) && (y <= radius.S && y >= -radius.S)
   cover(inCircle).suggestName("inCircleCover")

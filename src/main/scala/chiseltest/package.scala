@@ -14,12 +14,17 @@ package object chiseltest {
 
   /** allows access to chisel Bool type signals with Scala native values */
   implicit class testableBool(x: Bool) {
-    def poke(value:                               Bool):    Unit = Utils.pokeBits(x, value.litValue)
-    def poke(value:                               UInt):    Unit = Utils.pokeBits(x, value.litValue)
-    def poke(value:                               Boolean): Unit = Utils.pokeBits(x, if (value) BigInt(1) else BigInt(0))
-    def poke(value:                               BigInt): Unit = Utils.pokeBits(x, value)
-    private[chiseltest] def expectInternal(value: BigInt, message: Option[() => String]): Unit =
-      Context().backend.expectBits(x, value, message, Some(Utils.boolBitsToString))
+    def poke(value: Bool):    Unit = Utils.pokeBits(x, value.litValue)
+    def poke(value: UInt):    Unit = poke(value.litValue)
+    def poke(value: Boolean): Unit = Utils.pokeBits(x, if (value) BigInt(1) else BigInt(0))
+    def poke(value: BigInt): Unit = {
+      Utils.ensureFits(x, value)
+      Utils.pokeBits(x, value)
+    }
+    private[chiseltest] def expectInternal(value: BigInt, message: Option[() => String]): Unit = {
+      Utils.ensureFits(x, value)
+      Utils.expectBits(x, value, message, Some(Utils.boolBitsToString))
+    }
     def expect(value: Bool): Unit = expectInternal(value.litValue, None)
     def expect(value: Bool, message: => String): Unit = expectInternal(value.litValue, Some(() => message))
     def expect(value: UInt): Unit = expectInternal(value.litValue, None)
@@ -39,10 +44,15 @@ package object chiseltest {
 
   /** allows access to chisel UInt type signals with Scala native values */
   implicit class testableUInt(x: UInt) {
-    def poke(value:                               UInt): Unit = Utils.pokeBits(x, value.litValue)
-    def poke(value:                               BigInt): Unit = Utils.pokeBits(x, value)
-    private[chiseltest] def expectInternal(value: BigInt, message: Option[() => String]): Unit =
-      Context().backend.expectBits(x, value, message, Some(Utils.boolBitsToString))
+    def poke(value: UInt): Unit = poke(value.litValue)
+    def poke(value: BigInt): Unit = {
+      Utils.ensureFits(x, value)
+      Utils.pokeBits(x, value)
+    }
+    private[chiseltest] def expectInternal(value: BigInt, message: Option[() => String]): Unit = {
+      Utils.ensureFits(x, value)
+      Utils.expectBits(x, value, message, None)
+    }
     def expect(value: UInt): Unit = expectInternal(value.litValue, None)
     def expect(value: UInt, message: => String): Unit = expectInternal(value.litValue, Some(() => message))
     def expect(value: BigInt): Unit = expectInternal(value, None)
@@ -53,10 +63,15 @@ package object chiseltest {
 
   /** allows access to chisel SInt type signals with Scala native values */
   implicit class testableSInt(x: SInt) {
-    def poke(value:                               SInt): Unit = Utils.pokeBits(x, value.litValue)
-    def poke(value:                               BigInt): Unit = Utils.pokeBits(x, value)
-    private[chiseltest] def expectInternal(value: BigInt, message: Option[() => String]): Unit =
-      Context().backend.expectBits(x, value, message, Some(Utils.boolBitsToString))
+    def poke(value: SInt): Unit = poke(value.litValue)
+    def poke(value: BigInt): Unit = {
+      Utils.ensureFits(x, value)
+      Utils.pokeBits(x, value)
+    }
+    private[chiseltest] def expectInternal(value: BigInt, message: Option[() => String]): Unit = {
+      Utils.ensureFits(x, value)
+      Utils.expectBits(x, value, message, None)
+    }
     def expect(value: SInt): Unit = expectInternal(value.litValue, None)
     def expect(value: SInt, message: => String): Unit = expectInternal(value.litValue, Some(() => message))
     def expect(value: BigInt): Unit = expectInternal(value, None)
@@ -262,19 +277,30 @@ package object chiseltest {
     import chisel3.internal.firrtl.{BinaryPoint, KnownBinaryPoint, UnknownBinaryPoint}
 
     // Throw an exception if the value cannot fit into the signal.
-    // For backwards compatibility reasons, we only perform this check
-    // when a BigInt or Boolean is poked (not for Chisel types!).
-    // We will also skip the check if the width is not known.
-    def ensureFits(signal: Data, value: BigInt): Unit = {
-      (signal.widthOption, signal) match {
-        case (Some(w), _: SInt) =>
+    def ensureFits(signal: Bool, value: BigInt): Unit = {
+      if (!(value == 0 || value == 1)) {
+        throw new ChiselException(s"Value $value does not fit into the range of $signal (false/0 ... true/1)")
+      }
+    }
+
+    // Throw an exception if the value cannot fit into the signal.
+    def ensureFits(signal: UInt, value: BigInt): Unit = {
+      signal.widthOption match {
+        case Some(w) => ensureInRange(signal, value, 0, (BigInt(1) << w) - 1)
+        case _       => // ignore
+      }
+    }
+
+    // Throw an exception if the value cannot fit into the signal.
+    def ensureFits(signal: SInt, value: BigInt): Unit = {
+      signal.widthOption match {
+        case Some(w) =>
           val m = BigInt(1) << (w - 1)
           ensureInRange(signal, value, -m, m - 1)
-        case (Some(w), _: Bits) =>
-          ensureInRange(signal, value, 0, (BigInt(1) << w) - 1)
         case _ => // ignore
       }
     }
+
     private def ensureInRange(signal: Data, value: BigInt, min: BigInt, max: BigInt): Unit = {
       if (value < min || value > max) {
         throw new ChiselException(s"Value $value does not fit into the range of $signal ($min ... $max)")
@@ -304,9 +330,16 @@ package object chiseltest {
       if (DataMirror.directionOf(signal) != Direction.Input) {
         throw new UnpokeableException("Can only poke inputs")
       }
-      // Some backends can behave incorrectly if too many bits are poked into their inputs
-      val maskedValue = value & ((BigInt(1) << signal.widthOption.get) - 1)
-      Context().backend.pokeBits(signal, maskedValue)
+      Context().backend.pokeBits(signal, value)
+    }
+
+    def expectBits(
+      signal:  Data,
+      value:   BigInt,
+      message: Option[() => String],
+      decode:  Option[BigInt => String]
+    ): Unit = {
+      Context().backend.expectBits(signal, value, message, decode)
     }
   }
 

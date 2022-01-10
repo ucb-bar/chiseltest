@@ -65,7 +65,7 @@ trait TestEnvInterface {
 
       val trace = new Throwable
       val expectStackDepth = trace.getStackTrace.indexWhere(ste =>
-        ste.getClassName == "chiseltest.package$testableData" && ste.getMethodName == "expect"
+        ste.getClassName.startsWith("chiseltest.package$") && ste.getMethodName == "expect"
       )
       require(
         expectStackDepth != -1,
