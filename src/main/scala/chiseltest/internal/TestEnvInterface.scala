@@ -54,12 +54,12 @@ trait TestEnvInterface {
     expected: BigInt,
     actual:   BigInt,
     signal:   String,
-    msg:      Option[String],
+    msg:      Option[() => String],
     decode:   Option[BigInt => String]
   ): Unit = {
     if (expected != actual) {
       val appendMsg = msg match {
-        case Some(_) => s": $msg"
+        case Some(m) => s": ${m()}"
         case _       => ""
       }
 

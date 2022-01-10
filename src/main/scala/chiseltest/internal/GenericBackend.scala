@@ -72,9 +72,7 @@ class GenericBackend[T <: Module](
     debugLog(s"${resolveName(signal)} <- $value")
   }
 
-  override def peekBits(signal: Data, stale: Boolean): BigInt = {
-    require(!stale, "Stale peek not yet implemented")
-
+  override def peekBits(signal: Data): BigInt = {
     doPeek(signal, new Throwable)
     val a = tester.peek(dataNames(signal))
     debugLog(s"${resolveName(signal)} -> $a")
@@ -84,14 +82,12 @@ class GenericBackend[T <: Module](
   override def expectBits(
     signal:  Data,
     value:   BigInt,
-    message: Option[String],
-    decode:  Option[BigInt => String],
-    stale:   Boolean
+    message: Option[() => String],
+    decode:  Option[BigInt => String]
   ): Unit = {
-    require(!stale, "Stale peek not yet implemented")
 
     debugLog(s"${resolveName(signal)} ?> $value")
-    Context().env.testerExpect(value, peekBits(signal, stale), resolveName(signal), message, decode)
+    Context().env.testerExpect(value, peekBits(signal), resolveName(signal), message, decode)
   }
 
   protected val clockCounter: mutable.HashMap[Clock, Int] = mutable.HashMap()

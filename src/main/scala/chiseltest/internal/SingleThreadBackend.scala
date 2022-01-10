@@ -52,8 +52,7 @@ class SingleThreadBackend[T <: Module](
     }
   }
 
-  override def peekBits(signal: Data, stale: Boolean): BigInt = {
-    require(!stale, "Stale peek not yet implemented")
+  override def peekBits(signal: Data): BigInt = {
     val a = tester.peek(dataNames(signal))
     a
   }
@@ -61,12 +60,10 @@ class SingleThreadBackend[T <: Module](
   override def expectBits(
     signal:  Data,
     value:   BigInt,
-    message: Option[String],
-    decode:  Option[BigInt => String],
-    stale:   Boolean
+    message: Option[() => String],
+    decode:  Option[BigInt => String]
   ): Unit = {
-    require(!stale, "Stale peek not yet implemented")
-    Context().env.testerExpect(value, peekBits(signal, stale), resolveName(signal), message, decode)
+    Context().env.testerExpect(value, peekBits(signal), resolveName(signal), message, decode)
   }
 
   override def doTimescope(contents: () => Unit): Unit = {
