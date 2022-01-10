@@ -43,7 +43,7 @@ package object chiseltest {
       */
     def expectPartial(value: T): Unit = {
       require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
-      x.elements.filter { case (k, v) =>
+      x.elements.filter { case (k, _) =>
         value.elements(k) match {
           case _: Record => true
           case d: Data   => d.isLit
@@ -89,7 +89,7 @@ package object chiseltest {
       */
     def expectPartial(value: T): Unit = {
       require(DataMirror.checkTypeEquivalence(x, value), s"Vec type mismatch")
-      x.getElements.zipWithIndex.filter { case (v, index) =>
+      x.getElements.zipWithIndex.filter { case (_, index) =>
         value.getElements(index) match {
           case _: T    => true
           case d: Data => d.isLit
@@ -138,37 +138,27 @@ package object chiseltest {
 
     def poke(value: T): Unit = (x, value) match {
       case (x: Bool, value: Bool) => pokeBits(x, value.litValue)
-      // TODO can't happen because of type parameterization
-      case (x: Bool, value: Bits) =>
-        throw new LiteralTypeException(s"can only poke signals of type Bool with Bool value")
       case (x: Bits, value: UInt) => pokeBits(x, value.litValue)
       case (x: SInt, value: SInt) => pokeBits(x, value.litValue)
-      // TODO can't happen because of type parameterization
-      case (x: Bits, value: SInt) =>
-        throw new LiteralTypeException(s"can only poke SInt value into signals of type SInt")
-      case (x: FixedPoint, value: FixedPoint) => {
+      case (x: FixedPoint, value: FixedPoint) =>
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
         pokeBits(x, value.litValue)
-      }
       case (x: Interval, value: Interval) =>
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
         pokeBits(x, value.litValue)
-      case (x: Record, value: Record) => {
+      case (x: Record, value: Record) =>
         require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
-        (x.elements.zip(value.elements)).foreach { case ((_, x), (_, value)) =>
+        x.elements.zip(value.elements).foreach { case ((_, x), (_, value)) =>
           x.poke(value)
         }
-      }
-      case (x: Vec[_], value: Vec[_]) => {
+      case (x: Vec[_], value: Vec[_]) =>
         require(DataMirror.checkTypeEquivalence(x, value), s"Vec type mismatch")
-        (x.getElements.zip(value.getElements)).foreach { case (x, value) =>
+        x.getElements.zip(value.getElements).foreach { case (x, value) =>
           x.poke(value)
         }
-      }
-      case (x: EnumType, value: EnumType) => {
+      case (x: EnumType, value: EnumType) =>
         require(DataMirror.checkTypeEquivalence(x, value), s"EnumType mismatch")
         pokeBits(x, value.litValue)
-      }
       case x => throw new LiteralTypeException(s"don't know how to poke $x")
       // TODO: aggregate types
     }
@@ -193,9 +183,7 @@ package object chiseltest {
         }.toSeq
         chiselTypeOf(x).Lit(elementValueFns: _*).asInstanceOf[T]
       case x: Vec[_] =>
-        val elementValueFns = x.getElements.map { case elt: Data =>
-          elt.peek()
-        }
+        val elementValueFns = x.getElements.map(_.peek())
         Vec.Lit(elementValueFns: _*).asInstanceOf[T]
       case x: EnumType =>
         throw new NotImplementedError(s"peeking enums ($x) not yet supported, need programmatic enum construction")
@@ -205,37 +193,27 @@ package object chiseltest {
     protected def expect(value: T, message: Option[() => String]): Unit = (x, value) match {
       case (x: Bool, value: Bool) =>
         Context().backend.expectBits(x, value.litValue, message, Some(BitsDecoders.boolBitsToString))
-      // TODO can't happen because of type parameterization
-      case (x: Bool, value: Bits) =>
-        throw new LiteralTypeException(s"cannot expect non-Bool value $value from Bool IO $x")
       case (x: Bits, value: UInt) => Context().backend.expectBits(x, value.litValue, message, None)
       case (x: SInt, value: SInt) => Context().backend.expectBits(x, value.litValue, message, None)
-      // TODO can't happen because of type parameterization
-      case (x: Bits, value: SInt) =>
-        throw new LiteralTypeException(s"cannot expect non-SInt value $value from SInt IO $x")
-      case (x: FixedPoint, value: FixedPoint) => {
+      case (x: FixedPoint, value: FixedPoint) =>
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
         Context().backend.expectBits(x, value.litValue, message, Some(BitsDecoders.fixedToString(x.binaryPoint)))
-      }
       case (x: Interval, value: Interval) =>
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
         Context().backend.expectBits(x, value.litValue, message, Some(BitsDecoders.fixedToString(x.binaryPoint)))
-      case (x: Record, value: Record) => {
+      case (x: Record, value: Record) =>
         require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
-        (x.elements.zip(value.elements)).foreach { case ((_, x), (_, value)) =>
+        x.elements.zip(value.elements).foreach { case ((_, x), (_, value)) =>
           x.expect(value, message)
         }
-      }
-      case (x: Vec[_], value: Vec[_]) => {
+      case (x: Vec[_], value: Vec[_]) =>
         require(DataMirror.checkTypeEquivalence(x, value), s"Vec type mismatch")
-        (x.getElements.zip(value.getElements)).foreach { case (x, value) =>
+        x.getElements.zip(value.getElements).foreach { case (x, value) =>
           x.expect(value, message)
         }
-      }
-      case (x: EnumType, value: EnumType) => {
+      case (x: EnumType, value: EnumType) =>
         require(DataMirror.checkTypeEquivalence(x, value), s"EnumType mismatch")
         Context().backend.expectBits(x, value.litValue, message, Some(BitsDecoders.enumToString(x)))
-      }
       case x => throw new LiteralTypeException(s"don't know how to expect $x")
       // TODO: aggregate types
     }
@@ -276,7 +254,7 @@ package object chiseltest {
 
   // TODO: call-by-name doesn't work with varargs, is there a better way to do this?
   def parallel(run1: => Unit, run2: => Unit): Unit = {
-    fork { run1 }.fork { run2 }.join
+    fork { run1 }.fork { run2 }.join()
   }
 
   def timescope(contents: => Unit): Unit = {
@@ -313,9 +291,9 @@ package object chiseltest {
     }
   }
 
-  implicit def decoupledToDriver[T <: Data](x: ReadyValidIO[T]) = new DecoupledDriver(x)
+  implicit def decoupledToDriver[T <: Data](x: ReadyValidIO[T]): DecoupledDriver[T] = new DecoupledDriver(x)
 
-  implicit def validToDriver[T <: Data](x: ValidIO[T]) = new ValidDriver(x)
+  implicit def validToDriver[T <: Data](x: ValidIO[T]): ValidDriver[T] = new ValidDriver(x)
 
   // expose public flags
   val VerilatorBackendAnnotation = simulator.VerilatorBackendAnnotation
