@@ -11,6 +11,60 @@ import chisel3.util._
 /** Basic interfaces and implicit conversions for testers2
   */
 package object chiseltest {
+
+  /** allows access to chisel Bool type signals with Scala native values */
+  implicit class testableBool(x: Bool) {
+    def poke(value:                               Bool):    Unit = Utils.pokeBits(x, value.litValue)
+    def poke(value:                               UInt):    Unit = Utils.pokeBits(x, value.litValue)
+    def poke(value:                               Boolean): Unit = Utils.pokeBits(x, if (value) BigInt(1) else BigInt(0))
+    def poke(value:                               BigInt): Unit = Utils.pokeBits(x, value)
+    private[chiseltest] def expectInternal(value: BigInt, message: Option[() => String]): Unit =
+      Context().backend.expectBits(x, value, message, Some(Utils.boolBitsToString))
+    def expect(value: Bool): Unit = expectInternal(value.litValue, None)
+    def expect(value: Bool, message: => String): Unit = expectInternal(value.litValue, Some(() => message))
+    def expect(value: UInt): Unit = expectInternal(value.litValue, None)
+    def expect(value: UInt, message: => String): Unit = expectInternal(value.litValue, Some(() => message))
+    def expect(value: Boolean): Unit = expectInternal(if (value) BigInt(1) else BigInt(0), None)
+    def expect(value: Boolean, message: => String): Unit =
+      expectInternal(if (value) BigInt(1) else BigInt(0), Some(() => message))
+    def expect(value: BigInt): Unit = expectInternal(value, None)
+    def expect(value: BigInt, message: => String): Unit = expectInternal(value, Some(() => message))
+    def peek(): Bool = Context().backend.peekBits(x) match {
+      case x: BigInt if x == 0 => false.B
+      case x: BigInt if x == 1 => true.B
+      case x => throw new LiteralTypeException(s"peeked Bool with value $x not 0 or 1")
+    }
+    def peekBoolean(): Boolean = Context().backend.peekBits(x) == 1
+  }
+
+  /** allows access to chisel UInt type signals with Scala native values */
+  implicit class testableUInt(x: UInt) {
+    def poke(value:                               UInt): Unit = Utils.pokeBits(x, value.litValue)
+    def poke(value:                               BigInt): Unit = Utils.pokeBits(x, value)
+    private[chiseltest] def expectInternal(value: BigInt, message: Option[() => String]): Unit =
+      Context().backend.expectBits(x, value, message, Some(Utils.boolBitsToString))
+    def expect(value: UInt): Unit = expectInternal(value.litValue, None)
+    def expect(value: UInt, message: => String): Unit = expectInternal(value.litValue, Some(() => message))
+    def expect(value: BigInt): Unit = expectInternal(value, None)
+    def expect(value: BigInt, message: => String): Unit = expectInternal(value, Some(() => message))
+    def peek():       UInt = Context().backend.peekBits(x).asUInt(DataMirror.widthOf(x))
+    def peekBigInt(): BigInt = Context().backend.peekBits(x)
+  }
+
+  /** allows access to chisel SInt type signals with Scala native values */
+  implicit class testableSInt(x: SInt) {
+    def poke(value:                               SInt): Unit = Utils.pokeBits(x, value.litValue)
+    def poke(value:                               BigInt): Unit = Utils.pokeBits(x, value)
+    private[chiseltest] def expectInternal(value: BigInt, message: Option[() => String]): Unit =
+      Context().backend.expectBits(x, value, message, Some(Utils.boolBitsToString))
+    def expect(value: SInt): Unit = expectInternal(value.litValue, None)
+    def expect(value: SInt, message: => String): Unit = expectInternal(value.litValue, Some(() => message))
+    def expect(value: BigInt): Unit = expectInternal(value, None)
+    def expect(value: BigInt, message: => String): Unit = expectInternal(value, Some(() => message))
+    def peek():       SInt = Context().backend.peekBits(x).asSInt(DataMirror.widthOf(x))
+    def peekBigInt(): BigInt = Context().backend.peekBits(x)
+  }
+
   implicit class testableRecord[T <: Record](x: T) {
 
     /** Poke the given signal with a [[Record.litValue()]]
@@ -107,9 +161,9 @@ package object chiseltest {
     import Utils._
 
     def poke(value: T): Unit = (x, value) match {
-      case (x: Bool, value: Bool) => pokeBits(x, value.litValue)
-      case (x: Bits, value: UInt) => pokeBits(x, value.litValue)
-      case (x: SInt, value: SInt) => pokeBits(x, value.litValue)
+      case (x: Bool, value: Bool) => x.poke(value)
+      case (x: UInt, value: UInt) => x.poke(value)
+      case (x: SInt, value: SInt) => x.poke(value)
       case (x: FixedPoint, value: FixedPoint) =>
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
         pokeBits(x, value.litValue)
@@ -134,14 +188,9 @@ package object chiseltest {
     }
 
     def peek(): T = x match {
-      case x: Bool =>
-        Context().backend.peekBits(x) match {
-          case x: BigInt if x == 0 => false.B.asInstanceOf[T]
-          case x: BigInt if x == 1 => true.B.asInstanceOf[T]
-          case x => throw new LiteralTypeException(s"peeked Bool with value $x not 0 or 1")
-        }
-      case x: UInt => Context().backend.peekBits(x).asUInt(DataMirror.widthOf(x)).asInstanceOf[T]
-      case x: SInt => Context().backend.peekBits(x).asSInt(DataMirror.widthOf(x)).asInstanceOf[T]
+      case x: Bool => x.peek().asInstanceOf[T]
+      case x: UInt => x.peek().asInstanceOf[T]
+      case x: SInt => x.peek().asInstanceOf[T]
       case x: FixedPoint =>
         val multiplier = BigDecimal(2).pow(x.binaryPoint.get)
         (BigDecimal(Context().backend.peekBits(x)) / multiplier).F(x.binaryPoint).asInstanceOf[T]
@@ -161,10 +210,9 @@ package object chiseltest {
     }
 
     protected def expectInternal(value: T, message: Option[() => String]): Unit = (x, value) match {
-      case (x: Bool, value: Bool) =>
-        Context().backend.expectBits(x, value.litValue, message, Some(boolBitsToString))
-      case (x: Bits, value: UInt) => Context().backend.expectBits(x, value.litValue, message, None)
-      case (x: SInt, value: SInt) => Context().backend.expectBits(x, value.litValue, message, None)
+      case (x: Bool, value: Bool) => x.expectInternal(value.litValue, message)
+      case (x: UInt, value: UInt) => x.expectInternal(value.litValue, message)
+      case (x: SInt, value: SInt) => x.expectInternal(value.litValue, message)
       case (x: FixedPoint, value: FixedPoint) =>
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
         Context().backend.expectBits(x, value.litValue, message, Some(fixedToString(x.binaryPoint)))
