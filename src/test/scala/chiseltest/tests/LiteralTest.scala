@@ -10,22 +10,6 @@ import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class LiteralVecU extends Module {
-  val out   = IO(Output(Vec(4, UInt(8.W))))
-  val v = VecInit(1.U, 2.U, 4.U, 8.U)
-  out := v
-}
-class LiteralVecS extends Module {
-  val out   = IO(Output(Vec(4, SInt(8.W))))
-  val v = VecInit(1.S, -2.S, 4.S, -8.S)
-  out := v
-}
-class LiteralVecB extends Module {
-  val out   = IO(Output(Vec(4, Bool())))
-  val v = VecInit(true.B, false.B, true.B, false.B)
-  out := v
-}
-
 class LiteralTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Testers2"
 
