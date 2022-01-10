@@ -160,7 +160,7 @@ package object chiseltest {
       case x => throw new LiteralTypeException(s"don't know how to peek $x")
     }
 
-    protected def expect(value: T, message: Option[() => String]): Unit = (x, value) match {
+    protected def expectInternal(value: T, message: Option[() => String]): Unit = (x, value) match {
       case (x: Bool, value: Bool) =>
         Context().backend.expectBits(x, value.litValue, message, Some(boolBitsToString))
       case (x: Bits, value: UInt) => Context().backend.expectBits(x, value.litValue, message, None)
@@ -174,12 +174,12 @@ package object chiseltest {
       case (x: Record, value: Record) =>
         require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
         x.elements.zip(value.elements).foreach { case ((_, x), (_, value)) =>
-          x.expect(value, message)
+          x.expectInternal(value, message)
         }
       case (x: Vec[_], value: Vec[_]) =>
         require(DataMirror.checkTypeEquivalence(x, value), s"Vec type mismatch")
         x.getElements.zip(value.getElements).foreach { case (x, value) =>
-          x.expect(value, message)
+          x.expectInternal(value, message)
         }
       case (x: EnumType, value: EnumType) =>
         require(DataMirror.checkTypeEquivalence(x, value), s"EnumType mismatch")
@@ -188,8 +188,8 @@ package object chiseltest {
       // TODO: aggregate types
     }
 
-    def expect(value: T): Unit = expect(value, None)
-    def expect(value: T, message: => String): Unit = expect(value, Some(() => message))
+    def expect(value: T): Unit = expectInternal(value, None)
+    def expect(value: T, message: => String): Unit = expectInternal(value, Some(() => message))
 
     /** @return the single clock that drives the source of this signal.
       * @throws ClockResolutionException if sources of this signal have more than one, or zero clocks
