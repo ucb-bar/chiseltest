@@ -1,3 +1,7 @@
+queue_rules:
+- name: default
+  conditions:
+  - status-success=all tests passed
 pull_request_rules:
 - name: automatic squash-and-merge on CI success and review
   conditions:
@@ -9,10 +13,10 @@ pull_request_rules:
   - label!="DO NOT MERGE"
   - label!="bp-conflict"
   actions:
-    merge:
+    queue:
+      name: default
       method: squash
-      strict: smart
-      strict_method: merge
+      update_method: merge
 - name: backport to 0.3.x
   conditions:
   - merged
@@ -43,7 +47,7 @@ pull_request_rules:
   - label!="DO NOT MERGE"
   - label!="bp-conflict"
   actions:
-    merge:
+    queue:
+      name: default
       method: squash
-      strict: smart
-      strict_method: merge
+      update_method: merge
