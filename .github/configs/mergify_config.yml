@@ -1,0 +1,6 @@
+# Configuration for generating .mergify.yml
+conditions:
+  - status-success=all tests passed
+branches:
+  - 0.3.x
+  - 0.5.x
