@@ -10,7 +10,7 @@ object chiseltest extends mill.Cross[chiseltestCrossModule]("2.12.13")
 
 val defaultVersions = Map(
   "chisel3" -> "3.5-SNAPSHOT",
-  "treadle" -> "1.5-SNAPSHOT"
+  "treadle" -> "1.5.0"
 )
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
