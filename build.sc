@@ -9,7 +9,7 @@ import coursier.maven.MavenRepository
 object chiseltest extends mill.Cross[chiseltestCrossModule]("2.12.13")
 
 val defaultVersions = Map(
-  "chisel3" -> "3.5-SNAPSHOT",
+  "chisel3" -> "3.5.0",
   "treadle" -> "1.5-SNAPSHOT"
 )
 
