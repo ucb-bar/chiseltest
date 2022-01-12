@@ -230,14 +230,19 @@ private[chiseltest] class TransitionSystemSimulator(
     def failedPropertiesMsg: String =
       s"Failed (${failed.size}) properties in step #$index:\n${failed.map(failedMsg).mkString("\n")}"
     expectedFailed match {
-      case None =>
-        assert(failed.isEmpty, "Unexpected failure!! " + failedPropertiesMsg)
+      case None if failed.isEmpty => // great!
+      case None => // oh no
+        println(
+          "Warn: Potential simulation/formal mismatch.\n" +
+            s"In step #$index: Unexpected failure!! " + failedPropertiesMsg
+        )
       case Some(Seq()) => // this means that we do not know which exact property is supposed to fail
       case Some(props) =>
         val failedSet = failed.toSet
         if (!props.toSet.subsetOf(failedSet)) {
           println(
-            s"In step #$index: Expected properties ${props.mkString(", ")} to fail, instead ${failed.mkString(", ")} failed"
+            "Warn: Potential simulation/formal mismatch.\n" +
+              s"In step #$index: Expected properties ${props.mkString(", ")} to fail, instead ${failed.mkString(", ")} failed"
           )
         }
     }

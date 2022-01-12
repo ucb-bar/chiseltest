@@ -9,14 +9,15 @@ private[chiseltest] object VpiVerilogHarnessGenerator {
   def codeGen(
     toplevel:    TopmoduleInfo,
     moduleNames: Seq[String],
-    useVpdDump:  Boolean = false
+    useVpdDump:  Boolean = false,
+    useFsdbDump: Boolean = false
   ): String = {
     val testbenchName = firrtl.Namespace(moduleNames).newName("testbench")
 
     val dutName = toplevel.name
     val namespace = firrtl.Namespace(toplevel.portNames)
 
-    require(toplevel.clocks.length <= 1, "Multi clock circuits are currently not supported!")
+    toplevel.requireNoMultiClock()
     val clockName = toplevel.clocks.headOption.getOrElse(namespace.newName("clock"))
     val dumpFileVar = namespace.newName("dumpfile")
     val dumpOnVar = namespace.newName("dumpon")
@@ -49,11 +50,23 @@ private[chiseltest] object VpiVerilogHarnessGenerator {
     codeBuffer.append(s"    $$init_outs(${outputNames.mkString(", ")});\n")
     codeBuffer.append(s"    $$init_sigs($dutName);\n")
 
+    /* Dump VPD Waveform File*/
     if (useVpdDump) {
       codeBuffer.append("    /*** Enable VPD dump ***/\n")
       codeBuffer.append("    if ($value$plusargs(\"vcdplusfile=%s\", " + dumpFileVar + ")) begin\n")
       codeBuffer.append(s"      $$vcdplusfile($dumpFileVar);\n")
+      codeBuffer.append(s"      $$dumpfile($dumpFileVar);\n")
+      codeBuffer.append(s"      $$dumpvars(0, $dutName);\n")
       codeBuffer.append(s"      $$vcdpluson;\n")
+      codeBuffer.append("    end\n")
+    }
+
+    /* Dump FSDB Waveform File*/
+    if (useFsdbDump) {
+      codeBuffer.append("    /*** Enable FSDB dump ***/\n")
+      codeBuffer.append("    if ($value$plusargs(\"fsdbfile=%s\", " + dumpFileVar + ")) begin\n")
+      codeBuffer.append(s"      $$fsdbDumpfile($dumpFileVar);\n")
+      codeBuffer.append(s"      $$fsdbDumpvars(0, $dutName);\n")
       codeBuffer.append("    end\n")
     }
 
@@ -70,7 +83,8 @@ private[chiseltest] object VpiVerilogHarnessGenerator {
     codeBuffer.append(s"  always @(negedge $clockName)  begin\n")
     codeBuffer.append(s"    if ($dumpFileVar && !$dumpOnVar) begin\n")
     codeBuffer.append(s"      $dumpOnVar = 1;\n")
-    codeBuffer.append("      $dumpon;\n")
+    if (useFsdbDump) codeBuffer.append("      $fsdbDumpon;\n")
+    else codeBuffer.append("      $dumpon;\n")
     codeBuffer.append("    end\n")
     codeBuffer.append("    $tick();\n")
     codeBuffer.append("    $dumpflush;\n")

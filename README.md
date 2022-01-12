@@ -1,40 +1,24 @@
-# ChiselTest
-*formerly known as testers2*
+# chiseltest
 
-This is **alpha software** that is currently under development, and interfaces may be subject to change (see [stability](#stability) for details).
-However, it is very much in a usable state, so if you're fine living on the bleeding edge, give it a try. 
+Chiseltest is the _batteries-included_ testing and formal verification library for
+[Chisel](https://github.com/chipsalliance/chisel3)-based RTL designs.
+Chiseltest emphasizes tests that are lightweight (minimizes boilerplate code),
+easy to read and write (understandability), and compose (for better test code reuse).
 
-## Overview
-ChiselTest is a test harness for [Chisel](https://github.com/chipsalliance/chisel3)-based RTL designs, currently supporting directed testing (all test stimulus manually specified - no constrained random and coverage-driven flows).
-ChiselTest emphasizes tests that are lightweight (minimizes boilerplate code), easy to read and write (understandability), and compose (for better test code reuse).
-
-The core primitives are similar to nonsynthesizable Verilog: input pin assignment (`poke`), pin value assertion (`expect`), and time advance (`step`). Threading concurrency is also supported with the use of `fork` and `join`, and concurrent accesses to wires are checked to prevent race conditions.
-
-### Migrating from chisel-testers / iotesters
-The core abstractions (`poke`, `expect`, `step`) are similar to [chisel-testers](https://github.com/freechipsproject/chisel-testers), but the syntax is inverted: instead of doing `tester.poke(wire, value)` with a Scala number value, in ChiselTest you would write `wire.poke(value)` with a Chisel literal value.
-Furthermore, as no reference to the tester context is needed, test helper functions can be defined outside a test class and written as libraries.
-
-Currently, this should support all the functionality that was in chisel-testers, and provides additional features.
-This project is meant to supersede chisel-testers, and eventually may become a default part of chisel3.
-
-Test cases written in chisel-testers cannot be directly used in ChiselTest, as the syntax is significantly different.
-
-
-## Getting Started
-
-### Installation 
+## Installation 
 To use chisel-testers as a managed dependency, add this in your build.sbt:
 ```scala
-libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.2.1"
+libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.5.0-RC2"
 ```
 
-Note, `chiseltest` snapshots generally track chisel3 snapshots, and requires the use of a chisel3 snapshot.
-We may introduce versioned snapshots and releases in the future, tied to a particular release of chisel3.
+If you are also directly depending on the `chisel3` library, please
+[make sure that your chisel3 and chiseltest versions match](https://www.chisel-lang.org/chisel3/docs/appendix/versioning.html)
+to avoid linking errors.
 
-You can also build ChiselTest locally with `publishLocal`.
-
-### Writing a Test
-ChiselTest integrates with the [ScalaTest](http://scalatest.org) framework, which provides a framework for detection and execution of unit tests.
+## Writing a Test
+ChiselTest integrates with the [ScalaTest](http://scalatest.org) framework,
+which provides good IDE and continuous integration support for launching
+unit tests.
 
 Assuming a typical Chisel project with `MyModule` defined in `src/main/scala/MyModule.scala`:
 
@@ -99,7 +83,7 @@ In this file:
     `testOnly` can also be used to run specific tests.
 
 
-## Usage References
+### Usage References
 See the test cases for examples:
 - [BasicTest](src/test/scala/chiseltest/tests/BasicTest.scala) shows basic `peek`, `poke`, and `step` functionality
 - [QueueTest](src/test/scala/chiseltest/tests/QueueTest.scala) shows example uses of the DecoupledDriver library, providing functions like `enqueueNow`, `expectDequeueNow`, their sequence variants, `expectPeek`, and `expectInvalid`.
@@ -111,16 +95,6 @@ See the test cases for examples:
     ```
 - [AlutTest](src/test/scala/chiseltest/tests/AluTest.scala) shows an example of re-using the same test for different data
 - [ShiftRegisterTest](src/test/scala/chiseltest/tests/ShiftRegisterTest.scala) shows an example of using fork/join to define a test helper function, where multiple invocations of it are pipelined using `fork`.
-- [VerilatorBasicTests](src/test/scala/chiseltest/experimental/tests/VerilatorBasicTests.scala) shows an example using Verilator as the simulator.
-  - Note: the simulator is selected by passing an annotation into the `test` function, which requires experimental imports:
-    ```scala
-    import chiseltest._
-    ```
-    ```scala
-    test(new MyModule).withAnnotations(Seq(VerilatorBackendAnnotation)) { c =>
-      // test body here
-    }
-    ``` 
 
 ## New Constructs
 - `fork` to spawn threads, and `join` to block (wait) on a thread.
@@ -139,14 +113,26 @@ See the test cases for examples:
   This fits well with the pattern of assigning a default pull-up/down to a wire, and temporarily overriding that value, for example a Decoupled `valid` signal defaulting low but driven high during an enqueue transaction.
   See [TimescopeTest](src/test/scala/chiseltest/tests/TimescopeTest.scala) for examples.
 
+## Simulator Backends
 
-## Quick References
-To dump VCDs (into the test_run_dir subfolder) using sbt:
-```
-testOnly chiseltest.tests.BasicTest -- -DwriteVcd=1
-```
+One of our goals is to keep your tests independent of the underlying simulator as much as possible.
+Thus, in most cases you should be able to choose from one of our four supported backends and get the
+exact same test results albeit with differences in execution speed and wave dump quality.
 
-## Verilator Backend
+
+We provide full bindings to two popular open-source simulator:
+- [treadle](https://github.com/chipsalliance/treadle): default, fast startup times, slow execution for larger circuits,
+  supports only VCD
+- [verilator](https://www.veripool.org/wiki/verilato): enable with `VerilatorBackendAnnotation`, slow startup,
+  fast execution, supports VCD and FST
+
+We also provide bindings with some feature limitations to:
+- [iverilog](http://iverilog.icarus.com/): open-source, enable with `IcarusBackendAnnotation`, supports VCD, FST and LXT
+- [vcs](https://www.synopsys.com/verification/simulation/vcs.html): commercial, enable with `VcsBackendAnnotation`,
+  supports VCD and FSDB
+
+
+### Verilator Versions
 
 We currently support the following versions of the [verilator](https://www.veripool.org/wiki/verilator) simulator:
 - `v4.028`: [Ubuntu 20.04](https://packages.ubuntu.com/focal/verilator), [Fedora 32](https://src.fedoraproject.org/rpms/verilator)
@@ -157,21 +143,30 @@ We currently support the following versions of the [verilator](https://www.verip
 - `v4.202`
 
 ## Stability
-These APIs may be considered stable and are unlikely to change significantly:
-- Test invocation `test`
-- Basic operations: `poke`, `peek`, `expect`, `step`, including on Bundles
-- Basic concurrency operations: `fork`, `join`
-- Decoupled library: `enqueueNow`, `expectDequeueNow`, their sequence variants, `expectPeek`, `expectInvalid` - though the names may be refactored
-- `timescope` - though the name may be refactored
+Most APIs that can be accessed through `import chiseltest._` are going to remain stable.
+We are also trying to keep the API provided through `import chiseltest.formal._` relatively stable.
+All other packages are considered internal and thus might change at any time.
 
-These are subject to change:
-- Multiclock behavior, which is currently not well defined, including `poke` on clocks and `step` when there are multiple clocks.
+## Migrating from chisel-testers / iotesters
 
+### Port to new API
+The core abstractions (`poke`, `expect`, `step`) are similar to
+[chisel-testers](https://github.com/freechipsproject/chisel-testers), but the syntax is inverted:
+instead of doing `tester.poke(wire, value)` with a Scala number value, in ChiselTest you would write `wire.poke(value)`
+with a Chisel literal value.
+Furthermore, as no reference to the tester context is needed,
+test helper functions can be defined outside a test class and written as libraries.
 
-## Roadmap
-These features are on our roadmap, but are not implemented yet.
-No timeframe is currently available, but feel free to let us know if some feature is critical to your use case in the relevant issue thread, and we may adjust our development priorities accordingly.
-- [#14](https://github.com/ucb-bar/chisel-testers2/issues/14) support for multi-clock designs, and in particular, supporting clock poke to clock step inter-thread dependencies.
-- [#28](https://github.com/ucb-bar/chisel-testers2/issues/28) faster Verilator / VCS testing using mechanisms that avoid interprocess communication, like JNI
-- [#58](https://github.com/ucb-bar/chisel-testers2/issues/58) faster threading (note, unclear if there are good solutions here, especially ones that are fully API compatible - Scala generally lacks good coroutine support)
-- [#60](https://github.com/ucb-bar/chisel-testers2/issues/60), [#34](https://github.com/ucb-bar/chisel-testers2/issues/34), [#2](https://github.com/ucb-bar/chisel-testers2/issues/2) support for testing non-Chisel modules, such as post-syn Verilog, or generally a separation of DUT interface and implementation
+### PeekPokeTester compatibility
+
+`chiseltest` now provides a compatibility layer that makes it possible to re-use old `PeekPokeTester` based
+tests with little to no changes to the code.
+We ported the majority of [tests from the chisel-testers repository](https://github.com/freechipsproject/chisel-testers/tree/master/src/test/scala)
+to our [new compatibility layer](https://github.com/ucb-bar/chiseltest/tree/master/src/test/scala/chiseltest/iotesters).
+While the test itself can mostly remain unchanged, the old `Driver` is removed and instead tests are launched
+with the new `test` syntax.
+
+### Hardware testers
+
+Hardware testers are synthesizeable tests, most often extending the `BasicTester` class provided by `chisel3`.
+You can now directly [use these tests with `chiseltest` through the `runUntilStop` function](https://github.com/ucb-bar/chiseltest/blob/master/src/test/scala/chiseltest/tests/HardwareTestsTest.scala).
