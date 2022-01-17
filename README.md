@@ -8,7 +8,7 @@ easy to read and write (understandability), and compose (for better test code re
 ## Installation 
 To use chisel-testers as a managed dependency, add this in your build.sbt:
 ```scala
-libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.5.0-RC2"
+libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.5.0"
 ```
 
 If you are also directly depending on the `chisel3` library, please
