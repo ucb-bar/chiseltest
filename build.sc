@@ -9,8 +9,8 @@ import coursier.maven.MavenRepository
 object chiseltest extends mill.Cross[chiseltestCrossModule]("2.12.13")
 
 val defaultVersions = Map(
-  "chisel3" -> "3.5-SNAPSHOT",
-  "treadle" -> "1.5-SNAPSHOT"
+  "chisel3" -> "3.6-SNAPSHOT",
+  "treadle" -> "1.6-SNAPSHOT"
 )
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
@@ -49,7 +49,7 @@ class chiseltestCrossModule(val crossScalaVersion: String)
   // 2.12.12 -> Array("2", "12", "12") -> "12" -> 12
   private def majorVersion = crossScalaVersion.split('.')(1).toInt
 
-  def publishVersion = "0.5-SNAPSHOT"
+  def publishVersion = "0.6-SNAPSHOT"
 
   override def scalacOptions = T {
     super.scalacOptions() ++ Seq(
