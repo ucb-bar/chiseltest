@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.experimental.{DataMirror, Direction, EnumType, FixedPoint, Interval}
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._
+import chisel3.internal.firrtl.KnownBinaryPoint
 import chisel3.util._
 
 /** Basic interfaces and implicit conversions for testers2
@@ -78,6 +79,55 @@ package object chiseltest {
     def expect(value: BigInt, message: => String): Unit = expectInternal(value, Some(() => message))
     def peek():       SInt = Context().backend.peekBits(x).asSInt(DataMirror.widthOf(x))
     def peekBigInt(): BigInt = Context().backend.peekBits(x)
+  }
+
+  /** allows access to chisel Interval type signals with Scala native values */
+  implicit class testableInterval(x: Interval) {
+    private def asInterval(value: Double):     Interval = value.I(Utils.getFirrtlWidth(x), x.binaryPoint)
+    private def asInterval(value: BigDecimal): Interval = value.I(Utils.getFirrtlWidth(x), x.binaryPoint)
+    def poke(value: Interval): Unit = {
+      require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
+      Utils.pokeBits(x, value.litValue)
+    }
+    def poke(value: Double):     Unit = poke(asInterval(value))
+    def poke(value: BigDecimal): Unit = poke(asInterval(value))
+    private[chiseltest] def expectInternal(value: Interval, message: Option[() => String]): Unit = {
+      require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
+      Context().backend.expectBits(x, value.litValue, message, Some(Utils.fixedToString(x.binaryPoint)))
+    }
+    def expect(value: Interval): Unit = expectInternal(value, None)
+    def expect(value: Interval, message: => String): Unit = expectInternal(value, Some(() => message))
+    private[chiseltest] def expectInternal(value: Double, epsilon: Double, message: Option[() => String]): Unit = {
+      ???
+    }
+    def expect(value: Double): Unit = expectInternal(value, epsilon = 0.01, None)
+    def expect(value: Double, epsilon: Double): Unit = expectInternal(value, epsilon = epsilon, None)
+    def expect(value: Double, message: => String): Unit =
+      expectInternal(value, epsilon = 0.01, Some(() => message))
+    def expect(value: Double, message: => String, epsilon: Double): Unit =
+      expectInternal(value, epsilon = epsilon, Some(() => message))
+    private[chiseltest] def expectInternal(
+      value:   BigDecimal,
+      epsilon: BigDecimal,
+      message: Option[() => String]
+    ): Unit = {
+      ???
+    }
+    def expect(value: BigDecimal): Unit = expectInternal(value, epsilon = 0.01, None)
+    def expect(value: BigDecimal, epsilon: BigDecimal): Unit = expectInternal(value, epsilon = epsilon, None)
+    def expect(value: BigDecimal, message: => String): Unit =
+      expectInternal(value, epsilon = 0.01, Some(() => message))
+    def expect(value: BigDecimal, message: => String, epsilon: BigDecimal): Unit =
+      expectInternal(value, epsilon = epsilon, Some(() => message))
+    def peek(): Interval = Context().backend.peekBits(x).I(x.binaryPoint)
+    def peekDouble(): Double = x.binaryPoint match {
+      case KnownBinaryPoint(bp) => Interval.toDouble(Context().backend.peekBits(x), bp)
+      case _                    => throw new Exception("Cannot peekInterval with unknown binary point location")
+    }
+    def peekBigDecimal(): BigDecimal = x.binaryPoint match {
+      case KnownBinaryPoint(bp) => Interval.toBigDecimal(Context().backend.peekBits(x), bp)
+      case _                    => throw new Exception("Cannot peekInterval with unknown binary point location")
+    }
   }
 
   implicit class testableRecord[T <: Record](x: T) {
@@ -305,6 +355,12 @@ package object chiseltest {
       if (value < min || value > max) {
         throw new ChiselException(s"Value $value does not fit into the range of $signal ($min ... $max)")
       }
+    }
+
+    // helps us work around the fact that signal.width is private!
+    def getFirrtlWidth(signal: Bits): chisel3.internal.firrtl.Width = signal.widthOption match {
+      case Some(value) => chisel3.internal.firrtl.KnownWidth(value)
+      case None        => chisel3.internal.firrtl.UnknownWidth()
     }
 
     def boolBitsToString(bits: BigInt): String = (bits != 0).toString
