@@ -150,7 +150,8 @@ private[chiseltest] object Maltese {
       case (None, value) =>
         mem = Vector.fill(depth)(value)
       case (Some(addr), value) =>
-        mem = mem.updated(addr.toInt, value)
+        // ignore out of bounds results (on the SMT level, the memory depth is always a power of two)
+        if (addr < depth) { mem = mem.updated(addr.toInt, value) }
     }
     mem
   }
