@@ -5,6 +5,7 @@ package chiseltest.tests
 import chisel3._
 import chisel3.experimental.Interval
 import chiseltest._
+import org.scalatest.exceptions.TestFailedException
 import org.scalatest.freespec.AnyFreeSpec
 
 class IntervalTests extends AnyFreeSpec with ChiselScalatestTester {
@@ -49,7 +50,9 @@ class IntervalTests extends AnyFreeSpec with ChiselScalatestTester {
   }
 
   "not enough bits and interval pseudo divide will not work" in {
-    test(new IntervalDivide(Interval(10.W, 4.BP), 2)) (testIntervalDivide)
+    assertThrows[TestFailedException] {
+      test(new IntervalDivide(Interval(10.W, 4.BP), 2))(testIntervalDivide)
+    }
   }
 }
 

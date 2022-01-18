@@ -98,8 +98,8 @@ package object chiseltest {
     }
     def expect(value: Interval): Unit = expectInternal(value, None)
     def expect(value: Interval, message: => String): Unit = expectInternal(value, Some(() => message))
-    private[chiseltest] def expectInternal(value: Double, epsilon: Double, message: Option[() => String]): Unit = {
-      ???
+    private[chiseltest] def expectInternal(expected: Double, epsilon: Double, userMsg: Option[() => String]): Unit = {
+      Utils.expectEpsilon(x, peekDouble(), expected, epsilon, userMsg)
     }
     def expect(value: Double): Unit = expectInternal(value, epsilon = 0.01, None)
     def expect(value: Double, epsilon: Double): Unit = expectInternal(value, epsilon = epsilon, None)
@@ -108,11 +108,11 @@ package object chiseltest {
     def expect(value: Double, message: => String, epsilon: Double): Unit =
       expectInternal(value, epsilon = epsilon, Some(() => message))
     private[chiseltest] def expectInternal(
-      value:   BigDecimal,
-      epsilon: BigDecimal,
-      message: Option[() => String]
+      expected: BigDecimal,
+      epsilon:  BigDecimal,
+      userMsg:  Option[() => String]
     ): Unit = {
-      ???
+      Utils.expectEpsilon(x, peekBigDecimal(), expected, epsilon, userMsg)
     }
     def expect(value: BigDecimal): Unit = expectInternal(value, epsilon = 0.01, None)
     def expect(value: BigDecimal, epsilon: BigDecimal): Unit = expectInternal(value, epsilon = epsilon, None)
@@ -148,8 +148,8 @@ package object chiseltest {
     }
     def expect(value: FixedPoint): Unit = expectInternal(value, None)
     def expect(value: FixedPoint, message: => String): Unit = expectInternal(value, Some(() => message))
-    private[chiseltest] def expectInternal(value: Double, epsilon: Double, message: Option[() => String]): Unit = {
-      ???
+    private[chiseltest] def expectInternal(expected: Double, epsilon: Double, userMsg: Option[() => String]): Unit = {
+      Utils.expectEpsilon(x, peekDouble(), expected, epsilon, userMsg)
     }
     def expect(value: Double): Unit = expectInternal(value, epsilon = 0.01, None)
     def expect(value: Double, epsilon: Double): Unit = expectInternal(value, epsilon = epsilon, None)
@@ -158,11 +158,11 @@ package object chiseltest {
     def expect(value: Double, message: => String, epsilon: Double): Unit =
       expectInternal(value, epsilon = epsilon, Some(() => message))
     private[chiseltest] def expectInternal(
-      value:   BigDecimal,
-      epsilon: BigDecimal,
-      message: Option[() => String]
+      expected: BigDecimal,
+      epsilon:  BigDecimal,
+      userMsg:  Option[() => String]
     ): Unit = {
-      ???
+      Utils.expectEpsilon(x, peekBigDecimal(), expected, epsilon, userMsg)
     }
     def expect(value: BigDecimal): Unit = expectInternal(value, epsilon = 0.01, None)
     def expect(value: BigDecimal, epsilon: BigDecimal): Unit = expectInternal(value, epsilon = epsilon, None)
@@ -443,13 +443,45 @@ package object chiseltest {
       }
     }
 
-    def expectBits(signal: Data, actual: BigInt, msg: Option[() => String], decode: Option[BigInt => String]): Unit = {
-      val expected = Context().backend.peekBits(signal)
+    def expectEpsilon(
+      signal:   Data,
+      actual:   Double,
+      expected: Double,
+      epsilon:  Double,
+      userMsg:  Option[() => String]
+    ): Unit = {
+      val ok = (actual - expected).abs < epsilon
+      if (!ok) {
+        val signalName = Context().backend.resolveName(signal)
+        val msg = s"$signalName: ($actual - $expected).abs = ${(actual - expected).abs} >= eps=$epsilon"
+        Utils.expectFailed(msg, userMsg)
+      }
+    }
+
+    def expectEpsilon(
+      signal:   Data,
+      actual:   BigDecimal,
+      expected: BigDecimal,
+      epsilon:  BigDecimal,
+      userMsg:  Option[() => String]
+    ): Unit = {
+      val ok = (actual - expected).abs < epsilon
+      if (!ok) {
+        val signalName = Context().backend.resolveName(signal)
+        val msg = s"$signalName: ($actual - $expected).abs = ${(actual - expected).abs} >= eps=$epsilon"
+        Utils.expectFailed(msg, userMsg)
+      }
+    }
+
+    def expectBits(
+      signal:   Data,
+      expected: BigInt,
+      msg:      Option[() => String],
+      decode:   Option[BigInt => String]
+    ): Unit = {
+      val actual = Context().backend.peekBits(signal)
       if (expected != actual) {
-        val appendMsg = msg match {
-          case Some(m) => s": ${m()}"
-          case _       => ""
-        }
+
         val (actualStr, expectedStr) = decode match {
           case Some(decode) =>
             (
@@ -460,12 +492,18 @@ package object chiseltest {
             (s"$actual (${bigIntToHex(actual)})", s"$expected (${bigIntToHex(expected)})")
         }
         val signalName = Context().backend.resolveName(signal)
-        val message = s"$signalName=$actualStr did not equal expected=$expectedStr$appendMsg"
-        expectFailed(message)
+        val message = s"$signalName=$actualStr did not equal expected=$expectedStr"
+        expectFailed(message, msg)
       }
     }
 
-    def expectFailed(message: String): Unit = Context().env.signalExpectFailure(message)
+    def expectFailed(message: String, userMsg: Option[() => String]): Unit = {
+      val appendMsg = userMsg match {
+        case Some(m) => s": ${m()}"
+        case _       => ""
+      }
+      Context().env.signalExpectFailure(message + appendMsg)
+    }
   }
 
   implicit class testableClock(x: Clock) {

@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.experimental.FixedPoint
 import chiseltest._
 import chiseltest.simulator.RequiresVerilator
+import org.scalatest.exceptions.TestFailedException
 import org.scalatest.freespec.AnyFreeSpec
 
 class FixedPointTests extends AnyFreeSpec with ChiselScalatestTester {
@@ -50,7 +51,9 @@ class FixedPointTests extends AnyFreeSpec with ChiselScalatestTester {
   }
 
   "not enough bits and fixed point pseudo divide will not work" in {
-    test(new FixedPointDivide(FixedPoint(10.W, 4.BP), 2))(testFixedPointDivide)
+    assertThrows[TestFailedException] {
+      test(new FixedPointDivide(FixedPoint(10.W, 4.BP), 2))(testFixedPointDivide)
+    }
   }
 
   private def testFixedIsWhole(dut: FixedIsWhole): Unit = {
