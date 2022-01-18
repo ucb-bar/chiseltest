@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - master
+      - 0.5.x
       - 0.3.x
 
 jobs:
