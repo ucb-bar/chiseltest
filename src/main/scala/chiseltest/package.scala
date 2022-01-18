@@ -93,7 +93,8 @@ package object chiseltest {
     def poke(value: BigDecimal): Unit = poke(asInterval(value))
     private[chiseltest] def expectInternal(value: Interval, message: Option[() => String]): Unit = {
       require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
-      Context().backend.expectBits(x, value.litValue, message, Some(Utils.fixedToString(x.binaryPoint)))
+      // for backwards compatibility reasons, we do not support epsilon when expect is called with the Interval type.
+      Utils.expectBits(x, value.litValue, message, Some(Utils.fixedToString(x.binaryPoint)))
     }
     def expect(value: Interval): Unit = expectInternal(value, None)
     def expect(value: Interval, message: => String): Unit = expectInternal(value, Some(() => message))
@@ -142,7 +143,8 @@ package object chiseltest {
     def poke(value: BigDecimal): Unit = poke(asFixedPoint(value))
     private[chiseltest] def expectInternal(value: FixedPoint, message: Option[() => String]): Unit = {
       require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
-      Context().backend.expectBits(x, value.litValue, message, Some(Utils.fixedToString(x.binaryPoint)))
+      // for backwards compatibility reasons, we do not support epsilon when expect is called with the FixedPoint type.
+      Utils.expectBits(x, value.litValue, message, Some(Utils.fixedToString(x.binaryPoint)))
     }
     def expect(value: FixedPoint): Unit = expectInternal(value, None)
     def expect(value: FixedPoint, message: => String): Unit = expectInternal(value, Some(() => message))
@@ -337,7 +339,7 @@ package object chiseltest {
         }
       case (x: EnumType, value: EnumType) =>
         require(DataMirror.checkTypeEquivalence(x, value), s"EnumType mismatch")
-        Context().backend.expectBits(x, value.litValue, message, Some(enumToString(x)))
+        Utils.expectBits(x, value.litValue, message, Some(enumToString(x)))
       case x => throw new LiteralTypeException(s"don't know how to expect $x")
       // TODO: aggregate types
     }
@@ -365,6 +367,7 @@ package object chiseltest {
   }
 
   private object Utils {
+
     import chisel3.internal.firrtl.{BinaryPoint, KnownBinaryPoint, UnknownBinaryPoint}
 
     // Throw an exception if the value cannot fit into the signal.
@@ -415,11 +418,13 @@ package object chiseltest {
           case UnknownBinaryPoint => "[unknown binary point]"
         }
       }
+
       inner
     }
 
     def enumToString(record: EnumType): BigInt => String = {
       def inner(bits: BigInt): String = "[unimplemented enum decode]"
+
       inner
     }
 
@@ -430,14 +435,37 @@ package object chiseltest {
       Context().backend.pokeBits(signal, value)
     }
 
-    def expectBits(
-      signal:  Data,
-      value:   BigInt,
-      message: Option[() => String],
-      decode:  Option[BigInt => String]
-    ): Unit = {
-      Context().backend.expectBits(signal, value, message, decode)
+    private def bigIntToHex(x: BigInt): String = {
+      if (x < 0) {
+        f"-0x${-x}%x"
+      } else {
+        f"0x$x%x"
+      }
     }
+
+    def expectBits(signal: Data, actual: BigInt, msg: Option[() => String], decode: Option[BigInt => String]): Unit = {
+      val expected = Context().backend.peekBits(signal)
+      if (expected != actual) {
+        val appendMsg = msg match {
+          case Some(m) => s": ${m()}"
+          case _       => ""
+        }
+        val (actualStr, expectedStr) = decode match {
+          case Some(decode) =>
+            (
+              s"${decode(actual)} ($actual, ${bigIntToHex(actual)})",
+              s"${decode(expected)} ($expected, ${bigIntToHex(expected)})"
+            )
+          case None =>
+            (s"$actual (${bigIntToHex(actual)})", s"$expected (${bigIntToHex(expected)})")
+        }
+        val signalName = Context().backend.resolveName(signal)
+        val message = s"$signalName=$actualStr did not equal expected=$expectedStr$appendMsg"
+        expectFailed(message)
+      }
+    }
+
+    def expectFailed(message: String): Unit = Context().env.signalExpectFailure(message)
   }
 
   implicit class testableClock(x: Clock) {

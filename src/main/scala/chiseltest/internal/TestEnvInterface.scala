@@ -39,56 +39,23 @@ trait TestEnvInterface {
     }
   }
 
-  protected def bigintToHex(x: BigInt): String = {
-    if (x < 0) {
-      f"-0x${-x}%x"
-    } else {
-      f"0x$x%x"
-    }
-  }
-
-  /** Expect a specific value on a wire, calling testerFail if the expectation isn't met.
+  /** Adds a failure message with correct stack trace to the batched failures.
     * Failures queued until the next checkpoint.
     */
-  def testerExpect(
-    expected: BigInt,
-    actual:   BigInt,
-    signal:   String,
-    msg:      Option[() => String],
-    decode:   Option[BigInt => String]
-  ): Unit = {
-    if (expected != actual) {
-      val appendMsg = msg match {
-        case Some(m) => s": ${m()}"
-        case _       => ""
-      }
+  def signalExpectFailure(message: String): Unit = {
+    val trace = new Throwable
+    val expectStackDepth = trace.getStackTrace.indexWhere(ste =>
+      ste.getClassName.startsWith("chiseltest.package$") && ste.getMethodName == "expect"
+    )
+    require(
+      expectStackDepth != -1,
+      s"Failed to find expect in stack trace:\r\n${trace.getStackTrace.mkString("\r\n")}"
+    )
 
-      val trace = new Throwable
-      val expectStackDepth = trace.getStackTrace.indexWhere(ste =>
-        ste.getClassName.startsWith("chiseltest.package$") && ste.getMethodName == "expect"
-      )
-      require(
-        expectStackDepth != -1,
-        s"Failed to find expect in stack trace:\r\n${trace.getStackTrace.mkString("\r\n")}"
-      )
-
-      val trimmedTrace = trace.getStackTrace.drop(expectStackDepth + 2)
-      val detailedTrace = topFileName.map(getExpectDetailedTrace(trimmedTrace.toSeq, _)).getOrElse("")
-
-      val (actualStr, expectedStr) = decode match {
-        case Some(decode) =>
-          (
-            s"${decode(actual)} ($actual, ${bigintToHex(actual)})",
-            s"${decode(expected)} ($expected, ${bigintToHex(expected)})"
-          )
-        case None =>
-          (s"$actual (${bigintToHex(actual)})", s"$expected (${bigintToHex(expected)})")
-      }
-
-      val message = s"$signal=$actualStr did not equal expected=$expectedStr$appendMsg$detailedTrace"
-      val stackIndex = expectStackDepth + 1
-      batchedFailures += new FailedExpectException(message, stackIndex)
-    }
+    val trimmedTrace = trace.getStackTrace.drop(expectStackDepth + 2)
+    val detailedTrace = topFileName.map(getExpectDetailedTrace(trimmedTrace.toSeq, _)).getOrElse("")
+    val stackIndex = expectStackDepth + 1
+    batchedFailures += new FailedExpectException(message + detailedTrace, stackIndex)
   }
 
   /** If there are any failures, reports them and end the test now.

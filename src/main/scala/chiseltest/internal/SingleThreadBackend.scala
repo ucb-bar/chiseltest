@@ -18,7 +18,7 @@ class SingleThreadBackend[T <: Module](
   coverageAnnotations:    AnnotationSeq)
     extends BackendInstance[T] {
 
-  private def resolveName(signal: Data): String = { // TODO: unify w/ dataNames?
+  override def resolveName(signal: Data): String = {
     dataNames.getOrElse(signal, signal.toString)
   }
 
@@ -55,15 +55,6 @@ class SingleThreadBackend[T <: Module](
   override def peekBits(signal: Data): BigInt = {
     val a = tester.peek(dataNames(signal))
     a
-  }
-
-  override def expectBits(
-    signal:  Data,
-    value:   BigInt,
-    message: Option[() => String],
-    decode:  Option[BigInt => String]
-  ): Unit = {
-    Context().env.testerExpect(value, peekBits(signal), resolveName(signal), message, decode)
   }
 
   override def doTimescope(contents: () => Unit): Unit = {

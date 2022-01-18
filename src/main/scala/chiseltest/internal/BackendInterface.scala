@@ -50,12 +50,8 @@ trait BackendInterface {
     */
   def peekBits(signal: Data): BigInt
 
-  def expectBits(
-    signal:  Data,
-    value:   BigInt,
-    message: Option[() => String],
-    decode:  Option[BigInt => String]
-  ): Unit
+  /** Returns a human readable name of a signal. */
+  def resolveName(signal: Data): String
 
   /** Sets the timeout of the clock: the number of cycles the clock can advance without
     * some non-nop poke operation.

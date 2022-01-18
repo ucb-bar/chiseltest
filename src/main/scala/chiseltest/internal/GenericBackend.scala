@@ -28,7 +28,7 @@ class GenericBackend[T <: Module](
     if (verbose) println(str)
   }
 
-  protected def resolveName(signal: Data): String = { // TODO: unify w/ dataNames?
+  override def resolveName(signal: Data): String = {
     dataNames.getOrElse(signal, signal.toString)
   }
 
@@ -77,17 +77,6 @@ class GenericBackend[T <: Module](
     val a = tester.peek(dataNames(signal))
     debugLog(s"${resolveName(signal)} -> $a")
     a
-  }
-
-  override def expectBits(
-    signal:  Data,
-    value:   BigInt,
-    message: Option[() => String],
-    decode:  Option[BigInt => String]
-  ): Unit = {
-
-    debugLog(s"${resolveName(signal)} ?> $value")
-    Context().env.testerExpect(value, peekBits(signal), resolveName(signal), message, decode)
   }
 
   protected val clockCounter: mutable.HashMap[Clock, Int] = mutable.HashMap()
