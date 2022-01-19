@@ -58,8 +58,8 @@ package object chiseltest {
     def expect(value: UInt, message: => String): Unit = expectInternal(value.litValue, Some(() => message))
     def expect(value: BigInt): Unit = expectInternal(value, None)
     def expect(value: BigInt, message: => String): Unit = expectInternal(value, Some(() => message))
-    def peek():       UInt = Context().backend.peekBits(x).asUInt(DataMirror.widthOf(x))
-    def peekBigInt(): BigInt = Context().backend.peekBits(x)
+    def peek():    UInt = Context().backend.peekBits(x).asUInt(DataMirror.widthOf(x))
+    def peekInt(): BigInt = Context().backend.peekBits(x)
   }
 
   /** allows access to chisel SInt type signals with Scala native values */
@@ -77,8 +77,8 @@ package object chiseltest {
     def expect(value: SInt, message: => String): Unit = expectInternal(value.litValue, Some(() => message))
     def expect(value: BigInt): Unit = expectInternal(value, None)
     def expect(value: BigInt, message: => String): Unit = expectInternal(value, Some(() => message))
-    def peek():       SInt = Context().backend.peekBits(x).asSInt(DataMirror.widthOf(x))
-    def peekBigInt(): BigInt = Context().backend.peekBits(x)
+    def peek():    SInt = Context().backend.peekBits(x).asSInt(DataMirror.widthOf(x))
+    def peekInt(): BigInt = Context().backend.peekBits(x)
   }
 
   /** allows access to chisel Interval type signals with Scala native values */

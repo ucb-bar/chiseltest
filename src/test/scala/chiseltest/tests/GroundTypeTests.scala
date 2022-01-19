@@ -75,7 +75,7 @@ class GroundTypeTests extends AnyFlatSpec with ChiselScalatestTester {
     test(new PassthroughModule(UInt(4.W))) { c =>
       (0 until 16).foreach { ii =>
         c.in.poke(ii.U)
-        assert(c.out.peekBigInt() == ii)
+        assert(c.out.peekInt() == ii)
         c.clock.step()
       }
     }
@@ -85,7 +85,7 @@ class GroundTypeTests extends AnyFlatSpec with ChiselScalatestTester {
     test(new PassthroughModule(SInt(4.W))) { c =>
       (-8 to 7).foreach { ii =>
         c.in.poke(ii.S)
-        assert(c.out.peekBigInt() == ii)
+        assert(c.out.peekInt() == ii)
         c.clock.step()
       }
     }
