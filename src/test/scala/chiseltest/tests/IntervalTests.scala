@@ -67,3 +67,4 @@ class IntervalDivide(intervalType: Interval, val shiftAmount: Int) extends Modul
   val out = IO(Output(intervalType))
   out := (in.asUInt >> shiftAmount).asInterval(intervalType.range)
 }
+

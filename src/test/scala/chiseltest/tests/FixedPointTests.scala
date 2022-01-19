@@ -99,3 +99,4 @@ private class FixedPointDivide(val fixedType: FixedPoint, val shiftAmount: Int) 
   val out = IO(Output(fixedType))
   out := (in.asUInt >> shiftAmount).asFixedPoint(fixedType.binaryPoint)
 }
+
