@@ -75,6 +75,17 @@ class MemoryTests extends AnyFlatSpec with ChiselScalatestTester with Formal wit
     }
     assert(e.failAt == 0)
   }
+  "read-only memory" should "always return the initial value when reading in-bounds" taggedAs FormalTag in {
+    verify(new OutOfBoundsValueIs(-1), Seq(BoundedCheck(1), DefaultBackend))
+  }
+  "read-only memory" should "return an arbitrary value when reading out-of-bounds" taggedAs FormalTag in {
+    (0 until 4).foreach { ii =>
+      val e = intercept[FailedBoundedCheckException] {
+        verify(new OutOfBoundsValueIs(ii), Seq(BoundedCheck(1), DefaultBackend))
+      }
+      assert(e.failAt == 0)
+    }
+  }
 }
 
 class SyncMemTestModule(readUnderWrite: ReadUnderWrite) extends Module {
@@ -182,5 +193,24 @@ class ReadEnableMemValidDataAfterEnTrue extends ReadEnableSyncMemModule {
 class ReadEnableMemInvalidDataAfterEnFalse extends ReadEnableSyncMemModule {
   when(past(!en)) {
     assert(data === 0.U)
+  }
+}
+
+class OutOfBoundsValueIs(value: Int) extends Module {
+  val readAddr = IO(Input(UInt(2.W)))
+  val out = IO(Output(UInt(8.W)))
+  // memory with three entries initialized to zero
+  val m = Mem(3, UInt(8.W))
+  annotate(new ChiselAnnotation {
+    override def toFirrtl = MemoryScalarInitAnnotation(m.toTarget, 0)
+  })
+  out := m.read(readAddr)
+  // all in bounds entries should be zero
+  when(readAddr === 0.U) { assert(out === 0.U) }
+  when(readAddr === 1.U) { assert(out === 0.U) }
+  when(readAddr === 2.U) { assert(out === 0.U) }
+  // out of bounds read should never be equal to the constant value
+  if(value >= 0) {
+    when(readAddr === 3.U) { assert(out === value.U, "%d =/= %d", out, value.U) }
   }
 }
