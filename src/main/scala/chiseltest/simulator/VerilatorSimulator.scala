@@ -45,7 +45,7 @@ private object VerilatorSimulator extends Simulator {
 
   // example version string: Verilator 4.038 2020-07-11 rev v4.038
   private lazy val version: (Int, Int) = { // (major, minor)
-    val versionSplitted = os.proc("verilator", "--version").call().out.trim.split(' ')
+    val versionSplitted = os.proc(if (JNAUtils.isWindows) {"verilator_bin"} else {"verilator"}, "--version").call().out.trim.split(' ')
     assert(
       versionSplitted.length > 1 && versionSplitted.head == "Verilator",
       s"Unknown verilator version string: ${versionSplitted.mkString(" ")}"
@@ -155,7 +155,7 @@ private object VerilatorSimulator extends Simulator {
       ret.exitCode == 0,
       s"Compilation of verilator generated code failed for circuit $topName in work dir $verilatedDir"
     )
-    val simBinary = verilatedDir / target
+    val simBinary = if (JNAUtils.isWindows) {verilatedDir / s"${target}.exe"} else {verilatedDir / target}
     assert(os.exists(simBinary), s"Failed to generate simulation binary: $simBinary")
     simBinary
   }
@@ -173,7 +173,7 @@ private object VerilatorSimulator extends Simulator {
     removeOldCode(verilatedDir, verbose)
     val flagAnnos = VerilatorLinkFlags(JNAUtils.ldFlags) +: VerilatorCFlags(JNAUtils.ccFlags) +: annos
     val flags = generateFlags(topName, verilatedDir, flagAnnos)
-    val cmd = List("verilator", "--cc", "--exe", cppHarness) ++ flags ++ List(s"$topName.sv")
+    val cmd = List(if (JNAUtils.isWindows) {"verilator_bin"} else {"verilator"}, "--cc", "--exe", cppHarness) ++ flags ++ List(s"$topName.sv")
     val ret = run(cmd, targetDir, verbose)
 
     assert(ret.exitCode == 0, s"verilator command failed on circuit ${topName} in work dir $targetDir")
@@ -221,7 +221,7 @@ private object VerilatorSimulator extends Simulator {
     cFlags.mkString(" "),
     // name of the directory that verilator generates the C++ model + Makefile in
     "-Mdir",
-    verilatedDir.toString()
+    s"${verilatedDir.toString()}"
   ) ++ (if (ldFlags.nonEmpty) Seq("-LDFLAGS", ldFlags.mkString(" ")) else Seq())
 
   // documentation of Verilator flags: https://verilator.org/guide/latest/exe_verilator.html#

@@ -5,22 +5,30 @@ import com.sun.jna._
 import scala.collection.JavaConverters
 
 object JNAUtils {
+  val isWindows: Boolean = System.getProperty("os.name").toLowerCase().contains("win")
+
   def javaHome: String = System.getProperty("java.home") match {
     case s: String if s.endsWith("/jre") => s.dropRight(4)
     case s: String                       => s
   }
-  def osIncludeName: String = System.getProperty("os.name") match {
-    case "Mac OS X" => "darwin"
-    case "Linux"    => "linux"
-    case s: String => s
+
+  def osIncludeName: String = if (isWindows) {
+    "win32"
+  } else {
+    System.getProperty("os.name") match {
+      case "Mac OS X"   => "darwin"
+      case "Linux"      => "linux"
+      case "Windows 10" => "win32"
+      case s: String => s
+    }
   }
 
   /** additional ccFlags that are required in order to compile into a library that can be loaded with JNI */
   def ccFlags: Seq[String] = Seq(
     "-fPIC",
     "-shared",
-    s"-I$javaHome/include",
-    s"-I$javaHome/include/$osIncludeName",
+    s"""-I'$javaHome/include'""",
+    s"""-I'$javaHome/include/$osIncludeName'""",
     // hide all symbols in the shared object by default
     // https://stackoverflow.com/questions/435352/limiting-visibility-of-symbols-when-linking-shared-libraries
     "-fvisibility=hidden"
@@ -61,7 +69,11 @@ object JNAUtils {
     os.copy.over(libPath, to = libCopy)
     // dlopen options: RTLD_NOW
     val opts = JavaConverters.mapAsJavaMap(Map(Library.OPTION_OPEN_FLAGS -> 2))
-    val so = NativeLibrary.getInstance(libCopy.toString(), opts)
+    val so = if (isWindows) {
+      NativeLibrary.getInstance(libCopy.toString())
+    } else {
+      NativeLibrary.getInstance(libCopy.toString(), opts)
+    }
     val initFoo = so.getFunction("sim_init")
     val sPtr = initFoo.invokePointer(Array())
     new TesterSharedLibInterface(so = so, sPtr = sPtr)
@@ -78,7 +90,11 @@ object JNAUtils {
   def genJNACppCode(simState: String): String = {
     val header =
       s"""// we only export the symbols that we prefixed with a unique id
+         |#if defined _WIN32 || defined __CYGWIN__ || defined __MINGW32__ || defined __MINGW64__
+         |#define _EXPORT __declspec(dllexport)
+         |#else
          |#define _EXPORT __attribute__((visibility("default")))
+         |#endif
          |extern "C" {
          |""".stripMargin
 
