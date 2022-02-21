@@ -237,7 +237,7 @@ private object VerilatorSimulator extends Simulator {
     cFlags.mkString(" "),
     // name of the directory that verilator generates the C++ model + Makefile in
     "-Mdir",
-    s"${verilatedDir.toString()}"
+    verilatedDir.toString()
   ) ++ (if (ldFlags.nonEmpty) Seq("-LDFLAGS", ldFlags.mkString(" ")) else Seq())
 
   // documentation of Verilator flags: https://verilator.org/guide/latest/exe_verilator.html#
