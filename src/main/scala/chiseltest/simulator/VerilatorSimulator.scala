@@ -87,7 +87,9 @@ private object VerilatorSimulator extends Simulator {
     val targetDir = Compiler.requireTargetDir(state.annotations)
     val toplevel = TopmoduleInfo(state.circuit)
 
-    val libPath = targetDir / "verilated" / ("V" + toplevel.name)
+    val libFilename = if (JNAUtils.isWindows) { "V" + toplevel.name + ".exe" }
+    else { "V" + toplevel.name }
+    val libPath = targetDir / "verilated" / libFilename
     // the binary we created communicates using our standard IPC interface
     val coverageAnnos = loadCoverageAnnos(targetDir)
     val coverageFile = targetDir / "coverage.dat"
