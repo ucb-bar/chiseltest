@@ -101,7 +101,7 @@ jobs:
         with:
           java-version: adopt@1.11
       - name: Test
-        run: sbt "testOnly -- -n RequiresVerilator"
+        run: sbt 'testOnly -- -n RequiresVerilator'
 
   verilator:
     name: verilator regressions
