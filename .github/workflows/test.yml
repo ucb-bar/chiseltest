@@ -97,7 +97,7 @@ jobs:
       - name: Print Verilator Version
         run: verilator_bin --version
       - name: Test
-        run: sbt 'testOnly -- -n RequiresVerilator'
+        run: sbt "testOnly -- -n RequiresVerilator"
 
   verilator:
     name: verilator regressions
