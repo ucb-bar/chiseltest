@@ -2,6 +2,7 @@
 
 package chiseltest.simulator
 
+import chiseltest.simulator.jna.JNAUtils
 import chiseltest.utils.CaptureStdout
 import org.scalatest.Tag
 import chiseltest.utils.FlatSpecWithTargetDir
@@ -18,7 +19,7 @@ class VerilatorMemoryCompliance extends MemoryCompliance(VerilatorSimulator, Req
 class VerilatorStopAssertAssumeCompliance extends StopAssertAssumeCompliance(VerilatorSimulator, RequiresVerilator)
 
 class VerilatorSpecificTests extends FlatSpecWithTargetDir {
-  behavior of "verilator"
+  behavior.of("verilator")
 
   private val sim = VerilatorSimulator
 
@@ -40,7 +41,9 @@ class VerilatorSpecificTests extends FlatSpecWithTargetDir {
       assert(dut.peek("io_out") == 1)
       dut.finish()
     }
-    assert(out.contains("verilator --cc --exe "))
+    val verilatorBinName = if (JNAUtils.isWindows) { "verilator_bin" }
+    else { "verilator" }
+    assert(out.contains(s"${verilatorBinName} --cc --exe "))
     assert(out.contains("g++"))
     assert(out.contains("perl"))
     assert(out.contains("make -C"))
