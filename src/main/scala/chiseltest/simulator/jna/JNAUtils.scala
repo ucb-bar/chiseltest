@@ -18,7 +18,6 @@ object JNAUtils {
     System.getProperty("os.name") match {
       case "Mac OS X"   => "darwin"
       case "Linux"      => "linux"
-      case "Windows 10" => "win32"
       case s: String => s
     }
   }
