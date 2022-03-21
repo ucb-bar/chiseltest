@@ -512,7 +512,13 @@ package object chiseltest {
     }
 
     def step(cycles: Int = 1): Unit = {
+      val currentClock = Context().backend.currentClockStep.getOrElse(x, BigInt(0))
+      Context().backend.currentClockStep(x) = currentClock + cycles
       Context().backend.step(x, cycles)
+    }
+
+    def getStep: BigInt = {
+      Context().backend.currentClockStep.getOrElse(x, BigInt(0))
     }
   }
 

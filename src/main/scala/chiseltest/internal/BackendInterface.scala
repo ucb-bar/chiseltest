@@ -32,6 +32,8 @@ class TesterThreadList(protected val elts: Seq[AbstractTesterThread]) {
   */
 trait BackendInterface {
 
+  val currentClockStep = collection.mutable.Map[Clock, BigInt]()
+
   /** Writes a value to a clock.
     */
   def pokeClock(signal: Clock, value: Boolean): Unit
