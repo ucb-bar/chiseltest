@@ -142,6 +142,33 @@ We currently support the following versions of the [verilator](https://www.verip
 - `v4.108`: [Fedora 34](https://src.fedoraproject.org/rpms/verilator)
 - `v4.202`
 
+## Frequently Asked Questions
+
+### How do I rerun with --full-stacktrace?
+
+Whereas Chisel accepts command-line arguments, chiseltest exposes the underlying annotation interface.
+You can pass annotations to a test by using `.withAnnotations(...)`, for example:
+```scala
+// Top of file
+import chisel3.stage.PrintFullStackTraceAnnotation
+
+// ...
+
+    // Inside your test spec
+    test(new MyModule).withAnnotations(Seq(PrintFullStackTraceAnnotation)) { c =>
+      // test body here
+    }
+```
+This will remove the chisel3 stacktrace suppression (ie. `at ... ()`).
+However, if you are using ScalaTest, you may notice a shortened stack trace with `...` at the end.
+You can tell ScalaTest to stop suppressing the stack trace by passing `-oF` to it.
+For example (using SBT):
+```bash
+$ sbt
+> testOnly <spec name> -- -oF
+```
+Any arguments after `--` pass to ScalaTest directly instead of being interpreted by SBT.
+
 ## Stability
 Most APIs that can be accessed through `import chiseltest._` are going to remain stable.
 We are also trying to keep the API provided through `import chiseltest.formal._` relatively stable.
