@@ -10,15 +10,14 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 
 class GetStepTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "Testers2"
+  behavior of "Testers2 clock getStep"
 
   private def runTest(c: StaticModule[_]): Unit = {
-    // one reset step will be performed by default, so the step count starts at one
-    assert(c.clock.getStep == 1)
+    assert(c.clock.getStep == 0)
     c.clock.step()
-    assert(c.clock.getStep == 2)
+    assert(c.clock.getStep == 1)
     c.clock.step(10)
-    assert(c.clock.getStep == 12)
+    assert(c.clock.getStep == 11)
   }
 
   it should "check steps in single clock" in {
@@ -30,7 +29,7 @@ class GetStepTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   private def randomClockStepper(rand: scala.util.Random, c: StaticModule[_], maxCycles: Int): Unit = {
-    var count = 1
+    var count = 0
     while(count < maxCycles) {
       val delta = rand.nextInt(3) + 1
       c.clock.step(delta)

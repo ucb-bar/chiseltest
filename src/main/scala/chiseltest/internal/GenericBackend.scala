@@ -150,12 +150,14 @@ class GenericBackend[T <: Module](
 
   override def run(testFn: T => Unit): AnnotationSeq = {
     rootTimescope = Some(new RootTimescope)
-    stepCount = 0
     val mainThread = new TesterThread(
       () => {
         tester.poke("reset", 1)
         stepMainClock()
         tester.poke("reset", 0)
+
+        // we only count the user steps
+        stepCount = 0
 
         testFn(dut)
       },

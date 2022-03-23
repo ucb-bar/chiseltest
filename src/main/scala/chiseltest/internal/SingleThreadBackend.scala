@@ -115,7 +115,9 @@ class SingleThreadBackend[T <: Module](
       tester.poke("reset", 1)
       tester.step(1)
       tester.poke("reset", 0)
-      stepCount = 1
+
+      // we only count the user steps
+      stepCount = 0
 
       // execute use code
       testFn(dut)
