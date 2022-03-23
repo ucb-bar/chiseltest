@@ -81,6 +81,7 @@ class SingleThreadBackend[T <: Module](
       case StepOk =>
         // update and check timeout
         idleCycles += delta
+        stepCount += delta
         if (timeout > 0 && idleCycles == timeout) {
           throw new TimeoutException(s"timeout on $signal at $timeout idle cycles")
         }
@@ -92,6 +93,13 @@ class SingleThreadBackend[T <: Module](
         val msg = s"A stop() statement was triggered in ${dut.name}."
         throw new StopException(msg)
     }
+  }
+
+  private var stepCount: Long = 0
+
+  override def getStep(signal: Clock): Long = {
+    require(signal == dut.clock)
+    stepCount
   }
 
   override def setTimeout(signal: Clock, cycles: Int): Unit = {
@@ -107,6 +115,9 @@ class SingleThreadBackend[T <: Module](
       tester.poke("reset", 1)
       tester.step(1)
       tester.poke("reset", 0)
+
+      // we only count the user steps
+      stepCount = 0
 
       // execute use code
       testFn(dut)

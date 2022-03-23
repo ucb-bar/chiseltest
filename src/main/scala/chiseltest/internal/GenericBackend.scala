@@ -127,9 +127,17 @@ class GenericBackend[T <: Module](
     }
   }
 
+  override def getStep(signal: Clock): Long = {
+    require(signal == dut.clock, "step count is only implemented for a single clock right now")
+    stepCount
+  }
+
+  private var stepCount: Long = 0
+
   private def stepMainClock(): Unit = {
     tester.step() match {
       case StepOk => // all right
+        stepCount += 1
       case StepInterrupted(_, true, _) =>
         val msg = s"An assertion in ${dut.name} failed.\n" +
           "Please consult the standard output for more details."
@@ -147,6 +155,9 @@ class GenericBackend[T <: Module](
         tester.poke("reset", 1)
         stepMainClock()
         tester.poke("reset", 0)
+
+        // we only count the user steps
+        stepCount = 0
 
         testFn(dut)
       },
