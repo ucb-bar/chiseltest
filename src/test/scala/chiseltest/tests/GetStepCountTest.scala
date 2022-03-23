@@ -9,15 +9,15 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 
 
-class GetStepTest extends AnyFlatSpec with ChiselScalatestTester {
+class GetStepCountTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Testers2 clock getStep"
 
   private def runTest(c: StaticModule[_]): Unit = {
-    assert(c.clock.getStep == 0)
+    assert(c.clock.getStepCount == 0)
     c.clock.step()
-    assert(c.clock.getStep == 1)
+    assert(c.clock.getStepCount == 1)
     c.clock.step(10)
-    assert(c.clock.getStep == 11)
+    assert(c.clock.getStepCount == 11)
   }
 
   it should "check steps in single clock" in {
@@ -34,7 +34,7 @@ class GetStepTest extends AnyFlatSpec with ChiselScalatestTester {
       val delta = rand.nextInt(3) + 1
       c.clock.step(delta)
       count += delta
-      assert(c.clock.getStep == count)
+      assert(c.clock.getStepCount == count)
     }
   }
 

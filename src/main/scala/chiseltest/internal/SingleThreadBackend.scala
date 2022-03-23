@@ -97,7 +97,7 @@ class SingleThreadBackend[T <: Module](
 
   private var stepCount: Long = 0
 
-  override def getStep(signal: Clock): Long = {
+  override def getStepCount(signal: Clock): Long = {
     require(signal == dut.clock)
     stepCount
   }
