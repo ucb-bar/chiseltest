@@ -32,8 +32,6 @@ class TesterThreadList(protected val elts: Seq[AbstractTesterThread]) {
   */
 trait BackendInterface {
 
-  val currentClockStep = collection.mutable.Map[Clock, BigInt]()
-
   /** Writes a value to a clock.
     */
   def pokeClock(signal: Clock, value: Boolean): Unit
@@ -66,6 +64,9 @@ trait BackendInterface {
   /** Advances the target clock by one cycle.
     */
   def step(signal: Clock, cycles: Int): Unit
+
+  /** Returns the number of steps performed on the clock `signal` since the beginning of the simulation */
+  def getStep(signal: Clock): Long
 
   def doFork(runnable: () => Unit, name: Option[String], region: Option[Region]): AbstractTesterThread
 
