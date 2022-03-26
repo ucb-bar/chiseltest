@@ -36,6 +36,11 @@ class chiseltestCrossModule(val crossScalaVersion: String)
     )
   else Agg.empty[Dep]
 
+  def chisel3PluginIvyDeps = if (chisel3Module.isEmpty) {
+    Agg(ivy"edu.berkeley.cs:::chisel3-plugin:${defaultVersions("chisel3")}")
+  }
+  else Agg.empty[Dep]
+
   def treadleModule: Option[PublishModule] = None
 
   def treadleIvyDeps = if (treadleModule.isEmpty)
@@ -73,20 +78,18 @@ class chiseltestCrossModule(val crossScalaVersion: String)
     ) ++ chisel3IvyDeps ++ treadleIvyDeps
   }
 
-  object test extends Tests with ScalafmtModule {
-    override def ivyDeps = T {
-      Agg(
-        ivy"org.scalatest::scalatest:3.0.8",
-        ivy"com.lihaoyi::utest:0.7.11"
-      ) ++ chisel3IvyDeps ++ treadleIvyDeps
-    }
+  override def scalacPluginIvyDeps = T { chisel3PluginIvyDeps }
 
-    def testFrameworks = T {
-      Seq(
-        "org.scalatest.tools.Framework",
-        "utest.runner.Framework"
-      )
-    }
+  def test = T {
+    T.sequence(Seq(test_1.test(), test_2.test()))
+  }
+
+  object test_1 extends Tests with TestModule.ScalaTest with ScalafmtModule {
+    override def ivyDeps = T { chisel3IvyDeps ++ treadleIvyDeps }
+  }
+
+  object test_2 extends Tests with TestModule.Utest with ScalafmtModule {
+    override def ivyDeps = T { chisel3IvyDeps ++ treadleIvyDeps }
   }
 
   def pomSettings = T {
