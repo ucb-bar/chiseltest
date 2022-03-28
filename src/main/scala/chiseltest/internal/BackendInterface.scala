@@ -68,7 +68,7 @@ trait BackendInterface {
   /** Returns the current step, i.e., the number of clock cycles performed by the test so far,
     * excluding any initial reset cycles performed by the chiseltest library at the start of the test.
     */
-  def getStep(signal: Clock): Long
+  def getStepCount(signal: Clock): Long
 
   def doFork(runnable: () => Unit, name: Option[String], region: Option[Region]): AbstractTesterThread
 
