@@ -189,11 +189,11 @@ test helper functions can be defined outside a test class and written as librari
 `chiseltest` now provides a compatibility layer that makes it possible to re-use old `PeekPokeTester` based
 tests with little to no changes to the code.
 We ported the majority of [tests from the chisel-testers repository](https://github.com/freechipsproject/chisel-testers/tree/master/src/test/scala)
-to our [new compatibility layer](https://github.com/ucb-bar/chiseltest/tree/master/src/test/scala/chiseltest/iotesters).
+to our [new compatibility layer](https://github.com/ucb-bar/chiseltest/tree/main/src/test/scala/chiseltest/iotesters).
 While the test itself can mostly remain unchanged, the old `Driver` is removed and instead tests are launched
 with the new `test` syntax.
 
 ### Hardware testers
 
 Hardware testers are synthesizeable tests, most often extending the `BasicTester` class provided by `chisel3`.
-You can now directly [use these tests with `chiseltest` through the `runUntilStop` function](https://github.com/ucb-bar/chiseltest/blob/master/src/test/scala/chiseltest/tests/HardwareTestsTest.scala).
+You can now directly [use these tests with `chiseltest` through the `runUntilStop` function](https://github.com/ucb-bar/chiseltest/blob/main/src/test/scala/chiseltest/tests/HardwareTestsTest.scala).

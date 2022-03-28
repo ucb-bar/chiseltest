@@ -8,7 +8,7 @@ pull_request_rules:
   - status-success=all tests passed
   - '#approved-reviews-by>=1'
   - '#changes-requested-reviews-by=0'
-  - base=master
+  - base=main
   - label="Please Merge"
   - label!="DO NOT MERGE"
   - label!="bp-conflict"
@@ -20,7 +20,7 @@ pull_request_rules:
 - name: backport to 0.5.x
   conditions:
   - merged
-  - base=master
+  - base=main
   - milestone=0.5.x
   actions:
     backport:
@@ -36,7 +36,7 @@ pull_request_rules:
 - name: backport to 0.3.x, 0.5.x
   conditions:
   - merged
-  - base=master
+  - base=main
   - milestone=0.3.x
   actions:
     backport:
