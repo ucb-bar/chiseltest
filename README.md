@@ -123,7 +123,7 @@ exact same test results albeit with differences in execution speed and wave dump
 We provide full bindings to two popular open-source simulator:
 - [treadle](https://github.com/chipsalliance/treadle): default, fast startup times, slow execution for larger circuits,
   supports only VCD
-- [verilator](https://www.veripool.org/wiki/verilato): enable with `VerilatorBackendAnnotation`, slow startup,
+- [verilator](https://www.veripool.org/wiki/verilator): enable with `VerilatorBackendAnnotation`, slow startup,
   fast execution, supports VCD and FST
 
 We also provide bindings with some feature limitations to:
