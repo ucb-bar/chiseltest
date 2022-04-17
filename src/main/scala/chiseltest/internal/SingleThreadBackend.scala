@@ -1,7 +1,14 @@
 package chiseltest.internal
 
 import chisel3.{Clock, Data, Module}
-import chiseltest.{ChiselAssertionError, ClockResolutionException, Region, StopException, TimeoutException}
+import chiseltest.{
+  ChiselAssertionError,
+  ClockResolutionException,
+  Region,
+  StopException,
+  TimeoutException,
+  UnpeekableException
+}
 import chiseltest.coverage.TestCoverage
 import chiseltest.simulator.{SimulatorContext, StepInterrupted, StepOk}
 import firrtl.AnnotationSeq
@@ -53,6 +60,11 @@ class SingleThreadBackend[T <: Module](
   }
 
   override def peekBits(signal: Data): BigInt = {
+    if (!dataNames.keySet.exists(_ == signal)) {
+      throw new UnpeekableException(
+        "Signal not found. Perhaps you're peeking a non-IO signal.\n  If so, consider using the chiseltest.experimental.expose API."
+      )
+    }
     val a = tester.peek(dataNames(signal))
     a
   }
