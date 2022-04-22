@@ -27,6 +27,16 @@ class BasicTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
     }
   }
 
+  it should "fail on peeking internal signals" in {
+    assertThrows[UnpeekableException] {
+      test(new Module {
+        val hidden = Reg(Bool())
+      }) { c =>
+        c.hidden.peek()
+      }
+    }
+  }
+
   it should "fail on expect mismatch" in {
     assertThrows[exceptions.TestFailedException] {
       test(new StaticModule(42.U)) { c =>
