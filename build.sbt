@@ -70,7 +70,7 @@ scalacOptions ++= Seq(
 libraryDependencies ++= Seq(
   "edu.berkeley.cs" %% "chisel3" % defaultVersions("chisel3"),
   "edu.berkeley.cs" %% "treadle" % defaultVersions("treadle"),
-  "org.scalatest" %% "scalatest" % "3.2.10",
+  "org.scalatest" %% "scalatest" % "3.2.12",
   "com.lihaoyi" %% "utest" % "0.7.11",
   "net.java.dev.jna" % "jna" % "5.11.0",
   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
