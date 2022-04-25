@@ -38,8 +38,7 @@ class chiseltestCrossModule(val crossScalaVersion: String)
 
   def chisel3PluginIvyDeps = if (chisel3Module.isEmpty) {
     Agg(ivy"edu.berkeley.cs:::chisel3-plugin:${defaultVersions("chisel3")}")
-  }
-  else Agg.empty[Dep]
+  } else Agg.empty[Dep]
 
   def treadleModule: Option[PublishModule] = None
 
@@ -72,7 +71,7 @@ class chiseltestCrossModule(val crossScalaVersion: String)
 
   override def ivyDeps = T {
     Agg(
-      ivy"org.scalatest::scalatest:3.2.10",
+      ivy"org.scalatest::scalatest:3.2.12",
       ivy"com.lihaoyi::utest:0.7.11",
       ivy"net.java.dev.jna:jna:5.11.0"
     ) ++ chisel3IvyDeps ++ treadleIvyDeps
