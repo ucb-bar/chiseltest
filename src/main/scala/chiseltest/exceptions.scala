@@ -5,6 +5,7 @@ package chiseltest
 class NotLiteralException(message: String) extends Exception(message)
 class LiteralTypeException(message: String) extends Exception(message)
 class UnpokeableException(message: String) extends Exception(message)
+class UnpeekableException(message: String) extends Exception(message)
 class UnsupportedOperationException(message: String) extends Exception(message)
 
 class ClockResolutionException(message: String) extends Exception(message)
