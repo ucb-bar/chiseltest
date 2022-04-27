@@ -1,9 +1,9 @@
+package chiseltest.backends.verilator
+
 import chisel3._
 import chiseltest._
 import chisel3.experimental._
-
-import chiseltest.VerilatorBackendAnnotation
-import org.scalatest._
+import chiseltest.simulator.RequiresVerilator
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -14,7 +14,7 @@ class FooBundleX() extends Bundle {
 class FlatIOVerilatorTests extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   behavior of "Verilator and FlatIO"
 
-  it should "run Verilator with FlatIO" in {
+  it should "run Verilator with FlatIO" taggedAs RequiresVerilator  in {
     test(
       new Module {
         val io = FlatIO(new FooBundleX())
@@ -26,7 +26,7 @@ class FlatIOVerilatorTests extends AnyFlatSpec with ChiselScalatestTester with M
     }
   }
 
-  it should "run Verilator with IO" in {
+  it should "run Verilator with IO" taggedAs RequiresVerilator  in {
     test(
       new Module {
         val io = IO(new FooBundleX())
