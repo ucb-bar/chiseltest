@@ -14,6 +14,7 @@ class MagicPacketTrackerTests extends AnyFlatSpec with ChiselScalatestTester wit
   private val DefaultDepthPow2 = 4 // some queues only work with power of two
 
   it should "notice if the counter overflows" taggedAs FormalTag in {
+    assume(DefaultBackend != CVC4EngineAnnotation, "CVC4 is too slow with some of these tests (5h+)")
     // counter overflows can happen if the user specified a depth that is too small
     val e = intercept[FailedBoundedCheckException] {
       verify(new PacketTrackerCounterOverflowTest, Seq(BoundedCheck(16), DefaultBackend))
@@ -22,18 +23,22 @@ class MagicPacketTrackerTests extends AnyFlatSpec with ChiselScalatestTester wit
   }
 
   it should "verify the BubbleFifo" taggedAs FormalTag in {
+    assume(DefaultBackend != CVC4EngineAnnotation, "CVC4 is too slow with some of these tests (5h+)")
     verify(new FifoTestWrapper(new BubbleFifo(UInt(16.W), 4)), defaultOptions)
   }
 
   it should "verify QueueV0" taggedAs FormalTag in {
+    assume(DefaultBackend != CVC4EngineAnnotation, "CVC4 is too slow with some of these tests (5h+)")
     verify(new QueueFormalTest(new MyQueueV0(32)), defaultOptions)
   }
 
   it should "verify QueueV1" taggedAs FormalTag in {
+    assume(DefaultBackend != CVC4EngineAnnotation, "CVC4 is too slow with some of these tests (5h+)")
     verify(new QueueFormalTest(new MyQueueV1(DefaultDepth,32)), defaultOptions)
   }
 
   it should "find bug in QueueV2" taggedAs FormalTag in {
+    assume(DefaultBackend != CVC4EngineAnnotation, "CVC4 is too slow with some of these tests (5h+)")
     val e = intercept[FailedBoundedCheckException] {
       verify(new QueueFormalTest(new MyQueueV2(DefaultDepth, 32)), defaultOptions)
     }
@@ -41,18 +46,22 @@ class MagicPacketTrackerTests extends AnyFlatSpec with ChiselScalatestTester wit
   }
 
   it should "verify QueueV3" taggedAs FormalTag in {
+    assume(DefaultBackend != CVC4EngineAnnotation, "CVC4 is too slow with some of these tests (5h+)")
     verify(new QueueFormalTest(new MyQueueV3(DefaultDepthPow2,32)), defaultOptions)
   }
 
   it should "verify QueueV4" taggedAs FormalTag in {
+    assume(DefaultBackend != CVC4EngineAnnotation, "CVC4 is too slow with some of these tests (5h+)")
     verify(new QueueFormalTest(new MyQueueV4(DefaultDepthPow2,32)), defaultOptions)
   }
 
   it should "verify QueueV5" taggedAs FormalTag in {
+    assume(DefaultBackend != CVC4EngineAnnotation, "CVC4 is too slow with some of these tests (5h+)")
     verify(new QueueFormalTest(new MyQueueV5(DefaultDepthPow2,32)), defaultOptions)
   }
 
   it should "find bug in QueueV6 w/ pipe = false" taggedAs FormalTag in {
+    assume(DefaultBackend != CVC4EngineAnnotation, "CVC4 is too slow with some of these tests (5h+)")
     val e = intercept[FailedBoundedCheckException] {
       verify(new QueueFormalTest(new MyQueueV6(DefaultDepth, 32, pipe = false, fixed = false)), defaultOptions)
     }
@@ -60,10 +69,12 @@ class MagicPacketTrackerTests extends AnyFlatSpec with ChiselScalatestTester wit
   }
 
   it should "verify fix for QueueV6 w/ pipe = false" taggedAs FormalTag in {
+    assume(DefaultBackend != CVC4EngineAnnotation, "CVC4 is too slow with some of these tests (5h+)")
     verify(new QueueFormalTest(new MyQueueV6(DefaultDepth, 32, pipe = false, fixed = true)), defaultOptions)
   }
 
   it should "find bug in QueueV6 w/ pipe = true" taggedAs FormalTag in {
+    assume(DefaultBackend != CVC4EngineAnnotation, "CVC4 is too slow with some of these tests (5h+)")
     val e = intercept[FailedBoundedCheckException] {
       verify(new QueueFormalTest(new MyQueueV6(DefaultDepth, 32, pipe = true, fixed = false)), defaultOptions)
     }
@@ -71,10 +82,12 @@ class MagicPacketTrackerTests extends AnyFlatSpec with ChiselScalatestTester wit
   }
 
   it should "verify fix for QueueV6 w/ pipe = true" taggedAs FormalTag in {
+    assume(DefaultBackend != CVC4EngineAnnotation, "CVC4 is too slow with some of these tests (5h+)")
     verify(new QueueFormalTest(new MyQueueV6(DefaultDepth, 32, pipe = true, fixed = true)), defaultOptions)
   }
 
   it should "verify some versions of the Queue from the Chisel standard library" taggedAs FormalTag in {
+    assume(DefaultBackend != CVC4EngineAnnotation, "CVC4 is too slow with some of these tests (5h+)")
     verify(new ChiselQueueTest(DefaultDepth, 32, false, false), defaultOptions)
     verify(new ChiselQueueTest(DefaultDepth, 32, false, true), defaultOptions)
     verify(new ChiselQueueTest(DefaultDepth, 32, true, false), defaultOptions)
