@@ -25,6 +25,8 @@ package object defaults {
     // if there is not backend specified, use treadle
     val hasSimulator = annotationSeq.exists(_.isInstanceOf[SimulatorAnnotation])
     if (hasSimulator) { annotationSeq }
-    else { TreadleBackendAnnotation +: annotationSeq }
+    //TODO:CIRCT: Restore this code to treadle as default
+//    else { TreadleBackendAnnotation +: annotationSeq }
+    else { Seq(VerilatorBackendAnnotation) ++ annotationSeq }
   }
 }

@@ -2,9 +2,11 @@
 
 package chiseltest.simulator
 
+import chiseltest.internal.Utils.makeScriptFromCommand
 import firrtl._
 import firrtl.annotations._
 import chiseltest.simulator.jna._
+import firrtl.stage.OutputFileAnnotation
 
 case object VerilatorBackendAnnotation extends SimulatorAnnotation {
   override def getSimulator: Simulator = VerilatorSimulator
@@ -103,6 +105,30 @@ private object VerilatorSimulator extends Simulator {
     new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, args, Some(readCoverage))
   }
 
+  def runFirtool(state: CircuitState, targetDir: os.Path, verbose: Boolean): Unit = {
+    val baseFileName =
+      state.annotations.collectFirst { case OutputFileAnnotation(name) => name }.getOrElse(state.circuit.main)
+    val inputFileName = targetDir / baseFileName + ".lo.fir"
+    val outputFileName = targetDir / baseFileName + ".sv"
+
+    println("Running firtool")
+    println("Current directory " + targetDir.toString())
+    println("file ins work\n" + os.list(targetDir).mkString("\n"))
+    val command = List(
+      "firtool",
+      "--format=fir",
+      "--ignore-fir-locators",
+      "--verilog",
+      "-o",
+      outputFileName,
+      inputFileName
+    )
+
+    println(makeScriptFromCommand(command, Some(targetDir / "firtool_command.sh")))
+
+    run(command, targetDir, verbose)
+  }
+
   private def createContextFromScratch(state: CircuitState): SimulatorContext = {
     // we will create the simulation in the target directory
     val targetDir = Compiler.requireTargetDir(state.annotations)
@@ -115,8 +141,13 @@ private object VerilatorSimulator extends Simulator {
     val waveformExt = Simulator.getWavformFormat(state.annotations)
     val cppHarness = generateHarness(targetDir, toplevel, waveformExt, verbose)
 
+    //TODO:CIRCT: remove this code
     // compile low firrtl to System Verilog for verilator to use
-    val verilogState = Compiler.lowFirrtlToSystemVerilog(state, VerilatorCoverage.CoveragePasses)
+    val loweringAnnotations: AnnotationSeq =
+      Compiler.lowFirrtlToSystemVerilog(state, VerilatorCoverage.CoveragePasses).annotations
+
+    // This will overwrite the verilog generated right above here
+    runFirtool(state, targetDir, verbose)
 
     // turn SystemVerilog into C++ simulation
     val verilatedDir = runVerilator(toplevel.name, targetDir, cppHarness, state.annotations, verbose)
@@ -135,7 +166,7 @@ private object VerilatorSimulator extends Simulator {
     val libPath = compileSimulation(topName = toplevel.name, verilatedDir, verbose)
 
     // the binary we created communicates using our standard IPC interface
-    val coverageAnnos = VerilatorCoverage.collectCoverageAnnotations(verilogState.annotations)
+    val coverageAnnos = VerilatorCoverage.collectCoverageAnnotations(loweringAnnotations)
     if (Caching.shouldCache(state)) {
       saveCoverageAnnos(targetDir, coverageAnnos)
     }
@@ -192,6 +223,13 @@ private object VerilatorSimulator extends Simulator {
       "--exe",
       cppHarness
     ) ++ flags ++ List(s"$topName.sv")
+
+    println(makeScriptFromCommand(cmd, Some(targetDir / "verilator_command.sh")))
+
+    println("Running firtool")
+    println("Work directory    " + targetDir.toString)
+    println("file in work\n    " + os.list(targetDir).mkString("\n    "))
+
     val ret = run(cmd, targetDir, verbose)
 
     assert(ret.exitCode == 0, s"verilator command failed on circuit ${topName} in work dir $targetDir")
