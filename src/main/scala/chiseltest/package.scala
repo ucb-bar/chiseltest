@@ -570,6 +570,7 @@ package object chiseltest {
 
   // expose public flags
   val VerilatorBackendAnnotation = simulator.VerilatorBackendAnnotation
+  val VerilatorCirctBackendAnnotation = simulator.VerilatorCirctBackendAnnotation
   val TreadleBackendAnnotation = simulator.TreadleBackendAnnotation
   val VcsBackendAnnotation = simulator.VcsBackendAnnotation
   val IcarusBackendAnnotation = simulator.IcarusBackendAnnotation

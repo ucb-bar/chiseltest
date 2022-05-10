@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
 package chiseltest.backends.verilator
 
 import chisel3._
@@ -10,10 +9,10 @@ import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class VerilatorBasicTests extends AnyFlatSpec with ChiselScalatestTester with Matchers {
-  behavior of "Testers2 with Verilator"
+class VerilatorCirctBasicTests extends AnyFlatSpec with ChiselScalatestTester with Matchers {
+  behavior of "Testers2 with Verilator using CIRCT"
 
-  val annos: AnnotationSeq = Seq(VerilatorBackendAnnotation)
+  val annos: AnnotationSeq = Seq(VerilatorCirctBackendAnnotation)
 
   it should "test static circuits" taggedAs RequiresVerilator in {
     test(new StaticModule(42.U)).withAnnotations(annos) { c =>
@@ -54,6 +53,25 @@ class VerilatorBasicTests extends AnyFlatSpec with ChiselScalatestTester with Ma
       counter := counter + 1.U
       io.out := counter
     }).withAnnotations(annos) { c =>
+      c.io.out.expect(0.U)
+      c.clock.step()
+      c.io.out.expect(1.U)
+      c.clock.step()
+      c.io.out.expect(2.U)
+      c.clock.step()
+      c.io.out.expect(3.U)
+    }
+  }
+
+  it should "test inputless sequential circuits with CIRCT" taggedAs RequiresVerilator in {
+    test(new Module {
+      val io = IO(new Bundle {
+        val out = Output(UInt(8.W))
+      })
+      val counter = RegInit(UInt(8.W), 0.U)
+      counter := counter + 1.U
+      io.out := counter
+    }).withAnnotations(Seq(VerilatorCirctBackendAnnotation)) { c =>
       c.io.out.expect(0.U)
       c.clock.step()
       c.io.out.expect(1.U)
@@ -119,3 +137,4 @@ class VerilatorBasicTests extends AnyFlatSpec with ChiselScalatestTester with Ma
     }
   }
 }
+
