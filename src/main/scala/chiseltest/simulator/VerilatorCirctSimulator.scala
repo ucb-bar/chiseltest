@@ -38,6 +38,7 @@ private object VerilatorCirctSimulator extends VerilatorSimulatorTrait {
     val command = List(
       "firtool",
       "--format=fir",
+      "--dedup",
       "--ignore-fir-locators",
       "--verilog",
       "-o",
