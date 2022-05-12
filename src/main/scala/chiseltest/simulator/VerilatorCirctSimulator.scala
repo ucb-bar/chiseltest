@@ -2,9 +2,7 @@
 
 package chiseltest.simulator
 
-import chiseltest.internal.Utils.makeScriptFromCommand
 import firrtl._
-import firrtl.annotations._
 import chiseltest.simulator.jna._
 import firrtl.stage.OutputFileAnnotation
 
@@ -21,23 +19,14 @@ private object VerilatorCirctSimulator extends VerilatorSimulatorTrait {
 
   /** is this simulator installed on the local machine? */
   override def isAvailable: Boolean = {
-    val firToolFound = try {
-      os.proc("which", "firtool").call().exitCode == 0
-    }
-    catch {
-      case t: os.SubprocessException => false
-    }
+    val firToolFound =
+      try {
+        os.proc("which", "firtool").call().exitCode == 0
+      } catch {
+        case t: os.SubprocessException => false
+      }
     val binaryFound = os.proc("which", "verilator").call().exitCode == 0
     firToolFound && binaryFound && majorVersion >= 4
-  }
-
-  def checkHasFirTool(): Unit = {
-    try {
-      val binaryFound = os.proc("which", "firtooXl").call().exitCode == 0
-    } catch {
-      case t: os.SubprocessException =>
-        assert(false, s"Backend using CIRCT (VerilatorCirctBackend) selected but firtool command is not found")
-    }
   }
 
   def runFirtool(state: CircuitState, targetDir: os.Path, verbose: Boolean): Unit = {

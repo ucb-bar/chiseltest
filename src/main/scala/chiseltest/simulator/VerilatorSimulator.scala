@@ -2,11 +2,10 @@
 
 package chiseltest.simulator
 
-import chiseltest.internal.Utils.makeScriptFromCommand
 import firrtl._
 import firrtl.annotations._
 import chiseltest.simulator.jna._
-import firrtl.stage.OutputFileAnnotation
+import os.Path
 
 case object VerilatorBackendAnnotation extends SimulatorAnnotation {
   override def getSimulator: Simulator = VerilatorSimulator
@@ -70,8 +69,8 @@ private trait VerilatorSimulatorTrait extends Simulator {
     (maj, min)
   }
 
-  private [simulator] def majorVersion: Int = version._1
-  private [simulator] def minorVersion: Int = version._2
+  private[simulator] def majorVersion: Int = version._1
+  private[simulator] def minorVersion: Int = version._2
 
   /** start a new simulation
     *
@@ -82,11 +81,11 @@ private trait VerilatorSimulatorTrait extends Simulator {
     Caching.cacheSimulationBin(simName, state, createContextFromScratch, recreateCachedContext)
   }
 
-  private [simulator] def getSimulatorArgs(state: CircuitState): Array[String] = {
+  private[simulator] def getSimulatorArgs(state: CircuitState): Array[String] = {
     state.annotations.view.collect { case PlusArgsAnnotation(args) => args }.flatten.toArray
   }
 
-  private [simulator] def recreateCachedContext(state: CircuitState): SimulatorContext = {
+  private[simulator] def recreateCachedContext(state: CircuitState): SimulatorContext = {
     // we will create the simulation in the target directory
     val targetDir = Compiler.requireTargetDir(state.annotations)
     val toplevel = TopmoduleInfo(state.circuit)
@@ -153,15 +152,15 @@ private trait VerilatorSimulatorTrait extends Simulator {
     new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, args, Some(readCoverage))
   }
 
-  private [simulator] def saveCoverageAnnos(targetDir: os.Path, annos: AnnotationSeq): Unit = {
+  private[simulator] def saveCoverageAnnos(targetDir: os.Path, annos: AnnotationSeq): Unit = {
     os.write.over(targetDir / "coverageAnnotations.json", JsonProtocol.serialize(annos))
   }
 
-  private [simulator] def loadCoverageAnnos(targetDir: os.Path): AnnotationSeq = {
+  private[simulator] def loadCoverageAnnos(targetDir: os.Path): AnnotationSeq = {
     JsonProtocol.deserialize((targetDir / "coverageAnnotations.json").toIO)
   }
 
-  private [simulator] def compileSimulation(topName: String, verilatedDir: os.Path, verbose: Boolean): os.Path = {
+  private[simulator] def compileSimulation(topName: String, verilatedDir: os.Path, verbose: Boolean): os.Path = {
     val target = s"V$topName"
     val cmd = Seq("make", "-C", verilatedDir.toString(), "-j", "-f", s"V$topName.mk", target)
     val ret = run(cmd, null, verbose)
@@ -169,14 +168,14 @@ private trait VerilatorSimulatorTrait extends Simulator {
       ret.exitCode == 0,
       s"Compilation of verilator generated code failed for circuit $topName in work dir $verilatedDir"
     )
-    val simBinary = if (JNAUtils.isWindows) { verilatedDir / s"${target}.exe" }
+    val simBinary = if (JNAUtils.isWindows) { verilatedDir / s"$target.exe" }
     else { verilatedDir / target }
     assert(os.exists(simBinary), s"Failed to generate simulation binary: $simBinary")
     simBinary
   }
 
   /** executes verilator in order to generate a C++ simulation */
-  private [simulator] def runVerilator(
+  private[simulator] def runVerilator(
     topName:    String,
     targetDir:  os.Path,
     cppHarness: String,
@@ -198,23 +197,44 @@ private trait VerilatorSimulatorTrait extends Simulator {
 
     val ret = run(cmd, targetDir, verbose)
 
-    assert(ret.exitCode == 0, s"verilator command failed on circuit ${topName} in work dir $targetDir")
+    assert(ret.exitCode == 0, s"verilator command failed on circuit $topName in work dir $targetDir")
     verilatedDir
   }
 
-  private [simulator] def removeOldCode(verilatedDir: os.Path, verbose: Boolean): Unit = {
+  private[simulator] def removeOldCode(verilatedDir: os.Path, verbose: Boolean): Unit = {
     if (os.exists(verilatedDir)) {
       if (verbose) println(s"Deleting stale Verilator object directory: $verilatedDir")
       os.remove.all(verilatedDir)
     }
   }
 
-  private [simulator] def run(cmd: Seq[String], cwd: os.Path, verbose: Boolean): os.CommandResult = {
+  /* Prints out a more human readable and quote-correct version of
+   * a command list that can be run from the command line, this can be
+   * super useful to read or debug execution of scripts run with `os.proc`
+   * It should in most cases render the quotes properly and indents quoted blocks of arguments
+   *
+   */
+  def makeScriptFromCommand(commandTerms: Iterable[String], pathOpt: Option[Path] = None): String = {
+    val commandScript = commandTerms.map { term =>
+      if (term.contains(" ")) {
+        "    \"" + term.split(" +").mkString(" \\\n    ") + "\""
+      } else {
+        term
+      }
+    }.mkString("", " \\\n", "")
+
+    pathOpt.foreach { path =>
+      os.write.over(path, commandScript)
+    }
+
+    commandScript
+  }
+
+  private[simulator] def run(cmd: Seq[String], cwd: os.Path, verbose: Boolean): os.CommandResult = {
     if (verbose) {
       // print the command and pipe the output to stdout
       println(cmd.mkString(" "))
       println(makeScriptFromCommand(cmd, Some(cwd / s"chiseltest_command_${cmd.head}.sh")))
-
 
       os.proc(cmd)
         .call(cwd = cwd, stdout = os.ProcessOutput.Readlines(println), stderr = os.ProcessOutput.Readlines(println))
@@ -223,7 +243,7 @@ private trait VerilatorSimulatorTrait extends Simulator {
     }
   }
 
-  private [simulator] def DefaultCFlags(topName: String) = List(
+  private[simulator] def DefaultCFlags(topName: String) = List(
     "-O1",
     "-DVL_USER_STOP",
     "-DVL_USER_FATAL",
@@ -232,7 +252,12 @@ private trait VerilatorSimulatorTrait extends Simulator {
     s"-include V$topName.h"
   )
 
-  private [simulator] def DefaultFlags(topName: String, verilatedDir: os.Path, cFlags: Seq[String], ldFlags: Seq[String]) = List(
+  private[simulator] def DefaultFlags(
+    topName:      String,
+    verilatedDir: os.Path,
+    cFlags:       Seq[String],
+    ldFlags:      Seq[String]
+  ) = List(
     "--assert", // we always enable assertions
     "--coverage-user", // we always enable use coverage
     "-Wno-fatal",
@@ -276,7 +301,7 @@ private trait VerilatorSimulatorTrait extends Simulator {
     flags
   }
 
-  private [simulator] def generateHarness(
+  private[simulator] def generateHarness(
     targetDir:   os.Path,
     toplevel:    TopmoduleInfo,
     waveformExt: String,
@@ -285,7 +310,7 @@ private trait VerilatorSimulatorTrait extends Simulator {
     val topName = toplevel.name
 
     // create a custom c++ harness
-    val cppHarnessFileName = s"${topName}-harness.cpp"
+    val cppHarnessFileName = s"$topName-harness.cpp"
     val vcdFile = targetDir / (s"$topName." + waveformExt)
     val code = VerilatorCppJNAHarnessGenerator.codeGen(
       toplevel,
@@ -368,10 +393,10 @@ private object VerilatorPatchCoverageCpp {
     s"""#ifndef CHISEL_VL_COVER_INSERT
        |#define CHISEL_VL_COVER_INSERT(${callArgPrefix}countp, ...) \\
        |    VL_IF_COVER(${cov}_inserti(countp); ${cov}_insertf(__FILE__, __LINE__); \\
-       |                chisel_insertp(${callArgPrefix}"hier", name(), __VA_ARGS__))
+       |                chisel_insertp($callArgPrefix"hier", name(), __VA_ARGS__))
        |
        |#ifdef VM_COVERAGE
-       |static void chisel_insertp(${argPrefix}
+       |static void chisel_insertp($argPrefix
        |  const char* key0, const char* valp0, const char* key1, const char* valp1,
        |  const char* key2, int lineno, const char* key3, int column,
        |  const char* key4, const std::string& hier_str,
