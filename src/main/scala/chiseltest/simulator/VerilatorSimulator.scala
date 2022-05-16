@@ -234,7 +234,9 @@ private trait VerilatorSimulatorTrait extends Simulator {
     if (verbose) {
       // print the command and pipe the output to stdout
       println(cmd.mkString(" "))
-      println(makeScriptFromCommand(cmd, Some(cwd / s"chiseltest_command_${cmd.head}.sh")))
+      if (cwd != null) {
+        println(makeScriptFromCommand(cmd, Some(cwd / s"chiseltest_command_${cmd.head}.sh")))
+      }
 
       os.proc(cmd)
         .call(cwd = cwd, stdout = os.ProcessOutput.Readlines(println), stderr = os.ProcessOutput.Readlines(println))
