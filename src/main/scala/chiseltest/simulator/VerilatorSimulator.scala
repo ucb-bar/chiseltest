@@ -221,7 +221,7 @@ private trait VerilatorSimulatorTrait extends Simulator {
       } else {
         term
       }
-    }.mkString("", " \\\n", "")
+    }.mkString("", " \\\n", "") + "\n"
 
     pathOpt.foreach { path =>
       os.write.over(path, commandScript)
@@ -232,12 +232,16 @@ private trait VerilatorSimulatorTrait extends Simulator {
 
   private[simulator] def run(cmd: Seq[String], cwd: os.Path, verbose: Boolean): os.CommandResult = {
     if (verbose) {
-      // print the command and pipe the output to stdout
+      // print the command
       println(cmd.mkString(" "))
-      if (cwd != null) {
-        println(makeScriptFromCommand(cmd, Some(cwd / s"chiseltest_command_${cmd.head}.sh")))
+      // print a scriptable form of the command
+      cmd.headOption.foreach { head =>
+        val scriptName = if (cwd != null) { Some(cwd / s"chiseltest_command_$head.sh") }
+        else { None }
+        println(makeScriptFromCommand(cmd, scriptName))
       }
 
+      // execute cmd and pipe the output to stdout
       os.proc(cmd)
         .call(cwd = cwd, stdout = os.ProcessOutput.Readlines(println), stderr = os.ProcessOutput.Readlines(println))
     } else {
