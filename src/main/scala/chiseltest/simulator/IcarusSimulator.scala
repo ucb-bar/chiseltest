@@ -44,12 +44,11 @@ private object IcarusSimulator extends Simulator {
   }
   private def majorVersion: Int = version._1
   private def minorVersion: Int = version._2
-  
-  
+
   private def getSimulatorArgs(state: CircuitState): Array[String] = {
     state.annotations.view.collect { case PlusArgsAnnotation(args) => args }.flatten.toArray
   }
-  
+
   /** start a new simulation
     *
     * @param state LoFirrtl circuit + annotations
