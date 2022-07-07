@@ -73,7 +73,7 @@ class chiseltestCrossModule(val crossScalaVersion: String)
     Agg(
       ivy"org.scalatest::scalatest:3.2.12",
       ivy"com.lihaoyi::utest:0.7.11",
-      ivy"net.java.dev.jna:jna:5.11.0"
+      ivy"net.java.dev.jna:jna:5.12.1"
     ) ++ chisel3IvyDeps ++ treadleIvyDeps
   }
 
