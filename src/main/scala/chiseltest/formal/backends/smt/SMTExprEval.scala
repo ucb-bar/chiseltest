@@ -138,6 +138,32 @@ private[chiseltest] object SMTExprEval {
     case Op.UnsignedRem =>
       if (b == 0) { a }
       else { (a % b) & mask(width) }
+    case Op.SignedDiv => {
+      if (b == 0) { mask(width) }
+      else {
+        val aValue = bigIntValue(a, width)
+        val bValue = bigIntValue(b, width)
+        bvSignedValue(aValue / bValue, width)
+      }
+    }
+    case Op.SignedRem => {
+      if (b == 0) { a }
+      else {
+        val aValue = bigIntValue(a, width)
+        val bValue = bigIntValue(b, width)
+        bvSignedValue(aValue % bValue, width)
+      }
+    }
+    case Op.SignedMod => {
+      if (b == 0) { a }
+      else {
+        val aValue = bigIntValue(a, width)
+        val bValue = bigIntValue(b, width)
+        val remValue = aValue % bValue
+        if (isPositive(a, width) == isPositive(b, width) || remValue == 0) { bvSignedValue(remValue, width) }
+        else { bvSignedValue(remValue + bValue, width) }
+      }
+    }
     case other => throw new NotImplementedError(other.toString)
   }
   private def doBVConcat(a: BigInt, b: BigInt, bWidth: Int): BigInt = (a << bWidth) | b
@@ -149,6 +175,15 @@ private[chiseltest] object SMTExprEval {
   private def isNegative(value: BigInt, w: Int) = !isPositive(value, w)
   private def flipBits(value:   BigInt, w: Int) = ~value & mask(w)
   private def bool(b:           Boolean): BigInt = if (b) BigInt(1) else BigInt(0)
+  private def abs(value: BigInt, w: Int) = {
+    if (isPositive(value, w)) { value }
+    else { flipBits(value & mask(w - 1), w - 1) + 1 }
+  }
+  private def bigIntValue(value: BigInt, w: Int) = if (isPositive(value, w)) value else -abs(value, w)
+  private def bvSignedValue(value: BigInt, w: Int) = {
+    if (value >= 0) { value & mask(w) }
+    else { (BigInt(1) << (w - 1)) | (flipBits((-value) & mask(w - 1), w - 1) + 1) }
+  }
 }
 
 private[chiseltest] case class LocalEvalCtx(bv: Map[String, BigInt], array: Map[String, ArrayValue] = Map())
