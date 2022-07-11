@@ -51,11 +51,14 @@ object RawTester {
     * @param testFn    The block of code that implements the test
     * @tparam T        The type of device, derived from dutGen
     */
-  def test[T <: Module](dutGen: => T, annotationSeq: AnnotationSeq = Seq.empty)(testFn: T => Unit): TestResult = {
-
-    val testName = s"chisel_test_${System.currentTimeMillis()}"
-
-    val tester = new RawTester(testName)
+  def test[T <: Module](
+    dutGen:        => T,
+    annotationSeq: AnnotationSeq = Seq.empty,
+    testName:      String = ""
+  )(testFn:        T => Unit
+  ): TestResult = {
+    def randomTestName = s"chisel_test_${System.currentTimeMillis()}"
+    val tester = new RawTester(if (testName.trim.isEmpty) randomTestName else testName)
     tester.test(dutGen, annotationSeq)(testFn)
   }
 
