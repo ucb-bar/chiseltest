@@ -317,7 +317,8 @@ package object chiseltest {
         val elementValueFns = x.getElements.map(_.peek())
         Vec.Lit(elementValueFns: _*).asInstanceOf[T]
       case x: EnumType =>
-        throw new NotImplementedError(s"peeking enums ($x) not yet supported, need programmatic enum construction")
+        val bits = Context().backend.peekBits(x)
+        chisel3.internaltest.EnumHelpers.fromBits(x, bits).asInstanceOf[T]
       case x => throw new LiteralTypeException(s"don't know how to peek $x")
     }
 
@@ -422,8 +423,14 @@ package object chiseltest {
       inner
     }
 
-    def enumToString(record: EnumType): BigInt => String = {
-      def inner(bits: BigInt): String = "[unimplemented enum decode]"
+    def enumToString(tpe: EnumType): BigInt => String = {
+      def inner(bits: BigInt): String = {
+        val fullName = chisel3.internaltest.EnumHelpers.valueToName(tpe, bits).getOrElse("???")
+        // we only want to class and value name, not the package or enclosing class
+        val noPackage = fullName.split('.').takeRight(2).mkString(".")
+        val noEnclosingClass = noPackage.split('$').last
+        noEnclosingClass
+      }
 
       inner
     }
