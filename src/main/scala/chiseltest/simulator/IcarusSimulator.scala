@@ -45,6 +45,10 @@ private object IcarusSimulator extends Simulator {
   private def majorVersion: Int = version._1
   private def minorVersion: Int = version._2
 
+  private def getSimulatorArgs(state: CircuitState): Array[String] = {
+    state.annotations.view.collect { case PlusArgsAnnotation(args) => args }.flatten.toArray
+  }
+
   /** start a new simulation
     *
     * @param state LoFirrtl circuit + annotations
@@ -75,7 +79,8 @@ private object IcarusSimulator extends Simulator {
 
     // turn SystemVerilog into simulation binary
     val simCmd = compileSimulation(toplevel.name, targetDir, verilogHarness) ++
-      waveformFlags(targetDir, toplevel.name, state.annotations)
+      waveformFlags(targetDir, toplevel.name, state.annotations) ++
+      getSimulatorArgs(state)
 
     // the binary we created communicates using our standard IPC interface
     new IPCSimulatorContext(simCmd, toplevel, IcarusSimulator)

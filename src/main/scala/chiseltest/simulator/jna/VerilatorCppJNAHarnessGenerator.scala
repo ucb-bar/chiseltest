@@ -240,8 +240,9 @@ static sim_state* create_sim_state() {
                          |}
                          |
                          |
-                         |// required for asserts (until Verilator 4.200)
-                         |double sc_time_stamp () { return 0; }
+                         |// Global because older versions of verilator do not support contexts
+                         |static vluint64_t global_time = 0;
+                         |double sc_time_stamp () { return global_time; }
                          |
                          |static void _startCoverageAndDump(VERILATED_C** tfp, const std::string& dumpfile, TOP_CLASS* top) {
                          |$coverageInit
@@ -258,12 +259,14 @@ static sim_state* create_sim_state() {
                          |
                          |static int64_t _step(VERILATED_C* tfp, TOP_CLASS* top, vluint64_t& main_time) {
                          |    $clockLow
+                         |    global_time = main_time;
                          |    top->eval();
                          |#if VM_TRACE
                          |    if (tfp) tfp->dump(main_time);
                          |#endif
                          |    main_time++;
                          |    $clockHigh
+                         |    global_time = main_time;
                          |    top->eval();
                          |#if VM_TRACE
                          |    if (tfp) tfp->dump(main_time);
