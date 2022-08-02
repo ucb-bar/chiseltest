@@ -71,7 +71,7 @@ class chiseltestCrossModule(val crossScalaVersion: String)
 
   override def ivyDeps = T {
     Agg(
-      ivy"org.scalatest::scalatest:3.2.12",
+      ivy"org.scalatest::scalatest:3.2.13",
       ivy"com.lihaoyi::utest:0.8.0",
       ivy"net.java.dev.jna:jna:5.12.1"
     ) ++ chisel3IvyDeps ++ treadleIvyDeps
