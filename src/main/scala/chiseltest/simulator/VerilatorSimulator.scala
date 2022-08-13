@@ -160,7 +160,8 @@ private object VerilatorSimulator extends Simulator {
 
   private def compileSimulation(topName: String, verilatedDir: os.Path, verbose: Boolean): os.Path = {
     val target = s"V$topName"
-    val cmd = Seq("make", "-C", verilatedDir.toString(), "-j", "-f", s"V$topName.mk", target)
+    val processorCount = Runtime.getRuntime.availableProcessors.toString
+    val cmd = Seq("make", "-C", verilatedDir.toString(), "-j", processorCount, "-f", s"V$topName.mk", target)
     val ret = run(cmd, null, verbose)
     assert(
       ret.exitCode == 0,
