@@ -24,7 +24,7 @@ private[chiseltest] object VpiVerilogHarnessGenerator {
 
     val codeBuffer = new StringBuilder
     codeBuffer.append(s"module $testbenchName;\n")
-    codeBuffer.append(s"  reg $clockName = 1;\n")
+    codeBuffer.append(s"  reg $clockName = 0;\n")
     toplevel.inputs.foreach { case PinInfo(name, width, _) =>
       codeBuffer.append(s"  reg[${width - 1}:0] $name = 0;\n")
     }
