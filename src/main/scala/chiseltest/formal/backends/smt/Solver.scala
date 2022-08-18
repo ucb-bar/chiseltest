@@ -12,8 +12,10 @@ private[chiseltest] trait Solver {
   /** Constant Arrays are not required by SMTLib: https://rise4fun.com/z3/tutorialcontent/guide */
   def supportsConstArrays:            Boolean
   def supportsUninterpretedFunctions: Boolean
+  def supportsSoftAssert:             Boolean
+  def supportsUninterpretedSorts:     Boolean
 
-  def createContext(): SolverContext
+  def createContext(debugOn: Boolean = false): SolverContext
 }
 
 private[chiseltest] trait SolverContext {
@@ -42,7 +44,8 @@ private[chiseltest] trait SolverContext {
   def runCommand(cmd: SMTCommand): Unit
   def queryModel(e:   BVSymbol):   Option[BigInt]
   def getValue(e:     BVExpr):     Option[BigInt]
-  def getValue(e:     ArrayExpr):  Seq[(Option[BigInt], BigInt)]
+  def getValue(e:     ArrayExpr): Seq[(Option[BigInt], BigInt)]
+  def setOption(name: String, value: String): Unit
 
   /** releases all native resources */
   def close(): Unit

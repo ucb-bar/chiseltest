@@ -30,6 +30,24 @@ case object Z3EngineAnnotation extends FormalEngineAnnotation
   */
 case object BtormcEngineAnnotation extends FormalEngineAnnotation
 
+/** Use a SMTLib based model checker with the yices2 SMT solver.
+  * @note yices2 often performs better than Z3 or CVC4.
+  * @note yices2 is not supported yet, because we have not figured out yet how to deal with memory initialization
+  */
+private case object Yices2EngineAnnotation extends FormalEngineAnnotation
+
+/** Use a SMTLib based model checker with the boolector SMT solver.
+  * @note boolector often performs better than Z3 or CVC4.
+  * @note boolecter is not supported, because some bugs that were fixed in bitwuzla still remain in boolector
+  *       leading to crashes when trying to get-value of arrays.
+  */
+private case object BoolectorEngineAnnotation extends FormalEngineAnnotation
+
+/** Use a SMTLib based model checker with the bitwuzla SMT solver.
+  * @note bitwuzla often performs better than Z3 or CVC4.
+  */
+case object BitwuzlaEngineAnnotation extends FormalEngineAnnotation
+
 /** Formal Verification based on the firrtl compiler's SMT backend and the maltese SMT libraries solver bindings. */
 private[chiseltest] object Maltese {
   def bmc(circuit: ir.Circuit, annos: AnnotationSeq, kMax: Int, resetLength: Int = 0): Unit = {
@@ -138,9 +156,12 @@ private[chiseltest] object Maltese {
     val engines = annos.collect { case a: FormalEngineAnnotation => a }
     assert(engines.nonEmpty, "You need to provide at least one formal engine annotation!")
     engines.map {
-      case CVC4EngineAnnotation   => new SMTModelChecker(CVC4SMTLib)
-      case Z3EngineAnnotation     => new SMTModelChecker(Z3SMTLib)
-      case BtormcEngineAnnotation => new BtormcModelChecker(targetDir)
+      case CVC4EngineAnnotation      => new SMTModelChecker(CVC4SMTLib)
+      case Z3EngineAnnotation        => new SMTModelChecker(Z3SMTLib)
+      case BtormcEngineAnnotation    => new BtormcModelChecker(targetDir)
+      case Yices2EngineAnnotation    => new SMTModelChecker(Yices2SMTLib)
+      case BoolectorEngineAnnotation => new SMTModelChecker(BoolectorSMTLib)
+      case BitwuzlaEngineAnnotation  => new SMTModelChecker(BitwuzlaSMTLib)
     }
   }
 

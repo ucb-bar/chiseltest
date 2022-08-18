@@ -74,7 +74,7 @@ jobs:
       - name: Install Tabby OSS Cad Suite (from YosysHQ)
         uses: YosysHQ/setup-oss-cad-suite@v1
         with:
-          osscadsuite-version: '2021-11-09'
+          osscadsuite-version: '2022-08-18'
       - name: Print Verilator Version
         run: verilator --version
       - name: Setup Scala
@@ -132,39 +132,46 @@ jobs:
 
   formal:
     name: formal verification tests
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
-        os: [ubuntu-20.04, macos-latest]
-        backend: [z3, cvc4, btormc]
+        backend: [z3, cvc4, btormc, bitwuzla]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Install Z3 and CVC4 for Ubuntu
+      - name: Install Z3 and CVC4
         if: runner.os == 'Linux'
         run: |
           sudo apt-get install -y z3 cvc4
           z3 --version
           cvc4 --version
-      - name: Install Z3 and CVC4 for MacOS
-        if: runner.os == 'macOS'
-        run: |
-          brew install z3
-          brew tap cvc4/cvc4
-          brew install cvc4/cvc4/cvc4
-          z3 --version
-          cvc4 --version
       - name: Install Tabby OSS Cad Suite (from YosysHQ)
-        if: matrix.backend == 'btormc'
         uses: YosysHQ/setup-oss-cad-suite@v1
         with:
-          osscadsuite-version: '2021-11-09'
+          osscadsuite-version: '2022-08-18'
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
           java-version: adopt@1.11
       - name: Test
         run: sbt "testOnly -- -n Formal -Dformal_engine=${{ matrix.backend }}"
+
+  formal-mac:
+    name: formal verification tests on mac
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Z3 for MacOS
+        run: |
+          brew install z3
+          z3 --version
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11
+      - name: Test
+        run: sbt "testOnly -- -n Formal -Dformal_engine=z3"
 
   doc:
     name: Documentation and Formatting
@@ -186,7 +193,7 @@ jobs:
   # When adding new jobs, please add them to `needs` below
   all_tests_passed:
     name: "all tests passed"
-    needs: [test, doc, verilator, verilator-mac, formal, icarus, test-mac]
+    needs: [test, doc, verilator, verilator-mac, formal, formal-mac, icarus, test-mac]
     runs-on: ubuntu-latest
     steps:
       - run: echo Success!
