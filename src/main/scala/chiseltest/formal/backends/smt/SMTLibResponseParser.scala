@@ -4,14 +4,15 @@
 package chiseltest.formal.backends.smt
 
 import scala.annotation.tailrec
+import scala.collection.mutable
 
 private object SMTLibResponseParser {
   def parseValue(v: String): Option[BigInt] = {
     val expr = SExprParser.parse(v)
     expr match {
       // this is the assignment, something like ((in #b00000))
-      case SExprNode(List(SExprNode(List(_, value)))) => parseValue(value)
-      case _                                          => throw new NotImplementedError(s"Unexpected response: $expr")
+      case SExprNode(Seq(SExprNode(Seq(_, value)))) => parseValue(value)
+      case _                                        => throw new NotImplementedError(s"Unexpected response: $expr")
     }
   }
 
@@ -19,10 +20,10 @@ private object SMTLibResponseParser {
   private def parseValue(e: SExpr): Option[BigInt] = e match {
     case SExprLeaf(valueStr) => parseBVLiteral(valueStr)
     // example: (_ bv0 32)
-    case SExprNode(List(SExprLeaf("_"), SExprLeaf(value), SExprLeaf(width))) if value.startsWith("bv") =>
+    case SExprNode(Seq(SExprLeaf("_"), SExprLeaf(value), SExprLeaf(width))) if value.startsWith("bv") =>
       Some(BigInt(value.drop(2)))
-    case SExprNode(List(one)) => parseValue(one)
-    case _                    => throw new NotImplementedError(s"Unexpected response: $e")
+    case SExprNode(Seq(one)) => parseValue(one)
+    case _                   => throw new NotImplementedError(s"Unexpected response: $e")
   }
 
   type MemInit = Seq[(Option[BigInt], BigInt)]
@@ -30,33 +31,33 @@ private object SMTLibResponseParser {
   def parseMemValue(v: String): MemInit = {
     val tree = SExprParser.parse(v)
     tree match {
-      case SExprNode(List(SExprNode(List(_, value)))) => parseMem(value, Map())
-      case _                                          => throw new NotImplementedError(s"Unexpected response: $v")
+      case SExprNode(Seq(SExprNode(Seq(_, value)))) => parseMem(value, Map())
+      case _                                        => throw new NotImplementedError(s"Unexpected response: $v")
     }
   }
 
   private def parseMem(value: SExpr, ctx: Map[String, MemInit]): MemInit = value match {
-    case SExprNode(List(SExprNode(List(SExprLeaf("as"), SExprLeaf("const"), tpe)), value)) =>
+    case SExprNode(Seq(SExprNode(Seq(SExprLeaf("as"), SExprLeaf("const"), tpe)), value)) =>
       // initialize complete memory to value
-      List((None, parseValue(value).get))
-    case SExprNode(List(SExprLeaf("store"), array, indexExpr, valueExpr)) =>
+      Seq((None, parseValue(value).get))
+    case SExprNode(Seq(SExprLeaf("store"), array, indexExpr, valueExpr)) =>
       val (index, value) = (parseValue(indexExpr), parseValue(valueExpr))
       parseMem(array, ctx) :+ (Some(index.get), value.get)
-    case SExprNode(List(SExprLeaf("let"), SExprNode(List(SExprNode(List(SExprLeaf(variable), array0)))), array1)) =>
+    case SExprNode(Seq(SExprLeaf("let"), SExprNode(Seq(SExprNode(Seq(SExprLeaf(variable), array0)))), array1)) =>
       val newCtx = ctx ++ Seq(variable -> parseMem(array0, ctx))
       parseMem(array1, newCtx)
     case SExprLeaf(variable) =>
       assert(ctx.contains(variable), s"Undefined variable: $variable. " + ctx.keys.mkString(", "))
       ctx(variable)
     case SExprNode(
-          List(
+          Seq(
             SExprLeaf("lambda"),
-            SExprNode(List(SExprNode(List(SExprLeaf(v0), indexTpe)))),
-            SExprNode(List(SExprLeaf("="), SExprLeaf(v1), SExprLeaf(indexStr)))
+            SExprNode(Seq(SExprNode(Seq(SExprLeaf(v0), indexTpe)))),
+            SExprNode(Seq(SExprLeaf("="), SExprLeaf(v1), SExprLeaf(indexStr)))
           )
         ) if v0 == v1 =>
       // example: (lambda ((x!1 (_ BitVec 5))) (= x!1 #b00000))
-      List((None, BigInt(0)), (Some(parseBVLiteral(indexStr).get), BigInt(1)))
+      Seq((None, BigInt(0)), (Some(parseBVLiteral(indexStr).get), BigInt(1)))
     case other => throw new NotImplementedError(s"TODO implement parsing of SMT solver response: $other")
   }
 
@@ -72,49 +73,72 @@ private object SMTLibResponseParser {
   }
 }
 
-sealed trait SExpr
-case class SExprNode(children: List[SExpr]) extends SExpr {
+sealed trait SExpr {
+  def isEmpty: Boolean
+}
+case class SExprNode(children: Seq[SExpr]) extends SExpr {
   override def toString = children.mkString("(", " ", ")")
+  override def isEmpty: Boolean = children.isEmpty || children.forall(_.isEmpty)
 }
 case class SExprLeaf(value: String) extends SExpr {
   override def toString = value
+  override def isEmpty: Boolean = value.trim.isEmpty
 }
 
 /** simple S-Expression parser to make sense of SMTLib solver output */
 object SExprParser {
   def parse(line: String): SExpr = {
-    val tokens = line
-      .replace("(", " ( ")
-      .replace(")", " ) ")
-      .split("\\s+")
-      .filterNot(_.isEmpty)
-      .toList
+    val tokens = tokenize(line)
 
-    assert(tokens.nonEmpty)
-    if (tokens.head == "(") {
+    if (tokens.isEmpty) {
+      SExprLeaf("")
+    } else if (tokens.head == "(") {
       parseSExpr(tokens.tail)._1
     } else {
-      assert(tokens.tail.isEmpty)
+      assert(tokens.tail.isEmpty, s"multiple tokens, but not starting with a `(`:\n${tokens.mkString(" ")}")
       SExprLeaf(tokens.head)
     }
   }
 
-  private def parseSExpr(tokens: List[String]): (SExpr, List[String]) = {
+  // tokenization with | as escape character
+  private def tokenize(line: String): Seq[String] = {
+    val tokens = mutable.ListBuffer.empty[String]
+    var inEscape = false
+    var tmp = ""
+    def finish(): Unit = {
+      if (tmp.nonEmpty) {
+        tokens += tmp
+        tmp = ""
+      }
+    }
+    line.foreach {
+      case '('                                   => finish(); tokens += "("
+      case ')'                                   => finish(); tokens += ")"
+      case '|' if inEscape                       => tmp += '|'; finish(); inEscape = false
+      case '|' if !inEscape                      => finish(); inEscape = true; tmp = "|"
+      case ' ' | '\t' | '\r' | '\n' if !inEscape => finish()
+      case other                                 => tmp += other
+    }
+    finish()
+    tokens.toSeq
+  }
+
+  private def parseSExpr(tokens: Seq[String]): (SExpr, Seq[String]) = {
     var t = tokens
-    var elements = List[SExpr]()
+    val elements = mutable.ListBuffer.empty[SExpr]
     while (t.nonEmpty) {
       t.head match {
         case "(" =>
           val (child, nt) = parseSExpr(t.tail)
           t = nt
-          elements = elements :+ child
+          elements += child
         case ")" =>
-          return (SExprNode(elements), t.tail)
+          return (SExprNode(elements.toSeq), t.tail)
         case other =>
-          elements = elements :+ SExprLeaf(other)
+          elements += SExprLeaf(other)
           t = t.tail
       }
     }
-    (SExprNode(elements), List())
+    (SExprNode(elements.toSeq), Seq())
   }
 }
