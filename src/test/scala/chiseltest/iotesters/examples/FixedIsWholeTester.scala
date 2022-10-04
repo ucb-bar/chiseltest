@@ -21,7 +21,7 @@ class FixedIsWhole(w: Int) extends Module {
   val lsbsChopped = io.in.setBinaryPoint(0)
   val lsbsZeroed = (lsbsChopped << 2).asFixedPoint(2.BP)
   io.out := lsbsZeroed === io.in
-  printf(s"io_in %x (%d), io_out %d, lsbsChopped %x, lsbsZeroed %x\n",
+  printf("io_in %x (%d), io_out %d, lsbsChopped %x, lsbsZeroed %x\n",
     io.in.asUInt, io.in.asUInt, io.out, lsbsChopped.asUInt, lsbsZeroed.asUInt)
 }
 

@@ -55,7 +55,7 @@ class PlusArgReader extends BlackBox with HasBlackBoxInline {
 
 class PlusArgReaderWrapper(expected: Int) extends Module {
   val reader = Module(new PlusArgReader)
-  assert(reader.io.out === expected.U, s"Expected $expected, got %x.\n", reader.io.out)
+  chisel3.assert(reader.io.out === expected.U, "Expected $expected, got %x.\n", reader.io.out)
 }
 
 class IcarusBlackBoxTests extends AnyFlatSpec with ChiselScalatestTester {

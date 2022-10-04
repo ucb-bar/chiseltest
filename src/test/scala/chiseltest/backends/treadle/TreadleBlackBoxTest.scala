@@ -45,7 +45,7 @@ class PlusArgReaderTreadleImpl extends ScalaBlackBoxFactory with ScalaBlackBox {
 
 class PlusArgReaderWrapper(expected: Int) extends Module {
   val reader = Module(new PlusArgReader)
-  assert(reader.io.out === expected.U, s"Expected $expected, got %x.\n", reader.io.out)
+  chisel3.assert(reader.io.out === expected.U, "Expected $expected, got %x.\n", reader.io.out)
 }
 
 class TreadleBlackBoxTest extends AnyFlatSpec with ChiselScalatestTester {
