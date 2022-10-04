@@ -55,7 +55,8 @@ class PlusArgReader extends BlackBox with HasBlackBoxInline {
 
 class PlusArgReaderWrapper(expected: Int) extends Module {
   val reader = Module(new PlusArgReader)
-  assert(reader.io.out === expected.U, s"Expected $expected, got %x.\n", reader.io.out)
+  val msg = s"Expected $expected, got %x.\n" // this works around the fact that s".." is forbidden in the assert
+  assert(reader.io.out === expected.U, msg, reader.io.out)
 }
 
 class VerilogBlackBoxTests extends AnyFlatSpec with ChiselScalatestTester {

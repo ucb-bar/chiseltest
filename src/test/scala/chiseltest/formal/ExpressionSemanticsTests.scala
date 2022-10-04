@@ -24,8 +24,10 @@ class DivisionVsShiftTest extends Module {
   assert(numerator / 1.U === numerator)
   val powers = Seq.tabulate(10)(ii => (ii, BigInt(1) << ii))
   powers.foreach { case (ii, pow) =>
-    assert(numerator / pow.U === (numerator >> ii.U), s"num / $pow == num >> $ii")
-    assert(numerator / pow.U === numerator.head(width - ii), s"num / $pow == num[${width-1}:$ii]")
+    val msg1 = s"num / $pow == num >> $ii" // this works around the fact that s".." is forbidden in the assert
+    assert(numerator / pow.U === (numerator >> ii.U), msg1)
+    val msg2 = s"num / $pow == num[${width-1}:$ii]" // this works around the fact that s".." is forbidden in the assert
+    assert(numerator / pow.U === numerator.head(width - ii), msg2)
   }
 }
 
@@ -72,8 +74,10 @@ class DivisionAndRemainderTest(oracle: DivisionAndRemainderOracle) extends Modul
     val div = oracle.div(num, den)
     val rem = oracle.rem(num, den)
     val div_res = (num.U / den.U).suggestName(s"${num}_div_${den}_res")
-    assert(div_res === div.U, s"$num / $den == $div")
+    val msg1 = s"$num / $den == $div" // this works around the fact that s".." is forbidden in the assert
+    assert(div_res === div.U, msg1)
     val rem_res = (num.U % den.U).suggestName(s"${num}_rem_${den}_res")
-    assert(rem_res === rem.U, s"$num %% $den == $rem")
+    val msg2 = s"$num %% $den == $rem" // this works around the fact that s".." is forbidden in the assert
+    assert(rem_res === rem.U, msg2)
   }
 }
