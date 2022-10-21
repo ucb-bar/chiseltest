@@ -7,7 +7,7 @@ version := "0.6-SNAPSHOT"
 
 scalaVersion := "2.12.16"
 
-crossScalaVersions := Seq("2.12.16", "2.13.7")
+crossScalaVersions := Seq("2.12.16", "2.13.10")
 
 resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
@@ -70,7 +70,7 @@ scalacOptions ++= Seq(
 libraryDependencies ++= Seq(
   "edu.berkeley.cs" %% "chisel3" % defaultVersions("chisel3"),
   "edu.berkeley.cs" %% "treadle" % defaultVersions("treadle"),
-  "org.scalatest" %% "scalatest" % "3.2.12",
+  "org.scalatest" %% "scalatest" % "3.2.14",
   "com.lihaoyi" %% "utest" % "0.8.0",
   "net.java.dev.jna" % "jna" % "5.12.1",
   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
