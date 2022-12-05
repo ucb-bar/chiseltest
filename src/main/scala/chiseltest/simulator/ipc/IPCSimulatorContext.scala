@@ -57,11 +57,14 @@ private[chiseltest] class IPCSimulatorContext(
   private def startProcess(cmd: Seq[String], logs: ArrayBuffer[String], cwd: os.Path): Process = {
     val processBuilder = Process(cmd, cwd = cwd.toIO)
     // This makes everything written to stderr get added as lines to logs
-    val processLogger = ProcessLogger(println, { str =>
-      logs.synchronized {
+    val processLogger = ProcessLogger(
+      println,
+      { str =>
+        logs.synchronized {
           logs += str
         }
-    }) // don't log stdout
+      }
+    ) // don't log stdout
     processBuilder.run(processLogger)
   }
 
@@ -112,10 +115,10 @@ private[chiseltest] class IPCSimulatorContext(
   }
 
   private def dumpLogs(): Unit = {
-   _logs.synchronized{
-    _logs.foreach(x => println(x))
-    _logs.clear()
-   }
+    _logs.synchronized {
+      _logs.foreach(x => println(x))
+      _logs.clear()
+    }
   }
 
   private def throwExceptionIfDead(exitValue: Future[Int]): Unit = {
@@ -442,4 +445,5 @@ private class Channel(cwd: os.Path, name: String) {
   os.remove(cwd / name)
 }
 
-private[chiseltest] case class TestApplicationException(exitVal: Int, lastMessage: String) extends RuntimeException(lastMessage)
+private[chiseltest] case class TestApplicationException(exitVal: Int, lastMessage: String)
+    extends RuntimeException(lastMessage)

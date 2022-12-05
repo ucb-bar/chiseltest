@@ -224,7 +224,10 @@ class GenericBackend[T <: Module](
       try {
         tester.finish() // needed to dump VCDs + terminate any external process
       } catch {
-        case e: TestApplicationException =>  throw new ChiselAssertionError(s"Simulator exited sooner than expected. See logs for more information about what is assumed to be a Chisel Assertion which failed.")
+        case e: TestApplicationException =>
+          throw new ChiselAssertionError(
+            s"Simulator exited sooner than expected. See logs for more information about what is assumed to be a Chisel Assertion which failed."
+          )
       }
     }
     if (tester.sim.supportsCoverage) {
