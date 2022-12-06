@@ -193,7 +193,7 @@ private object VcsSimulator extends Simulator {
     "-LDFLAGS",
     "-lstdc++",
     "-CFLAGS",
-    "\"" + cFlags.mkString(" ") + "\""
+    cFlags.mkString(" ") // Don't wrap in double quotes
   ) ++ verdiFlags
 
   private def generateHarness(
