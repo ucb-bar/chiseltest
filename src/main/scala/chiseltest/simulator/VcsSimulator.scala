@@ -158,6 +158,7 @@ private object VcsSimulator extends Simulator {
     // combine all flags
     val userFlags = annos.collectFirst { case VcsFlags(f) => f }.getOrElse(Seq.empty)
     val flags = DefaultFlags(topName, cFlags, verdiFlags) ++ userFlags
+
     flags
   }
 
@@ -193,7 +194,7 @@ private object VcsSimulator extends Simulator {
     "-LDFLAGS",
     "-lstdc++",
     "-CFLAGS",
-    "\"" + cFlags.mkString(" ") + "\""
+    cFlags.mkString(" ") // Don't wrap in double quotes
   ) ++ verdiFlags
 
   private def generateHarness(
