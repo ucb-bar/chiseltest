@@ -8,6 +8,8 @@ import chiseltest.coverage.TestCoverage
 import chiseltest.simulator.{SimulatorContext, StepInterrupted, StepOk}
 import firrtl.AnnotationSeq
 
+import chiseltest.simulator.ipc.TestApplicationException
+
 import scala.collection.mutable
 
 /** Chiseltest threaded backend using the generic SimulatorContext abstraction from [[chiseltest.simulator]] */
@@ -219,8 +221,14 @@ class GenericBackend[T <: Module](
           thread.thread.interrupt()
         }
       }
-
-      tester.finish() // needed to dump VCDs + terminate any external process
+      try {
+        tester.finish() // needed to dump VCDs + terminate any external process
+      } catch {
+        case e: TestApplicationException =>
+          throw new ChiselAssertionError(
+            s"Simulator exited sooner than expected. See logs for more information about what is assumed to be a Chisel Assertion which failed."
+          )
+      }
     }
     if (tester.sim.supportsCoverage) {
       generateTestCoverageAnnotation() +: coverageAnnotations
