@@ -7,14 +7,19 @@ import chisel3.util._
 import chiseltest._
 import chiseltest.experimental.observe
 import chiseltest.formal._
+import logger.{LogLevel, LogLevelAnnotation}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class AsyncFifoTests extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption {
   behavior of "AsyncFifo"
 
-  // TODO: find out why wire persist when running stuttering clock transform
-  it should "pass a formal integrity test" taggedAs FormalTag ignore {
-    verify(new FifoTestWrapper(new AsyncFifo(UInt(8.W), 4)), Seq(BoundedCheck(4), DefaultBackend, EnableMultiClock))
+  it should "pass a formal integrity test" taggedAs FormalTag in {
+    verify(new FifoTestWrapper(new AsyncFifo(UInt(8.W), 4)), Seq(
+      BoundedCheck(4), DefaultBackend, EnableMultiClock,
+      // TODO: we currently do not model undef since the DefRandToRegisterPass doesn't deal well with multi-clock
+      DoNotModelUndef,
+      LogLevelAnnotation(LogLevel.Info)
+    ))
   }
 }
 

@@ -3,7 +3,7 @@
 
 package chiseltest.formal
 
-import firrtl._
+import firrtl.{options, _}
 import firrtl.annotations._
 import firrtl.backends.experimental.smt.FirrtlToTransitionSystem
 import firrtl.options.Dependency
@@ -51,8 +51,12 @@ object StutteringClockTransform extends Transform with DependencyAPIMigration {
     Dependency[firrtl.transforms.PropagatePresetAnnotations]
   override def invalidates(a: Transform): Boolean = false
 
-  // this pass needs to run *before* converting to a transition system
-  override def optionalPrerequisiteOf: Seq[TransformDependency] = Seq(Dependency(FirrtlToTransitionSystem))
+  override def optionalPrerequisiteOf: Seq[TransformDependency] = Seq(
+    // this pass needs to run *before* converting to a transition system
+    Dependency(FirrtlToTransitionSystem),
+    // this pass also needs to run before inlining as it assumes the standard module structure
+    Dependency[firrtl.passes.InlineInstances]
+  )
   // we need to be able to identify registers that are "preset"
   override def optionalPrerequisites: Seq[TransformDependency] = Seq(
     Dependency[PropagatePresetAnnotations]
