@@ -4,7 +4,7 @@ package chiseltest.formal.backends
 
 import chiseltest.formal.backends.btor.BtormcModelChecker
 import chiseltest.formal.backends.smt._
-import chiseltest.formal.{DoNotModelUndef, DoNotOptimizeFormal, FailedBoundedCheckException}
+import chiseltest.formal._
 import firrtl._
 import firrtl.annotations._
 import firrtl.stage._
@@ -57,8 +57,10 @@ private[chiseltest] object Maltese {
     // convert to transition system
     val targetDir = Compiler.requireTargetDir(annos)
     val modelUndef = !annos.contains(DoNotModelUndef)
-    val sysAnnos: AnnotationSeq = if (modelUndef) { DefRandomAnnos ++: annos }
-    else { annos }
+    val multiClock = annos.contains(EnableMultiClock)
+    val sysAnnos: AnnotationSeq = annos ++
+      (if (modelUndef) DefRandomAnnos else List()) ++
+      (if (multiClock) MultiClockAnnos else List())
     val sysInfo = toTransitionSystem(circuit, sysAnnos)
 
     // if the system has no bad states => success!
@@ -76,7 +78,7 @@ private[chiseltest] object Maltese {
           val sim = new TransitionSystemSimulator(sysInfo.sys)
           sim.run(witness, vcdFileName = Some((targetDir / s"${circuit.main}.bmc.vcd").toString))
           val trace = witnessToTrace(sysInfo, witness)
-          val treadleState = prepTreadle(circuit, annos, modelUndef)
+          val treadleState = prepTreadle(circuit, annos, modelUndef, multiClock)
           val treadleDut = TreadleBackendAnnotation.getSimulator.createContext(treadleState)
           Trace.replayOnSim(trace, treadleDut)
         }
@@ -88,15 +90,22 @@ private[chiseltest] object Maltese {
 
   // compile low firrtl circuit into a version with all DefRandom registers so that treadle can use it to replay the
   // counter example
-  private def prepTreadle(circuit: ir.Circuit, annos: AnnotationSeq, modelUndef: Boolean): CircuitState = {
-    if (!modelUndef) { CircuitState(circuit, annos) }
+  private def prepTreadle(
+    circuit:    ir.Circuit,
+    annos:      AnnotationSeq,
+    modelUndef: Boolean,
+    multiClock: Boolean
+  ): CircuitState = {
+    if (!modelUndef && !multiClock) { CircuitState(circuit, annos) }
     else {
       val res = firrtlPhase.transform(
         Seq(
           RunFirrtlTransformAnnotation(new LowFirrtlEmitter),
           new CurrentFirrtlStateAnnotation(Forms.LowForm),
           FirrtlCircuitAnnotation(circuit)
-        ) ++: annos ++: DefRandomTreadleAnnos
+        ) ++ annos ++
+          (if (modelUndef) DefRandomTreadleAnnos else List()) ++
+          (if (multiClock) MultiClockAnnos else List())
       )
       Compiler.annosToState(res)
     }
@@ -117,6 +126,10 @@ private[chiseltest] object Maltese {
   private val DefRandomAnnos: AnnotationSeq = Seq(
     RunFirrtlTransformAnnotation(Dependency(UndefinedMemoryBehaviorPass)),
     RunFirrtlTransformAnnotation(Dependency(InvalidToRandomPass))
+  )
+
+  private val MultiClockAnnos: AnnotationSeq = Seq(
+    RunFirrtlTransformAnnotation(Dependency(StutteringClockTransform))
   )
 
   private val DefRandomTreadleAnnos: AnnotationSeq =

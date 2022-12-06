@@ -55,10 +55,21 @@ private object Formal {
     val lowFirrtl = Compiler.toLowFirrtl(highFirrtl, Seq(DontAssertSubmoduleAssumptionsAnnotation))
 
     // add reset assumptions
-    val withReset = AddResetAssumptionPass.execute(lowFirrtl)
+    val (withReset, resetLength) = if (withDefaults.contains(EnableMultiClock)) {
+      val resetOptions = withDefaults.collect { case r: ResetOption => r }
+      if (resetOptions.nonEmpty) {
+        println(s"WARN: reset options are ignore in multi-clock mode! " + resetOptions.mkString(", "))
+      }
+      (lowFirrtl, 0)
+    } else {
+      // add reset assumptions
+      val withReset = AddResetAssumptionPass.execute(lowFirrtl)
+      // execute operations
+      val resetLength = AddResetAssumptionPass.getResetLength(withDefaults)
+      (withReset, resetLength)
+    }
 
     // execute operations
-    val resetLength = AddResetAssumptionPass.getResetLength(withDefaults)
     ops.foreach(executeOp(withReset, resetLength, _))
   }
 
