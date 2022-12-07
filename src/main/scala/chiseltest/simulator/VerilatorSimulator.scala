@@ -43,17 +43,26 @@ private object VerilatorSimulator extends Simulator {
     }
   }
 
-  // example version string: Verilator 4.038 2020-07-11 rev v4.038
+  // example version string1: Verilator 4.038 2020-07-11 rev v4.038
+  // example version string2: Verilator 5.002.p 2022-11-15 rev v5.002-12-g58821e0eb
   private lazy val version: (Int, Int) = { // (major, minor)
     val versionSplitted = os.proc("verilator", "--version").call().out.trim.split(' ')
     assert(
       versionSplitted.length > 1 && versionSplitted.head == "Verilator",
       s"Unknown verilator version string: ${versionSplitted.mkString(" ")}"
     )
-    val Array(majStr, minStr) = versionSplitted(1).split('.').map(_.trim)
-    assert(majStr.length == 1 && minStr.length == 3, s"$majStr.$minStr is not of the expected format: D.DDD")
-    val (maj, min) = (majStr.toInt, minStr.toInt)
-    // println(s"Detected Verilator version $maj.$min")
+
+    val (maj, min) = versionSplitted(1).split('.').map(_.trim) match {
+      case Array(majStr, minStr) =>
+        assert(majStr.length == 1 && minStr.length == 3, s"${majStr}.${minStr} is not of the expected format: D.DDD")
+        (majStr.toInt, minStr.toInt)
+      case Array(majStr, minStr, s) =>
+        assert(majStr.length == 1 && minStr.length == 3, s"${majStr}.${minStr} is not of the expected format: D.DDD.s+")
+        (majStr.toInt, minStr.toInt)
+      case s =>
+        assert(false, s"${s} is not of the expected format: D.DDD or D.DDD.s+")
+        (0, 0)
+    }
     (maj, min)
   }
 
