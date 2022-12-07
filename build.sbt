@@ -5,9 +5,9 @@ name := "chiseltest"
 
 version := "0.6-SNAPSHOT"
 
-scalaVersion := "2.12.16"
+scalaVersion := "2.13.10"
 
-crossScalaVersions := Seq("2.12.16", "2.13.10")
+crossScalaVersions := Seq("2.12.17", "2.13.10")
 
 resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
