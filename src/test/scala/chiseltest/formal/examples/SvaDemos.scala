@@ -130,7 +130,7 @@ class SvaDemoModule extends Module {
   private def seqs_p(rStr: String, aStr: String, bStr: String, cStr: String): Unit = {
     val r = seq(rStr)
     withReset(false.B) {
-      assume(reset.asBool() === r)
+      assume(reset.asBool === r)
     }
     if(aStr.nonEmpty) a := seq(aStr)
     if(bStr.nonEmpty) b := seq(bStr)

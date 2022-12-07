@@ -133,7 +133,7 @@ class TesterSharedLibInterface(so: NativeLibrary, sPtr: Pointer) {
   private val finishFoo = so.getFunction("finish")
   def finish(): Unit = {
     finishFoo.invoke(Array(sPtr))
-    so.dispose()
+    so.close()
   }
   private val resetCoverageFoo = so.getFunction("resetCoverage")
   def resetCoverage(): Unit = {

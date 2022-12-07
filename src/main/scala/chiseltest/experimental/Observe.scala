@@ -4,7 +4,6 @@ package chiseltest.experimental
 
 import chisel3._
 import chisel3.util.experimental._
-import chisel3.experimental.IO
 
 object observe {
   def apply[T <: Data](signal: T): T = {

@@ -68,13 +68,13 @@ object fell {
 object stable {
 
   /** returns true if the signal was the same in the previous cycle as it is now */
-  def apply(signal: Data): Bool = past(signal).asUInt() === signal.asUInt()
+  def apply(signal: Data): Bool = past(signal).asUInt === signal.asUInt
 }
 
 object changed {
 
   /** returns true if the signal was the different in the previous cycle as it is now */
-  def apply(signal: Data): Bool = past(signal).asUInt() =/= signal.asUInt()
+  def apply(signal: Data): Bool = past(signal).asUInt =/= signal.asUInt
 }
 
 case class PastSignalAnnotation(target: ReferenceTarget) extends SingleTargetAnnotation[ReferenceTarget] {
