@@ -22,7 +22,7 @@ class ChiselEnumTest extends AnyFlatSpec with ChiselScalatestTester {
         val in = Input(EnumExample())
         val out = Output(UInt(2.W))
       })
-      io.out := io.in.asUInt()
+      io.out := io.in.asUInt
     }) { c =>
       c.io.in.poke(EnumExample.e0)
       c.io.out.expect(0.U)

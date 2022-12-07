@@ -1,7 +1,6 @@
 package chiseltest.formal.vips
 
 import chisel3._
-import chisel3.experimental.IO
 import chisel3.util._
 
 /** Tracks random packets for formally verifying FIFOs

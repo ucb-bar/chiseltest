@@ -25,7 +25,7 @@ class VecPassThrough(val numberOfElements: Int, elementGenerator: => UInt) exten
   regVector <> io.inVector
   io.outVector <> regVector
 
-  io.outVectorAsUInt := io.inVector.asUInt()
+  io.outVectorAsUInt := io.inVector.asUInt
 }
 
 /**
@@ -44,7 +44,7 @@ class BundlePassThrough extends Module {
   regBundle <> io.inBundle
   io.outBundle <> regBundle
 
-  io.outBundleAsUInt := io.inBundle.asUInt()
+  io.outBundleAsUInt := io.inBundle.asUInt
 }
 
 class PassThroughBundle extends Bundle {
@@ -138,7 +138,7 @@ class AggregatePassThrough(aggregateGenerator: => Aggregate) extends Module {
   aggregateRegister <> io.inputAggregate
   io.outputAggregate <> aggregateRegister
 
-  io.aggregateAsUInt := aggregateRegister.asUInt()
+  io.aggregateAsUInt := aggregateRegister.asUInt
   io.outputFromUInt := aggregateRegister.asTypeOf(aggregateGenerator)
 }
 
