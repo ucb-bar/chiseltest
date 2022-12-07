@@ -6,7 +6,7 @@ import mill.scalalib.scalafmt._
 import mill.scalalib.publish._
 import coursier.maven.MavenRepository
 
-object chiseltest extends mill.Cross[chiseltestCrossModule]("2.12.13")
+object chiseltest extends mill.Cross[chiseltestCrossModule]("2.13.10")
 
 val defaultVersions = Map(
   "chisel3" -> "3.6-SNAPSHOT",
