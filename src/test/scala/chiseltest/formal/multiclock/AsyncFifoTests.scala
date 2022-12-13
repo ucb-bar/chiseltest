@@ -47,14 +47,12 @@ class FifoTestWrapper[D <: Data](fifo: => AsyncFifo[D]) extends Module {
   // instantiate the normal tracker with global clock and read or write reset
   withGlobalClock {
     withReset(deqReset || enqReset) {
-      MagicPacketTracker(enq, deq, dut.depth)
+      MagicPacketTracker(enq, deq, dut.depth, debugPrint = true)
     }
   }
-
   // both resets are asserted in the first cycle
-  when(isInit()) {
+  duringInit {
     assume(deqReset)
     assume(enqReset)
   }
-
 }

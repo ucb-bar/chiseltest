@@ -35,6 +35,16 @@ object isInit {
   }
 }
 
+object duringInit {
+  def apply[T](block: => T): WhenContext = {
+    withGlobalClock { // we want to perform things during the first cycle of the check, no stuttering!
+      withReset(false.B) { // make sure assertions are not guarded by any reset
+        when(isInit())(block)
+      }
+    }
+  }
+}
+
 object clockIsEnabled {
   def apply(clock: Clock): Bool = {
     val enable = Wire(Bool())
