@@ -41,7 +41,7 @@ class AsyncFifo[D <: Data](val dataTpe: D, val depth: Int) extends Module {
     writeCount := writeNext
 
     when(write.enq.fire) {
-      mem.write(writeCount, write.enq.bits)
+      mem.write(writeCount, write.enq.bits, clock)
     }
 
     (writeCount, RegNext(BinaryToGray(writeNext), 0.U))
@@ -52,7 +52,7 @@ class AsyncFifo[D <: Data](val dataTpe: D, val depth: Int) extends Module {
     val readNext = readCount + read.deq.fire
     readCount := readNext
 
-    read.deq.bits := mem.read(readNext)
+    read.deq.bits := mem.read(readNext, read.clock)
 
     (readCount, RegNext(BinaryToGray(readNext))) // intentionally without reset!
   }
