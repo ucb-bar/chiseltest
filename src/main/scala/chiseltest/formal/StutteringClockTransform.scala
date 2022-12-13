@@ -276,6 +276,10 @@ object StutteringClockTransform extends Transform with DependencyAPIMigration {
         s.copy(en = Utils.and(clockEnable, s.en), clk = ctx.globalClock)
       // replace references to a fake global clock with UInt(1), since the global clock is always enabled!
       case n @ ir.DefNode(_, name, _) if ctx.isGlobalClockAlias(name) => n.copy(value = Utils.True())
+      // remove the asUInt that is added by the `clockIsEnabled` function in order to get good SSA, it is no longer
+      // needed since the clock is now an enable signal anyways
+      case n @ ir.DefNode(_, _, ir.DoPrim(PrimOps.AsUInt, Seq(ref: ir.Reference), _, _)) if ref.tpe == ir.ClockType =>
+        n.copy(value = toClockEnable(ref))
       // connect clock enable nodes to the actual clock enable
       case n @ ir.DefNode(info, name, value) =>
         ctx.clockEnables.get(name) match {
@@ -315,7 +319,8 @@ object StutteringClockTransform extends Transform with DependencyAPIMigration {
 
   // Phase #2
   private def updateSubmodules(m: ir.Module, moduleTypes: Map[String, ir.BundleType]): ir.DefModule = {
-    val globalClockName = moduleTypes(m.name).fields.last.name
+    // the global clock is always the first port of the module (after Phase #1)
+    val globalClockName = moduleTypes(m.name).fields.head.name
     val ctx = Ctx2(
       globalClock = ir.Reference(globalClockName, ir.ClockType, PortKind, SourceFlow),
       moduleTypes = moduleTypes
@@ -331,8 +336,8 @@ object StutteringClockTransform extends Transform with DependencyAPIMigration {
       ctx.instToModule(name) = module
       // fix instance type
       val nd = d.copy(tpe = ctx.moduleTypes(module))
-      // connect global clock
-      val globalClockName = nd.tpe.asInstanceOf[ir.BundleType].fields.last.name
+      // connect global clock (the global clock is always the first input after Phase #1)
+      val globalClockName = nd.tpe.asInstanceOf[ir.BundleType].fields.head.name
       val con =
         ir.Connect(ir.NoInfo, ir.SubField(ir.Reference(nd), globalClockName, ir.ClockType, SinkFlow), ctx.globalClock)
       // return both

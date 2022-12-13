@@ -18,7 +18,7 @@ class AsyncFifoTests extends AnyFlatSpec with ChiselScalatestTester with Formal 
       BoundedCheck(4), DefaultBackend, EnableMultiClock,
       // TODO: we currently do not model undef since the DefRandToRegisterPass doesn't deal well with multi-clock
       DoNotModelUndef,
-      LogLevelAnnotation(LogLevel.Info)
+//      LogLevelAnnotation(LogLevel.Info)
     ))
   }
 }
@@ -49,6 +49,12 @@ class FifoTestWrapper[D <: Data](fifo: => AsyncFifo[D]) extends Module {
     withReset(deqReset || enqReset) {
       MagicPacketTracker(enq, deq, dut.depth)
     }
+  }
+
+  // both resets are asserted in the first cycle
+  when(isInit()) {
+    assume(deqReset)
+    assume(enqReset)
   }
 
 }
