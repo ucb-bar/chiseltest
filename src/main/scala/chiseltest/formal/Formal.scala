@@ -50,9 +50,12 @@ private object Formal {
     assert(ops.nonEmpty, "No verification operation was specified!")
     val withDefaults = addDefaults(annos)
 
+    // we separate any potential log level annotations from the user in order to inject them in all the right places
+    val logLevel = Compiler.filterLogLevelAnnos(annos)
+
     // elaborate the design and compile to low firrtl
     val (highFirrtl, _) = Compiler.elaborate(() => dutGen, withDefaults)
-    val lowFirrtl = Compiler.toLowFirrtl(highFirrtl, Seq(DontAssertSubmoduleAssumptionsAnnotation))
+    val lowFirrtl = Compiler.toLowFirrtl(highFirrtl, Seq(DontAssertSubmoduleAssumptionsAnnotation) ++ logLevel)
 
     // add reset assumptions
     val (withReset, resetLength) = if (withDefaults.contains(EnableMultiClock)) {
@@ -69,8 +72,10 @@ private object Formal {
       (withReset, resetLength)
     }
 
+    val withResetAndLogLevel = withReset.copy(annotations = withReset.annotations ++ logLevel)
+
     // execute operations
-    ops.foreach(executeOp(withReset, resetLength, _))
+    ops.foreach(executeOp(withResetAndLogLevel, resetLength, _))
   }
 
   val DefaultEngine: FormalEngineAnnotation = Z3EngineAnnotation

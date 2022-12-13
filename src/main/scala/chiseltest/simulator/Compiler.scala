@@ -75,4 +75,5 @@ private[chiseltest] object Compiler {
     require(targetDirs.size == 1, s"Expected exactly one target directory, got multiple: $targetDirs")
     os.pwd / os.RelPath(targetDirs.head)
   }
+  def filterLogLevelAnnos(annos: AnnotationSeq): AnnotationSeq = annos.filter(_.isInstanceOf[LogLevelAnnotation])
 }

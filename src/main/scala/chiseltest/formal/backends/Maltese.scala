@@ -98,10 +98,9 @@ private[chiseltest] object Maltese {
   ): CircuitState = {
     if (!modelUndef && !multiClock) { CircuitState(circuit, annos) }
     else {
-      val res = firrtlPhase.transform(
+      val res = firrtlStage.execute(
+        Array("--start-from", "low", "-E", "low"),
         Seq(
-          RunFirrtlTransformAnnotation(new LowFirrtlEmitter),
-          new CurrentFirrtlStateAnnotation(Forms.LowForm),
           FirrtlCircuitAnnotation(circuit)
         ) ++ annos ++
           (if (modelUndef) DefRandomTreadleAnnos else List()) ++
@@ -140,10 +139,9 @@ private[chiseltest] object Maltese {
   private def toTransitionSystem(circuit: ir.Circuit, annos: AnnotationSeq): SysInfo = {
     val logLevel = Seq() // Seq("-ll", "info")
     val opts: AnnotationSeq = if (annos.contains(DoNotOptimizeFormal)) Seq() else Optimizations
-    val res = firrtlPhase.transform(
+    val res = firrtlStage.execute(
+      Array("--start-from", "low", "-E", "smt2"),
       Seq(
-        RunFirrtlTransformAnnotation(Dependency(SMTLibEmitter)),
-        new CurrentFirrtlStateAnnotation(Forms.LowForm),
         FirrtlCircuitAnnotation(circuit)
       ) ++: logLevel ++: annos ++: LoweringAnnos ++: opts
     )
@@ -163,7 +161,7 @@ private[chiseltest] object Maltese {
   private def noBadStates(sys: TransitionSystem): Boolean =
     sys.signals.count(_.lbl == IsBad) == 0
 
-  private def firrtlPhase = new FirrtlPhase
+  private def firrtlStage = new FirrtlStage
 
   private def makeCheckers(annos: AnnotationSeq, targetDir: os.Path): Seq[IsModelChecker] = {
     val engines = annos.collect { case a: FormalEngineAnnotation => a }
