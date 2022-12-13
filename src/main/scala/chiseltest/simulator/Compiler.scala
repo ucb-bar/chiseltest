@@ -5,10 +5,10 @@ package chiseltest.simulator
 import chisel3.RawModule
 import chisel3.stage._
 import chisel3.stage.phases._
-import firrtl.{AnnotationSeq, EmittedCircuitAnnotation}
+import firrtl.{AnnotationSeq, EmitCircuitAnnotation, EmittedCircuitAnnotation}
 import firrtl.annotations.{Annotation, DeletedAnnotation}
 import firrtl.options.TargetDirAnnotation
-import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlStage}
+import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlStage, OutputFileAnnotation}
 import logger.{LogLevelAnnotation, Logger}
 
 private[chiseltest] object Compiler {
@@ -64,7 +64,7 @@ private[chiseltest] object Compiler {
   }
   private def isInternalAnno(a: Annotation): Boolean = a match {
     case _: FirrtlCircuitAnnotation | _: DesignAnnotation[_] | _: ChiselCircuitAnnotation | _: DeletedAnnotation |
-        _: EmittedCircuitAnnotation[_] | _: LogLevelAnnotation =>
+        _: EmittedCircuitAnnotation[_] | _: LogLevelAnnotation | _: OutputFileAnnotation | _: EmitCircuitAnnotation =>
       true
     case _ => false
   }
