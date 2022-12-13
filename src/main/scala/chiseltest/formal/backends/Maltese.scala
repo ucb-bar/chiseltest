@@ -137,13 +137,13 @@ private[chiseltest] object Maltese {
   private case class SysInfo(sys: TransitionSystem, stateMap: Map[String, String], memDepths: Map[String, Int])
 
   private def toTransitionSystem(circuit: ir.Circuit, annos: AnnotationSeq): SysInfo = {
-    val logLevel = Seq() // Seq("-ll", "info")
+    val logLevel = Array() // "-ll", "trace")
     val opts: AnnotationSeq = if (annos.contains(DoNotOptimizeFormal)) Seq() else Optimizations
     val res = firrtlStage.execute(
-      Array("--start-from", "low", "-E", "smt2"),
+      Array("--start-from", "low", "-E", "smt2") ++ logLevel,
       Seq(
         FirrtlCircuitAnnotation(circuit)
-      ) ++: logLevel ++: annos ++: LoweringAnnos ++: opts
+      ) ++: annos ++: LoweringAnnos ++: opts
     )
     val stateMap = FlattenPass.getStateMap(circuit.main, res)
     val memDepths = FlattenPass.getMemoryDepths(circuit.main, res)
