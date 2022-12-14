@@ -2,8 +2,9 @@
 
 package chiseltest.formal
 
+import chisel3.util.log2Ceil
 import chisel3._
-import chisel3.experimental.{annotate, ChiselAnnotation}
+import chisel3.experimental.{annotate, requireIsChiselType, ChiselAnnotation}
 import firrtl.annotations.{Annotation, NoTargetAnnotation, PresetAnnotation}
 
 /** enables _experimental_ multi-clock support for formal verification */
@@ -40,6 +41,20 @@ object duringInit {
     withGlobalClock { // we want to perform things during the first cycle of the check, no stuttering!
       withReset(false.B) { // make sure assertions are not guarded by any reset
         when(isInit())(block)
+      }
+    }
+  }
+  def apply(cycles: Int)(block: => Unit): WhenContext = {
+    require(cycles > 0)
+    if (cycles == 1) { return apply(block) }
+    withGlobalClock { // we want to perform things during the first cycle of the check, no stuttering!
+      val countWidth = log2Ceil(cycles) + 1
+      val counter = withResetIsInitialValue { RegInit(0.U(countWidth.W)) }
+      withReset(false.B) { // make sure assertions are not guarded by any reset
+        when(counter < cycles.U) {
+          counter := counter + 1.U
+          block
+        }
       }
     }
   }
