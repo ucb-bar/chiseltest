@@ -15,7 +15,7 @@ class AsyncFifoTests extends AnyFlatSpec with ChiselScalatestTester with Formal 
 
   it should "pass a formal integrity test" taggedAs FormalTag in {
     verify(new FifoTestWrapper(new AsyncFifo(UInt(8.W), 4)), Seq(
-      BoundedCheck(4), DefaultBackend, EnableMultiClock,
+      BoundedCheck(8), DefaultBackend, EnableMultiClock,
       // TODO: we currently do not model undef since the DefRandToRegisterPass doesn't deal well with multi-clock
       DoNotModelUndef,
       //      LogLevelAnnotation(LogLevel.Info)
@@ -58,9 +58,10 @@ class FifoTestWrapper[D <: Data](fifo: => AsyncFifo[D]) extends Module {
       MagicPacketTracker(enq, deq, dut.depth, debugPrint = true)
     }
   }
-  // the reset is asserted in the first cycle
-  duringInit {
-    assume(enqReset)
+  duringInit(cycles = 3) { // need to reset for at least this many cycles in order to clear the synchronizer regs
+    assume(enqReset && clockIsEnabled(clock))
+    // the read clock needs to be enabled in order to properly reset the registers in the read region
+    assume(clockIsEnabled(readClock))
   }
 }
 
@@ -96,5 +97,15 @@ class DCAsyncFifoTestWrapper[D <: Data](fifo: => DCAsyncFifo[D]) extends Module 
   duringInit(cycles = 3) { // need to reset for at least this many cycles in order to clear the synchronizer regs
     assume(deqReset && clockIsEnabled(deqClock))
     assume(enqReset && clockIsEnabled(enqClock))
+  }.otherwise {
+    withGlobalClock {
+      withReset(false.B) {
+        // disable any reset after; this is a little too optimistic ...
+        // but it keeps one side from being reset without the other being reset which is not allowed
+        // it also prevents resets that are too short (< 3 cycles)
+        assume(!deqReset)
+        assume(!enqReset)
+      }
+    }
   }
 }
