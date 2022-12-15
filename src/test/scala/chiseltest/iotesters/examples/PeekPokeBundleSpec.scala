@@ -49,9 +49,9 @@ class PeekPokeBundleSpec extends AnyFlatSpec with ChiselScalatestTester {
       "aBottomBool"	-> BigInt(0),
       "anEnum" -> MyEnum.e1
     )
-    poke(dut.io.in, myBundleMap.values.toArray)
+    poke(dut.io.in, myBundleMap.values.toIndexedSeq)
     step(1)
-    expect(dut.io.out, myBundleMap.values.toArray)
+    expect(dut.io.out, myBundleMap.values.toIndexedSeq)
   }
 
   // A tester for the trivial circuit.

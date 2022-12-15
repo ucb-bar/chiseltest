@@ -21,9 +21,9 @@ class ThreadSafetyLocatorTest extends AnyFlatSpec with ChiselScalatestTester {
         }.fork {
           c.in.poke(true.B)
           c.clock.step(1)
-        }.join
+        }.join()
       }
-    }.getMessage()
+    }.getMessage
     exceptionMessage should include ("ThreadSafetyLocatorTest.scala:22")
     exceptionMessage should include ("ThreadSafetyLocatorTest.scala:19")
   }

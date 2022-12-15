@@ -265,7 +265,7 @@ private[chiseltest] class IPCSimulatorContext(
       0
     } else {
       (for {
-        _ <- Stream.from(1)
+        _ <- LazyList.from(1)
         data = recvResp
         if data.isDefined
       } yield data.get).head
@@ -279,7 +279,7 @@ private[chiseltest] class IPCSimulatorContext(
       0
     } else {
       (for {
-        _ <- Stream.from(1)
+        _ <- LazyList.from(1)
         data = recvResp
         if data.isDefined
       } yield data.get).head
@@ -300,7 +300,7 @@ private[chiseltest] class IPCSimulatorContext(
       BigInt(0)
     } else {
       (for {
-        _ <- Stream.from(1)
+        _ <- LazyList.from(1)
         data = recvValue(chunk)
         if data.isDefined
       } yield data.get).head

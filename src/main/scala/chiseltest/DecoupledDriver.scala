@@ -23,7 +23,7 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
     ClockResolutionUtils.getClock(
       DecoupledDriver.decoupledSourceKey,
       x,
-      x.ready.getSourceClock
+      x.ready.getSourceClock()
     ) // TODO: validate against bits/valid sink clocks
   }
 
@@ -73,13 +73,13 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
     ClockResolutionUtils.getClock(
       DecoupledDriver.decoupledSinkKey,
       x,
-      x.valid.getSourceClock
+      x.valid.getSourceClock()
     ) // TODO: validate against bits/valid sink clocks
   }
 
   // NOTE: this doesn't happen in the Monitor phase, unlike public functions
   def waitForValid(): Unit = {
-    while (x.valid.peek().litToBoolean == false) {
+    while (!x.valid.peek().litToBoolean) {
       getSinkClock.step(1)
     }
   }

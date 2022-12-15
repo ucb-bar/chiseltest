@@ -87,7 +87,7 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
     val lines = os.read.lines(coverageFile).drop(1)
     lines.map(_.split('\'').toList).map {
         case List(_, dict, countStr) =>
-          dict.drop(1).split('\u0001').map(_.split('\u0002').toList).map { case Seq(k, v) => k -> v }.toMap
+          dict.drop(1).split('\u0001').map(_.split('\u0002').toList).collect { case Seq(k, v) => k -> v }.toMap
         case _ => Map[String, String]()
     }.toSeq
   }

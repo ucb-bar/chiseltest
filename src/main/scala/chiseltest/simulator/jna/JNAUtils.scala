@@ -2,7 +2,8 @@
 
 package chiseltest.simulator.jna
 import com.sun.jna._
-import scala.collection.JavaConverters
+
+import scala.jdk.CollectionConverters.MapHasAsJava
 
 object JNAUtils {
   val isWindows: Boolean = System.getProperty("os.name").toLowerCase().contains("win")
@@ -67,7 +68,7 @@ object JNAUtils {
     val libCopy = libPath / os.up / (libPath.last + s"_$getUniqueId")
     os.copy.over(libPath, to = libCopy)
     // dlopen options: RTLD_NOW
-    val opts = JavaConverters.mapAsJavaMap(Map(Library.OPTION_OPEN_FLAGS -> 2))
+    val opts = Map(Library.OPTION_OPEN_FLAGS -> 2).asJava
     val so = if (isWindows) {
       NativeLibrary.getInstance(libCopy.toString())
     } else {
