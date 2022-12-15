@@ -265,10 +265,10 @@ private[chiseltest] class IPCSimulatorContext(
       0
     } else {
       (for {
-        _ <- LazyList.from(1)
+        _ <- Iterator.from(1)
         data = recvResp
         if data.isDefined
-      } yield data.get).head
+      } yield data.get).next()
     }
   }
 
@@ -279,10 +279,10 @@ private[chiseltest] class IPCSimulatorContext(
       0
     } else {
       (for {
-        _ <- LazyList.from(1)
+        _ <- Iterator.from(1)
         data = recvResp
         if data.isDefined
-      } yield data.get).head
+      } yield data.get).next()
     }
   }
 
@@ -300,10 +300,10 @@ private[chiseltest] class IPCSimulatorContext(
       BigInt(0)
     } else {
       (for {
-        _ <- LazyList.from(1)
+        _ <- Iterator.from(1)
         data = recvValue(chunk)
         if data.isDefined
-      } yield data.get).head
+      } yield data.get).next()
     }
   }
 
