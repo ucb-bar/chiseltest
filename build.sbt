@@ -9,10 +9,8 @@ scalaVersion := "2.12.15"
 
 crossScalaVersions := Seq("2.12.15", "2.13.7")
 
-resolvers ++= Seq(
-  Resolver.sonatypeRepo("snapshots"),
-  Resolver.sonatypeRepo("releases")
-)
+resolvers ++= Resolver.sonatypeOssRepos("snapshots")
+resolvers ++= Resolver.sonatypeOssRepos("releases")
 
 testFrameworks += new TestFramework("utest.runner.Framework")
 

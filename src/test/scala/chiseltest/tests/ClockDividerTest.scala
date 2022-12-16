@@ -47,7 +47,7 @@ class ClockDividerTest extends AnyFlatSpec with ChiselScalatestTester {
         c.io.divClock.step()
         c.io.mainOut.expect(2.U)
         c.io.divOut.expect(1.U)
-      } .join
+      } .join()
     }
   }
 }

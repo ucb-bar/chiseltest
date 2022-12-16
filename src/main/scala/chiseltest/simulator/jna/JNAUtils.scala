@@ -2,7 +2,6 @@
 
 package chiseltest.simulator.jna
 import com.sun.jna._
-import scala.collection.JavaConverters
 
 object JNAUtils {
   def javaHome: String = System.getProperty("java.home") match {
@@ -60,8 +59,18 @@ object JNAUtils {
     val libCopy = libPath / os.up / (libPath.last + s"_$getUniqueId")
     os.copy.over(libPath, to = libCopy)
     // dlopen options: RTLD_NOW
+<<<<<<< HEAD
     val opts = JavaConverters.mapAsJavaMap(Map(Library.OPTION_OPEN_FLAGS -> 2))
     val so = NativeLibrary.getInstance(libCopy.toString(), opts)
+=======
+    val opts = new java.util.HashMap[String, Int]()
+    opts.put(Library.OPTION_OPEN_FLAGS, 2)
+    val so = if (isWindows) {
+      NativeLibrary.getInstance(libCopy.toString())
+    } else {
+      NativeLibrary.getInstance(libCopy.toString(), opts)
+    }
+>>>>>>> df2340a (Fix scala 2.13 warnings and update sbt (#586))
     val initFoo = so.getFunction("sim_init")
     val sPtr = initFoo.invokePointer(Array())
     new TesterSharedLibInterface(so = so, sPtr = sPtr)

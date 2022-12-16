@@ -20,7 +20,7 @@ class TreadleSpecificTests extends AnyFlatSpec {
 
   it should "print the version that we depend on" in {
     val (_, out) = CaptureStdout {
-      sim.findVersions
+      sim.findVersions()
     }
     assert(out.contains("treadle is available"))
     assert(out.contains("1.5"))

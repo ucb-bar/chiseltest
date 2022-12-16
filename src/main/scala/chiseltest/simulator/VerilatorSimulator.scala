@@ -46,7 +46,20 @@ private object VerilatorSimulator extends Simulator {
   // example version string1: Verilator 4.038 2020-07-11 rev v4.038
   // example version string2: Verilator 5.002.p 2022-11-15 rev v5.002-12-g58821e0eb
   private lazy val version: (Int, Int) = { // (major, minor)
+<<<<<<< HEAD
     val versionSplitted = os.proc("verilator", "--version").call().out.trim.split(' ')
+=======
+    val versionSplitted = os
+      .proc(
+        if (JNAUtils.isWindows) { "verilator_bin" }
+        else { "verilator" },
+        "--version"
+      )
+      .call()
+      .out
+      .trim()
+      .split(' ')
+>>>>>>> df2340a (Fix scala 2.13 warnings and update sbt (#586))
     assert(
       versionSplitted.length > 1 && versionSplitted.head == "Verilator",
       s"Unknown verilator version string: ${versionSplitted.mkString(" ")}"
@@ -311,7 +324,7 @@ private object VerilatorPatchCoverageCpp {
 
     // then we replace the call
     val call = findLine(CallNeedle, cppFile, lines)
-    val callLine = lines(call).replaceAllLiterally(CallNeedle, CallReplacement)
+    val callLine = lines(call).replace(CallNeedle, CallReplacement)
     lines(call) = callLine
   }
 

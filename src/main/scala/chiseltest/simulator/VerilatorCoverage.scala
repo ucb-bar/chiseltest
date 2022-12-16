@@ -89,7 +89,8 @@ private object VerilatorCoverage {
     if (!line.startsWith("C '\u0001")) return None
     line.split('\'').toList match {
       case List(_, dict, countStr) =>
-        val entries = dict.drop(1).split('\u0001').map(_.split('\u0002').toList).map { case Seq(k, v) => k -> v }.toMap
+        val entries =
+          dict.drop(1).split('\u0001').map(_.split('\u0002').toList).collect { case Seq(k, v) => k -> v }.toMap
         val count = countStr.trim.toLong
         val path = entries("h").split('.').toList.drop(2).mkString(".")
         val kind = entries("page").split("/").head

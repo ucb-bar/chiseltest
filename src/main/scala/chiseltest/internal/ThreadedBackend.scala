@@ -487,7 +487,7 @@ trait ThreadedBackend[T <: Module] extends BackendInterface {
     //noinspection ConvertExpressionToSAM
     //TODO: code analysis suggests "Convert expression to Single Abstract Method", will that work?
     val thread = new Thread(new Runnable {
-      def run() {
+      def run(): Unit = {
         try {
           waiting.acquire()
 
@@ -585,7 +585,7 @@ trait ThreadedBackend[T <: Module] extends BackendInterface {
     * Unblocks the next thread to be run, possibly also also stepping time via advanceTime().
     * When there are no more active threads, unblocks the driver thread via driverSemaphore.
     */
-  protected def scheduler() {
+  protected def scheduler(): Unit = {
     def threadCanRun(thread: TesterThread): Boolean = {
       val blockedByJoin = thread.joinedOn match {
         case joinedOn if joinedOn.isEmpty => false

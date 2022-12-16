@@ -20,7 +20,7 @@ class CombinationalPathTest extends AnyFlatSpec with ChiselScalatestTester {
         } .fork {
           c.clock.step(1)
           c.out.expect(true.B)
-        } .join
+        } .join()
       }
     }
   }
@@ -42,7 +42,7 @@ class CombinationalPathTest extends AnyFlatSpec with ChiselScalatestTester {
         } .fork {
           c.clock.step(1)
           c.io.out.expect(true.B)
-        } .join
+        } .join()
       }
     }
   }
@@ -63,7 +63,7 @@ class CombinationalPathTest extends AnyFlatSpec with ChiselScalatestTester {
         } .fork {
           c.clock.step(1)
           c.io.out.expect(true.B)
-        } .join
+        } .join()
       }
     }
   }

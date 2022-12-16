@@ -13,9 +13,9 @@ sealed class Region {
     pos
   }
 
-  def isBefore(other: Region): Boolean = this.getPos < other.getPos
-  def isAfter(other:  Region): Boolean = this.getPos > other.getPos
-  def isEqual(other:  Region): Boolean = this.getPos == other.getPos
+  def isBefore(other: Region): Boolean = this.getPos() < other.getPos()
+  def isAfter(other:  Region): Boolean = this.getPos() > other.getPos()
+  def isEqual(other:  Region): Boolean = this.getPos() == other.getPos()
 }
 
 object Region {
