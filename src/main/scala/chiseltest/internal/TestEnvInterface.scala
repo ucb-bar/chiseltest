@@ -45,17 +45,19 @@ trait TestEnvInterface {
   def signalExpectFailure(message: String): Unit = {
     val trace = new Throwable
     val expectStackDepth = trace.getStackTrace.indexWhere(ste =>
-      ste.getClassName.startsWith("chiseltest.package$") && ste.getMethodName == "expect"
+      ste.getClassName.startsWith(
+        "chiseltest.package$"
+      ) && (ste.getMethodName == "expect" || ste.getMethodName == "expectPartial")
     )
     require(
       expectStackDepth != -1,
       s"Failed to find expect in stack trace:\r\n${trace.getStackTrace.mkString("\r\n")}"
     )
 
-    val trimmedTrace = trace.getStackTrace.drop(expectStackDepth + 2)
-    val detailedTrace = topFileName.map(getExpectDetailedTrace(trimmedTrace.toSeq, _)).getOrElse("")
+    val trimmedTrace = trace.getStackTrace.drop(expectStackDepth)
+    val failureLocation: String = topFileName.map(getExpectDetailedTrace(trimmedTrace.toSeq, _)).getOrElse("")
     val stackIndex = expectStackDepth + 1
-    batchedFailures += new FailedExpectException(message + detailedTrace, stackIndex)
+    batchedFailures += new FailedExpectException(message + failureLocation, stackIndex)
   }
 
   /** If there are any failures, reports them and end the test now.
