@@ -58,7 +58,7 @@ class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Match
         c.in.bits.poke(false.B)  // Have this be a data failure only
         fork {
           c.out.expectDequeueNow(true.B)
-        } .join
+        } .join()
       }
     }
     exc.failedCodeFileNameAndLineNumberString.get should startWith ("DecoupledDriver.scala:")

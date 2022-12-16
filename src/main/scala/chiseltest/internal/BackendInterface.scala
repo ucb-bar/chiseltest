@@ -11,13 +11,13 @@ import scala.collection.mutable
 trait AbstractTesterThread
 
 class TesterThreadList(protected val elts: Seq[AbstractTesterThread]) {
-  def toSeq(): Seq[AbstractTesterThread] = elts
+  def toSeq: Seq[AbstractTesterThread] = elts
 
-  def join() {
+  def join(): Unit = {
     Context().backend.doJoin(elts, None)
   }
 
-  def joinAndStep(clock: Clock) {
+  def joinAndStep(clock: Clock): Unit = {
     Context().backend.doJoin(elts, Some(clock))
   }
 

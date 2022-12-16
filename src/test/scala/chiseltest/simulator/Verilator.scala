@@ -25,7 +25,7 @@ class VerilatorSpecificTests extends FlatSpecWithTargetDir {
 
   it should "print the version that we depend on" taggedAs RequiresVerilator in {
     val (_, out) = CaptureStdout {
-      sim.findVersions
+      sim.findVersions()
     }
     assert(out.contains("Found Verilator 4"))
   }

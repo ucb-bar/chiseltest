@@ -21,7 +21,7 @@ class ElementTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
         val in2 = Input(UInt(8.W))
         val out = Output(UInt(8.W))
 
-        def expect(in1Val: UInt, in2Val: UInt, outVal: UInt) {
+        def expect(in1Val: UInt, in2Val: UInt, outVal: UInt): Unit = {
           in1.poke(in1Val)
           in2.poke(in2Val)
           out.expect(outVal)
@@ -46,7 +46,7 @@ class ElementTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
         val in2 = Input(SInt(8.W))
         val out = Output(SInt(8.W))
 
-        def expect(in1Val: SInt, in2Val: SInt, outVal: SInt) {
+        def expect(in1Val: SInt, in2Val: SInt, outVal: SInt): Unit = {
           in1.poke(in1Val)
           in2.poke(in2Val)
           out.expect(outVal)
@@ -79,7 +79,7 @@ class ElementTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
         val outAnd = Output(Bool())
         val outOr = Output(Bool())
 
-        def expect(in1Val: Bool, in2Val: Bool, andVal: Bool, orVal: Bool) {
+        def expect(in1Val: Bool, in2Val: Bool, andVal: Bool, orVal: Bool): Unit = {
           in1.poke(in1Val)
           in2.poke(in2Val)
           outAnd.expect(andVal)
@@ -104,7 +104,7 @@ class ElementTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
         val in2 = Input(FixedPoint(8.W, 2.BP))
         val out = Output(FixedPoint(8.W, 2.BP))
 
-        def expect(in1Val: FixedPoint, in2Val: FixedPoint, outVal: FixedPoint) {
+        def expect(in1Val: FixedPoint, in2Val: FixedPoint, outVal: FixedPoint): Unit = {
           in1.poke(in1Val)
           in2.poke(in2Val)
           out.expect(outVal)

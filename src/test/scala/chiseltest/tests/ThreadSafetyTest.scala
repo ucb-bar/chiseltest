@@ -20,7 +20,7 @@ class ThreadSafetyTest extends AnyFlatSpec with ChiselScalatestTester {
         } .fork {
           c.in.poke(true.B)
           c.clock.step(1)
-        } .join
+        } .join()
       }
     }
   }
@@ -34,7 +34,7 @@ class ThreadSafetyTest extends AnyFlatSpec with ChiselScalatestTester {
         } .fork {
           c.in.poke(true.B)
           c.clock.step(1)
-        } .join
+        } .join()
       }
     }
   }
@@ -45,7 +45,7 @@ class ThreadSafetyTest extends AnyFlatSpec with ChiselScalatestTester {
       fork {
         c.in.poke(true.B)
         c.clock.step(1)
-      } .join
+      } .join()
     }
   }
 
@@ -55,7 +55,7 @@ class ThreadSafetyTest extends AnyFlatSpec with ChiselScalatestTester {
       fork {
         c.in.expect(true.B)
         c.clock.step(1)
-      } .join
+      } .join()
     }
   }
 
@@ -116,7 +116,7 @@ class ThreadSafetyTest extends AnyFlatSpec with ChiselScalatestTester {
             c.clock.step(2)
           }
           c.clock.step(1)
-        } .join
+        } .join()
         c.clock.step(1)
       }
     }
@@ -140,7 +140,7 @@ class ThreadSafetyTest extends AnyFlatSpec with ChiselScalatestTester {
         } .fork {
           c.clock.step(1)
           c.in.expect(true.B)
-        } .join
+        } .join()
       }
     }
   }

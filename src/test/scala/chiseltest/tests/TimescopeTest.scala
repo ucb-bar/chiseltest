@@ -36,7 +36,7 @@ class TimescopeTest extends AnyFlatSpec with ChiselScalatestTester {
           c.in.poke(1.U)
         }
         c.out.expect(0.U)
-      }.join
+      }.join()
     }
   }
 

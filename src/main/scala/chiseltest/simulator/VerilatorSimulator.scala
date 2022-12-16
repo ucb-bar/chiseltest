@@ -54,7 +54,7 @@ private object VerilatorSimulator extends Simulator {
       )
       .call()
       .out
-      .trim
+      .trim()
       .split(' ')
     assert(
       versionSplitted.length > 1 && versionSplitted.head == "Verilator",
@@ -330,7 +330,7 @@ private object VerilatorPatchCoverageCpp {
 
     // then we replace the call
     val call = findLine(CallNeedle, cppFile, lines)
-    val callLine = lines(call).replaceAllLiterally(CallNeedle, CallReplacement)
+    val callLine = lines(call).replace(CallNeedle, CallReplacement)
     lines(call) = callLine
   }
 

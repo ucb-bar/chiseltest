@@ -26,7 +26,7 @@ class ThreadJoinTest extends AnyFlatSpec with ChiselScalatestTester {
         c.clock.step(1)
         c.io.in.poke(16.U)
         c.clock.step(1)  // value needs to latch
-      } .join
+      } .join()
       c.io.out.expect(16.U)
     }
   }
@@ -40,7 +40,7 @@ class ThreadJoinTest extends AnyFlatSpec with ChiselScalatestTester {
         c.clock.step(1)  // value needs to latch
       } .fork {  // do-nothing thread finishes first
         c.clock.step(1)
-      } .join
+      } .join()
       c.io.out.expect(16.U)
     }
   }
@@ -54,7 +54,7 @@ class ThreadJoinTest extends AnyFlatSpec with ChiselScalatestTester {
         c.clock.step(3)
         c.io.in.poke(16.U)
         c.clock.step(1)  // value needs to latch
-      } .join
+      } .join()
       c.io.out.expect(16.U)
     }
   }
@@ -84,7 +84,7 @@ class ThreadJoinTest extends AnyFlatSpec with ChiselScalatestTester {
         assert(flag == 2)  // this is where it should break
         c.clock.step(1)
         assert(flag == 3)
-      }.join
+      }.join()
     }
   }
 }

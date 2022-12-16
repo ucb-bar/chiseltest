@@ -23,7 +23,7 @@ class VcsSpecificTests extends AnyFlatSpec {
 
   it should "print the version that we depend on" taggedAs(RequiresVcs) in {
     val (_, out) = CaptureStdout {
-      sim.findVersions
+      sim.findVersions()
     }
     assert(out.contains("Found Vcs"))
   }

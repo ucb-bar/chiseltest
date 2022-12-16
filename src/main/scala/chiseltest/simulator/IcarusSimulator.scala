@@ -34,7 +34,7 @@ private object IcarusSimulator extends Simulator {
 
   // example version string: Icarus Verilog version 11.0 (stable) ()
   private lazy val version: (Int, Int) = { // (major, minor)
-    val split = os.proc("iverilog", "-v").call(check = false, stderr = os.Pipe).out.trim.split(' ')
+    val split = os.proc("iverilog", "-v").call(check = false, stderr = os.Pipe).out.trim().split(' ')
     assert(
       split.length > 1 && split.take(3).sameElements(Seq("Icarus", "Verilog", "version")),
       s"Unknown icarus verilog version string: ${split.mkString(" ")}"

@@ -36,7 +36,7 @@ private object VcsSimulator extends Simulator {
   private lazy val version: (Int, Int) = {
     try {
       val VcsVersionRegex = """vcs script version : P-([0-9]+)\.(\d+)""".r
-      val text = os.proc("vcs", "-ID").call(check = false, stderr = os.Pipe).out.trim
+      val text = os.proc("vcs", "-ID").call(check = false, stderr = os.Pipe).out.trim()
 
       VcsVersionRegex.findFirstMatchIn(text).map { m =>
         (m.group(1).toInt, m.group(2).toInt)

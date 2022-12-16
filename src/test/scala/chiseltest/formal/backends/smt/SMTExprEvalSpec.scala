@@ -14,10 +14,10 @@ import firrtl.backends.experimental.smt._
 class SMTExprEvalSpec extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption with PrivateMethodTester {
   behavior of "SMTExprEval" 
   it should "could deal with signed division and remainder in doBVOp" in {
-    def doBVOp(op: Op.Value, a: BigInt, b: BigInt, width: Int) = {
+    def doBVOp(op: Op.Value, a: BigInt, b: BigInt, width: Int): BigInt = {
       class SMTExprEval
-      val f = PrivateMethod[SMTExprEval]('doBVOp)
-      SMTExprEval invokePrivate f(op, a, b, width)
+      val f = PrivateMethod[BigInt](Symbol("doBVOp"))
+      SMTExprEval.invokePrivate[BigInt](f(op, a, b, width))
     }
     assert(doBVOp(Op.SignedDiv, BigInt(10),  BigInt(3),   8) == BigInt(3))   //  10 /  3 =  3
     assert(doBVOp(Op.SignedDiv, BigInt(246), BigInt(253), 8) == BigInt(3))   // -10 / -3 =  3
