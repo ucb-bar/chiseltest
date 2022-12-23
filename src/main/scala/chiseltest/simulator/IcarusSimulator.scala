@@ -121,7 +121,7 @@ private object IcarusSimulator extends Simulator {
   private def compileSimulation(topName: String, targetDir: os.Path, verilogHarness: String): Seq[String] = {
     val relTargetDir = targetDir.relativeTo(os.pwd)
     val vpiFile = relTargetDir / "icarus" / s"$topName.vpi"
-    val flags = Seq(s"-m${vpiFile.toString()}", "-g2005-sv", "-DCLOCK_PERIOD=1")
+    val flags = Seq(s"-m${vpiFile.toString()}", "-g2005-sv", "-DCLOCK_PERIOD=1", "-DRANDOMIZE_REG_INIT=1", "-DINIT_RANDOM=#1")
     val simBinary = relTargetDir / "icarus" / topName
     val cmd = List("iverilog") ++ flags ++ List(
       "-o",
@@ -130,6 +130,7 @@ private object IcarusSimulator extends Simulator {
       (relTargetDir / s"$topName.sv").toString(),
       (relTargetDir / "icarus" / verilogHarness).toString()
     )
+    println(cmd.map { case x => if (x.contains('_')) s""""$x"""" else x }.mkString(" "))
     val ret = os.proc(cmd).call(cwd = os.pwd, check = false)
 
     val success = ret.exitCode == 0 && os.exists(os.pwd / simBinary)
