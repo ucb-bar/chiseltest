@@ -3,7 +3,7 @@
 import scala.language.implicitConversions
 import chiseltest.internal._
 import chisel3._
-import chisel3.experimental.{DataMirror, Direction, EnumType, FixedPoint, Interval}
+import chisel3.experimental.{DataMirror, Direction, EnumType, Interval}
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._
 import chisel3.internal.firrtl.KnownBinaryPoint
@@ -131,59 +131,6 @@ package object chiseltest {
     }
   }
 
-  /** allows access to chisel FixedPoint type signals with Scala native values */
-  implicit class testableFixedPoint(x: FixedPoint) {
-    private def asFixedPoint(value: Double):     FixedPoint = value.F(Utils.getFirrtlWidth(x), x.binaryPoint)
-    private def asFixedPoint(value: BigDecimal): FixedPoint = value.F(Utils.getFirrtlWidth(x), x.binaryPoint)
-    def poke(value: FixedPoint): Unit = {
-      require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
-      Utils.pokeBits(x, value.litValue)
-    }
-    def poke(value: Double):     Unit = poke(asFixedPoint(value))
-    def poke(value: BigDecimal): Unit = poke(asFixedPoint(value))
-    private[chiseltest] def expectInternal(value: FixedPoint, message: Option[() => String]): Unit = {
-      require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
-      // for backwards compatibility reasons, we do not support epsilon when expect is called with the FixedPoint type.
-      Utils.expectBits(x, value.litValue, message, Some(Utils.fixedToString(x.binaryPoint)))
-    }
-    def expect(value: FixedPoint): Unit = expectInternal(value, None)
-    def expect(value: FixedPoint, message: => String): Unit = expectInternal(value, Some(() => message))
-    private[chiseltest] def expectInternal(expected: Double, epsilon: Double, userMsg: Option[() => String]): Unit = {
-      Utils.expectEpsilon(x, peekDouble(), expected, epsilon, userMsg)
-    }
-    def expect(value: Double): Unit = expectInternal(value, epsilon = 0.01, None)
-    def expect(value: Double, epsilon: Double): Unit = expectInternal(value, epsilon = epsilon, None)
-    def expect(value: Double, message: => String): Unit =
-      expectInternal(value, epsilon = 0.01, Some(() => message))
-    def expect(value: Double, message: => String, epsilon: Double): Unit =
-      expectInternal(value, epsilon = epsilon, Some(() => message))
-    private[chiseltest] def expectInternal(
-      expected: BigDecimal,
-      epsilon:  BigDecimal,
-      userMsg:  Option[() => String]
-    ): Unit = {
-      Utils.expectEpsilon(x, peekBigDecimal(), expected, epsilon, userMsg)
-    }
-    def expect(value: BigDecimal): Unit = expectInternal(value, epsilon = 0.01, None)
-    def expect(value: BigDecimal, epsilon: BigDecimal): Unit = expectInternal(value, epsilon = epsilon, None)
-    def expect(value: BigDecimal, message: => String): Unit =
-      expectInternal(value, epsilon = 0.01, Some(() => message))
-    def expect(value: BigDecimal, message: => String, epsilon: BigDecimal): Unit =
-      expectInternal(value, epsilon = epsilon, Some(() => message))
-    def peek(): FixedPoint = {
-      val multiplier = BigDecimal(2).pow(x.binaryPoint.get)
-      (BigDecimal(Context().backend.peekBits(x)) / multiplier).F(x.binaryPoint)
-    }
-    def peekDouble(): Double = x.binaryPoint match {
-      case KnownBinaryPoint(bp) => FixedPoint.toDouble(Context().backend.peekBits(x), bp)
-      case _                    => throw new Exception("Cannot peekInterval with unknown binary point location")
-    }
-    def peekBigDecimal(): BigDecimal = x.binaryPoint match {
-      case KnownBinaryPoint(bp) => FixedPoint.toBigDecimal(Context().backend.peekBits(x), bp)
-      case _                    => throw new Exception("Cannot peekInterval with unknown binary point location")
-    }
-  }
-
   implicit class testableRecord[T <: Record](x: T) {
 
     /** Poke the given signal with a [[Record.litValue()]]
@@ -259,7 +206,6 @@ package object chiseltest {
         case (x: Bool, value: Bool) => x.poke(value)
         case (x: UInt, value: UInt) => x.poke(value)
         case (x: SInt, value: SInt) => x.poke(value)
-        case (x: FixedPoint, value: FixedPoint) => x.poke(value)
         case (x: Interval, value: Interval) => x.poke(value)
         case (x: Record, value: Record) =>
           require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
@@ -280,10 +226,9 @@ package object chiseltest {
     }
 
     def peek(): T = x match {
-      case x: Bool       => x.peek().asInstanceOf[T]
-      case x: UInt       => x.peek().asInstanceOf[T]
-      case x: SInt       => x.peek().asInstanceOf[T]
-      case x: FixedPoint => x.peek().asInstanceOf[T]
+      case x: Bool => x.peek().asInstanceOf[T]
+      case x: UInt => x.peek().asInstanceOf[T]
+      case x: SInt => x.peek().asInstanceOf[T]
       case x: Interval => x.peek().asInstanceOf[T]
       case x: Record =>
         val elementValueFns = x.elements.map { case (name: String, elt: Data) =>
@@ -305,7 +250,6 @@ package object chiseltest {
         case (x: Bool, value: Bool) => x.expectInternal(value.litValue, message)
         case (x: UInt, value: UInt) => x.expectInternal(value.litValue, message)
         case (x: SInt, value: SInt) => x.expectInternal(value.litValue, message)
-        case (x: FixedPoint, value: FixedPoint) => x.expectInternal(value, message)
         case (x: Interval, value: Interval) => x.expectInternal(value, message)
         case (x: Record, value: Record) =>
           require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
