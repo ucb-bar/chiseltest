@@ -154,40 +154,4 @@ class ElementTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
       c.out.d2.peek().litToBigDecimal should be (BigDecimal(0))
     }
   }
-
-  it should "work with Interval" in {
-
-    val inputRange = range"[-6, 6].2"
-    val outputRange = range"[-4.5,4.5].2"
-
-    test(new Module {
-      val io = IO(new Bundle {
-        val input = Input(Interval(inputRange))
-
-        val out1 = Output(Interval(inputRange))
-        val out1Clip = Output(Interval(outputRange))
-        val out1Squeeze = Output(Interval(outputRange))
-        val out1Wrap = Output(Interval(outputRange))
-      })
-      io.out1 := io.input
-      io.out1Clip := io.input.clip(io.out1Clip)
-      io.out1Squeeze := io.input.squeeze(io.out1Squeeze)
-      io.out1Wrap := io.input.wrap(io.out1Wrap)
-    }) { c =>
-
-      def checkOutcome(input: Interval, clipped: Interval, wrapped: Interval): Unit = {
-        c.io.input.poke(input)
-
-        c.io.out1.expect(input)
-        c.io.out1Clip.expect(clipped)
-        c.io.out1Wrap.expect(wrapped)
-      }
-
-      checkOutcome((-6.0).I(inputRange), (-4.5).I(outputRange), 3.25.I(outputRange))
-      checkOutcome((-3.25).I(inputRange), (-3.25).I(outputRange), (-3.25).I(outputRange))
-      checkOutcome(0.I(inputRange), 0.I(outputRange), 0.I(outputRange))
-      checkOutcome(4.5.I(inputRange), 4.5.I(outputRange), 4.5.I(outputRange))
-      checkOutcome(4.75.I(inputRange), 4.5.I(outputRange), (-4.5).I(outputRange))
-    }
-  }
 }

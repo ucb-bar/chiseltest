@@ -61,16 +61,6 @@ class FaultDecoderTest extends AnyFlatSpec with ChiselScalatestTester with Match
     exc.getMessage should include ("expected=-0.5 (-1, -0x1)")
   }
 
-  it should "display decimal for intervals" in {
-    val exc = intercept[exceptions.TestFailedException] {
-      test(new StaticModule((1.5).I(1.BP))) { c =>
-        c.out.expect((1.0).I(1.BP))
-      }
-    }
-    exc.getMessage should include ("1.5 (3, 0x3)")
-    exc.getMessage should include ("expected=1.0 (2, 0x2)")
-  }
-
   ignore should "display names for enums" in {  // needs better reflection support in enums
     import chisel3.experimental.ChiselEnum
     object EnumExample extends ChiselEnum {
