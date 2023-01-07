@@ -58,7 +58,8 @@ scalacOptions ++= Seq(
   "-deprecation",
   "-feature",
   "-Xcheckinit",
-  "-Wconf:msg=firrtl:s" // do not warn about firrtl imports
+  "-Wconf:msg=firrtl:s", // do not warn about firrtl imports
+  "-Wconf:cat=deprecation&msg=migration to the MLIR:s"
 ) ++ {
   CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, n)) if n >= 13 => Seq("-Ymacro-annotations")
