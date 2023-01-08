@@ -26,7 +26,7 @@ class ExceptionPropagationTest extends AnyFlatSpec with ChiselScalatestTester {
       test(new StaticModule(false.B)) { c =>
         fork {
           throw new PropagationTestException
-        } .join
+        } .join()
       }
     }
   }

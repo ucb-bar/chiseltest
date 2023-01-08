@@ -25,7 +25,7 @@ class VecPassThrough(val numberOfElements: Int, elementGenerator: => UInt) exten
   regVector <> io.inVector
   io.outVector <> regVector
 
-  io.outVectorAsUInt := io.inVector.asUInt()
+  io.outVectorAsUInt := io.inVector.asUInt
 }
 
 /**
@@ -44,7 +44,7 @@ class BundlePassThrough extends Module {
   regBundle <> io.inBundle
   io.outBundle <> regBundle
 
-  io.outBundleAsUInt := io.inBundle.asUInt()
+  io.outBundleAsUInt := io.inBundle.asUInt
 }
 
 class PassThroughBundle extends Bundle {
@@ -62,7 +62,7 @@ class PassThroughBundle extends Bundle {
 class BundlePeekPokeTester(c: BundlePassThrough) extends PeekPokeTester(c) {
   private val numberOfElements = 3
 
-  private val vectorInputs = Array.tabulate(numberOfElements) { x => BigInt(x + 1) }
+  private val vectorInputs = IndexedSeq.tabulate(numberOfElements) { x => BigInt(x + 1) }
   println(s"scala array to poke into vector    ${vectorInputs.mkString(",")}")
 
   poke(c.io.inBundle, vectorInputs)
@@ -70,7 +70,7 @@ class BundlePeekPokeTester(c: BundlePassThrough) extends PeekPokeTester(c) {
   private val allAtOncePeekedInputs = peek(c.io.inBundle)
   println(s"input peeked all at once           ${allAtOncePeekedInputs.mkString(",")}")
 
-  private val individuallyPeekedInputs = Array(peek(c.io.inBundle.u1), peek(c.io.inBundle.u2), peek(c.io.inBundle.u3))
+  private val individuallyPeekedInputs = Seq(peek(c.io.inBundle.u1), peek(c.io.inBundle.u2), peek(c.io.inBundle.u3))
   println(s"input peeked individually          ${individuallyPeekedInputs.mkString(",")}")
 
   step(1)
@@ -78,7 +78,7 @@ class BundlePeekPokeTester(c: BundlePassThrough) extends PeekPokeTester(c) {
   private val allAtOncePeekedOutputs = peek(c.io.outBundle)
   println(s"output peeked all at once          ${allAtOncePeekedOutputs.mkString(",")}")
 
-  private val individuallyPeekedOutputs = Array(peek(c.io.inBundle.u1), peek(c.io.inBundle.u2), peek(c.io.inBundle.u3))
+  private val individuallyPeekedOutputs = Seq(peek(c.io.inBundle.u1), peek(c.io.inBundle.u2), peek(c.io.inBundle.u3))
   println(s"output peeked individually         ${individuallyPeekedOutputs.mkString(",")}")
 }
 
@@ -94,7 +94,7 @@ class BundlePeekPokeTester(c: BundlePassThrough) extends PeekPokeTester(c) {
 class VecPeekPokeTester(c: VecPassThrough) extends PeekPokeTester(c) {
   private val numberOfElements = c.numberOfElements
 
-  private val vectorInputs = Array.tabulate(numberOfElements) { x => BigInt(x) }
+  private val vectorInputs = IndexedSeq.tabulate(numberOfElements) { x => BigInt(x) }
   println(s"scala array to poke into vector    ${vectorInputs.mkString(",")}")
 
   poke(c.io.inVector, vectorInputs)
@@ -138,7 +138,7 @@ class AggregatePassThrough(aggregateGenerator: => Aggregate) extends Module {
   aggregateRegister <> io.inputAggregate
   io.outputAggregate <> aggregateRegister
 
-  io.aggregateAsUInt := aggregateRegister.asUInt()
+  io.aggregateAsUInt := aggregateRegister.asUInt
   io.outputFromUInt := aggregateRegister.asTypeOf(aggregateGenerator)
 }
 
@@ -151,7 +151,7 @@ class AggregatePassThrough(aggregateGenerator: => Aggregate) extends Module {
 class AggregateOrderingTester(c: AggregatePassThrough, numberOfElements: Int) extends PeekPokeTester(c) {
 
   private val startValue = if(numberOfElements < 7) "a" else "0"
-  private val inputArray = Array.tabulate(numberOfElements) { x => BigInt(startValue, 16) + x }
+  private val inputArray = IndexedSeq.tabulate(numberOfElements) { x => BigInt(startValue, 16) + x }
 
   poke(c.io.inputAggregate, inputArray)
   private val peekedInput = peek(c.io.inputAggregate)

@@ -10,7 +10,7 @@ import org.scalatest.matchers.should.Matchers
 
 class NoScalatestTesterTest extends AnyFreeSpec with Matchers {
   "This tester does not rely on scalatest to run" in {
-    def shiftTest(in: UInt, out: UInt, clk: Clock, value: UInt) {
+    def shiftTest(in: UInt, out: UInt, clk: Clock, value: UInt): Unit = {
       timescope {
         in.poke(value)
         clk.step()

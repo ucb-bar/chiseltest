@@ -14,7 +14,7 @@ class ShiftRegisterTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "test shift registers with abstractions" in {
     // TODO: this actually relies on total thread ordering
 
-    def shiftTest(in: UInt, out: UInt, clk: Clock, value: UInt) {
+    def shiftTest(in: UInt, out: UInt, clk: Clock, value: UInt): Unit = {
       timescope {
         in.poke(value)
         clk.step(1)
@@ -34,7 +34,7 @@ class ShiftRegisterTest extends AnyFlatSpec with ChiselScalatestTester {
       c.clock.step(1)
       fork { shiftTest(c.in, c.out, c.clock, 46.U) }
       c.clock.step(1)
-      fork { shiftTest(c.in, c.out, c.clock, 47.U) }.join
+      fork { shiftTest(c.in, c.out, c.clock, 47.U) }.join()
     }
   }
 }

@@ -6,7 +6,7 @@ import mill.scalalib.scalafmt._
 import mill.scalalib.publish._
 import coursier.maven.MavenRepository
 
-object chiseltest extends mill.Cross[chiseltestCrossModule]("2.12.13")
+object chiseltest extends mill.Cross[chiseltestCrossModule]("2.13.10")
 
 val defaultVersions = Map(
   "chisel3" -> "3.6.0-M2",
@@ -72,7 +72,7 @@ class chiseltestCrossModule(val crossScalaVersion: String)
   override def ivyDeps = T {
     Agg(
       ivy"org.scalatest::scalatest:3.2.14",
-      ivy"com.lihaoyi::utest:0.8.0",
+      ivy"com.lihaoyi::utest:0.8.1",
       ivy"net.java.dev.jna:jna:5.12.1"
     ) ++ chisel3IvyDeps ++ treadleIvyDeps
   }

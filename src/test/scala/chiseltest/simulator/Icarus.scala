@@ -26,7 +26,7 @@ class IcarusSpecificTests extends AnyFlatSpec {
 
   it should "print a version" taggedAs RequiresIcarus in {
     val (_, out) = CaptureStdout {
-      sim.findVersions
+      sim.findVersions()
     }
     assert(out.contains("Found Icarus Verilog 1"))
   }

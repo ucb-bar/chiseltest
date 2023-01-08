@@ -5,14 +5,12 @@ name := "chiseltest"
 
 version := "0.6.0-M2"
 
-scalaVersion := "2.12.16"
+scalaVersion := "2.13.10"
 
-crossScalaVersions := Seq("2.12.16", "2.13.10")
+crossScalaVersions := Seq("2.12.17", "2.13.10")
 
-resolvers ++= Seq(
-  Resolver.sonatypeRepo("snapshots"),
-  Resolver.sonatypeRepo("releases")
-)
+resolvers ++= Resolver.sonatypeOssRepos("snapshots")
+resolvers ++= Resolver.sonatypeOssRepos("releases")
 
 testFrameworks += new TestFramework("utest.runner.Framework")
 
@@ -59,7 +57,8 @@ scalacOptions ++= Seq(
   "-language:reflectiveCalls",
   "-deprecation",
   "-feature",
-  "-Xcheckinit"
+  "-Xcheckinit",
+  "-Wconf:msg=firrtl:s", // do not warn about firrtl imports
 ) ++ {
   CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, n)) if n >= 13 => Seq("-Ymacro-annotations")
@@ -71,7 +70,7 @@ libraryDependencies ++= Seq(
   "edu.berkeley.cs" %% "chisel3" % defaultVersions("chisel3"),
   "edu.berkeley.cs" %% "treadle" % defaultVersions("treadle"),
   "org.scalatest" %% "scalatest" % "3.2.14",
-  "com.lihaoyi" %% "utest" % "0.8.0",
+  "com.lihaoyi" %% "utest" % "0.8.1",
   "net.java.dev.jna" % "jna" % "5.12.1",
   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   compilerPlugin(("edu.berkeley.cs" % "chisel3-plugin" % defaultVersions("chisel3")).cross(CrossVersion.full))

@@ -3,7 +3,7 @@
 package chiseltest.tests
 
 import chisel3._
-import chisel3.experimental.DataMirror
+import chisel3.experimental.{AutoCloneType, DataMirror}
 import chisel3.internal.requireIsChiselType
 import chisel3.util._
 
@@ -43,16 +43,9 @@ class QueueModule[T <: Data](ioType: T, entries: Int) extends Module {
 }
 
 /** borrowed from chiselTests/RecordSpec.scala */
-final class CustomBundle(elts: (String, Data)*) extends Record {
-  val elements = ListMap(elts map { case (field, elt) =>
-    requireIsChiselType(elt)
-    field -> elt
-  }: _*)
+final class CustomBundle(elts: (String, Data)*) extends Record with AutoCloneType {
+  val elements = ListMap(elts.map { case (field, elt) => field -> elt.cloneType }: _*)
   def apply(elt: String): Data = elements(elt)
-  override def cloneType: this.type = {
-    val cloned = elts.map { case (n, d) => n -> DataMirror.internal.chiselTypeClone(d) }
-    (new CustomBundle(cloned: _*)).asInstanceOf[this.type]
-  }
 }
 /** taken from https://github.com/schoeberl/chisel-examples/blob/master/src/main/scala/simple/Alu.scala */
 class Alu(size: Int) extends Module {

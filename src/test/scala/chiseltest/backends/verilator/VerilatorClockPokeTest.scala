@@ -55,7 +55,7 @@ class VerilatorClockPokeTest extends AnyFlatSpec with ChiselScalatestTester {
       val inClock = IO(Input(Bool()))
       val out = IO(Output(UInt(8.W)))
 
-      withClock(inClock.asClock()) {
+      withClock(inClock.asClock) {
         out := Counter(true.B, 8)._1
       }
     }).withAnnotations(Seq(VerilatorBackendAnnotation)) { c =>

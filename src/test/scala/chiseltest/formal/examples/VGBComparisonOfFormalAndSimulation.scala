@@ -46,8 +46,8 @@ class ShapeProcessorProps extends Module {
   //------------------------------------------------------------------------------------------------
   // Check that we never see any KEEP_* values in the SFR. This ensures that the DUT will have
   // some kind of special handling in place for these values.
-  assert(shapeInSfr =/= KeepShape.asUInt())
-  assert(operationInSfr =/= KeepOperation.asUInt())
+  assert(shapeInSfr =/= KeepShape.asUInt)
+  assert(operationInSfr =/= KeepOperation.asUInt)
 
   //------------------------------------------------------------------------------------------------
   // Check that we only see legal shape/operation combinations in the SFR. This ensures that the
@@ -58,14 +58,14 @@ class ShapeProcessorProps extends Module {
   // Cover that we can see each shape. This way we know that the DUT can, in principle, update the
   // 'SHAPE' field. Using this property we can flag errors if the design ignores this field
   // completely when writing.
-  cover(shapeInSfr === Circle.asUInt())
-  cover(shapeInSfr === Rectangle.asUInt())
-  cover(shapeInSfr === Triangle.asUInt())
+  cover(shapeInSfr === Circle.asUInt)
+  cover(shapeInSfr === Rectangle.asUInt)
+  cover(shapeInSfr === Triangle.asUInt)
 
   //------------------------------------------------------------------------------------------------
   // Cover that we can see each operation. The same comments as for 'SHAPE' apply.
   OperationEnum.all.foreach { op =>
-    cover(operationInSfr === op.asUInt())
+    cover(operationInSfr === op.asUInt)
   }
 
   //------------------------------------------------------------------------------------------------
@@ -92,18 +92,18 @@ class ShapeProcessorProps extends Module {
   // Check that KEEP_* properly keep the values of their corresponding fields. This satisfies the
   // first part of the requirement for these values.
   assert(IfThen(
-    past(io.write && shapeOnWriteBus === KeepShape.asUInt()), stable(shapeInSfr)
+    past(io.write && shapeOnWriteBus === KeepShape.asUInt), stable(shapeInSfr)
   ))
   assert(IfThen(
-    past(io.write && operationOnWriteBus === KeepOperation.asUInt()), stable(operationInSfr)
+    past(io.write && operationOnWriteBus === KeepOperation.asUInt), stable(operationInSfr)
   ))
 
   //------------------------------------------------------------------------------------------------
   // Cover that we can see the operation change whenever we write KEEP_SHAPE (and vice-versa). This
   // way we know that the DUT can, in principle, satisfy the second part of the requirement for
   // KEEP_* values.
-  cover(past(io.write && shapeOnWriteBus === KeepShape.asUInt()) && changed(operationInSfr))
-  cover(past(io.write && operationOnWriteBus === KeepOperation.asUInt()) && changed(shapeInSfr))
+  cover(past(io.write && shapeOnWriteBus === KeepShape.asUInt) && changed(operationInSfr))
+  cover(past(io.write && operationOnWriteBus === KeepOperation.asUInt) && changed(shapeInSfr))
 
   //------------------------------------------------------------------------------------------------
   // Check that writes with reserved values are completely ignored. This ensures that the DUT
@@ -119,13 +119,13 @@ class ShapeProcessorProps extends Module {
   // Check that writes of illegal combinations of proper modes are completely ignored. This ensures
   // that the DUT doesn't, for example, write some default combination of modes in such cases.
   assert(IfThen(
-    past(io.write && shapeOnWriteBus === KeepShape.asUInt() &&
+    past(io.write && shapeOnWriteBus === KeepShape.asUInt &&
       !isLegalCombination(shapeInSfr, operationOnWriteBus)),
     stable(sfr)
   ))
 
   assert(IfThen(
-    past(io.write && operationOnWriteBus === KeepOperation.asUInt() &&
+    past(io.write && operationOnWriteBus === KeepOperation.asUInt &&
       !isLegalCombination(shapeOnWriteBus, operationInSfr)),
     stable(sfr)
   ))
@@ -134,8 +134,8 @@ class ShapeProcessorProps extends Module {
   //------------------------------------------------------------------------------------------------
   // Check that legal CTRL writes update the SFR fields.
   val isLegalCtrlWriteDataCombination: Bool = {
-    val shape = Mux(shapeOnWriteBus === KeepShape.asUInt(), shapeInSfr, shapeOnWriteBus)
-    val operation = Mux(operationOnWriteBus === KeepOperation.asUInt(), operationInSfr, operationOnWriteBus)
+    val shape = Mux(shapeOnWriteBus === KeepShape.asUInt, shapeInSfr, shapeOnWriteBus)
+    val operation = Mux(operationOnWriteBus === KeepOperation.asUInt, operationInSfr, operationOnWriteBus)
     isLegalCombination(shape, operation)
   }
 
@@ -145,12 +145,12 @@ class ShapeProcessorProps extends Module {
       isLegalCtrlWriteDataCombination
 
   assert(IfThen(
-    past(io.write && isLegalCtrlWriteData && shapeOnWriteBus =/= KeepShape.asUInt()),
+    past(io.write && isLegalCtrlWriteData && shapeOnWriteBus =/= KeepShape.asUInt),
     shapeInSfr === past(shapeOnWriteBus)
   ))
 
   assert(IfThen(
-    past(io.write && isLegalCtrlWriteData && operationOnWriteBus =/= KeepOperation.asUInt()),
+    past(io.write && isLegalCtrlWriteData && operationOnWriteBus =/= KeepOperation.asUInt),
     operationInSfr === past(operationOnWriteBus)
   ))
 

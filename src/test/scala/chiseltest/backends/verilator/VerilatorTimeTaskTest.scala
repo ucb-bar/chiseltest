@@ -37,15 +37,15 @@ class VerilatorTimeTaskTest extends AnyFlatSpec with ChiselScalatestTester {
       out := inst.io.out
       }).withAnnotations(annos) { c =>
       // Check that time increments, each clock edge is counts as 1 so a step is 2
-      val start = c.out.peek.litValue
+      val start = c.out.peek().litValue
       c.clock.step()
-      assert(c.out.peek.litValue == start + 2)
+      assert(c.out.peek().litValue == start + 2)
       c.clock.step()
-      assert(c.out.peek.litValue == start + 4)
+      assert(c.out.peek().litValue == start + 4)
       c.clock.step()
-      assert(c.out.peek.litValue == start + 6)
+      assert(c.out.peek().litValue == start + 6)
       c.clock.step()
-      assert(c.out.peek.litValue == start + 8)
+      assert(c.out.peek().litValue == start + 8)
     }
   }
 }

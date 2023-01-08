@@ -196,19 +196,7 @@ package object chiseltest {
       */
     def pokePartial(value: T): Unit = {
       require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
-      x.elements.filter { case (k, v) =>
-        DataMirror.directionOf(v) != ActualDirection.Output && {
-          value.elements(k) match {
-            case _:    Record => true
-            case data: Data   => data.isLit
-          }
-        }
-      }.foreach { case (k, v) =>
-        v match {
-          case record: Record => record.pokePartial(value.elements(k).asInstanceOf[Record])
-          case data:   Data   => data.poke(value.elements(k))
-        }
-      }
+      x.pokeInternal(value, allowPartial = true)
     }
 
     /** Check the given signal with a [[Record.litValue()]];
@@ -216,17 +204,7 @@ package object chiseltest {
       */
     def expectPartial(value: T): Unit = {
       require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
-      x.elements.filter { case (k, _) =>
-        value.elements(k) match {
-          case _: Record => true
-          case d: Data   => d.isLit
-        }
-      }.foreach { case (k, v) =>
-        v match {
-          case record: Record => record.expectPartial(value.elements(k).asInstanceOf[Record])
-          case data:   Data   => data.expect(value.elements(k))
-        }
-      }
+      x.expectInternal(value, None, allowPartial = true)
     }
   }
 
@@ -242,19 +220,7 @@ package object chiseltest {
       */
     def pokePartial(value: T): Unit = {
       require(DataMirror.checkTypeEquivalence(x, value), s"Vec type mismatch")
-      x.getElements.zipWithIndex.filter { case (v, index) =>
-        DataMirror.directionOf(v) != ActualDirection.Output && {
-          value.getElements(index) match {
-            case _:    T    => true
-            case data: Data => data.isLit
-          }
-        }
-      }.foreach { case (v, index) =>
-        v match {
-          case vec:  T    => vec.pokePartial(value.getElements(index).asInstanceOf[T])
-          case data: Data => data.poke(value.getElements(index))
-        }
-      }
+      x.pokeInternal(value, allowPartial = true)
     }
 
     /** Check the given signal with a [[Vec.litValue()]];
@@ -262,44 +228,55 @@ package object chiseltest {
       */
     def expectPartial(value: T): Unit = {
       require(DataMirror.checkTypeEquivalence(x, value), s"Vec type mismatch")
-      x.getElements.zipWithIndex.filter { case (_, index) =>
-        value.getElements(index) match {
-          case _: T    => true
-          case d: Data => d.isLit
-        }
-      }.foreach { case (v, index) =>
-        v match {
-          case vec:  T    => vec.expectPartial(value.getElements(index).asInstanceOf[T])
-          case data: Data => data.expect(value.getElements(index))
-        }
-      }
+      x.expectInternal(value, None, allowPartial = true)
     }
   }
 
   implicit class testableData[T <: Data](x: T) {
     import Utils._
 
-    def poke(value: T): Unit = (x, value) match {
-      case (x: Bool, value: Bool) => x.poke(value)
-      case (x: UInt, value: UInt) => x.poke(value)
-      case (x: SInt, value: SInt) => x.poke(value)
-      case (x: FixedPoint, value: FixedPoint) => x.poke(value)
-      case (x: Interval, value: Interval) => x.poke(value)
-      case (x: Record, value: Record) =>
-        require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
-        x.elements.zip(value.elements).foreach { case ((_, x), (_, value)) =>
-          x.poke(value)
+    def poke(value: T): Unit = pokeInternal(value, allowPartial = false)
+
+    private def isAllowedNonLitGround(value: T, allowPartial: Boolean, op: String): Boolean = {
+      val isGroundType = value match {
+        case _: Vec[_] | _: Record => false
+        case _ => true
+      }
+      // if we are dealing with a ground type non-literal, this is only allowed if we are doing a partial poke/expect
+      if (isGroundType && !value.isLit) {
+        if (allowPartial) { true }
+        else {
+          throw new NonLiteralValueError(value, x, op)
         }
-      case (x: Vec[_], value: Vec[_]) =>
-        require(DataMirror.checkTypeEquivalence(x, value), s"Vec type mismatch")
-        x.getElements.zip(value.getElements).foreach { case (x, value) =>
-          x.poke(value)
-        }
-      case (x: EnumType, value: EnumType) =>
-        require(DataMirror.checkTypeEquivalence(x, value), s"EnumType mismatch")
-        pokeBits(x, value.litValue)
-      case x => throw new LiteralTypeException(s"don't know how to poke $x")
-      // TODO: aggregate types
+      } else {
+        false
+      }
+    }
+
+    private[chiseltest] def pokeInternal(value: T, allowPartial: Boolean): Unit = {
+      if (isAllowedNonLitGround(value, allowPartial, "poke")) return
+      (x, value) match {
+        case (x: Bool, value: Bool) => x.poke(value)
+        case (x: UInt, value: UInt) => x.poke(value)
+        case (x: SInt, value: SInt) => x.poke(value)
+        case (x: FixedPoint, value: FixedPoint) => x.poke(value)
+        case (x: Interval, value: Interval) => x.poke(value)
+        case (x: Record, value: Record) =>
+          require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
+          x.elements.zip(value.elements).foreach { case ((_, x), (_, value)) =>
+            x.pokeInternal(value, allowPartial)
+          }
+        case (x: Vec[_], value: Vec[_]) =>
+          require(DataMirror.checkTypeEquivalence(x, value), s"Vec type mismatch")
+          x.getElements.zip(value.getElements).foreach { case (x, value) =>
+            x.pokeInternal(value, allowPartial)
+          }
+        case (x: EnumType, value: EnumType) =>
+          require(DataMirror.checkTypeEquivalence(x, value), s"EnumType mismatch")
+          pokeBits(x, value.litValue)
+        case x => throw new LiteralTypeException(s"don't know how to poke $x")
+        // TODO: aggregate types
+      }
     }
 
     def peek(): T = x match {
@@ -322,31 +299,41 @@ package object chiseltest {
       case x => throw new LiteralTypeException(s"don't know how to peek $x")
     }
 
-    protected def expectInternal(value: T, message: Option[() => String]): Unit = (x, value) match {
-      case (x: Bool, value: Bool) => x.expectInternal(value.litValue, message)
-      case (x: UInt, value: UInt) => x.expectInternal(value.litValue, message)
-      case (x: SInt, value: SInt) => x.expectInternal(value.litValue, message)
-      case (x: FixedPoint, value: FixedPoint) => x.expectInternal(value, message)
-      case (x: Interval, value: Interval) => x.expectInternal(value, message)
-      case (x: Record, value: Record) =>
-        require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
-        x.elements.zip(value.elements).foreach { case ((_, x), (_, value)) =>
-          x.expectInternal(value, message)
-        }
-      case (x: Vec[_], value: Vec[_]) =>
-        require(DataMirror.checkTypeEquivalence(x, value), s"Vec type mismatch")
-        x.getElements.zip(value.getElements).foreach { case (x, value) =>
-          x.expectInternal(value, message)
-        }
-      case (x: EnumType, value: EnumType) =>
-        require(DataMirror.checkTypeEquivalence(x, value), s"EnumType mismatch")
-        Utils.expectBits(x, value.litValue, message, Some(enumToString(x)))
-      case x => throw new LiteralTypeException(s"don't know how to expect $x")
-      // TODO: aggregate types
+    private[chiseltest] def expectInternal(value: T, message: Option[() => String], allowPartial: Boolean): Unit = {
+      if (isAllowedNonLitGround(value, allowPartial, "expect")) return
+      (x, value) match {
+        case (x: Bool, value: Bool) => x.expectInternal(value.litValue, message)
+        case (x: UInt, value: UInt) => x.expectInternal(value.litValue, message)
+        case (x: SInt, value: SInt) => x.expectInternal(value.litValue, message)
+        case (x: FixedPoint, value: FixedPoint) => x.expectInternal(value, message)
+        case (x: Interval, value: Interval) => x.expectInternal(value, message)
+        case (x: Record, value: Record) =>
+          require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
+          x.elements.zip(value.elements).foreach { case ((_, x), (_, value)) =>
+            x.expectInternal(value, message, allowPartial)
+          }
+        case (x: Vec[_], value: Vec[_]) =>
+          require(DataMirror.checkTypeEquivalence(x, value), s"Vec type mismatch")
+          x.getElements.zip(value.getElements).zipWithIndex.foreach { case ((subX, value), index) =>
+            value match {
+              case DontCare =>
+                throw new RuntimeException(
+                  s"Vec $x needs to be fully specified when using expect. Index $index is missing." +
+                    "Maybe try using `expectPartial` if you only want to check for some elements."
+                )
+              case other => subX.expectInternal(other, message, allowPartial)
+            }
+          }
+        case (x: EnumType, value: EnumType) =>
+          require(DataMirror.checkTypeEquivalence(x, value), s"EnumType mismatch")
+          Utils.expectBits(x, value.litValue, message, Some(enumToString(x)))
+        case x => throw new LiteralTypeException(s"don't know how to expect $x")
+        // TODO: aggregate types
+      }
     }
 
-    def expect(value: T): Unit = expectInternal(value, None)
-    def expect(value: T, message: => String): Unit = expectInternal(value, Some(() => message))
+    def expect(value: T): Unit = expectInternal(value, None, allowPartial = false)
+    def expect(value: T, message: => String): Unit = expectInternal(value, Some(() => message), allowPartial = false)
 
     /** @return the single clock that drives the source of this signal.
       * @throws ClockResolutionException if sources of this signal have more than one, or zero clocks
