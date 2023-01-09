@@ -58,7 +58,7 @@ scalacOptions ++= Seq(
   "-deprecation",
   "-feature",
   "-Xcheckinit",
-  "-Wconf:msg=firrtl:s", // do not warn about firrtl imports
+  "-Wconf:msg=firrtl:s" // do not warn about firrtl imports
 ) ++ {
   CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, n)) if n >= 13 => Seq("-Ymacro-annotations")
@@ -69,7 +69,7 @@ scalacOptions ++= Seq(
 libraryDependencies ++= Seq(
   "edu.berkeley.cs" %% "chisel3" % defaultVersions("chisel3"),
   "edu.berkeley.cs" %% "treadle" % defaultVersions("treadle"),
-  "org.scalatest" %% "scalatest" % "3.2.14",
+  "org.scalatest" %% "scalatest" % "3.2.15",
   "com.lihaoyi" %% "utest" % "0.8.1",
   "net.java.dev.jna" % "jna" % "5.12.1",
   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
