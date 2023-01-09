@@ -58,7 +58,20 @@ scalacOptions ++= Seq(
   "-deprecation",
   "-feature",
   "-Xcheckinit",
-  "-Wconf:msg=firrtl:s" // do not warn about firrtl imports
+  // do not warn about firrtl imports, once the firrtl repo is removed, we will need to import the code
+  "-Wconf:cat=deprecation&msg=Importing from firrtl is deprecated:s",
+  // TODO: remove FixedPoint support after 3.6 release
+  "-Wconf:cat=deprecation&msg=class FixedPoint:s",
+  "-Wconf:cat=deprecation&msg=class BinaryPoint:s",
+  "-Wconf:cat=deprecation&msg=object FixedPoint:s",
+  "-Wconf:cat=deprecation&msg=class fromDoubleToLiteral:s",
+  "-Wconf:cat=deprecation&msg=class fromBigDecimalToLiteral:s",
+  "-Wconf:cat=deprecation&msg=trait HasBinaryPoint:s",
+  // TODO: remove Interval support after 3.6 release
+  "-Wconf:cat=deprecation&msg=class Interval:s",
+  "-Wconf:cat=deprecation&msg=object Interval:s",
+  "-Wconf:cat=deprecation&msg=class fromBigDecimalToLiteralInterval:s",
+  "-Wconf:cat=deprecation&msg=class fromBigIntToLiteralInterval:s",
 ) ++ {
   CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, n)) if n >= 13 => Seq("-Ymacro-annotations")
