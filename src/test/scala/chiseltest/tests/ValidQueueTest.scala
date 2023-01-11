@@ -65,6 +65,19 @@ class ValidQueueTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
+  it should "work with a zero-width data queue" in {
+    test(new ValidQueueModule(UInt(0.W), delay = 3)) { c =>
+      c.in.initSource().setSourceClock(c.clock)
+      c.out.initSink().setSinkClock(c.clock)
+
+      fork {
+        c.in.enqueueSeq(Seq(0.U, 0.U, 0.U))
+      }.fork {
+        c.out.expectDequeueSeq(Seq(0.U, 0.U, 0.U))
+      }.join()
+    }
+  }
+
   class TriBundle extends Bundle {
     val a = UInt(8.W)
     val b = UInt(8.W)
