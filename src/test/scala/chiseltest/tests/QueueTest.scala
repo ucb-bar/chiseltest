@@ -80,4 +80,23 @@ class QueueTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
+  it should "enqueue/dequeue zero-width data" in {
+    test(new QueueModule(UInt(0.W), 2)) { c =>
+      c.in.initSource().setSourceClock(c.clock)
+      c.out.initSink().setSinkClock(c.clock)
+
+      fork {
+        c.in.enqueueSeq(Seq(0.U, 0.U, 0.U))
+      }
+
+      c.out.expectInvalid()
+      c.clock.step(1)  // wait for first element to enqueue
+      c.out.expectDequeueNow(0.U)
+      c.clock.step(1)
+      c.out.expectDequeueNow(0.U)
+      c.out.expectDequeueNow(0.U)
+      c.out.expectInvalid()
+    }
+  }
+
 }
