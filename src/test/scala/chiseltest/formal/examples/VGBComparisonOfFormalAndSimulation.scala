@@ -4,8 +4,6 @@ package chiseltest.formal.examples
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.BundleLiterals._
-import chisel3.experimental._
-import chisel3.util.experimental.BoringUtils
 import chiseltest._
 import chiseltest.formal._
 import chiseltest.experimental._

@@ -2,7 +2,7 @@
 
 package chisel3.internaltest
 
-import chisel3.experimental.EnumType
+import chisel3.EnumType
 
 /** Helper functions to allow for peeks and better debugging of ChiselEnums.
   * This needs to be in a `chisel3` package in order to access the package private

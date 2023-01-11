@@ -5,7 +5,6 @@ package chiseltest.tests
 
 import chisel3._
 import chiseltest._
-import chisel3.experimental.ChiselEnum
 import org.scalatest.exceptions.TestFailedException
 import org.scalatest.flatspec.AnyFlatSpec
 

@@ -3,7 +3,6 @@
 package chiseltest.iotesters.examples
 
 import chisel3._
-import chisel3.experimental.ChiselEnum
 import chiseltest.ChiselScalatestTester
 import chiseltest.iotesters._
 import org.scalatest.flatspec.AnyFlatSpec
