@@ -64,7 +64,8 @@ private[chiseltest] object Compiler {
   }
   private def isInternalAnno(a: Annotation): Boolean = a match {
     case _: FirrtlCircuitAnnotation | _: DesignAnnotation[_] | _: ChiselCircuitAnnotation | _: DeletedAnnotation |
-        _: EmittedCircuitAnnotation[_] | _: LogLevelAnnotation =>
+        _: EmittedCircuitAnnotation[_] | _: LogLevelAnnotation |
+        WriteVcdAnnotation | WriteFsdbAnnotation | WriteVpdAnnotation =>
       true
     case _ => false
   }
