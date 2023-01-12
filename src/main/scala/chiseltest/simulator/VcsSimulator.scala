@@ -96,8 +96,11 @@ private object VcsSimulator extends Simulator {
       userSimFlags ++
       waveformFlags(targetDir, toplevel.name, state.annotations)
 
+    // show verbose debug messages
+    val verbose = state.annotations.contains(SimulatorDebugAnnotation)
+
     // the binary we created communicates using our standard IPC interface
-    new IPCSimulatorContext(simCmd, toplevel, VcsSimulator)
+    new IPCSimulatorContext(simCmd, toplevel, VcsSimulator, verbose)
   }
 
   private def waveformFlags(targetDir: os.Path, topName: String, annos: AnnotationSeq): Seq[String] = {

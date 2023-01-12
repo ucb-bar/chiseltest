@@ -139,10 +139,6 @@ abstract class BasicCompliance(sim: Simulator, tag: Tag = DefaultTag, skipSimRef
   }
 
   it should "not print anything to stdout under normal conditions" taggedAs(tag) in {
-    // TODO: icarus and vcs still print out some spam in non-debug mode
-    val isIcarusOrVcs = sim == IcarusSimulator || sim == VcsSimulator
-    assume(!isIcarusOrVcs)
-
     val (_, out) = CaptureStdout {
       val dut = load(standardCircuit)
       dut.poke("io_in", 1)
