@@ -71,7 +71,7 @@ scalacOptions ++= Seq(
   "-Wconf:cat=deprecation&msg=class Interval:s",
   "-Wconf:cat=deprecation&msg=object Interval:s",
   "-Wconf:cat=deprecation&msg=class fromBigDecimalToLiteralInterval:s",
-  "-Wconf:cat=deprecation&msg=class fromBigIntToLiteralInterval:s",
+  "-Wconf:cat=deprecation&msg=class fromBigIntToLiteralInterval:s"
 ) ++ {
   CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, n)) if n >= 13 => Seq("-Ymacro-annotations")
@@ -84,7 +84,7 @@ libraryDependencies ++= Seq(
   "edu.berkeley.cs" %% "treadle" % defaultVersions("treadle"),
   "org.scalatest" %% "scalatest" % "3.2.15",
   "com.lihaoyi" %% "utest" % "0.8.1",
-  "net.java.dev.jna" % "jna" % "5.12.1",
+  "net.java.dev.jna" % "jna" % "5.13.0",
   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   compilerPlugin(("edu.berkeley.cs" % "chisel3-plugin" % defaultVersions("chisel3")).cross(CrossVersion.full))
 ) ++ {
