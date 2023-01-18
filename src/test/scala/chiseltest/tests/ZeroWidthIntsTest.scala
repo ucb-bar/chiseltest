@@ -8,6 +8,9 @@ import org.scalatest.freespec.AnyFreeSpec
 class ZeroWidthIntsTest extends AnyFreeSpec with ChiselScalatestTester {
   "peek, poke and expect zero width UInt" in {
     test(new PassthroughModule(UInt(0.W))) { c =>
+      c.in.poke(0.U(0.W))
+      c.in.expect(0.U(0.W))
+      // poking a `0.U` aka `0.U(1.W)` is also fine
       c.in.poke(0.U)
       c.in.expect(0.U)
       assert(c.in.peekInt() == 0)
@@ -17,6 +20,9 @@ class ZeroWidthIntsTest extends AnyFreeSpec with ChiselScalatestTester {
 
   "peek, poke and expect zero width SInt" in {
     test(new PassthroughModule(SInt(0.W))) { c =>
+      c.in.poke(0.S(0.W))
+      c.in.expect(0.S(0.W))
+      // poking a `0.S` aka `0.S(1.W)` is also fine
       c.in.poke(0.S)
       c.in.expect(0.S)
       assert(c.in.peekInt() == 0)
