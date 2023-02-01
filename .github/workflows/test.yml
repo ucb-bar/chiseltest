@@ -177,7 +177,7 @@ jobs:
           java-version: ${{ matrix.jvm }}
           cache: 'sbt'
       - name: Test
-        run: sbt ++${{ matrix.scala }} "testOnly treadle.**"
+        run: sbt ++${{ matrix.scala }} "testOnly treadle2.**"
 
   # Sentinel job to simplify how we specify which checks need to pass in branch
   # protection and in Mergify

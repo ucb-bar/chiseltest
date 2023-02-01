@@ -9,7 +9,7 @@ import chiseltest._
 import chiseltest.iotesters._
 import chiseltest.simulator.RequiresVerilator
 import firrtl.options.TargetDirAnnotation
-import treadle.chronometry.Timer
+import treadle2.chronometry.Timer
 import org.scalatest.flatspec.AnyFlatSpec
 
 object RealGCD2 {

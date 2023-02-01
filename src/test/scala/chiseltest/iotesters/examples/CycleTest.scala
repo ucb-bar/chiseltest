@@ -32,7 +32,7 @@ class HasCycleTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "work in treadle" in {
     // for treadle we need to use a treadle specific annotation: AllowCyclesAnnotation
     test(new HasCycle)
-      .withAnnotations(Seq(DontCheckCombLoopsAnnotation, TreadleBackendAnnotation, treadle.AllowCyclesAnnotation))
+      .withAnnotations(Seq(DontCheckCombLoopsAnnotation, TreadleBackendAnnotation, treadle2.AllowCyclesAnnotation))
       .runPeekPoke(new HasCycleTester(_))
   }
   it should "work in verilator" taggedAs RequiresVerilator in {

@@ -4,7 +4,7 @@ package chiseltest.simulator.benchmark
 
 import chiseltest.simulator._
 import firrtl.options.TargetDirAnnotation
-import treadle.chronometry.Timer
+import treadle2.chronometry.Timer
 
 object SimulatorBenchmark extends App {
   private def computeGcd(a: BigInt, b: BigInt): BigInt = a.gcd(b)
@@ -40,7 +40,7 @@ object SimulatorBenchmark extends App {
     case None => VerilatorBackendAnnotation.getSimulator
     case Some(name) => name.toLowerCase match {
       case "verilator" => VerilatorBackendAnnotation.getSimulator
-      case "treadle" => TreadleBackendAnnotation.getSimulator
+      case "treadle2" => TreadleBackendAnnotation.getSimulator
       case "iverilog" => IcarusBackendAnnotation.getSimulator
       case "vcd" => VcsBackendAnnotation.getSimulator
       case other => throw new RuntimeException(s"Unknown simulator option: $other")

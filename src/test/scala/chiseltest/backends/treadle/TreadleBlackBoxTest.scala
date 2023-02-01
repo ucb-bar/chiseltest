@@ -6,8 +6,8 @@ import chisel3._
 import chisel3.util._
 import chiseltest._
 import chiseltest.simulator.PlusArgsAnnotation
-import treadle.{BlackBoxFactoriesAnnotation, ScalaBlackBox, ScalaBlackBoxFactory}
-import treadle.blackboxes.PlusArg
+import treadle2.{BlackBoxFactoriesAnnotation, ScalaBlackBox, ScalaBlackBoxFactory}
+import treadle2.blackboxes.PlusArg
 import firrtl.ir.Type
 import org.scalatest.flatspec.AnyFlatSpec
 

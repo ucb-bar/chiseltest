@@ -1,7 +1,7 @@
 
 package chiseltest.iotesters
 
-import treadle.chronometry.Timer
+import treadle2.chronometry.Timer
 import chiseltest._
 
 class IoTestersGcd(gcd: DecoupledGcd, testValues: Seq[(Int, Int, Int)]) extends PeekPokeTester(gcd) {
@@ -47,7 +47,7 @@ object GcdRegression {
     val backendName = "verilator" // if (args.nonEmpty) { "verilator" } else { "treadle" }
     val options = backendName match {
       case "verilator" => Seq(VerilatorBackendAnnotation)
-      case "treadle" => Seq(TreadleBackendAnnotation)
+      case "treadle2" => Seq(TreadleBackendAnnotation)
       case other => throw new RuntimeException(s"Unknown backend: $other")
     }
 
