@@ -577,24 +577,9 @@ object SymbolTable extends LazyLogging {
      */
     def showLoop(badNode: Symbol, symbolTable: SymbolTable): Unit = {
       val dummyDatastore = new DataStore(10, new DataStoreAllocator)
-      val expressionViews = ExpressionViewBuilder.getExpressionViews(
-        symbolTable,
-        dummyDatastore,
-        new Scheduler(symbolTable),
-        validIfIsRandom = false,
-        circuit,
-        blackBoxFactories
-      )
-      val expressionViewRenderer = new ExpressionViewRenderer(
-        dummyDatastore,
-        symbolTable,
-        expressionViews,
-        maxDependencyDepth = 0
-      )
 
       def show(symbol: Symbol, highlightPattern: String): Unit = {
-        val expr = expressionViewRenderer.render(symbol, 0L, showValues = false)
-        val line = s"$expr   : ${symbol.info.serialize}"
+        val line = s"$symbol   : ${symbol.info.serialize}"
         val highlighted = line.replace(highlightPattern, s"${Console.RED}$highlightPattern${Console.RESET}")
         println(highlighted)
       }

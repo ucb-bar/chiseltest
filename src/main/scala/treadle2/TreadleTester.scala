@@ -303,10 +303,8 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     val value = peek(name)
     if (value != expectedValue) {
       val info = engine.scheduler.getAssignerInfo(name)
-      val renderer = new ExpressionViewRenderer(engine.dataStore, engine.symbolTable, engine.expressionViews)
-      val calculation = renderer.render(engine.symbolTable(name), wallTime.currentTime)
       fail(
-        TreadleException(s"Error:expect($name, $expectedValue) got $value $message\n$calculation\nAssigned at: $info")
+        TreadleException(s"Error:expect($name, $expectedValue) got $value $message\nAssigned at: $info")
       )
     }
     expectationsMet += 1
@@ -356,9 +354,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
   def expectMemory(name: String, index: Int, expectedValue: BigInt, message: String = ""): Unit = {
     val value = peekMemory(name, index)
     if (value != expectedValue) {
-      val renderer = new ExpressionViewRenderer(engine.dataStore, engine.symbolTable, engine.expressionViews)
-      val calculation = renderer.render(engine.symbolTable(name), wallTime.currentTime)
-      fail(TreadleException(s"Error:expect($name($index), $expectedValue) got $value $message\n$calculation"))
+      fail(TreadleException(s"Error:expect($name($index), $expectedValue) got $value $message"))
     }
     expectationsMet += 1
   }
@@ -405,8 +401,6 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
   def allWaveformValues: WaveformValues = {
     engine.dataStore.getWaveformValues(engine.symbolTable.nameToSymbol.values.toArray)
   }
-
-  def dependencyInfo(symbolName: String): String = engine.renderComputation(symbolName, showValues = false)
 
   def isRegister(symbolName: String): Boolean = engine.symbolTable.isRegister(symbolName)
 

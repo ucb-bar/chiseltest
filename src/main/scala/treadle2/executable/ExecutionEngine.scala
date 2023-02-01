@@ -21,13 +21,12 @@ import scala.collection.mutable
 
 //scalastyle:off magic.number number.of.methods
 class ExecutionEngine(
-  val ast:             Circuit,
-  val annotationSeq:   AnnotationSeq,
-  val symbolTable:     SymbolTable,
-  val dataStore:       DataStore,
-  val scheduler:       Scheduler,
-  val expressionViews: Map[Symbol, ExpressionView],
-  val wallTime:        UTC)
+  val ast:           Circuit,
+  val annotationSeq: AnnotationSeq,
+  val symbolTable:   SymbolTable,
+  val dataStore:     DataStore,
+  val scheduler:     Scheduler,
+  val wallTime:      UTC)
     extends LazyLogging {
   val cycleTimeIncrement = 500
 
@@ -38,12 +37,6 @@ class ExecutionEngine(
   private val topName: String = annotationSeq.collectFirst { case OutputFileAnnotation(ofn) => ofn }.getOrElse(ast.main)
   private val stageOptions = view[StageOptions](annotationSeq)
   val generatedFileRoot: String = stageOptions.getBuildFileName(topName)
-
-  val expressionViewRenderer = new ExpressionViewRenderer(
-    dataStore,
-    symbolTable,
-    expressionViews
-  )
 
   scheduler.executionEngineOpt = Some(this)
 
@@ -192,26 +185,6 @@ class ExecutionEngine(
 
     }
     evaluateCircuit()
-  }
-
-  def renderComputation(symbolNames: String, outputFormat: String = "d", showValues: Boolean = true): String = {
-    val renderer = new ExpressionViewRenderer(dataStore, symbolTable, expressionViews)
-
-    val symbols = symbolNames
-      .split(",")
-      .map(_.trim)
-      .flatMap { s =>
-        symbolTable.get(s)
-      }
-      .distinct
-
-    symbols.flatMap { symbol =>
-      expressionViews.get(symbol) match {
-        case Some(_) =>
-          Some(s"${renderer.render(symbol, wallTime.currentTime, outputFormat = outputFormat, showValues)}")
-        case _ => None
-      }
-    }.mkString("\n")
   }
 
   private def runAssigns(): Unit = {
@@ -647,24 +620,14 @@ object ExecutionEngine extends LazyLogging {
       compiler.compile(circuit)
     }
 
-    val expressionViews: Map[Symbol, ExpressionView] = ExpressionViewBuilder.getExpressionViews(
-      symbolTable,
-      dataStore,
-      scheduler,
-      validIfIsRandom,
-      circuit,
-      blackBoxFactories
-    )
-
     scheduler.organizeAssigners()
 
     val executionEngine =
-      new ExecutionEngine(circuit, annotationSeq, symbolTable, dataStore, scheduler, expressionViews, wallTime)
+      new ExecutionEngine(circuit, annotationSeq, symbolTable, dataStore, scheduler, wallTime)
 
     executionEngine.dataStore.setExecutionEngine(executionEngine)
 
     if (verbose) {
-      println(s"\n${scheduler.render(executionEngine)}")
       scheduler.setVerboseAssign(verbose)
     }
 

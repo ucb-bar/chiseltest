@@ -89,14 +89,13 @@ class RegisterCycleTest extends AnyFreeSpec with Matchers with LazyLogging {
       val output = new ByteArrayOutputStream()
       Console.withOut(new PrintStream(output)) {
         TreadleTestHarness(
-          Seq(FirrtlSourceAnnotation(input), SymbolsToWatchAnnotation(Seq("io_Out", "mySubModule_1.io_Out")))
+          Seq(FirrtlSourceAnnotation(input))
         ) { tester =>
           tester.poke("io_In", 1)
           tester.step(3)
           tester.expect("io_Out", 1)
         }
       }
-      output.toString.contains("io_Out <= 1") should be(true)
     }
   }
 

@@ -42,16 +42,6 @@ class VecSpec extends AnyFreeSpec with Matchers with LazyLogging {
     )
 
     TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
-      def show(): Unit = {
-        logger.debug("Rendering register assignments")
-        for (
-          name <- Seq.tabulate(1) { i =>
-            s"shifter_$i"
-          }
-        ) {
-          logger.debug(s"${tester.engine.renderComputation(name)}")
-        }
-      }
 
       def testRegisterValues(value0: BigInt, value1: BigInt, value2: BigInt, value3: BigInt): Unit = {
         tester.expect("shifter_0", value0)
@@ -63,7 +53,6 @@ class VecSpec extends AnyFreeSpec with Matchers with LazyLogging {
       tester.step()
       testRegisterValues(0, 0, 0, 0)
       tester.step()
-      show()
       testRegisterValues(0, 0, 0, 1)
       tester.step()
       testRegisterValues(0, 0, 1, 2)
@@ -73,7 +62,6 @@ class VecSpec extends AnyFreeSpec with Matchers with LazyLogging {
       testRegisterValues(1, 2, 3, 4)
       tester.step()
       testRegisterValues(2, 3, 4, 5)
-      show()
     }
   }
 

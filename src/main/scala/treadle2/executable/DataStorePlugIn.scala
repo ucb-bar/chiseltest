@@ -75,7 +75,6 @@ class RenderComputations(
       if (symbol.forcedValue.isDefined) {
         print(s"FORCED(${symbol.forcedValue.get} would have been: ")
       }
-      println(executionEngine.renderComputation(symbol.name))
     }
   }
 }

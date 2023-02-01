@@ -150,34 +150,6 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
     orphanedAssigns.clear()
     orphanedAssigns ++= assigners
   }
-
-  /** Render the assigners managed by this scheduler
-    * @return
-    */
-  def render(engine: ExecutionEngine): String = {
-    val expressionViewRenderer = new ExpressionViewRenderer(
-      engine.dataStore,
-      symbolTable,
-      engine.expressionViews,
-      maxDependencyDepth = 0
-    )
-
-    def renderAssigner(assigner: Assigner): String = {
-      val expression =
-        expressionViewRenderer.render(assigner.symbol, engine.wallTime.currentTime, showValues = false)
-
-      if (expression.isEmpty) {
-        s"${assigner.symbol.name} :::"
-      } else {
-        s"${expression.toString}"
-      }
-    }
-
-    s"Static assigns (${orphanedAssigns.size})\n" +
-      orphanedAssigns.map(renderAssigner).mkString("\n") + "\n\n" +
-      s"Active assigns (${combinationalAssigns.size})\n" +
-      combinationalAssigns.map(renderAssigner).mkString("\n") + "\n\n"
-  }
 }
 
 object Scheduler {

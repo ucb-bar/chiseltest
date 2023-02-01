@@ -7,7 +7,6 @@ import firrtl.ir._
 import firrtl.{FileUtils, MemKind, RegKind, WireKind}
 import logger.LazyLogging
 import treadle2._
-import treadle2.executable.RenderHelper.ExpressionHelper
 
 import scala.collection.mutable
 
@@ -237,9 +236,7 @@ object Memory {
   def buildMemoryExpressions(
     defMemory:    DefMemory,
     expandedName: String,
-    scheduler:    Scheduler,
-//    compiler     : ExpressionCompiler,
-    expressionViews: mutable.HashMap[Symbol, ExpressionView]
+    scheduler:    Scheduler
   ): Unit = {
     require(defMemory.readLatency == 0)
     require(defMemory.writeLatency == 1)
@@ -288,20 +285,6 @@ object Memory {
       val pipelineReadSymbols = buildPipeLine(portName, pipelineName, effectiveReadLatency)
       val chain = Seq(symbol) ++ pipelineReadSymbols
 
-      // This produces triggered: reg0 <= reg0/in, reg1 <= reg1/in etc.
-      chain.drop(1).grouped(2).withFilter(_.length == 2).toList.foreach {
-        case source :: target :: Nil =>
-          expressionViews(target) = expression"$source"
-        case _ =>
-      }
-
-      // This produces reg0/in <= root, reg1/in <= reg0 etc.
-      chain.grouped(2).withFilter(_.length == 2).toList.foreach {
-        case source :: target :: Nil =>
-          expressionViews(target) = expression"$source"
-        case _ =>
-      }
-
       chain.last
     }
 
@@ -314,8 +297,6 @@ object Memory {
 
       val endOfAddrPipeline = buildReadPipelineAssigners(readerName, "raddr", addr)
       val endOfEnablePipeline = buildReadPipelineAssigners(readerName, "ren", enable)
-
-      expressionViews(data) = expression"$memorySymbol($endOfAddrPipeline) enable=$endOfEnablePipeline"
     }
 
     /*
@@ -337,20 +318,6 @@ object Memory {
       val pipelineSymbols = buildPipeLine(writerString, pipelineName, memory.writeLatency)
       val chain = Seq(rootSymbol) ++ pipelineSymbols
 
-      // This produces triggered: reg0 <= reg0/in, reg1 <= reg1/in etc.
-      chain.drop(1).grouped(2).withFilter(_.length == 2).toList.foreach {
-        case source :: target :: Nil =>
-          expressionViews(target) = expression"$source"
-        case _ =>
-      }
-
-      // This produces reg0/in <= root, reg1/in <= reg0 etc.
-      chain.grouped(2).withFilter(_.length == 2).toList.foreach {
-        case source :: target :: Nil =>
-          expressionViews(target) = expression"$source"
-        case _ =>
-      }
-
       chain.last
     }
 
@@ -366,14 +333,9 @@ object Memory {
       val data = symbolTable(s"$writerName.data")
       val valid = symbolTable(s"$writerName.valid")
 
-      expressionViews(valid) = expression"and($enable)"
-
       val endOfValidPipeline = buildWritePipelineAssigners(clock, valid, writerName, "valid")
       val endOfAddrPipeline = buildWritePipelineAssigners(clock, addr, writerName, "addr")
       val endOfDataPipeline = buildWritePipelineAssigners(clock, data, writerName, "data")
-
-      expressionViews(portSymbol) = expression"[$endOfAddrPipeline] <= $endOfDataPipeline enable=$endOfValidPipeline"
-
     }
 
     memory.readwriters.foreach { readWriterString =>
@@ -393,17 +355,9 @@ object Memory {
       val endOfRaddrPipeline = buildReadPipelineAssigners(writerName, "raddr", addr)
       val endOfEnablePipeline = buildReadPipelineAssigners(writerName, "ren", enable)
 
-      expressionViews(rdata) = expression"$memorySymbol($endOfRaddrPipeline) enable=$endOfEnablePipeline"
-
-      // compute a valid so we only have to carry a single boolean up the write queue
-      expressionViews(valid) = expression"and(and($enable, $mask), $mode)"
-
       val endOfValidPipeline = buildWritePipelineAssigners(clock, valid, writerName, "valid")
       val endOfAddrPipeline = buildWritePipelineAssigners(clock, addr, writerName, "addr")
       val endOfDataPipeline = buildWritePipelineAssigners(clock, wdata, writerName, "wdata")
-
-      expressionViews(portSymbol) = expression"[$endOfAddrPipeline] <= $endOfDataPipeline enable=$endOfValidPipeline"
-
     }
   }
 

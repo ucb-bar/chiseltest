@@ -137,12 +137,6 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
     println(s"${symbol.name}($index) <= $showValue")
   }
 
-  def renderAssignment(symbol: Symbol): Unit = {
-    executionEngineOption.foreach { executionEngine =>
-      println(executionEngine.renderComputation(symbol.name))
-    }
-  }
-
   def getRegisterLastValueIndex(symbol: Symbol): Int = {
     executionEngineOption match {
       case Some(executionEngine) =>
