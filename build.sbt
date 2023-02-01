@@ -84,7 +84,6 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.2.15",
   "com.lihaoyi" %% "utest" % "0.8.1",
   "net.java.dev.jna" % "jna" % "5.13.0",
-  "org.scala-lang.modules" % "scala-jline" % "2.12.1", // for treadle
   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   compilerPlugin(("edu.berkeley.cs" % "chisel3-plugin" % defaultVersions("chisel3")).cross(CrossVersion.full))
 ) ++ {
