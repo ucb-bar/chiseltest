@@ -66,6 +66,7 @@ scalacOptions ++= Seq(
   "-Wconf:cat=deprecation&msg=class fromDoubleToLiteral:s",
   "-Wconf:cat=deprecation&msg=class fromBigDecimalToLiteral:s",
   "-Wconf:cat=deprecation&msg=trait HasBinaryPoint:s",
+  "-Wconf:cat=deprecation&msg=object UnknownBinaryPoint:s",
   // TODO: remove Interval support after 3.6 release
   "-Wconf:cat=deprecation&msg=class Interval:s",
   "-Wconf:cat=deprecation&msg=object Interval:s",
