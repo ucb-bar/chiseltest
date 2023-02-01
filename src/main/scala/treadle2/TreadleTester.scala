@@ -118,7 +118,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
   /** Advance time in ticks of the [[treadle2.chronometry.UTC]] wallTime, the default is picoseconds, but can be
     * read by the scaleName of the wallTime.  One should probably be advancing by some simple factor
     * of a clock period. The clockInfoList of the options should define this (could be more than one).
- *
+    *
     * @param interval units are in units of the [[wallTime]] scale.
     */
   def advanceTime(interval: Long): Unit = {
