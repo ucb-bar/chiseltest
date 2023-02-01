@@ -135,22 +135,6 @@ case object ValidIfIsRandomAnnotation extends NoTargetAnnotation with TreadleOpt
   )
 }
 
-/**  Sets the number of rollback buffers in simulator, useful to see why wires have their values
-  */
-case class RollBackBuffersAnnotation(rollbackBufferDepth: Int = TreadleDefaults.RollbackBuffers)
-    extends NoTargetAnnotation
-    with TreadleOption
-
-case object RollBackBuffersAnnotation extends HasShellOptions {
-  val options: Seq[ShellOption[_]] = Seq(
-    new ShellOption[Int](
-      longOption = "tr-rollback-buffers",
-      toAnnotationSeq = (buffers: Int) => Seq(RollBackBuffersAnnotation(buffers)),
-      helpText = s"number of rollback buffers, 0 is no buffers, default is ${TreadleDefaults.RollbackBuffers}"
-    )
-  )
-}
-
 /**  Sets verilog plus args that will be passed to black boxes
   */
 case class PlusArgsAnnotation(plusArgs: Seq[String]) extends NoTargetAnnotation with TreadleOption
@@ -401,7 +385,6 @@ class TreadleLibrary extends RegisteredLibrary {
     SaveFirrtlAtLoadAnnotation,
     DontRunLoweringCompilerLoadAnnotation,
     ValidIfIsRandomAnnotation,
-    RollBackBuffersAnnotation,
     MemoryToVCD,
     ClockInfoAnnotation,
     SymbolsToWatchAnnotation,

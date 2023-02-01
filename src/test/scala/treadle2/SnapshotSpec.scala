@@ -37,7 +37,7 @@ class SnapshotSpec extends AnyFreeSpec with Matchers with LazyLogging {
         |
       """.stripMargin
 
-    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), RollBackBuffersAnnotation(4))) { t =>
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { t =>
       t.poke("in0", 1)
       t.step()
       t.poke("in0", 2)
@@ -56,8 +56,6 @@ class SnapshotSpec extends AnyFreeSpec with Matchers with LazyLogging {
 
       logger.debug(s"snapshot0\n$snapshot0")
       logger.debug(s"snapshot1\n$snapshot1")
-
-      snapshot1.contains(""""numberOfBuffers":4,""") should be(true)
 
       logger.debug(s"snapshot0\n$snapshot0")
       logger.debug(s"snapshot1\n$snapshot1")

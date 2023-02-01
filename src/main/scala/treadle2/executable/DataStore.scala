@@ -11,15 +11,11 @@ import treadle2.ScalaBlackBox
 import scala.collection.mutable
 
 /** Creates a data store for the three underlying data types.
-  * The numberOfBuffers is used to control the ability to rollback execution.
   * The meaning of the values of each slot must be maintained outside of this class.
   * This class only supports (2 ** 31) - 1 of any ints, longs or bigs.
-  *
-  * @param numberOfBuffers Number of buffers
   */
 //scalastyle:off number.of.methods
-class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator) extends HasDataArrays {
-  assert(numberOfBuffers >= 0, s"DataStore: numberOfBuffers $numberOfBuffers must be >= 0")
+class DataStore(dataStoreAllocator: DataStoreAllocator) extends HasDataArrays {
 
   var leanMode:      Boolean = true
   val plugins:       mutable.HashMap[String, DataStorePlugin] = new mutable.HashMap()
@@ -106,21 +102,6 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
   val intData:  Array[Int] = Array.fill(numberOfInts)(0)
   val longData: Array[Long] = Array.fill(numberOfLongs)(0L)
   val bigData:  Array[Big] = Array.fill(numberOfBigs)(Big(0))
-
-  val rollBackBufferManager = new RollBackBufferManager(this)
-
-  def saveData(time: Long): Unit = {
-    if (numberOfBuffers > 0) {
-      rollBackBufferManager.saveData(time)
-    }
-  }
-
-  @deprecated("Use saveData(time: Long), clock based rollback buffers are no longer supported", "since 1.0")
-  def saveData(clockName: String, time: Long): Unit = {
-    if (numberOfBuffers > 0) {
-      rollBackBufferManager.saveData(time)
-    }
-  }
 
   def runPlugins(symbol: Symbol, offset: Int = -1, previousValue: BigInt): Unit = {
     activePlugins.foreach { _.run(symbol, offset, previousValue) }
@@ -473,39 +454,11 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
     val longDataValues = toLongJArray(longData)
     val bigDataValues = toBigJArray(bigData)
 
-    def packageRollbackBuffers = {
-      val packet = List("AllClocks").map { clockName =>
-        val rollbackRing = rollBackBufferManager.rollBackBufferRing
-
-        val intArray = JArray(rollbackRing.ringBuffer.map { x =>
-          toIntJArray(x.intData)
-        }.toList)
-        val longArray = JArray(rollbackRing.ringBuffer.map { x =>
-          toLongJArray(x.longData)
-        }.toList)
-        val bigArray = JArray(rollbackRing.ringBuffer.map { x =>
-          toBigJArray(x.bigData)
-        }.toList)
-
-        ("clockName" -> clockName) ~
-          ("latestBufferIndex" -> rollbackRing.latestBufferIndex) ~
-          ("oldestBufferIndex" -> rollbackRing.oldestBufferIndex) ~
-          ("intBuffers" -> intArray) ~
-          ("longBuffers" -> longArray) ~
-          ("bigBuffers" -> bigArray)
-      }
-
-      packet
-    }
-
     val json =
-      ("numberOfBuffers" -> numberOfBuffers) ~
-        ("nextForData" -> nextForData) ~
+      ("nextForData" -> nextForData) ~
         ("intData" -> intDataValues) ~
         ("longData" -> longDataValues) ~
-        ("bigData" -> bigDataValues) ~
-        ("rollbackData" -> packageRollbackBuffers)
-
+        ("bigData" -> bigDataValues)
     pretty(render(json))
   }
 
@@ -517,11 +470,6 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
       JField(fieldName, value) <- child
     } {
       fieldName match {
-        case "numberOfBuffers" =>
-          val JInt(numBuffs) = value
-          if (numBuffs != numberOfBuffers) {
-            println(s"WARNING: numberOfBuffers in snapshot $numBuffs does not match runtime $numberOfBuffers")
-          }
         case "nextForData" =>
           for {
             JObject(child2) <- value
@@ -561,65 +509,6 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
               }
             case _ =>
           }
-        case "rollbackData" =>
-          var clockBuffer = rollBackBufferManager.rollBackBufferRing
-          value match {
-            case JArray(clockSections) =>
-              for {
-                JObject(child2) <- clockSections
-                JField(subFieldName, subValue) <- child2
-              } {
-                (subFieldName, subValue) match {
-                  case ("clockName", JString(clockName)) =>
-                    clockBuffer = rollBackBufferManager.rollBackBufferRing
-
-                  case ("latestBufferIndex", JInt(latestBufferIndex)) =>
-                    clockBuffer.latestBufferIndex = latestBufferIndex.toInt
-
-                  case ("oldestBufferIndex", JInt(oldestBufferIndex)) =>
-                    clockBuffer.oldestBufferIndex = oldestBufferIndex.toInt
-
-                  case ("intBuffers", JArray(numArrays)) =>
-                    numArrays.zipWithIndex.foreach {
-                      case (JArray(elementValues), rollbackIndex) =>
-                        elementValues.zipWithIndex.foreach {
-                          case (JInt(v), index) =>
-                            clockBuffer.ringBuffer(rollbackIndex).intData(index) = v.toInt
-                          case _ => None
-                        }
-                      case _ =>
-                    }
-
-                  case ("longBuffers", JArray(numArrays)) =>
-                    numArrays.zipWithIndex.foreach {
-                      case (JArray(elementValues), rollbackIndex) =>
-                        elementValues.zipWithIndex.foreach {
-                          case (JInt(v), index) =>
-                            clockBuffer.ringBuffer(rollbackIndex).longData(index) = v.toLong
-                          case _ => None
-                        }
-                      case _ =>
-                    }
-
-                  case ("bigBuffers", JArray(numArrays)) =>
-                    numArrays.zipWithIndex.foreach {
-                      case (JArray(elementValues), rollbackIndex) =>
-                        elementValues.zipWithIndex.foreach {
-                          case (JInt(v), index) =>
-                            clockBuffer.ringBuffer(rollbackIndex).bigData(index) = v
-                          case _ => None
-                        }
-                      case _ =>
-                    }
-
-                  case (subSubFieldName, subSubValue) =>
-                    println(s"got an unhandled field in clock buffer section $subSubFieldName => $subSubValue")
-                }
-              }
-
-            case _ =>
-          }
-
         case _ =>
         // println(s"$fieldName -> $value")
       }
@@ -628,8 +517,8 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
 }
 
 object DataStore {
-  def apply(numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator): DataStore = {
-    new DataStore(numberOfBuffers, dataStoreAllocator)
+  def apply(dataStoreAllocator: DataStoreAllocator): DataStore = {
+    new DataStore(dataStoreAllocator)
   }
 }
 

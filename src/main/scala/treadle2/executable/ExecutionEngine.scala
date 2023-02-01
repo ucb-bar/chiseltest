@@ -191,9 +191,6 @@ class ExecutionEngine(
     try {
       scheduler.executeCombinationalAssigns()
 
-      // save data state under roll back buffers if they are being used
-      dataStore.saveData(wallTime.currentTime)
-
       pLastStopException match {
         case Some(exception) =>
           pLastStopException = None
@@ -576,9 +573,6 @@ object ExecutionEngine extends LazyLogging {
     val allowCycles = annotationSeq.exists { case AllowCyclesAnnotation => true; case _ => false }
     val prefixPrintfWithTime = annotationSeq.exists { case PrefixPrintfWithWallTime => true; case _ => false }
 
-    val rollbackBuffers = annotationSeq.collectFirst { case RollBackBuffersAnnotation(rbb) => rbb }.getOrElse(
-      TreadleDefaults.RollbackBuffers
-    )
     val plusArgs = annotationSeq.collectFirst { case PlusArgsAnnotation(seq) => seq }
       .getOrElse(Seq.empty)
       .map { s =>
@@ -597,7 +591,7 @@ object ExecutionEngine extends LazyLogging {
 
     symbolTable.allocateData(dataStoreAllocator)
 
-    val dataStore = DataStore(rollbackBuffers, dataStoreAllocator)
+    val dataStore = DataStore(dataStoreAllocator)
 
     if (verbose) {
       println(s"Symbol table:\n${symbolTable.render}")

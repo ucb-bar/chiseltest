@@ -36,7 +36,6 @@ class VecSpec extends AnyFreeSpec with Matchers with LazyLogging {
 
     val options = Seq(
       WriteVcdAnnotation,
-      RollBackBuffersAnnotation(20),
       TargetDirAnnotation("test_run_dir/vec_spec_1"),
       OutputFileAnnotation("vec_spec_1")
     )

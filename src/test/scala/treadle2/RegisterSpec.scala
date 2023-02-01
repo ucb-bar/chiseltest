@@ -293,7 +293,7 @@ class RegisterSpec extends AnyFreeSpec with Matchers {
       """.stripMargin
 
       TreadleTestHarness(
-        Seq(FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation, RollBackBuffersAnnotation(15))
+        Seq(FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation)
       ) { tester =>
         tester.poke("io_in", 77)
         tester.poke("io_en", 0)

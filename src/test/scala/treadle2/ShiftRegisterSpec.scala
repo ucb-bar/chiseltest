@@ -39,7 +39,7 @@ class ShiftRegisterSpec extends AnyFreeSpec with Matchers {
       """.stripMargin
 
     Console.withOut(new PrintStream(new ByteArrayOutputStream())) {
-      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), RollBackBuffersAnnotation(4))) { tester =>
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
         intercept[StopException] {
           tester.step(8)
         }

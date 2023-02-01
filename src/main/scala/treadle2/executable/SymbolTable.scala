@@ -576,8 +576,6 @@ object SymbolTable extends LazyLogging {
      * to do a better job of showing the loop
      */
     def showLoop(badNode: Symbol, symbolTable: SymbolTable): Unit = {
-      val dummyDatastore = new DataStore(10, new DataStoreAllocator)
-
       def show(symbol: Symbol, highlightPattern: String): Unit = {
         val line = s"$symbol   : ${symbol.info.serialize}"
         val highlighted = line.replace(highlightPattern, s"${Console.RED}$highlightPattern${Console.RESET}")

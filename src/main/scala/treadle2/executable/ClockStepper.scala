@@ -47,8 +47,6 @@ case class SimpleSingleClockStepper(
 
   var resetTaskTime: Long = -1L
 
-  val hasRollBack: Boolean = engine.dataStore.numberOfBuffers > 0
-
   var isFirstRun: Boolean = true
 
   var combinationalBumps: Long = 0L
@@ -58,11 +56,6 @@ case class SimpleSingleClockStepper(
     * @param value        new clock value should be zero or one, all non-zero values are treated as one
     */
   override def bumpClock(clockSymbol: Symbol, value: BigInt): Unit = {
-    if (hasRollBack) {
-      // save data state under roll back buffers for this clock
-      engine.dataStore.saveData(wallTime.currentTime)
-    }
-
     engine.setValue(clockSymbol.name, value)
     cycleCount += 1
   }
@@ -169,9 +162,8 @@ case class SimpleSingleClockStepper(
   * @param wallTime       handle to top level wall time
   */
 class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], wallTime: UTC) extends ClockStepper {
-  val dataStore:   DataStore = engine.dataStore
-  val scheduler:   Scheduler = engine.scheduler
-  val hasRollBack: Boolean = engine.dataStore.numberOfBuffers > 0
+  val dataStore: DataStore = engine.dataStore
+  val scheduler: Scheduler = engine.scheduler
 
   val shortestPeriod: Long = clockInfoList.map(_.period).min
 
@@ -201,10 +193,6 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
   override def bumpClock(clockSymbol: Symbol, value: BigInt): Unit = {
     val assigner = clockAssigners(clockSymbol)
     if (value > Big(0)) {
-      if (hasRollBack) {
-        // save data state under roll back buffers for this clock
-        engine.dataStore.saveData(wallTime.currentTime)
-      }
       assigner.upAssigner.run()
     } else {
       assigner.downAssigner.run()

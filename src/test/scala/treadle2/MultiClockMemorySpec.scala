@@ -36,7 +36,6 @@ class MultiClockMemorySpec extends AnyFreeSpec with Matchers with LazyLogging {
       FirrtlSourceAnnotation(input),
       TargetDirAnnotation("test_run_dir/two-clock-test"),
       WriteVcdAnnotation,
-      RollBackBuffersAnnotation(4),
       CallResetAtStartupAnnotation,
       ClockInfoAnnotation(Seq(ClockInfo("clock1", 6), ClockInfo("clock2", 2)))
     )
