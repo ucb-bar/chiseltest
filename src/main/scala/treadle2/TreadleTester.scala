@@ -373,35 +373,6 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     }
   }
 
-  def waveformValues(
-    symbolNames: Array[String] = Array[String](),
-    startCycle:  Int = 0,
-    endCycle:    Int = -1
-  ): WaveformValues = {
-    val symbols = if (symbolNames.length == 0) {
-      engine.symbolTable.nameToSymbol.values.toArray
-    } else {
-      val numSymbols = symbolNames.length
-      new Array[Symbol](numSymbols)
-    }
-
-    if (symbolNames.length == 0) {
-      symbolNames.zipWithIndex.foreach { case (symbolName, counter) =>
-        assert(
-          engine.symbolTable.contains(symbolName),
-          s""""$symbolName" : argument is not an element of this circuit"""
-        )
-        symbols.update(counter, engine.symbolTable(symbolName))
-      }
-    }
-
-    engine.dataStore.getWaveformValues(symbols, startCycle, endCycle)
-  }
-
-  def allWaveformValues: WaveformValues = {
-    engine.dataStore.getWaveformValues(engine.symbolTable.nameToSymbol.values.toArray)
-  }
-
   def isRegister(symbolName: String): Boolean = engine.symbolTable.isRegister(symbolName)
 
   def getStopResult: Option[Int] = engine.lastStopResult

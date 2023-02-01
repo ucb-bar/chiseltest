@@ -430,31 +430,6 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
     }
   }
 
-  def getWaveformValues(symbols: Array[Symbol], startCycle: Int = 0, endCycle: Int = -1): WaveformValues = {
-    var buffers: Seq[RollBackBuffer] = rollBackBufferManager.newestToOldestBuffers.reverse
-
-    val leftIndexInclusive = math.max(0, startCycle)
-    val rightIndexExclusive = if (endCycle == -1) buffers.length else math.min(buffers.length, endCycle)
-    val n = rightIndexExclusive - leftIndexInclusive
-
-    buffers = buffers.dropRight(buffers.length - rightIndexExclusive).drop(leftIndexInclusive)
-
-    val clockValues = new Array[BigInt](n)
-    val symbolValues = Array.ofDim[BigInt](symbols.length, n)
-
-    buffers.zipWithIndex.foreach { case (buffer, i) =>
-      clockValues(i) = buffer.time
-      symbols.zipWithIndex.foreach { case (symbol, j) =>
-        symbol.dataSize match {
-          case IntSize  => symbolValues(j)(i) = buffer.intData(symbol.index)
-          case LongSize => symbolValues(j)(i) = buffer.longData(symbol.index)
-          case BigSize  => symbolValues(j)(i) = buffer.bigData(symbol.index)
-        }
-      }
-    }
-    WaveformValues(clockValues, symbols, symbolValues)
-  }
-
   def update(symbol: Symbol, value: Big): Unit = {
     symbol.dataSize match {
       case IntSize  => intData(symbol.index) = value.toInt
