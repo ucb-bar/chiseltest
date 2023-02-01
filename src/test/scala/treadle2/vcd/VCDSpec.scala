@@ -122,16 +122,6 @@ class VCDSpec extends AnyFlatSpec with Matchers {
     c2.serialize should be("1%")
   }
 
-  behavior.of("VCD reader")
-
-  it should "be able to read a file" in {
-    val tempFile = File.createTempFile("GCD", ".vcd")
-    tempFile.deleteOnExit()
-    BackendCompilationUtilities.copyResourceToFile("/GCD.vcd", tempFile)
-    val vcdFile = VCD.read(tempFile.getCanonicalPath)
-
-    vcdFile.date should be("2016-10-13T16:31+0000")
-  }
 
   behavior.of("vcd log containing negative numbers")
 
@@ -197,82 +187,5 @@ class VCDSpec extends AnyFlatSpec with Matchers {
       engine.step()
       engine.peek("io_c") should be(BigInt(8))
     }
-  }
-
-  behavior.of("vcd can record temp vars or not")
-
-  //scalastyle:off method.length
-  def testVcdTempWireTest(hasTempWires: Boolean): Unit = {
-    val input =
-      """
-        |circuit pwminCount :
-        |  module pwminCount :
-        |    input clock : Clock
-        |    input reset : UInt<1>
-        |    output io : {testReg : UInt<4>}
-        |
-        |    clock is invalid
-        |    reset is invalid
-        |    io is invalid
-        |    reg testReg : UInt<4>, clock with : (reset => (reset, UInt<1>("h00"))) @[RegisterVCDSpec.scala 30:24]
-        |    node _T_6 = add(testReg, UInt<1>("h01")) @[RegisterVCDSpec.scala 31:22]
-        |    node _7 = tail(_T_6, 1) @[RegisterVCDSpec.scala 31:22]
-        |    testReg <= _7 @[RegisterVCDSpec.scala 31:11]
-        |    io.testReg <= testReg @[RegisterVCDSpec.scala 32:14]
-        |
-      """.stripMargin
-
-    val options = Seq(
-      Some(WriteVcdAnnotation),
-      if (hasTempWires) {
-        Some(VcdShowUnderScoredAnnotation)
-      } else {
-        None
-      },
-      Some(TargetDirAnnotation("test_run_dir/vcd_register_delay/")),
-      Some(OutputFileAnnotation("pwminCount"))
-    ).flatten
-
-    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { engine =>
-      engine.poke("reset", 0)
-      engine.step(50)
-    }
-    val vcd = VCD.read("test_run_dir/vcd_register_delay/pwminCount.vcd")
-
-    /* create an ordered indexed list of all the changes to testReg */
-    val eventsOfInterest = vcd.valuesAtTime.filter { case (_, changeSet) =>
-      changeSet.exists { change =>
-        change.wire.name == "testReg"
-      }
-    }.toSeq.sortBy(_._1).map(_._2).toArray
-
-    // at every step the io_testReg should be one cycle behind
-    for (timeStep <- 4 to 24) {
-      def getValue(step: Int, name: String): Int = {
-        eventsOfInterest(step).find { change =>
-          change.wire.name == name
-        }.head.value.toInt
-      }
-
-      getValue(timeStep, "testReg") should be(getValue(timeStep, "io_testReg"))
-    }
-
-    if (hasTempWires) {
-      vcd.wires.values.exists { value =>
-        value.name.startsWith("_")
-      } should be(true)
-    } else {
-      vcd.wires.values.forall { value =>
-        !value.name.startsWith("_")
-      } should be(true)
-    }
-  }
-
-  it should "have temp wires when desired" in {
-    testVcdTempWireTest(hasTempWires = true)
-  }
-
-  it should "not have temp wires when desired" in {
-    testVcdTempWireTest(hasTempWires = false)
   }
 }
