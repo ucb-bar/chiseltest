@@ -11,7 +11,7 @@ import org.scalatest.matchers.should.Matchers
 import treadle2.utils.CoveragePrettyPrinterMain
 
 class FormalCoverSpec extends AnyFreeSpec with Matchers {
-  private val stream = getClass.getResourceAsStream("/HasCoverStatements.fir")
+  private val stream = getClass.getResourceAsStream("/treadle/HasCoverStatements.fir")
   private val firrtlSource = scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
 
   "cover statements should be counted" in {
@@ -33,7 +33,7 @@ class FormalCoverSpec extends AnyFreeSpec with Matchers {
   }
 
   "distinct counters should be created for each instance" in {
-    val stream = getClass.getResourceAsStream("/CoverageTestModule.fir")
+    val stream = getClass.getResourceAsStream("/treadle/CoverageTestModule.fir")
     val src = scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
     TreadleTestHarness(Seq(FirrtlSourceAnnotation(src))) { tester =>
       val c0 = tester.getCoverage().toMap
@@ -103,7 +103,7 @@ class FormalCoverSpec extends AnyFreeSpec with Matchers {
   }
 
   "pretty printer provided can show coverage on firrtl source" in {
-    val firrtlFileName = "src/test/resources/HasCoverStatements.fir"
+    val firrtlFileName = "src/test/resources/treadle/HasCoverStatements.fir"
     val coverageFileName = "test_run_dir/HasCoverStatements/HasCoverStatements.coverage.txt"
     if (new File(coverageFileName).exists()) {
       new File(coverageFileName).delete()

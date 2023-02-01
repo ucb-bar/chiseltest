@@ -168,7 +168,7 @@ class VCDSpec extends AnyFlatSpec with Matchers {
   behavior.of("Using VCD output as a golden model test of a circuit")
 
   it should "be able to create a VCD then replay the VCD testing inputs" in {
-    val stream = getClass.getResourceAsStream("/VcdAdder.fir")
+    val stream = getClass.getResourceAsStream("/treadle/VcdAdder.fir")
     val input = scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
 
     val options = Seq(

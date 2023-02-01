@@ -606,7 +606,7 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers with LazyLogging {
   }
 
   "fifo with out-of bounds memory access should *not* work" in {
-    val stream = getClass.getResourceAsStream("/CircularPointerFifo.lo.fir")
+    val stream = getClass.getResourceAsStream("/treadle/CircularPointerFifo.lo.fir")
     val input = scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
     TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { dut =>
       // reset

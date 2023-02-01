@@ -11,7 +11,7 @@ class ModuleInLineSpec extends AnyFlatSpec with Matchers with LazyLogging {
   behavior.of("multiple modes")
 
   it should "expand instances as found" in {
-    val stream = getClass.getResourceAsStream("/three_deep.fir")
+    val stream = getClass.getResourceAsStream("/treadle/three_deep.fir")
     val input = io.Source.fromInputStream(stream).mkString
 
     TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
@@ -20,7 +20,7 @@ class ModuleInLineSpec extends AnyFlatSpec with Matchers with LazyLogging {
   }
 
   it should "nester registers should all be using the same clock" in {
-    val stream = getClass.getResourceAsStream("/NestedModsWithReg.fir")
+    val stream = getClass.getResourceAsStream("/treadle/NestedModsWithReg.fir")
     val input = io.Source.fromInputStream(stream).mkString
 
     TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>

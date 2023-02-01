@@ -249,10 +249,10 @@ class MemoryInitializationTest extends AnyFreeSpec with Matchers with LazyLoggin
 
   private def testMemFileInit(filename: String, expected: Seq[Int], tpe: MemoryLoadFileType): Unit = {
     val annos = Seq(
-      FirrtlFileAnnotation("src/test/resources/ReadMem.fir"),
+      FirrtlFileAnnotation("src/test/resources/treadle/ReadMem.fir"),
       MemoryFileInlineAnnotation(
         CircuitTarget("ReadMem").module("ReadMem").ref("m"),
-        s"src/test/resources/$filename",
+        s"src/test/resources/treadle/$filename",
         tpe
       )
     )

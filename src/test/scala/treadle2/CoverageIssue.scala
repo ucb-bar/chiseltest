@@ -7,7 +7,7 @@ import org.scalatest.matchers.should.Matchers
 class CoverageIssue extends AnyFreeSpec with Matchers {
 
   "coverage should be counted properly" in {
-    val stream = getClass.getResourceAsStream("/ToggleCoverage.fir")
+    val stream = getClass.getResourceAsStream("/treadle/ToggleCoverage.fir")
     val firrtlSource = scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
     TreadleTestHarness(Seq(FirrtlSourceAnnotation(firrtlSource))) { tester =>
       //Defines the signals which poked and expected on each clock cycle

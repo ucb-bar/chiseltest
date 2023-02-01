@@ -14,7 +14,7 @@ import treadle2.executable.{ClockInfo, StopException}
 class RiscVMiniSimpleSpec extends AnyFreeSpec with Matchers with LazyLogging {
   "riscv-mini simple core test should run then stop" in {
 
-    val stream = getClass.getResourceAsStream("/core-simple.lo.fir")
+    val stream = getClass.getResourceAsStream("/treadle/core-simple.lo.fir")
     val input =
       scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
 

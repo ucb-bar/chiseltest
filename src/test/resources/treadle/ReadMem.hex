@@ -1,0 +1,3 @@
+// comment
+ab
+CD eF // any whitespace should be treated as a separator
