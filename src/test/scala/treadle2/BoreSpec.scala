@@ -2,11 +2,13 @@
 
 package treadle2
 
-import firrtl._
+
+import firrtl.AnnotationSeq
 import firrtl.annotations._
-import firrtl.passes.wiring._
-import firrtl.stage._
-import firrtl.transforms._
+import firrtl.options.TargetDirAnnotation
+import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation}
+import firrtl.stage.{FirrtlSourceAnnotation, FirrtlStage, RunFirrtlTransformAnnotation}
+import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -45,6 +47,7 @@ class BoreSpec extends AnyFreeSpec with Matchers {
 
     var annos: AnnotationSeq = Seq(
       FirrtlSourceAnnotation(input),
+      TargetDirAnnotation("test_run_dir/BoreSpec"),
       SourceAnnotation(ComponentName("x", ModuleName("BoreTestConstant", CircuitName("BoreTestTop"))), "x"),
       DontTouchAnnotation(ReferenceTarget("BoreTestTop", "BoreTestConstant", List(), "x", List())),
       NoDedupAnnotation(ModuleName("BoreTestConstant", CircuitName("BoreTestTop"))),
