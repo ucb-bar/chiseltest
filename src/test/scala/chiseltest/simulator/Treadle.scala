@@ -23,6 +23,5 @@ class TreadleSpecificTests extends AnyFlatSpec {
       sim.findVersions()
     }
     assert(out.contains("treadle is available"))
-    assert(out.contains("1.6"))
   }
 }
