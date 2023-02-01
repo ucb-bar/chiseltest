@@ -18,7 +18,6 @@ private object TreadleSimulator extends Simulator {
   override def isAvailable: Boolean = true
   def findVersions(): Unit = {
     println("treadle is available")
-    println(s"version: ${treadle.BuildInfo.version}")
   }
   override def waveformFormats = Seq(WriteVcdAnnotation)
   override def supportsCoverage = true

@@ -10,7 +10,6 @@ object chiseltest extends mill.Cross[chiseltestCrossModule]("2.13.10")
 
 val defaultVersions = Map(
   "chisel3" -> "3.6-SNAPSHOT",
-  "treadle" -> "1.6-SNAPSHOT"
 )
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
@@ -40,14 +39,6 @@ class chiseltestCrossModule(val crossScalaVersion: String)
     Agg(ivy"edu.berkeley.cs:::chisel3-plugin:${defaultVersions("chisel3")}")
   } else Agg.empty[Dep]
 
-  def treadleModule: Option[PublishModule] = None
-
-  def treadleIvyDeps = if (treadleModule.isEmpty)
-    Agg(
-      getVersion("treadle")
-    )
-  else Agg.empty[Dep]
-
   override def millSourcePath = super.millSourcePath / os.up
 
   // 2.12.12 -> Array("2", "12", "12") -> "12" -> 12
@@ -74,7 +65,7 @@ class chiseltestCrossModule(val crossScalaVersion: String)
       ivy"org.scalatest::scalatest:3.2.15",
       ivy"com.lihaoyi::utest:0.8.1",
       ivy"net.java.dev.jna:jna:5.13.0"
-    ) ++ chisel3IvyDeps ++ treadleIvyDeps
+    ) ++ chisel3IvyDeps
   }
 
   override def scalacPluginIvyDeps = T { chisel3PluginIvyDeps }
@@ -84,11 +75,11 @@ class chiseltestCrossModule(val crossScalaVersion: String)
   }
 
   object test_1 extends Tests with TestModule.ScalaTest with ScalafmtModule {
-    override def ivyDeps = T { chisel3IvyDeps ++ treadleIvyDeps }
+    override def ivyDeps = T { chisel3IvyDeps }
   }
 
   object test_2 extends Tests with TestModule.Utest with ScalafmtModule {
-    override def ivyDeps = T { chisel3IvyDeps ++ treadleIvyDeps }
+    override def ivyDeps = T { chisel3IvyDeps }
   }
 
   def pomSettings = T {
