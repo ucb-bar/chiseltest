@@ -10,7 +10,6 @@ import firrtl.options.StageOptions
 import firrtl.options.Viewer.view
 import firrtl.stage.OutputFileAnnotation
 import treadle2.chronometry.UTC
-import treadle2.coverage.{Coverage, CoverageReport}
 import treadle2.executable._
 import treadle2.stage.TreadleTesterPhase
 
@@ -32,9 +31,6 @@ import treadle2.stage.TreadleTesterPhase
 class TreadleTester(annotationSeq: AnnotationSeq) {
 
   var expectationsMet = 0
-
-  //Keeps track of coverage
-  var lineValidators: List[Int] = Nil
 
   treadle2.random.setSeed(annotationSeq.collectFirst { case RandomSeedAnnotation(seed) => seed }.getOrElse(0L))
 
@@ -59,12 +55,6 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
   private val stageOptions = view[StageOptions](annotationSeq)
   private val memoryLogger: VcdMemoryLoggingController = {
     VcdMemoryLoggingController(annotationSeq.collect { case MemoryToVCD(command) => command }, engine.symbolTable)
-  }
-
-  /** Initializes the lineValidators attribute. Must be done after construction of the AST
-    */
-  def initLineValidators(): Unit = {
-    lineValidators = (for (_ <- 0 until Coverage.getNumValidators(engine.ast)) yield 0).toList
   }
 
   def setVerbose(value: Boolean = true): Unit = {
@@ -320,12 +310,6 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
       )
     }
     expectationsMet += 1
-
-    //Initialize coverage validators if not done yet
-    if (lineValidators.isEmpty) initLineValidators()
-
-    //Keep track of coverage
-    lineValidators = lineValidators.zip(Coverage.getValidators(engine.ast, this)).map(v => v._1 | v._2)
   }
 
   def cycleCount: Long = clockStepper.cycleCount
@@ -460,13 +444,6 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     engine.writeVCD()
     println(reportString)
   }
-
-  /** Prints out the coverage report
-    */
-  def reportCoverage: CoverageReport =
-    if (annotationSeq.contains(EnableCoverageAnnotation))
-      Coverage.reportCoverage(engine.ast, this)
-    else throw new IllegalStateException("Coverage isn't enabled!")
 
   def finish: Boolean = {
     engine.finish(writeCoverageReport)

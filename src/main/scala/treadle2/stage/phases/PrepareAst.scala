@@ -8,7 +8,6 @@ import firrtl.stage.{FirrtlCircuitAnnotation, Forms}
 import firrtl.transforms.BlackBoxSourceHelper
 import firrtl.{AnnotationSeq, CircuitState}
 import treadle2.TreadleCircuitStateAnnotation
-import treadle2.coverage.pass.AddCoverageExpressions
 import treadle2.utils.AugmentPrintf
 
 /** Call a bunch of transforms so TreadleTester can operate
@@ -16,7 +15,6 @@ import treadle2.utils.AugmentPrintf
 class PrepareAst extends Phase {
   private val targets = Seq(
     Dependency(firrtl.transforms.EnsureNamedStatements),
-    Dependency(AddCoverageExpressions),
     Dependency[BlackBoxSourceHelper],
     Dependency[AugmentPrintf],
     Dependency[HandleFormalStatements]
