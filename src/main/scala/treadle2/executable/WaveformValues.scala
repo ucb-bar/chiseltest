@@ -38,14 +38,15 @@ case class WaveformValues(
 
     // Generate JSON
     val jsonClk: JObject = ("name" -> "clk") ~ ("wave" -> clkWaveString)
-    val jsonWaves: JArray = (
-      symbols.map { symbol =>
-        symbol.name
-      }.toList,
-      waveStrings.toList,
-      dataStrings.toList
-    ).zipped.map { case (symbolName, waveString, dataString) =>
-      ("name" -> symbolName) ~ ("wave" -> waveString) ~ ("data" -> dataString)
+    val jsonWaves: JArray = {
+      val names = symbols.map(_.name)
+      names
+        .zip(waveStrings)
+        .zip(dataStrings)
+        .map { case ((symbolName, waveString), dataString) =>
+          ("name" -> symbolName) ~ ("wave" -> waveString) ~ ("data" -> dataString)
+        }
+        .toList
     }
     val jsonAllWaves = jsonClk ++ jsonWaves
 

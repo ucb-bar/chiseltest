@@ -10,7 +10,7 @@ class MemRegTester extends AnyFlatSpec with Matchers with LazyLogging {
   behavior.of("MemReg")
 
   //scalastyle:off
-  def riscMemRegTest() {
+  def riscMemRegTest(): Unit = {
     val riscFirrtl: String =
       s"""
          |circuit Risc :

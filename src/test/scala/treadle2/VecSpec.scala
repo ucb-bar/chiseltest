@@ -53,7 +53,7 @@ class VecSpec extends AnyFreeSpec with Matchers with LazyLogging {
         }
       }
 
-      def testRegisterValues(value0: BigInt, value1: BigInt, value2: BigInt, value3: BigInt) {
+      def testRegisterValues(value0: BigInt, value1: BigInt, value2: BigInt, value3: BigInt): Unit = {
         tester.expect("shifter_0", value0)
         tester.expect("shifter_1", value1)
         tester.expect("shifter_2", value2)

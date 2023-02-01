@@ -25,7 +25,7 @@ class GCDTester extends AnyFlatSpec with Matchers with LazyLogging {
 
   behavior.of("GCD")
 
-  def sizableTest(width: Int) {
+  def sizableTest(width: Int): Unit = {
     val gcdFirrtl: String =
       s"""
          |circuit GCD :
@@ -96,7 +96,7 @@ class GCDTester extends AnyFlatSpec with Matchers with LazyLogging {
   }
 
   //scalastyle:off
-  def manyValuesTest(width: Int) {
+  def manyValuesTest(width: Int): Unit ={
     val gcdFirrtl: String =
       s"""
          |circuit GCD :

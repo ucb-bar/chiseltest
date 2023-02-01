@@ -78,7 +78,7 @@ object VCD {
   }
 
   class WordIterator(fileName: String) extends Iterator[String] {
-    val lines: Iterator[String] = FileUtils.getLines(fileName).toIterator
+    val lines: Iterator[String] = FileUtils.getLines(fileName).iterator
     var currentLineNumber = 0
     var currentLine: Iterator[String] = Iterator.empty
     var _hasNext = false
@@ -104,7 +104,7 @@ object VCD {
       } else {
         if (lines.hasNext) {
           currentLineNumber += 1
-          currentLine = lines.next().trim.split("""\s+""").toIterator
+          currentLine = lines.next().trim.split("""\s+""").iterator
           loadNextWord()
         } else {
           _hasNext = false
@@ -299,7 +299,7 @@ case class VCD(
   }
 
   def wiresFor(change: Change): Set[Wire] = {
-    aliasedWires.getOrElse(change.wire.id, new mutable.HashSet) + change.wire
+    aliasedWires.getOrElse(change.wire.id, new mutable.HashSet).toSet + change.wire
   }
 
   def incrementId(): Unit = currentIdNumber += 1

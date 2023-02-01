@@ -107,7 +107,7 @@ case class PrintfOp(
           }
       }
     }
-    (StringContext.treatEscapes(outBuffer.toString()), filters.toSeq)
+    (StringContext.processEscapes(outBuffer.toString()), filters.toSeq)
   }
 
   def executeVerilogPrint(allArgs: Seq[BigInt]): String = {

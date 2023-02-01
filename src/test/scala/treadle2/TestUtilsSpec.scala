@@ -56,8 +56,8 @@ class TestUtilsSpec extends AnyFlatSpec with Matchers {
       for (j <- i to TestUtils.MaxTestingWidth) {
         val iterator = IntWidthTestValuesGenerator(i, j)
         var lastSeen = 0
-        if (iterator.hasNext()) {
-          lastSeen = iterator.next
+        if (iterator.hasNext) {
+          lastSeen = iterator.next()
           lastSeen should be(i)
           for (k <- iterator) {
             k should be > lastSeen
@@ -147,8 +147,8 @@ class TestUtilsSpec extends AnyFlatSpec with Matchers {
       for (j <- i to TestUtils.MaxTestingWidth) {
         val iterator = BigIntTestValuesGenerator.fromWidths(i, j)
         var lastSeen = Big0
-        if (iterator.hasNext()) {
-          lastSeen = iterator.next
+        if (iterator.hasNext) {
+          lastSeen = iterator.next()
           lastSeen should be(TestUtils.powerOfTwoFrom(i))
           for (k <- iterator) {
             k should be > lastSeen

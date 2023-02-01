@@ -90,10 +90,10 @@ class IntWidthTestValuesGenerator(minValue: Int = 0, maxValue: Int = TestUtils.M
 
   private var done = nextValue > maxValue
 
-  def hasNext(): Boolean = !done
+  def hasNext: Boolean = !done
 
   // scalastyle:off cyclomatic.complexity
-  def next: Int = {
+  def next(): Int = {
     val returnValue = nextValue
 
     def incrementPower(): Unit = {
@@ -143,9 +143,9 @@ class BigIntTestValuesGenerator(minValue: BigInt = 0, maxValue: BigInt = MaxTest
 
   private var done = nextValue > maxValue
 
-  def hasNext(): Boolean = !done
+  def hasNext: Boolean = !done
 
-  def next: BigInt = {
+  def next(): BigInt = {
     val returnValue = nextValue
 
     def incrementPower(): Unit = {

@@ -18,16 +18,12 @@ object SetImplicitOutputInfo extends Phase {
     val nameAnnoSeq = if (annotationSeq.exists { case _: TargetDirAnnotation => true; case _ => false }) {
       Seq.empty
     } else {
-      outputFileName = annotationSeq.collectFirst { case TopNameAnnotation(topName) =>
-        topName
-      }.getOrElse {
-        annotationSeq.collectFirst {
-          case FirrtlCircuitAnnotation(circuit) =>
-            circuit.main
-          case TreadleCircuitStateAnnotation(state) =>
-            state.circuit.main
-        }.getOrElse("default")
-      }
+      outputFileName = annotationSeq.collectFirst {
+        case FirrtlCircuitAnnotation(circuit) =>
+          circuit.main
+        case TreadleCircuitStateAnnotation(state) =>
+          state.circuit.main
+      }.getOrElse("default")
       Seq(OutputFileAnnotation(outputFileName))
     }
     val targetDir = if (annotationSeq.exists { case _: TargetDirAnnotation => true; case _ => false }) {

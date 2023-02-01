@@ -700,6 +700,6 @@ private object MemoryFileParser {
     // tokenize at any whitespace
     val tokens = noComment.split("\\s+").filterNot(_.isEmpty)
     // turn into numbers
-    tokens.map(BigInt(_, base))
+    tokens.toIndexedSeq.map(BigInt(_, base))
   }
 }
