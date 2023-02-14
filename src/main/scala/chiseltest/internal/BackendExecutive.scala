@@ -2,7 +2,8 @@
 
 package chiseltest.internal
 
-import chisel3.experimental.{BaseModule, DataMirror}
+import chisel3.experimental.BaseModule
+import chisel3.reflect.DataMirror
 import chisel3.{Data, Element, Module, Record, Vec}
 import chiseltest.coverage.Coverage
 import chiseltest.simulator.{Compiler, DebugPrintWrapper, Simulator}

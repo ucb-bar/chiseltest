@@ -3,7 +3,8 @@
 import scala.language.implicitConversions
 import chiseltest.internal._
 import chisel3._
-import chisel3.experimental.{DataMirror, Direction, FixedPoint, Interval}
+import chisel3.experimental.{Direction, FixedPoint, Interval}
+import chisel3.reflect.DataMirror
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._
 import chisel3.internal.firrtl.KnownBinaryPoint

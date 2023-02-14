@@ -60,6 +60,8 @@ scalacOptions ++= Seq(
   "-Xcheckinit",
   // do not warn about firrtl imports, once the firrtl repo is removed, we will need to import the code
   "-Wconf:cat=deprecation&msg=Importing from firrtl is deprecated:s",
+  // do not warn about firrtl deprecations
+  "-Wconf:cat=deprecation&msg=will not be supported as part of the migration to the MLIR-based FIRRTL Compiler:s",
   // TODO: remove FixedPoint support after 3.6 release
   "-Wconf:cat=deprecation&msg=class FixedPoint:s",
   "-Wconf:cat=deprecation&msg=class BinaryPoint:s",
@@ -67,6 +69,7 @@ scalacOptions ++= Seq(
   "-Wconf:cat=deprecation&msg=class fromDoubleToLiteral:s",
   "-Wconf:cat=deprecation&msg=class fromBigDecimalToLiteral:s",
   "-Wconf:cat=deprecation&msg=trait HasBinaryPoint:s",
+  "-Wconf:cat=deprecation&msg=object UnknownBinaryPoint:s",
   // TODO: remove Interval support after 3.6 release
   "-Wconf:cat=deprecation&msg=class Interval:s",
   "-Wconf:cat=deprecation&msg=object Interval:s",
