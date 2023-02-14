@@ -3,7 +3,12 @@
 import scala.language.implicitConversions
 import chiseltest.internal._
 import chisel3._
+<<<<<<< HEAD
 import chisel3.experimental.{DataMirror, Direction, EnumType, FixedPoint, Interval}
+=======
+import chisel3.experimental.{Direction, FixedPoint, Interval}
+import chisel3.reflect.DataMirror
+>>>>>>> fed4822 (Address chisel3 changes to DataMirror, AutoCloneType and new deprecation warnings (#619))
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._
 import chisel3.internal.firrtl.KnownBinaryPoint

@@ -3,8 +3,11 @@
 package chiseltest.tests
 
 import chisel3._
+<<<<<<< HEAD
 import chisel3.experimental.DataMirror
 import chisel3.internal.requireIsChiselType
+=======
+>>>>>>> fed4822 (Address chisel3 changes to DataMirror, AutoCloneType and new deprecation warnings (#619))
 import chisel3.util._
 
 import scala.collection.immutable.ListMap
@@ -44,10 +47,14 @@ class QueueModule[T <: Data](ioType: T, entries: Int) extends Module {
 
 /** borrowed from chiselTests/RecordSpec.scala */
 final class CustomBundle(elts: (String, Data)*) extends Record {
+<<<<<<< HEAD
   val elements = ListMap(elts map { case (field, elt) =>
     requireIsChiselType(elt)
     field -> elt
   }: _*)
+=======
+  val elements = ListMap(elts.map { case (field, elt) => field -> elt.cloneType }: _*)
+>>>>>>> fed4822 (Address chisel3 changes to DataMirror, AutoCloneType and new deprecation warnings (#619))
   def apply(elt: String): Data = elements(elt)
   override def cloneType: this.type = {
     val cloned = elts.map { case (n, d) => n -> DataMirror.internal.chiselTypeClone(d) }

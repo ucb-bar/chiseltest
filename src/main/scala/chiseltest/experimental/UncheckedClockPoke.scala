@@ -5,7 +5,8 @@ package chiseltest.experimental
 import chiseltest.UnpokeableException
 import chiseltest.internal.Context
 import chisel3._
-import chisel3.experimental.{DataMirror, Direction}
+import chisel3.reflect._
+import chisel3.experimental.Direction
 
 package object UncheckedClockPoke {
 

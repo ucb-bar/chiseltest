@@ -1,7 +1,7 @@
 package chiseltest.internal
 
 import chisel3._
-import chisel3.experimental.DataMirror
+import chisel3.reflect.DataMirror
 import chiseltest.defaults
 import chiseltest.iotesters.PeekPokeTester
 import chiseltest.simulator.SimulatorContext
