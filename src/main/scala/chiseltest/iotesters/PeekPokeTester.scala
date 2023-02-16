@@ -1,18 +1,14 @@
 package chiseltest.iotesters
 
 import chisel3._
-import chisel3.experimental._
+import chisel3.experimental.{FixedPoint, Interval}
 import chisel3.internal.firrtl.KnownBinaryPoint
-import chiseltest.ChiselAssertionError
-import chiseltest.internal.{Context, FailedExpectException}
 import chiseltest.simulator.SimulatorContext
 import logger.LazyLogging
-import org.scalatest.exceptions.TestFailedException
 
 import scala.collection.immutable
 import scala.collection.mutable
 import scala.language.implicitConversions
-import scala.util.Random
 import scala.annotation.{implicitNotFound, tailrec}
 
 // A typeclass that defines the types we can poke, peek, or expect from

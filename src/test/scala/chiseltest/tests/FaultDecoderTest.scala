@@ -72,7 +72,6 @@ class FaultDecoderTest extends AnyFlatSpec with ChiselScalatestTester with Match
   }
 
   ignore should "display names for enums" in {  // needs better reflection support in enums
-    import chisel3.experimental.ChiselEnum
     object EnumExample extends ChiselEnum {
       val e0, e1, e2 = Value
     }

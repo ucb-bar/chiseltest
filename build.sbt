@@ -58,7 +58,23 @@ scalacOptions ++= Seq(
   "-deprecation",
   "-feature",
   "-Xcheckinit",
-  "-Wconf:msg=firrtl:s", // do not warn about firrtl imports
+  // do not warn about firrtl imports, once the firrtl repo is removed, we will need to import the code
+  "-Wconf:cat=deprecation&msg=Importing from firrtl is deprecated:s",
+  // do not warn about firrtl deprecations
+  "-Wconf:cat=deprecation&msg=will not be supported as part of the migration to the MLIR-based FIRRTL Compiler:s",
+  // TODO: remove FixedPoint support after 3.6 release
+  "-Wconf:cat=deprecation&msg=class FixedPoint:s",
+  "-Wconf:cat=deprecation&msg=class BinaryPoint:s",
+  "-Wconf:cat=deprecation&msg=object FixedPoint:s",
+  "-Wconf:cat=deprecation&msg=class fromDoubleToLiteral:s",
+  "-Wconf:cat=deprecation&msg=class fromBigDecimalToLiteral:s",
+  "-Wconf:cat=deprecation&msg=trait HasBinaryPoint:s",
+  "-Wconf:cat=deprecation&msg=object UnknownBinaryPoint:s",
+  // TODO: remove Interval support after 3.6 release
+  "-Wconf:cat=deprecation&msg=class Interval:s",
+  "-Wconf:cat=deprecation&msg=object Interval:s",
+  "-Wconf:cat=deprecation&msg=class fromBigDecimalToLiteralInterval:s",
+  "-Wconf:cat=deprecation&msg=class fromBigIntToLiteralInterval:s"
 ) ++ {
   CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, n)) if n >= 13 => Seq("-Ymacro-annotations")
@@ -69,9 +85,9 @@ scalacOptions ++= Seq(
 libraryDependencies ++= Seq(
   "edu.berkeley.cs" %% "chisel3" % defaultVersions("chisel3"),
   "edu.berkeley.cs" %% "treadle" % defaultVersions("treadle"),
-  "org.scalatest" %% "scalatest" % "3.2.14",
+  "org.scalatest" %% "scalatest" % "3.2.15",
   "com.lihaoyi" %% "utest" % "0.8.1",
-  "net.java.dev.jna" % "jna" % "5.12.1",
+  "net.java.dev.jna" % "jna" % "5.13.0",
   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   compilerPlugin(("edu.berkeley.cs" % "chisel3-plugin" % defaultVersions("chisel3")).cross(CrossVersion.full))
 ) ++ {

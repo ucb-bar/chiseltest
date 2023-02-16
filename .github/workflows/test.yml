@@ -117,9 +117,9 @@ jobs:
           z3 --version
           cvc4 --version
       - name: Install Tabby OSS Cad Suite (from YosysHQ)
-        uses: YosysHQ/setup-oss-cad-suite@v1
+        uses: ./.github/workflows/setup-oss-cad-suite
         with:
-          osscadsuite-version: '2022-08-18'
+          osscadsuite-version: '2023-01-09'
       - name: Test
         run: sbt "testOnly -- -n Formal -Dformal_engine=${{ matrix.backend }}"
 
@@ -148,13 +148,25 @@ jobs:
       - name: Check Formatting
         run: sbt scalafmtCheckAll
 
+  no-warn:
+    name: No Warnings with Scala 2.13 for PRs
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Check for Warnings
+        run: sbt "set ThisBuild / scalacOptions ++= Seq(\"-Xfatal-warnings\") ; compile"
+      - name: Check for Warnings in Tests
+        run: sbt "set ThisBuild / scalacOptions ++= Seq(\"-Xfatal-warnings\") ; Test / compile"
+
   # Sentinel job to simplify how we specify which checks need to pass in branch
   # protection and in Mergify
   #
   # When adding new jobs, please add them to `needs` below
   all_tests_passed:
     name: "all tests passed"
-    needs: [test, doc, verilator, formal, formal-mac, icarus, test-mac]
+    needs: [test, doc, verilator, formal, formal-mac, icarus, test-mac, no-warn]
     runs-on: ubuntu-latest
     steps:
       - run: echo Success!
@@ -162,7 +174,8 @@ jobs:
   # sbt ci-release publishes all cross versions so this job needs to be
   # separate from a Scala versions build matrix to avoid duplicate publishing
   publish:
-    needs: [all_tests_passed]
+    # note: we do not require a warning check for publishing!
+    needs: [test, doc, verilator, formal, formal-mac, icarus, test-mac]
     runs-on: ubuntu-20.04
     if: github.event_name == 'push'
 

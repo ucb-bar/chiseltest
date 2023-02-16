@@ -139,10 +139,6 @@ abstract class BasicCompliance(sim: Simulator, tag: Tag = DefaultTag, skipSimRef
   }
 
   it should "not print anything to stdout under normal conditions" taggedAs(tag) in {
-    // TODO: icarus and vcs still print out some spam in non-debug mode
-    val isIcarusOrVcs = sim == IcarusSimulator || sim == VcsSimulator
-    assume(!isIcarusOrVcs)
-
     val (_, out) = CaptureStdout {
       val dut = load(standardCircuit)
       dut.poke("io_in", 1)
@@ -152,5 +148,22 @@ abstract class BasicCompliance(sim: Simulator, tag: Tag = DefaultTag, skipSimRef
       dut.finish()
     }
     assert(out.trim.isEmpty)
+  }
+
+  val ZeroBitCircuit =
+  """circuit ZeroBitCircuit :
+    |  module ZeroBitCircuit :
+    |    input clock : Clock
+    |    input reset : UInt<1>
+    |    output io : { flip in : UInt<0>, out : SInt<0>}
+    |
+    |    io.out is invalid
+    |    io.out <= SInt<0>(0)
+    |""".stripMargin
+
+  it should "support modules with 0-bit integer I/Os" taggedAs(tag) in {
+    // some simulators would fail to compile modules with 0-bit I/Os
+    val dut = load(ZeroBitCircuit)
+    dut.finish()
   }
 }

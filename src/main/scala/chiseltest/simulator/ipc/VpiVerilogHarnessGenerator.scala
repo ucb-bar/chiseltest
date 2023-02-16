@@ -32,7 +32,12 @@ private[chiseltest] object VpiVerilogHarnessGenerator {
       codeBuffer.append(s"  wire[${width - 1}:0] $name;\n")
     }
 
-    codeBuffer.append(s"  always #`CLOCK_PERIOD $clockName = ~$clockName;\n")
+    codeBuffer.append(s"  initial begin\n")
+    codeBuffer.append(s"    #`CLOCK_PERIOD; // Delay first clock edge to avoid race condition with randomization\n")
+    codeBuffer.append(s"    forever begin\n")
+    codeBuffer.append(s"      #`CLOCK_PERIOD $clockName = ~$clockName;\n")
+    codeBuffer.append(s"    end\n")
+    codeBuffer.append(s"  end\n")
     codeBuffer.append(s"  reg [4095:0] $dumpFileVar = 0;\n")
     codeBuffer.append(s"  reg $dumpOnVar = 0;\n") // this is a hack to exclude the first half-cycle from the wave dump
 
@@ -55,7 +60,6 @@ private[chiseltest] object VpiVerilogHarnessGenerator {
       codeBuffer.append("    /*** Enable VPD dump ***/\n")
       codeBuffer.append("    if ($value$plusargs(\"vcdplusfile=%s\", " + dumpFileVar + ")) begin\n")
       codeBuffer.append(s"      $$vcdplusfile($dumpFileVar);\n")
-      codeBuffer.append(s"      $$dumpfile($dumpFileVar);\n")
       codeBuffer.append(s"      $$dumpvars(0, $dutName);\n")
       codeBuffer.append(s"      $$vcdpluson;\n")
       codeBuffer.append("    end\n")

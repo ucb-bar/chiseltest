@@ -3,7 +3,8 @@
 import scala.language.implicitConversions
 import chiseltest.internal._
 import chisel3._
-import chisel3.experimental.{DataMirror, Direction, EnumType, FixedPoint, Interval}
+import chisel3.experimental.{Direction, FixedPoint, Interval}
+import chisel3.reflect.DataMirror
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._
 import chisel3.internal.firrtl.KnownBinaryPoint
@@ -45,40 +46,64 @@ package object chiseltest {
 
   /** allows access to chisel UInt type signals with Scala native values */
   implicit class testableUInt(x: UInt) {
+    private def isZeroWidth = x.widthOption.contains(0)
     def poke(value: UInt): Unit = poke(value.litValue)
     def poke(value: BigInt): Unit = {
       Utils.ensureFits(x, value)
-      Utils.pokeBits(x, value)
+      if (!isZeroWidth) { // poking a zero width value is a no-op
+        Utils.pokeBits(x, value)
+      }
     }
     private[chiseltest] def expectInternal(value: BigInt, message: Option[() => String]): Unit = {
       Utils.ensureFits(x, value)
-      Utils.expectBits(x, value, message, None)
+      if (!isZeroWidth) { // zero width UInts always have the value 0
+        Utils.expectBits(x, value, message, None)
+      }
     }
     def expect(value: UInt): Unit = expectInternal(value.litValue, None)
     def expect(value: UInt, message: => String): Unit = expectInternal(value.litValue, Some(() => message))
     def expect(value: BigInt): Unit = expectInternal(value, None)
     def expect(value: BigInt, message: => String): Unit = expectInternal(value, Some(() => message))
-    def peek():    UInt = Context().backend.peekBits(x).asUInt(DataMirror.widthOf(x))
-    def peekInt(): BigInt = Context().backend.peekBits(x)
+    def peekInt(): BigInt = if (!isZeroWidth) { Context().backend.peekBits(x) }
+    else {
+      // zero width UInts always have the value 0
+      0
+    }
+    def peek(): UInt = if (!isZeroWidth) { peekInt().asUInt(DataMirror.widthOf(x)) }
+    else {
+      0.U // TODO: change to 0-width constant once supported: https://github.com/chipsalliance/chisel3/pull/2932
+    }
   }
 
   /** allows access to chisel SInt type signals with Scala native values */
   implicit class testableSInt(x: SInt) {
+    private def isZeroWidth = x.widthOption.contains(0)
     def poke(value: SInt): Unit = poke(value.litValue)
     def poke(value: BigInt): Unit = {
       Utils.ensureFits(x, value)
-      Utils.pokeBits(x, value)
+      if (!isZeroWidth) { // poking a zero width value is a no-op
+        Utils.pokeBits(x, value)
+      }
     }
     private[chiseltest] def expectInternal(value: BigInt, message: Option[() => String]): Unit = {
       Utils.ensureFits(x, value)
-      Utils.expectBits(x, value, message, None)
+      if (!isZeroWidth) { // zero width UInts always have the value 0
+        Utils.expectBits(x, value, message, None)
+      }
     }
     def expect(value: SInt): Unit = expectInternal(value.litValue, None)
     def expect(value: SInt, message: => String): Unit = expectInternal(value.litValue, Some(() => message))
     def expect(value: BigInt): Unit = expectInternal(value, None)
     def expect(value: BigInt, message: => String): Unit = expectInternal(value, Some(() => message))
-    def peek():    SInt = Context().backend.peekBits(x).asSInt(DataMirror.widthOf(x))
-    def peekInt(): BigInt = Context().backend.peekBits(x)
+    def peekInt(): BigInt = if (!isZeroWidth) { Context().backend.peekBits(x) }
+    else {
+      // zero width UInts always have the value 0
+      0
+    }
+    def peek(): SInt = if (!isZeroWidth) { peekInt().asSInt(DataMirror.widthOf(x)) }
+    else {
+      0.S // TODO: change to 0-width constant once supported: https://github.com/chipsalliance/chisel3/pull/2932
+    }
   }
 
   /** allows access to chisel Interval type signals with Scala native values */
@@ -242,9 +267,14 @@ package object chiseltest {
         case _: Vec[_] | _: Record => false
         case _ => true
       }
+      val isZeroWidthInt = value match {
+        case v: Bits if v.widthOption.contains(0) => true
+        case _ => false
+      }
       // if we are dealing with a ground type non-literal, this is only allowed if we are doing a partial poke/expect
       if (isGroundType && !value.isLit) {
-        if (allowPartial) { true }
+        // zero-width integers do not carry a value and thus are allowed to be DontCare
+        if (allowPartial || isZeroWidthInt) { true }
         else {
           throw new NonLiteralValueError(value, x, op)
         }
@@ -376,6 +406,8 @@ package object chiseltest {
     // Throw an exception if the value cannot fit into the signal.
     def ensureFits(signal: SInt, value: BigInt): Unit = {
       signal.widthOption match {
+        case Some(0) => // special case: 0-width SInts always represent 0
+          ensureInRange(signal, value, 0, 0)
         case Some(w) =>
           val m = BigInt(1) << (w - 1)
           ensureInRange(signal, value, -m, m - 1)

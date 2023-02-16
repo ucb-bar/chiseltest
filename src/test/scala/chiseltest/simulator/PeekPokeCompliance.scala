@@ -91,6 +91,7 @@ abstract class PeekPokeCompliance(sim: Simulator, tag: Tag = DefaultTag) extends
       if(res != values) { dut.finish() }
       assert(res == values, s"width = $w")
     }
+    dut.finish()
   }
 
   it should "propagate SInt values of variable widths through the circuit" taggedAs(tag) in {
@@ -115,6 +116,7 @@ abstract class PeekPokeCompliance(sim: Simulator, tag: Tag = DefaultTag) extends
       if(res != values) { dut.finish() }
       assert(res == values, s"width = $w")
     }
+    dut.finish()
   }
 
 }
