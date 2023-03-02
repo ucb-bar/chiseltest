@@ -7,7 +7,7 @@ import chiseltest._
 import chisel3.experimental.BundleLiterals._
 import chisel3.util.{Pipe, Valid}
 import org.scalatest._
-import treadle.VerboseAnnotation
+import treadle2.VerboseAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ValidQueueModule(typeGen: Data, val delay: Int) extends Module {

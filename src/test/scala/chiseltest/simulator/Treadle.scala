@@ -14,7 +14,7 @@ class TreadleMemoryCompliance extends MemoryCompliance(TreadleSimulator)
 class TreadleStopAssertAssumeCompliance extends StopAssertAssumeCompliance(TreadleSimulator)
 
 class TreadleSpecificTests extends AnyFlatSpec {
-  behavior of "treadle"
+  behavior of "treadle2"
 
   private val sim = TreadleSimulator
 
@@ -23,6 +23,5 @@ class TreadleSpecificTests extends AnyFlatSpec {
       sim.findVersions()
     }
     assert(out.contains("treadle is available"))
-    assert(out.contains("1.6"))
   }
 }

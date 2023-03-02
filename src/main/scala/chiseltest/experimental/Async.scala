@@ -5,8 +5,8 @@ package chiseltest.experimental
 import chisel3._
 import chisel3.experimental.{ExtModule, IntParam}
 import firrtl.ir.{Param, Type}
-import treadle.executable.{PositiveEdge, Transition}
-import treadle.{ScalaBlackBox, ScalaBlackBoxFactory}
+import treadle2.executable.{PositiveEdge, Transition}
+import treadle2.{ScalaBlackBox, ScalaBlackBoxFactory}
 
 /** Temporary and bleeding edge features with no guarantee of forwards compatibility
   * This isn't in its own package object because that contributes to name mangling

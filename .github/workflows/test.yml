@@ -26,7 +26,7 @@ jobs:
           java-version: ${{ matrix.jvm }}
           cache: 'sbt'
       - name: Test
-        run: sbt ++${{ matrix.scala }} "testOnly -- -l RequiresVcs -l RequiresVerilator -l Formal -l RequiresIcarus"
+        run: sbt ++${{ matrix.scala }} "testOnly chiseltest.** -- -l RequiresVcs -l RequiresVerilator -l Formal -l RequiresIcarus"
 
   test-mac:
     name: sbt test on mac
@@ -35,7 +35,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Test
-        run: sbt "testOnly -- -l RequiresVcs -l RequiresVerilator -l Formal -l RequiresIcarus"
+        run: sbt "testOnly chiseltest.** -- -l RequiresVcs -l RequiresVerilator -l Formal -l RequiresIcarus"
 
   icarus:
     name: icarus verilog
@@ -57,7 +57,7 @@ jobs:
           brew install icarus-verilog
           iverilog -v || true
       - name: Test
-        run: sbt ++${{ matrix.scala }} "testOnly -- -n RequiresIcarus"
+        run: sbt ++${{ matrix.scala }} "testOnly chiseltest.** -- -n RequiresIcarus"
 
   verilator:
     name: verilator regressions
@@ -99,7 +99,7 @@ jobs:
           sudo make install
           verilator --version
       - name: Test
-        run: sbt "testOnly -- -n RequiresVerilator"
+        run: sbt "testOnly chiseltest.** -- -n RequiresVerilator"
 
   formal:
     name: formal verification tests
@@ -121,7 +121,7 @@ jobs:
         with:
           osscadsuite-version: '2023-01-09'
       - name: Test
-        run: sbt "testOnly -- -n Formal -Dformal_engine=${{ matrix.backend }}"
+        run: sbt "testOnly chiseltest.** -- -n Formal -Dformal_engine=${{ matrix.backend }}"
 
   formal-mac:
     name: formal verification tests on mac
@@ -134,7 +134,7 @@ jobs:
           brew install z3
           z3 --version
       - name: Test
-        run: sbt "testOnly -- -n Formal -Dformal_engine=z3"
+        run: sbt "testOnly chiseltest.** -- -n Formal -Dformal_engine=z3"
 
   doc:
     name: Documentation and Formatting
@@ -160,6 +160,25 @@ jobs:
       - name: Check for Warnings in Tests
         run: sbt "set ThisBuild / scalacOptions ++= Seq(\"-Xfatal-warnings\") ; Test / compile"
 
+  test-treadle:
+    name: sbt test for treadle on ubuntu
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        scala: [2.12.17, 2.13.10]
+        jvm: [8, 11]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Scala
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt'
+          java-version: ${{ matrix.jvm }}
+          cache: 'sbt'
+      - name: Test
+        run: sbt ++${{ matrix.scala }} "testOnly treadle2.**"
+
   # Sentinel job to simplify how we specify which checks need to pass in branch
   # protection and in Mergify
   #
@@ -175,7 +194,7 @@ jobs:
   # separate from a Scala versions build matrix to avoid duplicate publishing
   publish:
     # note: we do not require a warning check for publishing!
-    needs: [test, doc, verilator, formal, formal-mac, icarus, test-mac]
+    needs: [test, doc, verilator, formal, formal-mac, icarus, test-mac, test-treadle]
     runs-on: ubuntu-20.04
     if: github.event_name == 'push'
 

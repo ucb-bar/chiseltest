@@ -2,7 +2,7 @@
 // Author: Kevin Laeufer <laeufer@cs.berkeley.edu>
 package chiseltest.formal.backends
 
-import treadle.vcd
+import treadle2.vcd
 import chiseltest.formal.backends.smt._
 import firrtl.backends.experimental.smt._
 

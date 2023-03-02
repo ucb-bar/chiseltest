@@ -8,7 +8,7 @@ import chiseltest.internal.NoThreadingAnnotation
 import chiseltest.simulator.SimulatorAnnotation
 import chiseltest.simulator.benchmark.DecoupledGcd
 import firrtl.options.TargetDirAnnotation
-import treadle.chronometry.Timer
+import treadle2.chronometry.Timer
 
 object ChiseltestBenchmark extends App {
   private def computeGcd(a: BigInt, b: BigInt): BigInt = a.gcd(b)
@@ -44,7 +44,7 @@ object ChiseltestBenchmark extends App {
     case None => VerilatorBackendAnnotation
     case Some(name) => name.toLowerCase match {
       case "verilator" => VerilatorBackendAnnotation
-      case "treadle" => TreadleBackendAnnotation
+      case "treadle2" => TreadleBackendAnnotation
       case "iverilog" => IcarusBackendAnnotation
       case "vcd" => VcsBackendAnnotation
       case other => throw new RuntimeException(s"Unknown simulator option: $other")

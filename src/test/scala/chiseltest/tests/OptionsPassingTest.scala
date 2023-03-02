@@ -10,7 +10,7 @@ import chiseltest._
 import chiseltest.experimental.sanitizeFileName
 import firrtl.options.OutputAnnotationFileAnnotation
 import firrtl.stage.OutputFileAnnotation
-import treadle.{VerboseAnnotation, WriteVcdAnnotation}
+import treadle2.{VerboseAnnotation, WriteVcdAnnotation}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 

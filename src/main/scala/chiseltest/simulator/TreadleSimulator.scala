@@ -5,20 +5,19 @@ package chiseltest.simulator
 import firrtl.annotations.Annotation
 import firrtl.stage.FirrtlCircuitAnnotation
 import firrtl.{AnnotationSeq, CircuitState}
-import treadle.{ClockInfoAnnotation, TreadleTester, TreadleTesterAnnotation}
-import treadle.executable.{ClockInfo, StopException}
-import treadle.stage.TreadleTesterPhase
+import treadle2.{ClockInfoAnnotation, TreadleTester, TreadleTesterAnnotation}
+import treadle2.executable.{ClockInfo, StopException}
+import treadle2.stage.TreadleTesterPhase
 
 case object TreadleBackendAnnotation extends SimulatorAnnotation {
   override def getSimulator: Simulator = TreadleSimulator
 }
 
 private object TreadleSimulator extends Simulator {
-  override def name:        String = "treadle"
+  override def name:        String = "treadle2"
   override def isAvailable: Boolean = true
   def findVersions(): Unit = {
     println("treadle is available")
-    println(s"version: ${treadle.BuildInfo.version}")
   }
   override def waveformFormats = Seq(WriteVcdAnnotation)
   override def supportsCoverage = true
@@ -48,8 +47,8 @@ private object TreadleSimulator extends Simulator {
   }
 
   private def translateAnnotation(a: Annotation): Annotation = a match {
-    case WriteVcdAnnotation       => treadle.WriteVcdAnnotation
-    case PlusArgsAnnotation(args) => treadle.PlusArgsAnnotation(args)
+    case WriteVcdAnnotation       => treadle2.WriteVcdAnnotation
+    case PlusArgsAnnotation(args) => treadle2.PlusArgsAnnotation(args)
     case other                    => other
   }
 
