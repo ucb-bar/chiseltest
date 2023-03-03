@@ -2,9 +2,7 @@
 
 package chiseltest.tests
 
-import org.scalatest._
 import chisel3._
-import chisel3.experimental._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -93,101 +91,6 @@ class ElementTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
       c.io.expect(false.B, false.B, false.B, false.B)
       c.io.expect(true.B, false.B, false.B, true.B)
       c.io.expect(false.B, true.B, false.B, true.B)
-    }
-  }
-
-  it should "work with FixedPoint" in {
-    import chisel3.experimental.FixedPoint
-    test(new Module {
-      val io = IO(new Bundle {
-        val in1 = Input(FixedPoint(8.W, 2.BP))
-        val in2 = Input(FixedPoint(8.W, 2.BP))
-        val out = Output(FixedPoint(8.W, 2.BP))
-
-        def expect(in1Val: FixedPoint, in2Val: FixedPoint, outVal: FixedPoint): Unit = {
-          in1.poke(in1Val)
-          in2.poke(in2Val)
-          out.expect(outVal)
-        }
-      })
-      io.out := io.in1 + io.in2
-    }) { c =>
-      c.io.expect(0.F(2.BP), 0.F(2.BP), 0.F(2.BP))
-      c.io.expect(1.F(2.BP), 1.F(2.BP), 2.F(2.BP))
-      c.io.expect(0.5.F(2.BP), 0.5.F(2.BP), 1.F(2.BP))
-      c.io.expect(0.5.F(2.BP), -0.5.F(2.BP), 0.F(2.BP))
-
-      // Overflow test, treating it as a 6-bit signed int
-      c.io.expect(31.F(2.BP), 1.F(2.BP), -32.F(2.BP))
-      c.io.expect(-32.F(2.BP), -1.F(2.BP), 31.F(2.BP))
-
-      c.io.expect(31.F(2.BP), 31.F(2.BP), -2.F(2.BP))
-      c.io.expect(-32.F(2.BP), -32.F(2.BP), 0.F(2.BP))
-
-      // Overflow test with decimal component
-      c.io.expect(31.75.F(2.BP), 31.75.F(2.BP), -0.5.F(2.BP))
-      c.io.expect(31.75.F(2.BP), 0.25.F(2.BP), -32.F(2.BP))
-    }
-  }
-
-  it should "peek on FixedPoint correctly" in {
-    test(new PassthroughModule(new Bundle() {
-      val d1 = FixedPoint(64.W, 0.BP)
-      val d2 = FixedPoint(66.W, 2.BP)
-    })) { c =>
-      c.in.d1.poke(BigDecimal(Long.MaxValue).F(0.BP))
-      c.out.d1.peek().litToBigDecimal should be (BigDecimal(Long.MaxValue))
-
-      c.in.d1.poke(BigDecimal(Long.MinValue).F(0.BP))
-      c.out.d1.peek().litToBigDecimal should be (BigDecimal(Long.MinValue))
-
-      c.in.d1.poke(0.F(0.BP))
-      c.out.d1.peek().litToBigDecimal should be (BigDecimal(0))
-
-      c.in.d2.poke(BigDecimal(Long.MaxValue).F(2.BP))
-      c.out.d2.peek().litToBigDecimal should be (BigDecimal(Long.MaxValue))
-
-      c.in.d2.poke(BigDecimal(Long.MinValue).F(2.BP))
-      c.out.d2.peek().litToBigDecimal should be (BigDecimal(Long.MinValue))
-
-      c.in.d2.poke(0.F(2.BP))
-      c.out.d2.peek().litToBigDecimal should be (BigDecimal(0))
-    }
-  }
-
-  it should "work with Interval" in {
-
-    val inputRange = range"[-6, 6].2"
-    val outputRange = range"[-4.5,4.5].2"
-
-    test(new Module {
-      val io = IO(new Bundle {
-        val input = Input(Interval(inputRange))
-
-        val out1 = Output(Interval(inputRange))
-        val out1Clip = Output(Interval(outputRange))
-        val out1Squeeze = Output(Interval(outputRange))
-        val out1Wrap = Output(Interval(outputRange))
-      })
-      io.out1 := io.input
-      io.out1Clip := io.input.clip(io.out1Clip)
-      io.out1Squeeze := io.input.squeeze(io.out1Squeeze)
-      io.out1Wrap := io.input.wrap(io.out1Wrap)
-    }) { c =>
-
-      def checkOutcome(input: Interval, clipped: Interval, wrapped: Interval): Unit = {
-        c.io.input.poke(input)
-
-        c.io.out1.expect(input)
-        c.io.out1Clip.expect(clipped)
-        c.io.out1Wrap.expect(wrapped)
-      }
-
-      checkOutcome((-6.0).I(inputRange), (-4.5).I(outputRange), 3.25.I(outputRange))
-      checkOutcome((-3.25).I(inputRange), (-3.25).I(outputRange), (-3.25).I(outputRange))
-      checkOutcome(0.I(inputRange), 0.I(outputRange), 0.I(outputRange))
-      checkOutcome(4.5.I(inputRange), 4.5.I(outputRange), 4.5.I(outputRange))
-      checkOutcome(4.75.I(inputRange), 4.5.I(outputRange), (-4.5).I(outputRange))
     }
   }
 }

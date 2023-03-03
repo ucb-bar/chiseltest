@@ -16,7 +16,7 @@ class HasOddWidthSInt extends Module {
   out := masked === in
 }
 
-// The poke of a negative number into an SInt, FixedPoint, or Interval input that is not a standard word size
+// The poke of a negative number into an SInt input that is not a standard word size
 // would break in verilator if the poked value was not masked to the correct number of
 // bits first. This was fixed by masking those values to the proper width before poking
 class NegativeInputValuesTest extends AnyFreeSpec with ChiselScalatestTester {
