@@ -1,8 +1,6 @@
 package chiseltest.iotesters
 
 import chisel3._
-import chisel3.experimental.{FixedPoint, Interval}
-import chisel3.internal.firrtl.KnownBinaryPoint
 import chiseltest.simulator.SimulatorContext
 import logger.LazyLogging
 
@@ -120,26 +118,6 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
     case None        => chisel3.internal.firrtl.UnknownWidth()
   }
 
-  def pokeFixedPoint(signal: FixedPoint, value: Double): Unit = {
-    val bigInt = value.F(getFirrtlWidth(signal), signal.binaryPoint).litValue
-    poke(signal, bigInt)
-  }
-
-  def pokeFixedPointBig(signal: FixedPoint, value: BigDecimal): Unit = {
-    val bigInt = value.F(getFirrtlWidth(signal), signal.binaryPoint).litValue
-    poke(signal, bigInt)
-  }
-
-  def pokeInterval(signal: Interval, value: Double): Unit = {
-    val bigInt = value.I(getFirrtlWidth(signal), signal.binaryPoint).litValue
-    poke(signal, bigInt)
-  }
-
-  def pokeIntervalBig(signal: Interval, value: BigDecimal): Unit = {
-    val bigInt = value.I(getFirrtlWidth(signal), signal.binaryPoint).litValue
-    poke(signal, bigInt)
-  }
-
   /** Locate a specific bundle element, given a name path.
     * TODO: Handle Vecs
     *
@@ -211,54 +189,12 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
   def peek[E <: Element: Pokeable](signal: E): BigInt = {
     if (!signal.isLit) {
       val bits = backend.peek(fullSignalName(signal))
-      if (signal.isInstanceOf[SInt] || signal.isInstanceOf[Interval]) {
+      if (signal.isInstanceOf[SInt]) {
         signExtend(bits, signal.widthOption.getOrElse(256))
       } else {
         bits
       }
     } else { signal.litValue }
-  }
-
-  /** Returns the value signal as a Double. Double may not be big enough to contain the
-    * value without precision loss. This situation will Throw ChiselException
-    * Consider using the more reliable [[peekFixedPointBig]]
-    */
-  def peekFixedPoint(signal: FixedPoint): Double = {
-    val bigInt = peek(signal)
-    signal.binaryPoint match {
-      case KnownBinaryPoint(bp) => FixedPoint.toDouble(bigInt, bp)
-      case _                    => throw new Exception("Cannot peekFixedPoint with unknown binary point location")
-    }
-  }
-
-  /** returns the value of signal as BigDecimal */
-  def peekFixedPointBig(signal: FixedPoint): BigDecimal = {
-    val bigInt = peek(signal)
-    signal.binaryPoint match {
-      case KnownBinaryPoint(bp) => FixedPoint.toBigDecimal(bigInt, bp)
-      case _                    => throw new Exception("Cannot peekFixedPoint with unknown binary point location")
-    }
-  }
-
-  /** Returns the value signal as a Double. Double may not be big enough to contain the
-    * value without precision loss. This situation will Throw ChiselException
-    * Consider using the more reliable [[peekIntervalBig]]
-    */
-  def peekInterval(signal: Interval): Double = {
-    val bigInt = peek(signal)
-    signal.binaryPoint match {
-      case KnownBinaryPoint(bp) => Interval.toDouble(bigInt, bp)
-      case _                    => throw new Exception("Cannot peekInterval with unknown binary point location")
-    }
-  }
-
-  /** returns the value of signal as BigDecimal */
-  def peekIntervalBig(signal: Interval): BigDecimal = {
-    val bigInt = peek(signal)
-    signal.binaryPoint match {
-      case KnownBinaryPoint(bp) => Interval.toBigDecimal(bigInt, bp)
-      case _                    => throw new Exception("Cannot peekInterval with unknown binary point location")
-    }
   }
 
   def peek(signal: Aggregate): Seq[BigInt] = {
@@ -337,71 +273,6 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
 
   def expect[E <: Element: Pokeable](signal: E, expected: Int, msg: => String): Boolean = {
     expect(signal, BigInt(expected), msg)
-  }
-
-  /** Uses a Double as the expected value
-    *
-    * Consider using the more reliable [[expectFixedPointBig]]
-    *
-    * @param signal    signal
-    * @param expected  value expected
-    * @param msg       message on failure
-    * @param epsilon   error bounds on expected value are +/- epsilon
-    * @return
-    */
-  def expectFixedPoint(signal: FixedPoint, expected: Double, msg: => String, epsilon: Double = 0.01): Boolean = {
-    val double = peekFixedPoint(signal)
-
-    expect((double - expected).abs < epsilon, msg)
-  }
-
-  /** Uses a BigDecimal as the expected value
-    *
-    * @param signal    signal
-    * @param expected  value expected
-    * @param msg       message on failure
-    * @param epsilon   error bounds on expected value are +/- epsilon
-    * @return
-    */
-  def expectFixedPointBig(
-    signal:   FixedPoint,
-    expected: BigDecimal,
-    msg:      => String,
-    epsilon:  BigDecimal = 0.01
-  ): Boolean = {
-    val bigDecimal = peekFixedPointBig(signal)
-
-    expect((bigDecimal - expected).abs < epsilon, msg)
-  }
-
-  /** Uses a Double as the expected value
-    *
-    * Consider using the more reliable [[expectIntervalBig]]
-    *
-    * @param signal    signal
-    * @param expected  value expected
-    * @param msg       message on failure
-    * @param epsilon   error bounds on expected value are +/- epsilon
-    * @return
-    */
-  def expectInterval(signal: Interval, expected: Double, msg: => String, epsilon: Double = 0.01): Boolean = {
-    val double = peekInterval(signal)
-
-    expect((double - expected).abs < epsilon, msg + s" expected: $expected; actual: $double")
-  }
-
-  /** Uses a BigDecimal as the expected value
-    *
-    * @param signal    signal
-    * @param expected  value expected
-    * @param msg       message on failure
-    * @param epsilon   error bounds on expected value are +/- epsilon
-    * @return
-    */
-  def expectIntervalBig(signal: Interval, expected: BigDecimal, msg: => String, epsilon: BigDecimal = 0.01): Boolean = {
-    val bigDecimal = peekIntervalBig(signal)
-
-    expect((bigDecimal - expected).abs < epsilon, msg)
   }
 
   def expect(signal: Aggregate, expected: IndexedSeq[BigInt]): Boolean = {
