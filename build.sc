@@ -58,7 +58,7 @@ class chiseltestCrossModule(val crossScalaVersion: String)
     super.javacOptions() ++ Seq("-source", "1.8", "-target", "1.8")
   }
 
-  override def moduleDeps = super.moduleDeps ++ chisel3Module ++ treadleModule
+  override def moduleDeps = super.moduleDeps ++ chisel3Module
 
   override def ivyDeps = T {
     Agg(
