@@ -2,7 +2,7 @@
 #include <jni.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h> 
+#include <stdlib.h>
 #include <pthread.h>
 #define _GNU_SOURCE
 #include <dlfcn.h>
@@ -23,7 +23,7 @@ void *peek_wide_ptrs[1024];
 void *set_args_ptrs[1024];
 
 // id_counter (increment by one)
-pthread_mutex_t id_lock; 
+pthread_mutex_t id_lock;
 int id_counter = 0; // synchronize the id_counter to be thread-safe
 
 /* Native implementation for load_so (see jni_api in jni_api_test.scala) */

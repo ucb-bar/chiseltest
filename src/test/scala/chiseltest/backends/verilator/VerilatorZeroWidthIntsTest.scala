@@ -4,7 +4,7 @@ import chisel3._
 import chiseltest._
 import chisel3.experimental.BundleLiterals._
 import chiseltest.simulator.RequiresVerilator
-import chiseltest.tests.{PassthroughModule, ZeroWidthTestBundle, ZeroWidthTestBundleSigned}
+import chiseltest.tests.PassthroughModule
 import org.scalatest.freespec.AnyFreeSpec
 
 class VerilatorZeroWidthIntsTest extends AnyFreeSpec with ChiselScalatestTester {
