@@ -49,7 +49,7 @@ publishTo := {
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map(
-  "chisel3" -> "3.6-SNAPSHOT",
+  "chisel3" -> "3.6.0"
 )
 
 scalacOptions ++= Seq(
@@ -60,7 +60,7 @@ scalacOptions ++= Seq(
   // do not warn about firrtl imports, once the firrtl repo is removed, we will need to import the code
   "-Wconf:cat=deprecation&msg=Importing from firrtl is deprecated:s",
   // do not warn about firrtl deprecations
-  "-Wconf:cat=deprecation&msg=will not be supported as part of the migration to the MLIR-based FIRRTL Compiler:s",
+  "-Wconf:cat=deprecation&msg=will not be supported as part of the migration to the MLIR-based FIRRTL Compiler:s"
 ) ++ {
   CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, n)) if n >= 13 => Seq("-Ymacro-annotations")
