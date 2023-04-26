@@ -5,6 +5,7 @@ package chiseltest.simulator
 import firrtl._
 import firrtl.annotations._
 import chiseltest.simulator.jna._
+import chiseltest.simulator.jni._
 
 case object VerilatorBackendAnnotation extends SimulatorAnnotation {
   override def getSimulator: Simulator = VerilatorSimulator
@@ -108,8 +109,12 @@ private object VerilatorSimulator extends Simulator {
     }
 
     val args = getSimulatorArgs(state)
-    val lib = JNAUtils.compileAndLoadJNAClass(libPath)
-    new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, args, Some(readCoverage))
+    // val lib = JNAUtils.compileAndLoadJNAClass(libPath)
+    // new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, args, Some(readCoverage))
+
+    // TODO: instead of getting a TesterSharedLibInterface, we should get an so_id, sPtr that can be used to create a JNISimulator Context
+    val (soId, simStatePtr) = JNAUtils.compileAndLoadJNIClass(libPath)
+    new JNISimulatorContext(soId, simStatePtr, targetDir, toplevel, VerilatorSimulator, args, Some(readCoverage))
   }
 
   private def createContextFromScratch(state: CircuitState): SimulatorContext = {
@@ -155,8 +160,11 @@ private object VerilatorSimulator extends Simulator {
     }
 
     val args = getSimulatorArgs(state)
-    val lib = JNAUtils.compileAndLoadJNAClass(libPath)
-    new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, args, Some(readCoverage))
+    // val lib = JNAUtils.compileAndLoadJNAClass(libPath)
+    // new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, args, Some(readCoverage))
+
+    val (soId, simStatePtr) = JNAUtils.compileAndLoadJNIClass(libPath)
+    new JNISimulatorContext(soId, simStatePtr, targetDir, toplevel, VerilatorSimulator, args, Some(readCoverage))
   }
 
   private def saveCoverageAnnos(targetDir: os.Path, annos: AnnotationSeq): Unit = {

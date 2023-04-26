@@ -201,7 +201,7 @@ JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1writeCov
  * Signature:  (II)I
  */
 JNIEXPORT jint JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1poke
-  (JNIEnv *env, jobject obj, jint so_id, jlong s, jint id, jint value) {
+  (JNIEnv *env, jobject obj, jint so_id, jlong s, jint id, jlong value) {
     void (*poke)(void *, int32_t, int64_t);
     *(void **) (&poke) = poke_ptrs[so_id];
 
@@ -227,7 +227,7 @@ JNIEXPORT jint JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1peek
  * Signature:  (III)V
  */
 JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1poke_1wide
-  (JNIEnv *env, jobject obj, jint so_id, jlong s, jint id, jint offset, jint value) {
+  (JNIEnv *env, jobject obj, jint so_id, jlong s, jint id, jint offset, jlong value) {
     void (*poke_wide)(void*, int32_t, int32_t, int64_t);
     *(void **) (&poke_wide) = poke_wide_ptrs[so_id];
 
@@ -248,14 +248,17 @@ JNIEXPORT jint JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1peek_1wi
   }
 
 JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1set_1args
-  (JNIEnv *env, jobject obj, jint so_id, jlong s, jint argc, jstring argv) {
-    const char* argv_str = (*env)->GetStringUTFChars(env, argv, 0);
-    char cap[128];
-    strcpy(cap, argv_str);
-    (*env)->ReleaseStringUTFChars(env, argv, argv_str);
+  (JNIEnv *env, jobject obj, jint so_id, jlong s, jint argc, jobjectArray argv) {
+    const char *buf[128];
+    for (int i = 0; i < argc; i++) {
+      void *obj_str = (*env)->GetObjectArrayElement(env, argv, i);
+      const char* argv_str = (*env)->GetStringUTFChars(env, obj_str, 0);
+      buf[i] = argv_str;
+      (*env)->ReleaseStringUTFChars(env, obj_str, argv_str);
+    }
     void (*set_args)(void *, int32_t, char **);
     *(void **) (&set_args) = set_args_ptrs[so_id];
 
-    set_args((void *) s, argc, (char **) cap);
+    set_args((void *) s, argc, (char **) buf);
   }
 

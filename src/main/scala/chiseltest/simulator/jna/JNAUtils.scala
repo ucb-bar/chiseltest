@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package chiseltest.simulator.jna
+
+import chiseltest.simulator.jni._
 import com.sun.jna._
 
 object JNAUtils {
@@ -76,6 +78,26 @@ object JNAUtils {
     val initFoo = so.getFunction("sim_init")
     val sPtr = initFoo.invokePointer(Array())
     new TesterSharedLibInterface(so = so, sPtr = sPtr)
+  }
+
+  def compileAndLoadJNIClass(libPath: os.Path): (Int, Long) = {
+    // make a copy of the library, since overwriting the library while it is still loaded
+    // seems to go wrong
+    val libCopy = libPath / os.up / (libPath.last + s"_$getUniqueId")
+    os.copy.over(libPath, to = libCopy)
+    // dlopen options: RTLD_NOW
+    val opts = new java.util.HashMap[String, Int]()
+    opts.put(Library.OPTION_OPEN_FLAGS, 2)
+    val so = if (isWindows) {
+      NativeLibrary.getInstance(libCopy.toString())
+    } else {
+      NativeLibrary.getInstance(libCopy.toString(), opts)
+    }
+
+    val soId = JniAPI.load_so(libCopy.toString())
+    val sPtr = JniAPI.call_sim_init(soId)
+    (soId, sPtr)
+    // TODO: need to somehow return the soId instead of the so itself, because we already loaded the so and don't want to load it again which will provide a different new sim context pointer
   }
 
   private def cType(tpe: String): String = tpe.toLowerCase match {

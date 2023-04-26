@@ -69,7 +69,7 @@ JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1writeCov
  * Signature:  (IJII)I
  */
 JNIEXPORT jint JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1poke
-  (JNIEnv *, jobject, jint, jlong, jint, jint);
+  (JNIEnv *, jobject, jint, jlong, jint, jlong);
 
 /*
  * Class:      chiseltest_simulator_jni_JniAPI_00024
@@ -85,7 +85,7 @@ JNIEXPORT jint JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1peek
  * Signature:  (IJIII)V
  */
 JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1poke_1wide
-  (JNIEnv *, jobject, jint, jlong, jint, jint, jint);
+  (JNIEnv *, jobject, jint, jlong, jint, jint, jlong);
 
 /*
  * Class:      chiseltest_simulator_jni_JniAPI_00024
@@ -101,7 +101,7 @@ JNIEXPORT jint JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1peek_1wi
  * Signature:  (IJILjava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1set_1args
-  (JNIEnv *, jobject, jint, jlong, jint, jstring);
+  (JNIEnv *, jobject, jint, jlong, jint, jobjectArray);
 
 #ifdef __cplusplus
 }

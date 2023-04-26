@@ -64,13 +64,13 @@ object JniAPI {
 
   @native def call_writeCoverage(so_id: Int, s: Long, filename: String): Unit
 
-  @native def call_poke(so_id: Int, s: Long, id: Int, value: Int): Int
+  @native def call_poke(so_id: Int, s: Long, id: Int, value: Long): Int
 
   @native def call_peek(so_id: Int, s: Long, id: Int): Int
 
-  @native def call_poke_wide(so_id: Int, s: Long, id: Int, offset: Int, value: Int): Unit
+  @native def call_poke_wide(so_id: Int, s: Long, id: Int, offset: Int, value: Long): Unit
 
   @native def call_peek_wide(so_id: Int, s: Long, id: Int, offset: Int): Int
 
-  @native def call_set_args(so_id: Int, s: Long, argc: Int, argv: String): Unit
+  @native def call_set_args(so_id: Int, s: Long, argc: Int, argv: Array[String]): Unit
 }
