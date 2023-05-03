@@ -250,7 +250,7 @@ JNIEXPORT jlong JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1peek_1w
 JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1set_1args
   (JNIEnv *env, jobject obj, jint so_id, jlong s, jint argc, jobjectArray argv) {
     // TODO - need to heap allocate, create a large enough 2D buffer to copy the args, otherwise try and maintain copies of obj_str and argv_str which are stored on the stack
-    const char buf[argc][1024];
+    char buf[argc][1024];
     for (int i = 0; i < argc; i++) {
       void *obj_str = (*env)->GetObjectArrayElement(env, argv, i);
       const char* argv_str = (*env)->GetStringUTFChars(env, obj_str, 0);

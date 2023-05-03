@@ -54,7 +54,7 @@ object JniAPI {
 
   @native def call_sim_init(so_id: Int): Long
 
-  @native def call_step(so_id: Int, s: Long, cycles: Int): Int
+  @native def call_step(so_id: Int, s: Long, cycles: Int): Long
 
   @native def call_update(so_id: Int, s: Long): Unit
 

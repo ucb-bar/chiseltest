@@ -160,6 +160,7 @@ private object VerilatorSimulator extends Simulator {
     }
 
     val args = getSimulatorArgs(state)
+    // TODO: allow for switching between JNA and JNI
     // val lib = JNAUtils.compileAndLoadJNAClass(libPath)
     // new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, args, Some(readCoverage))
 
