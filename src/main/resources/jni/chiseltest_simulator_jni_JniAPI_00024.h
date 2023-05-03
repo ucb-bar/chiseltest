@@ -28,7 +28,7 @@ JNIEXPORT jlong JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1sim_1in
  * Method:     call_1step
  * Signature:  (IJI)I
  */
-JNIEXPORT jint JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1step
+JNIEXPORT jlong JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1step
   (JNIEnv *, jobject, jint, jlong, jint);
 
 /*
@@ -68,7 +68,7 @@ JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1writeCov
  * Method:     call_1poke
  * Signature:  (IJII)I
  */
-JNIEXPORT jint JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1poke
+JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1poke
   (JNIEnv *, jobject, jint, jlong, jint, jlong);
 
 /*
@@ -76,7 +76,7 @@ JNIEXPORT jint JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1poke
  * Method:     call_1peek
  * Signature:  (IJI)I
  */
-JNIEXPORT jint JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1peek
+JNIEXPORT jlong JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1peek
   (JNIEnv *, jobject, jint, jlong, jint);
 
 /*
@@ -92,7 +92,7 @@ JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1poke_1wi
  * Method:     call_1peek_1wide
  * Signature:  (IJII)I
  */
-JNIEXPORT jint JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1peek_1wide
+JNIEXPORT jlong JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1peek_1wide
   (JNIEnv *, jobject, jint, jlong, jint, jint);
 
 /*

@@ -31,13 +31,13 @@ JNIEXPORT jint JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_load_1so
   (JNIEnv* env, jobject obj, jstring path) {
     // Convert jstring --> C string
     const char* path_str = (*env)->GetStringUTFChars(env, path, 0);
-    char cap[128];
-    strcpy(cap, path_str);
-    (*env)->ReleaseStringUTFChars(env, path, path_str);
+    // char cap[128];
+    // strcpy(cap, path_str);
     // printf("%s", cap);
 
     // Load shared object
-    void *so_handle = dlopen(cap, RTLD_LAZY);
+    void *so_handle = dlopen(path_str, RTLD_LAZY);
+    (*env)->ReleaseStringUTFChars(env, path, path_str);
 
     // Check if load was successful
     if (so_handle == NULL) {
@@ -131,7 +131,7 @@ JNIEXPORT jlong JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1sim_1in
  * Method:     call_1step
  * Signature:  (I)I
  */
-JNIEXPORT jint JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1step
+JNIEXPORT jlong JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1step
   (JNIEnv *env, jobject obj, jint so_id, jlong s, jint cycles) {
     int64_t (*step)(void *, int32_t);
     *(void **) (&step) = step_ptrs[so_id];
@@ -186,13 +186,13 @@ JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1resetCov
 JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1writeCoverage
   (JNIEnv *env, jobject obj, jint so_id, jlong s, jstring filename) {
     const char* filename_str = (*env)->GetStringUTFChars(env, filename, 0);
-    char cap[128];
-    strcpy(cap, filename_str);
-    (*env)->ReleaseStringUTFChars(env, filename, filename_str);
+    // char cap[128];
+    // strcpy(cap, filename_str);
     void (*write_coverage)(void *, char*);
     *(void **) (&write_coverage) = write_coverage_ptrs[so_id];
 
-    write_coverage((void *) s, cap);
+    write_coverage((void *) s, filename_str);
+    (*env)->ReleaseStringUTFChars(env, filename, filename_str);
   }
 
 /*
@@ -200,7 +200,7 @@ JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1writeCov
  * Method:     call_1poke
  * Signature:  (II)I
  */
-JNIEXPORT jint JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1poke
+JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1poke
   (JNIEnv *env, jobject obj, jint so_id, jlong s, jint id, jlong value) {
     void (*poke)(void *, int32_t, int64_t);
     *(void **) (&poke) = poke_ptrs[so_id];
@@ -213,7 +213,7 @@ JNIEXPORT jint JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1poke
  * Method:     call_1peek
  * Signature:  (III)I
  */
-JNIEXPORT jint JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1peek
+JNIEXPORT jlong JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1peek
   (JNIEnv *env, jobject obj, jint so_id, jlong s, jint id) {
     int64_t (*peek)(void *, int32_t);
     *(void **) (&peek) = peek_ptrs[so_id];
@@ -239,7 +239,7 @@ JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1poke_1wi
  * Method:     call_1peek_1wide
  * Signature:  (II)I
  */
-JNIEXPORT jint JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1peek_1wide
+JNIEXPORT jlong JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1peek_1wide
   (JNIEnv *env, jobject obj, jint so_id, jlong s, jint id, jint offset) {
     int64_t (*peek_wide)(void*, int32_t, int32_t);
     *(void **) (&peek_wide) = peek_wide_ptrs[so_id];
@@ -249,11 +249,12 @@ JNIEXPORT jint JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1peek_1wi
 
 JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1set_1args
   (JNIEnv *env, jobject obj, jint so_id, jlong s, jint argc, jobjectArray argv) {
-    const char *buf[128];
+    // TODO - need to heap allocate, create a large enough 2D buffer to copy the args, otherwise try and maintain copies of obj_str and argv_str which are stored on the stack
+    const char buf[argc][1024];
     for (int i = 0; i < argc; i++) {
       void *obj_str = (*env)->GetObjectArrayElement(env, argv, i);
       const char* argv_str = (*env)->GetStringUTFChars(env, obj_str, 0);
-      buf[i] = argv_str;
+      strcpy(buf[i], argv_str);
       (*env)->ReleaseStringUTFChars(env, obj_str, argv_str);
     }
     void (*set_args)(void *, int32_t, char **);

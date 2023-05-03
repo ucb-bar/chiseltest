@@ -109,6 +109,7 @@ private[chiseltest] class JNASimulatorContext(
     }
     update()
     val r = takeSteps(n)
+    println(r.asInstanceOf[Long])
     val status = (r >> 32) & 3
     if (status == 0) {
       StepOk
