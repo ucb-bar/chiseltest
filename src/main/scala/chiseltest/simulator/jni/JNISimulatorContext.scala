@@ -14,6 +14,7 @@ import logger.LazyLogging
   * @param readCoverageFile function that parses the coverage file and returns the list of counts
   */
 private[chiseltest] class JNISimulatorContext(
+  bridgeLib:        JniAPI,
   soId:             Int,
   simStatePtr:      Long,
   targetDir:        os.Path,
@@ -36,18 +37,18 @@ private[chiseltest] class JNISimulatorContext(
   private val idIsSigned = (toplevel.inputs ++ toplevel.outputs).map(_.signed).toIndexedSeq
 
   // Pass command line arguments to the simulator
-  JniAPI.call_set_args(soId, simStatePtr, args.size, args)
+  bridgeLib.call_set_args(soId, simStatePtr, args.size, args)
 
   private def update(): Unit = {
     assert(isRunning)
-    JniAPI.call_update(soId, simStatePtr)
+    bridgeLib.call_update(soId, simStatePtr)
     isStale = false
   }
 
   private def takeSteps(cycles: Int): Long = {
     assert(isRunning)
     require(cycles > 0)
-    JniAPI.call_step(soId, simStatePtr, cycles)
+    bridgeLib.call_step(soId, simStatePtr, cycles)
   }
 
   private def getId(signal: String): Int =
@@ -64,11 +65,11 @@ private[chiseltest] class JNISimulatorContext(
       var remaining = maskedValue
       (0 until words).foreach { ii =>
         val part = (remaining & mask64).toLong
-        JniAPI.call_poke_wide(soId, simStatePtr, signalId, ii, part)
+        bridgeLib.call_poke_wide(soId, simStatePtr, signalId, ii, part)
         remaining = remaining >> 64
       }
     } else {
-      JniAPI.call_poke(soId, simStatePtr, signalId, maskedValue.toLong)
+      bridgeLib.call_poke(soId, simStatePtr, signalId, maskedValue.toLong)
     }
     isStale = true
   }
@@ -82,12 +83,12 @@ private[chiseltest] class JNISimulatorContext(
       val words = (width + 63) / 64
       var value = BigInt(0)
       (0 until words).foreach { ii =>
-        val word = BigInt(JniAPI.call_peek_wide(soId, simStatePtr, signalId, ii)) & mask64
+        val word = BigInt(bridgeLib.call_peek_wide(soId, simStatePtr, signalId, ii)) & mask64
         value = value | (word << (ii * 64))
       }
       value
     } else {
-      JniAPI.call_peek(soId, simStatePtr, signalId) & mask64
+      bridgeLib.call_peek(soId, simStatePtr, signalId) & mask64
     }
     if (idIsSigned(signalId)) { toSigned(unsigned, width) }
     else { unsigned }
@@ -128,14 +129,14 @@ private[chiseltest] class JNISimulatorContext(
   private var isRunning = true
   override def finish(): Unit = {
     assert(isRunning, "Simulator is already stopped! Are you trying to call finish twice?")
-    JniAPI.call_finish(soId, simStatePtr)
+    bridgeLib.call_finish(soId, simStatePtr)
     isRunning = false
   }
 
   private val coverageFile = targetDir / "coverage.dat"
   override def getCoverage(): List[(String, Long)] = {
     if (isRunning) {
-      JniAPI.call_writeCoverage(soId, simStatePtr, coverageFile.toString())
+      bridgeLib.call_writeCoverage(soId, simStatePtr, coverageFile.toString())
     }
     assert(os.exists(coverageFile), s"Could not find `$coverageFile` file!")
     readCoverageFile.get()
@@ -143,37 +144,6 @@ private[chiseltest] class JNISimulatorContext(
 
   override def resetCoverage(): Unit = {
     assert(isRunning)
-    JniAPI.call_resetCoverage(soId, simStatePtr)
+    bridgeLib.call_resetCoverage(soId, simStatePtr)
   }
 }
-
-// class JNITesterSharedLibInterface(soId: Int, sPtr: Long) {
-//   def step(cycles: Int): Long = { JniAPI.call_step(soId, sPtr, cycles) }
-//   def update(): Unit = { JniAPI.call_update(soId, sPtr) }
-//   def finish(): Unit = {
-//     JniAPI.call_finish(soId, sPtr)
-//   }
-//   def resetCoverage(): Unit = {
-//     JniAPI.call_resetCoverage(soId, sPtr)
-//   }
-//   def writeCoverage(filename: String): Unit = {
-//     JniAPI.call_writeCoverage(soId, sPtr, filename)
-//   }
-//   def poke(id: Int, value: Long): Unit = {
-//     // JniAPI.call_poke(soId, sPtr, id, value)
-//   }
-//   def peek(id: Int): Long = {
-//     JniAPI.call_peek(soId, sPtr, id)
-//   }
-//   def pokeWide(id: Int, offset: Int, value: Long): Unit = {
-//     // TODO: complains about type mismatch but FooHarness takes in int64_t as value
-//     // JniAPI.call_poke_wide(soId, sPtr, id, offset, value)
-//   }
-//   def peekWide(id: Int, offset: Int): Long = {
-//     JniAPI.call_peek_wide(soId, sPtr, id, offset)
-//   }
-//   def setArgs(args: Array[String]): Unit = {
-//     // JniAPI.call_set_args(soId, sPtr, args.size, args)
-//   }
-// }
-

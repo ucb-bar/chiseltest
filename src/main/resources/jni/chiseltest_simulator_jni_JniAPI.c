@@ -1,4 +1,4 @@
-#include "chiseltest_simulator_jni_JniAPI_00024.h"
+#include "chiseltest_simulator_jni_JniAPI.h"
 #include <jni.h>
 #include <stdio.h>
 #include <string.h>
@@ -27,7 +27,7 @@ pthread_mutex_t id_lock;
 int id_counter = 0; // synchronize the id_counter to be thread-safe
 
 /* Native implementation for load_so (see jni_api in jni_api_test.scala) */
-JNIEXPORT jint JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_load_1so
+JNIEXPORT jint JNICALL Java_chiseltest_simulator_jni_JniAPI_load_1so
   (JNIEnv* env, jobject obj, jstring path) {
     // Convert jstring --> C string
     const char* path_str = (*env)->GetStringUTFChars(env, path, 0);
@@ -117,7 +117,7 @@ JNIEXPORT jint JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_load_1so
     return so_id;
   }
 
-JNIEXPORT jlong JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1sim_1init
+JNIEXPORT jlong JNICALL Java_chiseltest_simulator_jni_JniAPI_call_1sim_1init
   (JNIEnv *env, jobject obj, jint so_id) {
     void * (*sim_init)();
     *(void **) (&sim_init) = sim_init_ptrs[so_id];
@@ -127,11 +127,11 @@ JNIEXPORT jlong JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1sim_1in
   }
 
 /*
- * Class:      jni_1api_JniAPI_00024
+ * Class:      jni_1api_JniAPI
  * Method:     call_1step
  * Signature:  (I)I
  */
-JNIEXPORT jlong JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1step
+JNIEXPORT jlong JNICALL Java_chiseltest_simulator_jni_JniAPI_call_1step
   (JNIEnv *env, jobject obj, jint so_id, jlong s, jint cycles) {
     int64_t (*step)(void *, int32_t);
     *(void **) (&step) = step_ptrs[so_id];
@@ -140,11 +140,11 @@ JNIEXPORT jlong JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1step
   }
 
 /*
- * Class:      jni_1api_JniAPI_00024
+ * Class:      jni_1api_JniAPI
  * Method:     call_1update
  * Signature:  ()V
  */
-JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1update
+JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_call_1update
   (JNIEnv *env, jobject obj, jint so_id, jlong s) {
     void (*update)(void *);
     *(void **) (&update) = update_ptrs[so_id];
@@ -153,11 +153,11 @@ JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1update
   }
 
 /*
- * Class:      jni_1api_JniAPI_00024
+ * Class:      jni_1api_JniAPI
  * Method:     call_1finish
  * Signature:  ()V
  */
-JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1finish
+JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_call_1finish
   (JNIEnv *env, jobject obj, jint so_id, jlong s) {
     void (*finish)(void *);
     *(void **) (&finish) = finish_ptrs[so_id];
@@ -166,11 +166,11 @@ JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1finish
   }
 
 /*
- * Class:      jni_1api_JniAPI_00024
+ * Class:      jni_1api_JniAPI
  * Method:     call_1resetCoverage
  * Signature:  ()V
  */
-JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1resetCoverage
+JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_call_1resetCoverage
   (JNIEnv *env, jobject obj, jint so_id, jlong s) {
     void (*reset_coverage)(void *);
     *(void **) (&reset_coverage) = reset_coverage_ptrs[so_id];
@@ -179,16 +179,16 @@ JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1resetCov
   }
 
 /*
- * Class:      jni_1api_JniAPI_00024
+ * Class:      jni_1api_JniAPI
  * Method:     call_1writeCoverage
  * Signature:  (Ljava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1writeCoverage
+JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_call_1writeCoverage
   (JNIEnv *env, jobject obj, jint so_id, jlong s, jstring filename) {
     const char* filename_str = (*env)->GetStringUTFChars(env, filename, 0);
     // char cap[128];
     // strcpy(cap, filename_str);
-    void (*write_coverage)(void *, char*);
+    void (*write_coverage)(void *, const char*);
     *(void **) (&write_coverage) = write_coverage_ptrs[so_id];
 
     write_coverage((void *) s, filename_str);
@@ -196,11 +196,11 @@ JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1writeCov
   }
 
 /*
- * Class:      jni_1api_JniAPI_00024
+ * Class:      jni_1api_JniAPI
  * Method:     call_1poke
  * Signature:  (II)I
  */
-JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1poke
+JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_call_1poke
   (JNIEnv *env, jobject obj, jint so_id, jlong s, jint id, jlong value) {
     void (*poke)(void *, int32_t, int64_t);
     *(void **) (&poke) = poke_ptrs[so_id];
@@ -209,11 +209,11 @@ JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1poke
   }
 
 /*
- * Class:      jni_1api_JniAPI_00024
+ * Class:      jni_1api_JniAPI
  * Method:     call_1peek
  * Signature:  (III)I
  */
-JNIEXPORT jlong JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1peek
+JNIEXPORT jlong JNICALL Java_chiseltest_simulator_jni_JniAPI_call_1peek
   (JNIEnv *env, jobject obj, jint so_id, jlong s, jint id) {
     int64_t (*peek)(void *, int32_t);
     *(void **) (&peek) = peek_ptrs[so_id];
@@ -222,11 +222,11 @@ JNIEXPORT jlong JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1peek
   }
 
 /*
- * Class:      jni_1api_JniAPI_00024
+ * Class:      jni_1api_JniAPI
  * Method:     call_1poke_1wide
  * Signature:  (III)V
  */
-JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1poke_1wide
+JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_call_1poke_1wide
   (JNIEnv *env, jobject obj, jint so_id, jlong s, jint id, jint offset, jlong value) {
     void (*poke_wide)(void*, int32_t, int32_t, int64_t);
     *(void **) (&poke_wide) = poke_wide_ptrs[so_id];
@@ -235,11 +235,11 @@ JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1poke_1wi
   }
 
 /*
- * Class:      jni_1api_JniAPI_00024
+ * Class:      jni_1api_JniAPI
  * Method:     call_1peek_1wide
  * Signature:  (II)I
  */
-JNIEXPORT jlong JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1peek_1wide
+JNIEXPORT jlong JNICALL Java_chiseltest_simulator_jni_JniAPI_call_1peek_1wide
   (JNIEnv *env, jobject obj, jint so_id, jlong s, jint id, jint offset) {
     int64_t (*peek_wide)(void*, int32_t, int32_t);
     *(void **) (&peek_wide) = peek_wide_ptrs[so_id];
@@ -247,7 +247,7 @@ JNIEXPORT jlong JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1peek_1w
     return peek_wide((void *) s, id, offset);
   }
 
-JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_00024_call_1set_1args
+JNIEXPORT void JNICALL Java_chiseltest_simulator_jni_JniAPI_call_1set_1args
   (JNIEnv *env, jobject obj, jint so_id, jlong s, jint argc, jobjectArray argv) {
     // TODO - need to heap allocate, create a large enough 2D buffer to copy the args, otherwise try and maintain copies of obj_str and argv_str which are stored on the stack
     char buf[argc][1024];

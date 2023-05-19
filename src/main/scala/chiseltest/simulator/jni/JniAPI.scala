@@ -2,9 +2,9 @@ package chiseltest.simulator.jni
 
 import scala.io.Source
 
-object JniAPI {
+class JniAPI(targetDir: os.Path) {
   /* Borrowed from JNAUtils */
-  val isWindows: Boolean = System.getProperty("os.name").toLowerCase().contains("win")
+  private val isWindows: Boolean = System.getProperty("os.name").toLowerCase().contains("win")
 
   def javaHome: String = System.getProperty("java.home") match {
     case s: String if s.endsWith("/jre") => s.dropRight(4)
@@ -21,16 +21,15 @@ object JniAPI {
     }
   }
 
-  val tmpDir = os.Path(System.getProperty("java.io.tmpdir"))
-  val jniSoDir = tmpDir / "chiseltest_jni_bridge"
+  private val jniSoDir = targetDir / "chiseltest_jni_bridge"
   if (!os.exists(jniSoDir)) {
     os.makeDir(jniSoDir)
   }
-  val jniSo = jniSoDir / "libjnibridge.so"
+  private val jniSo = jniSoDir / "libjnibridge.so"
 
   // TODO: save a hash of the sources used to compile the .so, to force recompilation of the bridge library if the sources change
   if (!os.exists(jniSo)) {
-    val jniFile = "chiseltest_simulator_jni_JniAPI_00024"
+    val jniFile = "chiseltest_simulator_jni_JniAPI"
     os.write(jniSoDir / s"$jniFile.c", Source.fromResource(s"jni/$jniFile.c").getLines().mkString("\n"))
     os.write(jniSoDir / s"$jniFile.h", Source.fromResource(s"jni/$jniFile.h").getLines().mkString("\n"))
 
@@ -44,7 +43,10 @@ object JniAPI {
 
     val gccCmd = Seq("gcc") ++ gccFlags :+ s"$jniFile.c" :+ "-o" :+ jniSo.toString
     val gccCmdStatus = os.proc(gccCmd).call(cwd = jniSoDir)
-    assert(gccCmdStatus.exitCode == 0, s"While compiling the JNI bridge library, gcc exited with a non-zero exit code (${gccCmdStatus.exitCode}) and stdout: ${gccCmdStatus.out.toString}")
+    assert(
+      gccCmdStatus.exitCode == 0,
+      s"While compiling the JNI bridge library, gcc exited with a non-zero exit code (${gccCmdStatus.exitCode}) and stdout: ${gccCmdStatus.out.toString}"
+    )
   }
 
   System.load(jniSo.toString)
