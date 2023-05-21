@@ -16,38 +16,41 @@ class JniBridgeSpec extends AnyFlatSpec with ChiselScalatestTester with Matchers
   behavior of "Testers2"
 
   it should "be able to load so through bridge library and call functions" in {
-    //println("BridgeLib start")
+    println("JniBridgeSpec start")
     val soPath = os.pwd / "src" / "main" / "resources" / "jni" / "VFoo"
+    println((os.pwd / "test_run_dir").toString())
+    val bridgeLib = new JniAPI(os.pwd / "test_run_dir")
+    println("bridgeLib instantiated")
 
-    val vfoo_id = JniAPI.load_so(soPath.toString())
-    val vfoo_id2 = JniAPI.load_so(soPath.toString())
+    val vfoo_id = bridgeLib.load_so(soPath.toString())
+    val vfoo_id2 = bridgeLib.load_so(soPath.toString())
 
-    val ptr = JniAPI.call_sim_init(vfoo_id)
-    val ptr2 = JniAPI.call_sim_init(vfoo_id2)
+    val ptr = bridgeLib.call_sim_init(vfoo_id)
+    val ptr2 = bridgeLib.call_sim_init(vfoo_id2)
 
-    JniAPI.call_poke(vfoo_id, ptr, 1, 10)
-    JniAPI.call_poke(vfoo_id2, ptr2, 1, 20)
-    JniAPI.call_update(vfoo_id, ptr)
-    val output = JniAPI.call_peek(vfoo_id, ptr, 1)
-    val output2 = JniAPI.call_peek(vfoo_id2, ptr2, 1)
+    bridgeLib.call_poke(vfoo_id, ptr, 1, 10)
+    bridgeLib.call_poke(vfoo_id2, ptr2, 1, 20)
+    bridgeLib.call_update(vfoo_id, ptr)
+    val output = bridgeLib.call_peek(vfoo_id, ptr, 1)
+    val output2 = bridgeLib.call_peek(vfoo_id2, ptr2, 1)
 
     println(output)
     println(output2)
     assert(output == 10)
     assert(output2 == 20)
 
-    JniAPI.call_poke(vfoo_id, ptr, 1, 30)
-    JniAPI.call_poke(vfoo_id2, ptr2, 1, 40)
+    bridgeLib.call_poke(vfoo_id, ptr, 1, 30)
+    bridgeLib.call_poke(vfoo_id2, ptr2, 1, 40)
 
-    val output_1 = JniAPI.call_peek(vfoo_id, ptr, 1)
-    val output2_1 = JniAPI.call_peek(vfoo_id2, ptr2, 1)
+    val output_1 = bridgeLib.call_peek(vfoo_id, ptr, 1)
+    val output2_1 = bridgeLib.call_peek(vfoo_id2, ptr2, 1)
 
     println(output_1)
     println(output2_1)
     assert(output_1 == 30)
     assert(output2_1 == 40)
 
-    JniAPI.call_finish(vfoo_id, ptr)
-    JniAPI.call_finish(vfoo_id2, ptr)
+    bridgeLib.call_finish(vfoo_id, ptr)
+    bridgeLib.call_finish(vfoo_id2, ptr)
   }
 }
