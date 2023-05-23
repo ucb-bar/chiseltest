@@ -236,7 +236,7 @@ class ShapeProcessor extends Module {
     value === 1.U || value === 2.U || value === 4.U
   }
   def isLegalOperation(value: UInt): Bool =
-    MuxLookup(value(6,4), false.B, Seq(
+    MuxLookup(value(6,4), false.B)(Seq(
       0.U -> (value(3,0) <= 1.U),
       2.U -> (value(3,0) === 0.U),
       4.U -> (value(3,0) <= 1.U),
