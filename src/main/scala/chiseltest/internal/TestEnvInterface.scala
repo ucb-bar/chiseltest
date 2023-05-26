@@ -4,8 +4,8 @@ package chiseltest.internal
 
 import java.io.File
 
-import firrtl.AnnotationSeq
-import firrtl.options.TargetDirAnnotation
+import firrtl2.AnnotationSeq
+import firrtl2.options.TargetDirAnnotation
 
 import scala.collection.mutable
 

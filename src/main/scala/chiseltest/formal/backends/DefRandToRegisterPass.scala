@@ -2,12 +2,12 @@
 
 package chiseltest.formal.backends
 
-import firrtl.options.Dependency
-import firrtl.stage.Forms
-import firrtl._
-import firrtl.annotations._
-import firrtl.backends.experimental.smt.random._
-import firrtl.transforms.DontTouchAnnotation
+import firrtl2.options.Dependency
+import firrtl2.stage.Forms
+import firrtl2._
+import firrtl2.annotations._
+import firrtl2.backends.experimental.smt.random._
+import firrtl2.transforms.DontTouchAnnotation
 
 import scala.collection.mutable
 
@@ -28,7 +28,7 @@ private object DefRandToRegisterPass extends Transform with DependencyAPIMigrati
   )
   override def invalidates(a: Transform): Boolean = false
 
-  override protected def execute(state: firrtl.CircuitState): firrtl.CircuitState = {
+  override protected def execute(state: firrtl2.CircuitState): firrtl2.CircuitState = {
     val c = CircuitTarget(state.circuit.main)
     val modsAndAnnos = state.circuit.modules.map(onModule(c, _))
     val circuit = state.circuit.copy(modules = modsAndAnnos.map(_._1))

@@ -2,7 +2,7 @@
 
 package chiseltest
 
-import firrtl.AnnotationSeq
+import firrtl2.AnnotationSeq
 
 // Returned from a call to test(...){...} in any of the testers (RawTester, ChiselScalatestTester, ChiselUtestTester).
 // Currently only contains the annotations relevant for calculating coverage.

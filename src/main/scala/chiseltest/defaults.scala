@@ -5,7 +5,7 @@ package chiseltest
 import chiseltest.internal._
 import chisel3.Module
 import chiseltest.simulator.SimulatorAnnotation
-import firrtl.AnnotationSeq
+import firrtl2.AnnotationSeq
 
 package object defaults {
   // TODO: I think we need a way to specify global defaults, e.g. to say 'run all tests under verilator'

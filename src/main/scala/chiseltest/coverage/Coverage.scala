@@ -1,7 +1,7 @@
 package chiseltest.coverage
 
-import firrtl._
-import firrtl.annotations.{Annotation, NoTargetAnnotation}
+import firrtl2._
+import firrtl2.annotations.{Annotation, NoTargetAnnotation}
 
 /** Coverage counts returned from the simulator interface.
   * Each instance of a cover statement in the circuit

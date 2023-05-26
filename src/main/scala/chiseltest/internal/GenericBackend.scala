@@ -6,7 +6,7 @@ import chiseltest._
 import chisel3._
 import chiseltest.coverage.TestCoverage
 import chiseltest.simulator.{SimulatorContext, StepInterrupted, StepOk}
-import firrtl.AnnotationSeq
+import firrtl2.AnnotationSeq
 
 import chiseltest.simulator.ipc.TestApplicationException
 

@@ -2,8 +2,8 @@
 
 package treadle2.executable
 
-import firrtl.graph.{DiGraph, MutableDiGraph}
-import firrtl.ir.ClockType
+import firrtl2.graph.{DiGraph, MutableDiGraph}
+import firrtl2.ir.ClockType
 
 /** builds driving and driven by relationships between symbols
   */

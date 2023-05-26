@@ -3,13 +3,13 @@
 package treadle2.executable
 
 import java.io.{File, PrintWriter}
-import firrtl.annotations.{PresetAnnotation, ReferenceTarget}
-import firrtl.annotations.TargetToken.Instance
-import firrtl.ir.{Circuit, NoInfo}
-import firrtl.options.StageOptions
-import firrtl.options.Viewer.view
-import firrtl.stage.OutputFileAnnotation
-import firrtl.{AnnotationSeq, MemKind, PortKind, RegKind}
+import firrtl2.annotations.{PresetAnnotation, ReferenceTarget}
+import firrtl2.annotations.TargetToken.Instance
+import firrtl2.ir.{Circuit, NoInfo}
+import firrtl2.options.StageOptions
+import firrtl2.options.Viewer.view
+import firrtl2.stage.OutputFileAnnotation
+import firrtl2.{AnnotationSeq, MemKind, PortKind, RegKind}
 import logger.LazyLogging
 import treadle2._
 import treadle2.blackboxes.PlusArg
@@ -456,7 +456,7 @@ class ExecutionEngine(
 
   def findTopLevelClocks(): Seq[Symbol] = {
     val inputs = symbolTable.symbols.filter(s => symbolTable.isTopLevelInput(s.name))
-    inputs.filter(_.firrtlType == firrtl.ir.ClockType).toList
+    inputs.filter(_.firrtlType == firrtl2.ir.ClockType).toList
   }
 
   /*

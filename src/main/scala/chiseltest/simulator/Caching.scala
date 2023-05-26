@@ -3,8 +3,8 @@
 package chiseltest.simulator
 
 import chiseltest.internal.CachingAnnotation
-import firrtl._
-import firrtl.annotations._
+import firrtl2._
+import firrtl2.annotations._
 
 import java.security.MessageDigest
 import scala.util.Try

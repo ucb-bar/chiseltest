@@ -7,7 +7,7 @@ import chiseltest.experimental.sanitizeFileName
 import chisel3.Module
 import chiseltest.internal.TestEnvInterface.addDefaultTargetDir
 import chiseltest.iotesters.PeekPokeTester
-import firrtl.AnnotationSeq
+import firrtl2.AnnotationSeq
 import org.scalatest._
 import org.scalatest.exceptions.TestFailedException
 

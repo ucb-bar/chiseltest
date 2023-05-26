@@ -2,8 +2,8 @@
 
 package treadle2.stage
 
-import firrtl.AnnotationSeq
-import firrtl.options.Phase
+import firrtl2.AnnotationSeq
+import firrtl2.options.Phase
 import treadle2.stage.phases._
 
 /** When returns the annotation list with a TreadleTester constructed

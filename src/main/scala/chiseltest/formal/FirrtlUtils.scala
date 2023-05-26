@@ -2,7 +2,7 @@
 package chiseltest.formal
 
 import chisel3.util.log2Ceil
-import firrtl._
+import firrtl2._
 
 /** firrtl utility functions used in our passes.
   * At some point, these could be moved into the firrtl repo.

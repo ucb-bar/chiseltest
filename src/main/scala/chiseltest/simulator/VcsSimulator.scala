@@ -3,8 +3,8 @@
 package chiseltest.simulator
 
 import chiseltest.simulator.ipc.{IPCSimulatorContext, VpiVerilogHarnessGenerator}
-import firrtl.annotations.NoTargetAnnotation
-import firrtl.{AnnotationSeq, CircuitState}
+import firrtl2.annotations.NoTargetAnnotation
+import firrtl2.{AnnotationSeq, CircuitState}
 
 import java.io.IOException
 

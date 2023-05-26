@@ -2,14 +2,14 @@
 
 package chiseltest.coverage
 
-import firrtl.analyses.InstanceKeyGraph
-import firrtl.analyses.InstanceKeyGraph.InstanceKey
-import firrtl.annotations.NoTargetAnnotation
-import firrtl._
-import firrtl.options.Dependency
-import firrtl.passes.InlineInstances
-import firrtl.stage.Forms
-import firrtl.stage.TransformManager.TransformDependency
+import firrtl2.analyses.InstanceKeyGraph
+import firrtl2.analyses.InstanceKeyGraph.InstanceKey
+import firrtl2.annotations.NoTargetAnnotation
+import firrtl2._
+import firrtl2.options.Dependency
+import firrtl2.passes.InlineInstances
+import firrtl2.stage.Forms
+import firrtl2.stage.TransformManager.TransformDependency
 
 /** Generates a list of instance paths for every module: [[ModuleInstancesAnnotation]]
   * This pass is used by the Verilator backend to convert cover points reported by Verilator

@@ -2,7 +2,7 @@
 
 package treadle2.utils
 
-import firrtl.ir.{Circuit, DefModule, Module}
+import firrtl2.ir.{Circuit, DefModule, Module}
 import treadle2.executable.TreadleException
 
 object FindModule {

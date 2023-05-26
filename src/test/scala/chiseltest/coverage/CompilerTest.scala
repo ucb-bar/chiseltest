@@ -6,8 +6,8 @@ import chisel3.Module
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chiseltest.ChiselScalatestTester
 import chiseltest.experimental.sanitizeFileName
-import firrtl.{AnnotationSeq, EmittedFirrtlCircuitAnnotation, EmittedFirrtlModuleAnnotation, EmittedVerilogCircuitAnnotation, EmittedVerilogModuleAnnotation}
-import firrtl.options.TargetDirAnnotation
+import firrtl2.{AnnotationSeq, EmittedFirrtlCircuitAnnotation, EmittedFirrtlModuleAnnotation, EmittedVerilogCircuitAnnotation, EmittedVerilogModuleAnnotation}
+import firrtl2.options.TargetDirAnnotation
 import org.scalatest.TestSuite
 
 import java.io.File

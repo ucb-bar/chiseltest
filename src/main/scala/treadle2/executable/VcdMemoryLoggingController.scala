@@ -2,7 +2,7 @@
 
 package treadle2.executable
 
-import firrtl.MemKind
+import firrtl2.MemKind
 import logger.LazyLogging
 import treadle2.utils.NumberHelpers
 

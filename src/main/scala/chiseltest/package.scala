@@ -2,13 +2,12 @@
 
 import scala.language.implicitConversions
 import chiseltest.internal._
-import chisel3._
 import chisel3.experimental.Direction
 import chisel3.reflect.DataMirror
+import chisel3.{Bits, Bool, ChiselException, Clock, Data, DontCare, EnumType, Record, SInt, UInt, Vec, chiselTypeOf, fromBigIntToLiteral, fromBooleanToLiteral, fromIntToLiteral}
+import chisel3.util.{ReadyValidIO, ValidIO}
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._
-import chisel3.internal.firrtl.KnownBinaryPoint
-import chisel3.util._
 
 /** Basic interfaces and implicit conversions for testers2
   */
@@ -276,9 +275,6 @@ package object chiseltest {
   }
 
   private object Utils {
-
-    import chisel3.internal.firrtl.{BinaryPoint, KnownBinaryPoint, UnknownBinaryPoint}
-
     // Throw an exception if the value cannot fit into the signal.
     def ensureFits(signal: Bool, value: BigInt): Unit = {
       if (!(value == 0 || value == 1)) {

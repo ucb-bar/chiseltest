@@ -2,13 +2,14 @@
 package chiseltest.formal
 
 import chisel3._
-import chisel3.experimental.{annotate, ChiselAnnotation, RunFirrtlTransform}
-import chisel3.util.{log2Ceil, ShiftRegisters}
+import chisel3.experimental.{ChiselAnnotation, annotate}
+import chisel3.util.{ShiftRegisters, log2Ceil}
 import chiseltest.formal.FirrtlUtils.findClockAndReset
-import firrtl.annotations._
-import firrtl._
-import firrtl.options.Dependency
-import firrtl.transforms.EnsureNamedStatements
+import firrtl2.annotations._
+import firrtl2._
+import firrtl2.options.Dependency
+import firrtl2.stage.RunFirrtlTransformAnnotation
+import firrtl2.transforms.EnsureNamedStatements
 
 import scala.collection.mutable
 
@@ -45,10 +46,11 @@ object past {
 
   private def makeReg[T <: Data](prev: T): T = {
     val past = RegNext(prev)
-    annotate(new ChiselAnnotation with RunFirrtlTransform {
-      override def transformClass = classOf[SafePastSignalsPass]
-      override def toFirrtl = PastSignalAnnotation(past.toTarget)
-    })
+    // TODO: we need to run SafePastSignalsPass and also annotate PastSignalAnnotation(past.toTarget)
+//    annotate(new ChiselAnnotation {
+//      override def transformClass = classOf[SafePastSignalsPass]
+//      override def toFirrtl = PastSignalAnnotation(past.toTarget)
+//    })
     past
   }
 }
@@ -83,7 +85,7 @@ case class PastSignalAnnotation(target: ReferenceTarget) extends SingleTargetAnn
 
 class SafePastSignalsPass extends Transform with DependencyAPIMigration {
   override def prerequisites =
-    firrtl.stage.Forms.LowForm :+ Dependency(EnsureNamedStatements)
+    firrtl2.stage.Forms.LowForm :+ Dependency(EnsureNamedStatements)
   override def invalidates(a: Transform) = false
 
   override def execute(state: CircuitState): CircuitState = {
@@ -139,7 +141,7 @@ class SafePastSignalsPass extends Transform with DependencyAPIMigration {
             logger.info(
               s"[$m] ${v.op} statement ${v.name} is disabled until ${g.serialize} cycles after reset. ${v.info.serialize}"
             )
-            v.withEn(Utils.and(v.en, g))
+            v.copy(en = Utils.and(v.en, g))
         }
       case other => other.mapStmt(addDelayGuard(m, _, guard))
     }
