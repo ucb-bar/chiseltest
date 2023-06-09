@@ -4,17 +4,44 @@ import chisel3.RawModule
 import chisel3.stage._
 import chisel3.stage.phases._
 import chisel3.experimental.EnumAnnotations.{EnumComponentAnnotation, EnumDefAnnotation, EnumVecAnnotation}
-import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 // this imports the [[firrtl]] package from Chisel (not to be confused with the firrtl2 compiler!
 import firrtl._
 import firrtl.ir._
 import firrtl.annotations._
 import firrtl.stage.FirrtlCircuitAnnotation
 import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation}
+import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import logger.LogLevelAnnotation
 
 /// Indicates that an unsupported Chisel annotation was encountered
 case class UnsupportedAnnotation(name: String, instance: String) extends firrtl2.annotations.NoTargetAnnotation
+
+/// This annotation can be used to pass firrtl2 annotations through Chisel
+private[chiseltest] case class Firrtl2AnnotationWrapper(anno: firrtl2.annotations.Annotation) extends NoTargetAnnotation
+private[chiseltest] object convertTargetToFirrtl2 {
+  def apply(r: ReferenceTarget): firrtl2.annotations.ReferenceTarget =
+    firrtl2.annotations.ReferenceTarget(
+      r.circuit,
+      r.module,
+      r.path.map { case (instance, module) => (convertInst(instance), convertOfMod(module)) },
+      r.ref,
+      r.component.map(convertToken)
+    )
+  private def convertInst(i: TargetToken.Instance): firrtl2.annotations.TargetToken.Instance =
+    firrtl2.annotations.TargetToken.Instance(i.value)
+  private def convertOfMod(o: TargetToken.OfModule): firrtl2.annotations.TargetToken.OfModule =
+    firrtl2.annotations.TargetToken.OfModule(o.value)
+  private def convertToken(t: TargetToken): firrtl2.annotations.TargetToken = t match {
+    case i: TargetToken.Instance => convertInst(i)
+    case o: TargetToken.OfModule => convertOfMod(o)
+    case TargetToken.Ref(value)   => firrtl2.annotations.TargetToken.Ref(value)
+    case TargetToken.Index(value) => firrtl2.annotations.TargetToken.Index(value)
+    case TargetToken.Field(value) => firrtl2.annotations.TargetToken.Field(value)
+    case TargetToken.Clock        => firrtl2.annotations.TargetToken.Clock
+    case TargetToken.Init         => firrtl2.annotations.TargetToken.Init
+    case TargetToken.Reset        => firrtl2.annotations.TargetToken.Reset
+  }
+}
 
 /// wraps Chisel elaboration to bridge it over into the firrtl2 world
 private object ChiselBridge {
@@ -81,6 +108,7 @@ private object ChiselBridge {
     case c: ComponentName => convert(c)
   }
   private def convert(anno: Annotation): firrtl2.annotations.Annotation = anno match {
+    case Firrtl2AnnotationWrapper(anno) => anno
     case firrtl.transforms.BlackBoxInlineAnno(target, name, text) =>
       firrtl2.transforms.BlackBoxInlineAnno(convert(target), name, text)
     case SourceAnnotation(target, pin) => firrtl2.passes.wiring.SourceAnnotation(convert(target), pin)

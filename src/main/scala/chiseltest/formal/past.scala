@@ -3,8 +3,8 @@ package chiseltest.formal
 
 import chisel3._
 import chisel3.experimental.{annotate, ChiselAnnotation}
-import chisel3.util.{log2Ceil, ShiftRegisters}
 import chiseltest.formal.FirrtlUtils.findClockAndReset
+import chiseltest.simulator.{convertTargetToFirrtl2, Firrtl2AnnotationWrapper}
 import firrtl2.annotations._
 import firrtl2._
 import firrtl2.options.Dependency
@@ -46,11 +46,14 @@ object past {
 
   private def makeReg[T <: Data](prev: T): T = {
     val past = RegNext(prev)
-    // TODO: we need to run SafePastSignalsPass and also annotate PastSignalAnnotation(past.toTarget)
-//    annotate(new ChiselAnnotation {
-//      override def transformClass = classOf[SafePastSignalsPass]
-//      override def toFirrtl = PastSignalAnnotation(past.toTarget)
-//    })
+    // annotate register
+    annotate(new ChiselAnnotation {
+      override def toFirrtl = Firrtl2AnnotationWrapper(PastSignalAnnotation(convertTargetToFirrtl2(past.toTarget)))
+    })
+    // make sure that the transform rund
+    annotate(new ChiselAnnotation {
+      override def toFirrtl = Firrtl2AnnotationWrapper(RunFirrtlTransformAnnotation(Dependency[SafePastSignalsPass]))
+    })
     past
   }
 }
