@@ -107,6 +107,10 @@ private object ChiselBridge {
     case ModuleName(name, circuit) => firrtl2.annotations.ModuleName(name, convert(circuit))
     case c: ComponentName => convert(c)
   }
+  private def convert(hexOrBinary: MemoryLoadFileType): firrtl2.annotations.MemoryLoadFileType = hexOrBinary match {
+    case MemoryLoadFileType.Hex    => firrtl2.annotations.MemoryLoadFileType.Hex
+    case MemoryLoadFileType.Binary => firrtl2.annotations.MemoryLoadFileType.Binary
+  }
   private def convert(anno: Annotation): firrtl2.annotations.Annotation = anno match {
     case Firrtl2AnnotationWrapper(anno) => anno
     case firrtl.transforms.BlackBoxInlineAnno(target, name, text) =>
@@ -115,6 +119,8 @@ private object ChiselBridge {
     case SinkAnnotation(target, pin)   => firrtl2.passes.wiring.SinkAnnotation(convertNamed(target), pin)
     case DontTouchAnnotation(target)   => firrtl2.transforms.DontTouchAnnotation(convert(target))
     case NoDedupAnnotation(target)     => firrtl2.transforms.NoDedupAnnotation(convert(target))
+    case MemoryFileInlineAnnotation(target, filename, hexOrBinary) =>
+      firrtl2.annotations.MemoryFileInlineAnnotation(convert(target), filename, convert(hexOrBinary))
     case a: EnumComponentAnnotation => UnsupportedAnnotation("EnumComponentAnnotation", a.toString)
     case a: EnumDefAnnotation       => UnsupportedAnnotation("EnumDefAnnotation", a.toString)
     case a: EnumVecAnnotation       => UnsupportedAnnotation("EnumVecAnnotation", a.toString)
