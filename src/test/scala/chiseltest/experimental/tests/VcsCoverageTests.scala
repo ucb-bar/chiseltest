@@ -6,7 +6,7 @@ import chisel3._
 import chiseltest._
 import chiseltest.experimental.sanitizeFileName
 import chiseltest.simulator.{RequiresVcs, VcsFlags, VcsSimFlags}
-import firrtl.AnnotationSeq
+import firrtl2.AnnotationSeq
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -72,7 +72,7 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
   }
 
   it should "allow stacking coverage for Vcs" in {
-    assume(firrtl.FileUtils.isVCSAvailable)
+    assume(firrtl2.FileUtils.isVCSAvailable)
     clean()
     val annos = Seq(VcsBackendAnnotation) ++ SimAndCompileFlags(Seq("-cm", "line+tgl+branch+cond+assert"))
     runTest(annos)

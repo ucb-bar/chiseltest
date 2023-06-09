@@ -5,7 +5,7 @@ package treadle2.executable
 import firrtl2.annotations._
 import firrtl2.ir._
 import firrtl2.{FileUtils, MemKind, RegKind, WireKind}
-import logger.LazyLogging
+import firrtl2.logger.LazyLogging
 import treadle2._
 
 import scala.collection.mutable

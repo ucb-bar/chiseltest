@@ -3,7 +3,7 @@
 package treadle2.executable
 
 import firrtl2.MemKind
-import logger.LazyLogging
+import firrtl2.logger.LazyLogging
 import treadle2.utils.NumberHelpers
 
 import scala.util.matching.Regex

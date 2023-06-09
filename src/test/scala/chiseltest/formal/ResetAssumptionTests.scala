@@ -7,7 +7,7 @@ import chiseltest._
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.{ChiselAnnotation, annotate}
-import firrtl.annotations.PresetAnnotation
+import firrtl2.annotations.PresetAnnotation
 
 // very similar to the firrtl example in the backend tests, but in this case we rely on the fact
 // that the high level interface is going to ensure that the design is reset for a single cycle!
@@ -20,7 +20,7 @@ class FailAfterModule(n: Int) extends Module {
 // in order to make sure that our reset assumptions pass respects preset annotated resets
 class FailAfterPresetModule(n: Int) extends Module with RequireAsyncReset {
   annotate(new ChiselAnnotation {
-    override def toFirrtl = PresetAnnotation(reset.toTarget)
+    override def toFirrtl = ??? // PresetAnnotation(reset.toTarget)
   })
   val counter = RegInit(0.U(log2Ceil(n + 1).W))
   counter := counter + 1.U
@@ -35,7 +35,7 @@ class ResetCountCheckModule(resetCycles: Int) extends Module {
   require(resetCycles > 0)
   val preset = IO(Input(AsyncReset()))
   annotate(new ChiselAnnotation {
-    override def toFirrtl = PresetAnnotation(preset.toTarget)
+    override def toFirrtl = ??? // PresetAnnotation(preset.toTarget)
   })
 
   // saturating counter

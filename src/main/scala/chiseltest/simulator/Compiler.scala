@@ -9,7 +9,7 @@ import firrtl2.{AnnotationSeq, EmittedCircuitAnnotation}
 import firrtl2.annotations.{Annotation, DeletedAnnotation}
 import firrtl2.options.TargetDirAnnotation
 import firrtl2.stage.{FirrtlCircuitAnnotation, FirrtlStage}
-import logger.{LogLevelAnnotation, Logger}
+import firrtl2.logger.{LogLevelAnnotation, Logger}
 
 private[chiseltest] object Compiler {
 

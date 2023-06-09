@@ -2,7 +2,7 @@
 
 package chiseltest.simulator
 
-import firrtl.AnnotationSeq
+import firrtl2.AnnotationSeq
 import org.scalatest.Tag
 
 import java.nio.ByteBuffer

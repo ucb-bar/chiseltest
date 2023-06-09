@@ -71,7 +71,7 @@ private object Caching {
     hashStrings(values)
   }
 
-  private def firrtlVersionString: String = firrtl.BuildInfo.toString
+  private def firrtlVersionString: String = firrtl2.BuildInfo.toString
   private def systemVersionStrings: Seq[String] =
     Seq(System.getProperty("java.version"), scala.util.Properties.versionNumberString)
 

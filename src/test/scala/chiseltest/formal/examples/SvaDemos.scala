@@ -9,7 +9,7 @@ import chiseltest._
 import chiseltest.formal._
 import org.scalatest.flatspec.AnyFlatSpec
 import chiseltest.formal.FormalTag
-import firrtl.annotations.PresetAnnotation
+import firrtl2.annotations.PresetAnnotation
 
 /** These small examples demonstrate how the chisel Past operator can be used
   * to emulate simple SVA constructs.
@@ -113,7 +113,7 @@ class SvaDemo3 extends SvaDemoModule {
 class SvaDemoModule extends Module {
   private val preset = IO(Input(AsyncReset()))
   annotate(new ChiselAnnotation {
-    override def toFirrtl = PresetAnnotation(preset.toTarget)
+    override def toFirrtl = ??? // PresetAnnotation(preset.toTarget)
   })
   private def seq(values: String): Bool = {
     withReset(preset) {

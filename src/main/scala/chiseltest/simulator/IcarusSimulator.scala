@@ -7,7 +7,7 @@ import firrtl2.options.Dependency
 import firrtl2.stage.RunFirrtlTransformAnnotation
 import firrtl2.transforms.formal.RemoveVerificationStatements
 import firrtl2.{AnnotationSeq, CircuitState}
-import logger.LazyLogging
+import firrtl2.logger.LazyLogging
 
 case object IcarusBackendAnnotation extends SimulatorAnnotation {
   override def getSimulator: Simulator = IcarusSimulator

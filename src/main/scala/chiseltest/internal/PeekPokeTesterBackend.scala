@@ -6,7 +6,7 @@ import chiseltest.defaults
 import chiseltest.iotesters.PeekPokeTester
 import chiseltest.simulator.SimulatorContext
 import firrtl2.AnnotationSeq
-import logger.Logger
+import firrtl2.logger.Logger
 
 import scala.util.DynamicVariable
 

@@ -8,7 +8,7 @@ import chiseltest.iotesters._
 import chisel3.util.experimental.loadMemoryFromFileInline
 import chiseltest._
 import chiseltest.simulator.RequiresVerilator
-import firrtl.options.TargetDirAnnotation
+import firrtl2.options.TargetDirAnnotation
 import org.scalatest.freespec.AnyFreeSpec
 
 

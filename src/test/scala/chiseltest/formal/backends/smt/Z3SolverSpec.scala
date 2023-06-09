@@ -3,7 +3,7 @@ package chiseltest.formal.backends.smt
 
 import chiseltest.formal.FormalTag
 import org.scalatest.flatspec.AnyFlatSpec
-import firrtl.backends.experimental.smt._
+import firrtl2.backends.experimental.smt._
 
 class Z3SolverSpec extends AnyFlatSpec {
 

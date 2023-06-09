@@ -2,9 +2,9 @@
 
 package treadle2
 
-import firrtl.annotations.{PresetAnnotation, ReferenceTarget, Target}
-import firrtl.stage.FirrtlSourceAnnotation
-import firrtl.transforms.{DontTouchAnnotation, NoDCEAnnotation}
+import firrtl2.annotations.{PresetAnnotation, ReferenceTarget, Target}
+import firrtl2.stage.FirrtlSourceAnnotation
+import firrtl2.transforms.{DontTouchAnnotation, NoDCEAnnotation}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers

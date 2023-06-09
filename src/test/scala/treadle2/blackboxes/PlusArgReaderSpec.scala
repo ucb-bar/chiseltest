@@ -2,7 +2,7 @@
 
 package treadle2.blackboxes
 
-import firrtl.stage.FirrtlSourceAnnotation
+import firrtl2.stage.FirrtlSourceAnnotation
 import org.scalatest.freespec.AnyFreeSpec
 import treadle2.{BlackBoxFactoriesAnnotation, PlusArgsAnnotation, TreadleTestHarness, WriteVcdAnnotation}
 

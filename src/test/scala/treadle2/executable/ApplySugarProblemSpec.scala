@@ -2,7 +2,7 @@
 
 package treadle2.executable
 
-import logger.LazyLogging
+import firrtl2.logger.LazyLogging
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 

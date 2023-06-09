@@ -4,7 +4,7 @@
 package chiseltest.coverage
 
 import chiseltest._
-import firrtl.AnnotationSeq
+import firrtl2.AnnotationSeq
 import org.scalatest.flatspec.AnyFlatSpec
 import chisel3._
 import chiseltest.simulator.{DefaultTag, SimulatorAnnotation}

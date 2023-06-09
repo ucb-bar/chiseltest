@@ -9,8 +9,8 @@ import chiseltest.iotesters._
 import chisel3.util.experimental.loadMemoryFromFileInline
 import chisel3.util.log2Ceil
 import chiseltest._
-import firrtl.FileUtils
-import firrtl.options.TargetDirAnnotation
+import firrtl2.FileUtils
+import firrtl2.options.TargetDirAnnotation
 import org.scalatest.freespec.AnyFreeSpec
 
 class MemoryShape extends Bundle {

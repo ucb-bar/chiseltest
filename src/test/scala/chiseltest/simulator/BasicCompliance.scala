@@ -3,7 +3,7 @@
 package chiseltest.simulator
 
 import chiseltest.utils.CaptureStdout
-import firrtl.options.TargetDirAnnotation
+import firrtl2.options.TargetDirAnnotation
 import org.scalatest.Tag
 
 /** tests some basic functionality that should be supported by all simulators */

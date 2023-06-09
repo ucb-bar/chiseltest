@@ -3,7 +3,7 @@ package chiseltest.formal
 import chiseltest._
 import chisel3._
 import chiseltest.internal.TestEnvInterface
-import firrtl.AnnotationSeq
+import firrtl2.AnnotationSeq
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ExpressionSemanticsTests extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption {

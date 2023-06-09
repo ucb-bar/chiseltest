@@ -4,9 +4,9 @@ package treadle2.chronometry
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 
-import firrtl.options.TargetDirAnnotation
-import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
-import logger.LazyLogging
+import firrtl2.options.TargetDirAnnotation
+import firrtl2.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
+import firrtl2.logger.LazyLogging
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import treadle2.{PrefixPrintfWithWallTime, TreadleTestHarness, WriteVcdAnnotation}

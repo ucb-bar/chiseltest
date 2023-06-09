@@ -5,7 +5,7 @@ package treadle2.executable
 import firrtl2._
 import firrtl2.graph.DiGraph
 import firrtl2.ir._
-import logger.LazyLogging
+import firrtl2.logger.LazyLogging
 import treadle2.utils.FindModule
 import treadle2.{ScalaBlackBox, ScalaBlackBoxFactory}
 

@@ -10,7 +10,7 @@ import firrtl2.options.StageOptions
 import firrtl2.options.Viewer.view
 import firrtl2.stage.OutputFileAnnotation
 import firrtl2.{AnnotationSeq, MemKind, PortKind, RegKind}
-import logger.LazyLogging
+import firrtl2.logger.LazyLogging
 import treadle2._
 import treadle2.blackboxes.PlusArg
 import treadle2.chronometry.{Timer, UTC}

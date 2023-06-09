@@ -5,13 +5,13 @@ package treadle2.vcd
 import java.io.PrintWriter
 import java.text.SimpleDateFormat
 
-import logger.LazyLogging
+import firrtl2.logger.LazyLogging
 
 import collection._
 import java.util.{Date, TimeZone}
 
-import firrtl.FileUtils
-import firrtl.options.StageMain
+import firrtl2.FileUtils
+import firrtl2.options.StageMain
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.matching.Regex
