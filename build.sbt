@@ -49,7 +49,7 @@ publishTo := {
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map(
-  "chisel3" -> "6.0.0-M1+9-f590ac9f-SNAPSHOT",
+  "chisel3" -> "5.0.0", //"6.0.0-M1+9-f590ac9f-SNAPSHOT",
   "firrtl" -> "2.0-SNAPSHOT",
 )
 
@@ -76,6 +76,7 @@ libraryDependencies ++= Seq(
   "com.lihaoyi" %% "utest" % "0.8.1",
   "net.java.dev.jna" % "jna" % "5.13.0",
   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+  "com.lihaoyi" %% "os-lib" % "0.8.1",
   compilerPlugin(("org.chipsalliance" % "chisel-plugin" % defaultVersions("chisel3")).cross(CrossVersion.full))
 ) ++ {
   CrossVersion.partialVersion(scalaVersion.value) match {

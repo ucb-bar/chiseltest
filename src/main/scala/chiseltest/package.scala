@@ -4,7 +4,23 @@ import scala.language.implicitConversions
 import chiseltest.internal._
 import chisel3.experimental.Direction
 import chisel3.reflect.DataMirror
-import chisel3.{Bits, Bool, ChiselException, Clock, Data, DontCare, EnumType, Record, SInt, UInt, Vec, chiselTypeOf, fromBigIntToLiteral, fromBooleanToLiteral, fromIntToLiteral}
+import chisel3.{
+  chiselTypeOf,
+  fromBigIntToLiteral,
+  fromBooleanToLiteral,
+  fromIntToLiteral,
+  Bits,
+  Bool,
+  ChiselException,
+  Clock,
+  Data,
+  DontCare,
+  EnumType,
+  Record,
+  SInt,
+  UInt,
+  Vec
+}
 import chisel3.util.{ReadyValidIO, ValidIO}
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._

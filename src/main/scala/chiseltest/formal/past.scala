@@ -2,8 +2,8 @@
 package chiseltest.formal
 
 import chisel3._
-import chisel3.experimental.{ChiselAnnotation, annotate}
-import chisel3.util.{ShiftRegisters, log2Ceil}
+import chisel3.experimental.{annotate, ChiselAnnotation}
+import chisel3.util.{log2Ceil, ShiftRegisters}
 import chiseltest.formal.FirrtlUtils.findClockAndReset
 import firrtl2.annotations._
 import firrtl2._

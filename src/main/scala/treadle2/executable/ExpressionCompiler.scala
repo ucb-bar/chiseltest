@@ -990,7 +990,15 @@ class ExpressionCompiler(
             throw TreadleException(s"Could not find symbol for Print $printf")
         }
 
-      case verify @ Verification(Formal.Cover, info, clockExpression, predicateExpression, enableExpression, message, _) =>
+      case verify @ Verification(
+            Formal.Cover,
+            info,
+            clockExpression,
+            predicateExpression,
+            enableExpression,
+            message,
+            _
+          ) =>
         val name = expand(verify.name)
         symbolTable.verifyInfo.get(name) match {
           case Some(verifyInfo) =>
