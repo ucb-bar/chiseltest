@@ -43,12 +43,23 @@ private object ChiselBridge {
     (stateWithUserAnnos, dut)
   }
 
+  private val RunWiring = firrtl2.stage.RunFirrtlTransformAnnotation(
+    firrtl2.options.Dependency[firrtl2.passes.wiring.WiringTransform]
+  )
+  private def addPassesBasedOnAnnos(annos: firrtl2.AnnotationSeq): firrtl2.AnnotationSeq = {
+    // the boring utils Chisel library used to automatically schedule the Wiring transform
+    // we now have to do this manually
+    val usesBoring = annos.exists(_.isInstanceOf[firrtl2.passes.wiring.SinkAnnotation])
+    val runWiring = if (usesBoring) Seq(RunWiring) else Seq()
+    runWiring ++: annos
+  }
+
   private def annosToState(annos: AnnotationSeq): firrtl2.CircuitState = {
     val circuit = annos.collectFirst { case FirrtlCircuitAnnotation(c) => c }.get
     val filteredAnnos = annos.filterNot(isInternalAnno)
     val firrtl2Annos = filteredAnnos.map(convert)
     val firrtl2Circuit = convert(circuit)
-    firrtl2.CircuitState(firrtl2Circuit, firrtl2Annos)
+    firrtl2.CircuitState(firrtl2Circuit, addPassesBasedOnAnnos(firrtl2Annos))
   }
 
   private def isInternalAnno(a: Annotation): Boolean = a match {
