@@ -172,11 +172,26 @@ private object ChiselBridge {
     case DefInstance(info, name, module, tpe) => firrtl2.ir.DefInstance(convert(info), name, module, convert(tpe))
     case PartialConnect(info, loc, expr)      => firrtl2.ir.PartialConnect(convert(info), convert(loc), convert(expr))
     case Attach(info, exprs)                  => firrtl2.ir.Attach(convert(info), exprs.map(convert))
-    case Stop(info, ret, clk, en)             => firrtl2.ir.Stop(convert(info), ret, convert(clk), convert(en))
-    case Print(info, string, args, clk, en) =>
-      firrtl2.ir.Print(convert(info), convert(string), args.map(convert), convert(clk), convert(en))
-    case Verification(op, info, clk, pred, en, msg) =>
-      firrtl2.ir.Verification(convert(op), convert(info), convert(clk), convert(pred), convert(en), convert(msg))
+    case s: Stop => firrtl2.ir.Stop(convert(s.info), s.ret, convert(s.clk), convert(s.en), name = s.name)
+    case p: Print =>
+      firrtl2.ir.Print(
+        convert(p.info),
+        convert(p.string),
+        p.args.map(convert),
+        convert(p.clk),
+        convert(p.en),
+        name = p.name
+      )
+    case v: Verification =>
+      firrtl2.ir.Verification(
+        convert(v.op),
+        convert(v.info),
+        convert(v.clk),
+        convert(v.pred),
+        convert(v.en),
+        convert(v.msg),
+        name = v.name
+      )
     case IsInvalid(info, expr) => firrtl2.ir.IsInvalid(convert(info), convert(expr))
     case CDefMemory(info, name, tpe, size, seq, readUnderWrite) =>
       firrtl2.CDefMemory(convert(info), name, convert(tpe), size, seq, convertReadUnderWrite(readUnderWrite))
