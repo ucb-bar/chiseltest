@@ -3,7 +3,7 @@ package chiseltest.simulator
 import chisel3.RawModule
 import chisel3.stage._
 import chisel3.stage.phases._
-import chisel3.experimental.EnumAnnotations.{EnumComponentAnnotation, EnumDefAnnotation}
+import chisel3.experimental.EnumAnnotations.{EnumComponentAnnotation, EnumDefAnnotation, EnumVecAnnotation}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 // this imports the [[firrtl]] package from Chisel (not to be confused with the firrtl2 compiler!
 import firrtl._
@@ -89,6 +89,7 @@ private object ChiselBridge {
     case NoDedupAnnotation(target)     => firrtl2.transforms.NoDedupAnnotation(convert(target))
     case a: EnumComponentAnnotation => UnsupportedAnnotation("EnumComponentAnnotation", a.toString)
     case a: EnumDefAnnotation       => UnsupportedAnnotation("EnumDefAnnotation", a.toString)
+    case a: EnumVecAnnotation       => UnsupportedAnnotation("EnumVecAnnotation", a.toString)
     case _ => throw new NotImplementedError(s"TODO: convert ${anno}")
   }
 
