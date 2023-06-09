@@ -7,6 +7,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import chiseltest._
 import chisel3._
 import chisel3.experimental.{ChiselAnnotation, annotate}
+import chiseltest.simulator.{Firrtl2AnnotationWrapper, convertTargetToFirrtl2}
 import firrtl2.annotations.{Annotation, MemoryArrayInitAnnotation, MemoryScalarInitAnnotation, ReferenceTarget}
 import firrtl2.ir.ReadUnderWrite
 
@@ -123,7 +124,7 @@ class ReadOnlyMemModule extends Module {
   out := m.read(readAddr)
   def annoMem(a: ReferenceTarget => Annotation): Unit = {
     annotate(new ChiselAnnotation {
-      override def toFirrtl = ??? //a(m.toTarget)
+      override def toFirrtl = Firrtl2AnnotationWrapper(a(convertTargetToFirrtl2(m.toTarget)))
     })
   }
 }
@@ -178,7 +179,7 @@ class ReadEnableSyncMemModule extends Module {
   val m = SyncReadMem(4, UInt(8.W))
   // init with all zeros
   annotate(new ChiselAnnotation {
-    override def toFirrtl = ??? // MemoryScalarInitAnnotation(m.toTarget, 0)
+    override def toFirrtl = Firrtl2AnnotationWrapper(MemoryScalarInitAnnotation(convertTargetToFirrtl2(m.toTarget), 0))
   })
   // the read port is enabled in even cycles
   val data = m.read(0.U, en)
@@ -202,7 +203,7 @@ class OutOfBoundsValueIs(value: Int) extends Module {
   // memory with three entries initialized to zero
   val m = Mem(3, UInt(8.W))
   annotate(new ChiselAnnotation {
-    override def toFirrtl = ??? // MemoryScalarInitAnnotation(m.toTarget, 0)
+    override def toFirrtl = Firrtl2AnnotationWrapper(MemoryScalarInitAnnotation(convertTargetToFirrtl2(m.toTarget), 0))
   })
   out := m.read(readAddr)
   // all in bounds entries should be zero
