@@ -2,10 +2,10 @@
 
 package treadle2.utils
 
-import firrtl.annotations.{Annotation, NoTargetAnnotation}
-import firrtl.options.{HasShellOptions, Shell, ShellOption, Stage, StageMain, Unserializable}
-import firrtl.{annoSeqToSeq, AnnotationSeq, FileUtils}
-import logger.Logger
+import firrtl2.annotations.{Annotation, NoTargetAnnotation}
+import firrtl2.options.{HasShellOptions, Shell, ShellOption, Stage, StageMain, Unserializable}
+import firrtl2.{annoSeqToSeq, AnnotationSeq, FileUtils}
+import firrtl2.logger.Logger
 
 /** A Prototype rendering program to add coverage information to the
   * printout of a firrtl file that contains coverage statements and

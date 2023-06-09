@@ -3,7 +3,7 @@
 package chiseltest.simulator.jna
 
 import chiseltest.simulator._
-import logger.LazyLogging
+import firrtl2.logger.LazyLogging
 
 /** This context works with a simulation binary that communicates through the Java Native Access library.
   * @param so interface to the dynamic simulation library

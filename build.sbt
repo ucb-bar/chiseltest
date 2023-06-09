@@ -3,11 +3,11 @@
 organization := "edu.berkeley.cs"
 name := "chiseltest"
 
-version := "0.6-SNAPSHOT"
+version := "1.0-SNAPSHOT"
 
 scalaVersion := "2.13.10"
 
-crossScalaVersions := Seq("2.12.17", "2.13.10")
+crossScalaVersions := Seq("2.13.10")
 
 resolvers ++= Resolver.sonatypeOssRepos("snapshots")
 resolvers ++= Resolver.sonatypeOssRepos("releases")
@@ -49,7 +49,8 @@ publishTo := {
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map(
-  "chisel3" -> "3.6-SNAPSHOT",
+  "chisel3" -> "5.0.0", //"6.0.0-M1+9-f590ac9f-SNAPSHOT",
+  "firrtl" -> "2.0-SNAPSHOT",
 )
 
 scalacOptions ++= Seq(
@@ -69,12 +70,14 @@ scalacOptions ++= Seq(
 }
 
 libraryDependencies ++= Seq(
-  "edu.berkeley.cs" %% "chisel3" % defaultVersions("chisel3"),
+  "org.chipsalliance" %% "chisel" % defaultVersions("chisel3"),
+  "edu.berkeley.cs" %% "firrtl" % defaultVersions("firrtl"),
   "org.scalatest" %% "scalatest" % "3.2.15",
   "com.lihaoyi" %% "utest" % "0.8.1",
   "net.java.dev.jna" % "jna" % "5.13.0",
   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-  compilerPlugin(("edu.berkeley.cs" % "chisel3-plugin" % defaultVersions("chisel3")).cross(CrossVersion.full))
+  "com.lihaoyi" %% "os-lib" % "0.8.1",
+  compilerPlugin(("org.chipsalliance" % "chisel-plugin" % defaultVersions("chisel3")).cross(CrossVersion.full))
 ) ++ {
   CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, n)) if n >= 13 => Nil

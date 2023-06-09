@@ -3,13 +3,13 @@
 package chiseltest.simulator
 
 import chiseltest.coverage.{Coverage, ModuleInstancesAnnotation, ModuleInstancesPass}
-import firrtl._
-import firrtl.annotations._
-import firrtl.options.Dependency
-import firrtl.passes.InlineInstances
-import firrtl.stage.{Forms, RunFirrtlTransformAnnotation}
-import firrtl.stage.TransformManager.TransformDependency
-import firrtl.transforms.EnsureNamedStatements
+import firrtl2._
+import firrtl2.annotations._
+import firrtl2.options.Dependency
+import firrtl2.passes.InlineInstances
+import firrtl2.stage.{Forms, RunFirrtlTransformAnnotation}
+import firrtl2.stage.TransformManager.TransformDependency
+import firrtl2.transforms.EnsureNamedStatements
 
 import scala.collection.mutable
 

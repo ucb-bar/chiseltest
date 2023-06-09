@@ -3,68 +3,45 @@
 package chiseltest.simulator
 
 import chisel3.RawModule
-import chisel3.stage._
-import chisel3.stage.phases._
-import firrtl.{AnnotationSeq, EmittedCircuitAnnotation}
-import firrtl.annotations.{Annotation, DeletedAnnotation}
-import firrtl.options.TargetDirAnnotation
-import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlStage}
-import logger.{LogLevelAnnotation, Logger}
+import firrtl2.{AnnotationSeq, EmittedCircuitAnnotation}
+import firrtl2.annotations.{Annotation, DeletedAnnotation}
+import firrtl2.options.TargetDirAnnotation
+import firrtl2.stage.{FirrtlCircuitAnnotation, FirrtlStage}
+import firrtl2.logger.{LogLevelAnnotation, Logger}
 
 private[chiseltest] object Compiler {
 
-  private val elaboratePhase = new Elaborate
-  def elaborate[M <: RawModule](gen: () => M, annotationSeq: AnnotationSeq): (firrtl.CircuitState, M) = {
-    // run Builder.build(Module(gen()))
-    val genAnno = ChiselGeneratorAnnotation(gen)
-    val elaborationAnnos = Logger.makeScope(annotationSeq) { elaboratePhase.transform(genAnno +: annotationSeq) }
-
-    // extract elaborated module
-    val dut = elaborationAnnos.collectFirst { case DesignAnnotation(d) => d }.get
-
-    // run aspects
-    val aspectAnnos = maybeAspects.transform(elaborationAnnos)
-
-    // run Converter.convert(a.circuit) and toFirrtl on all annotations
-    val converterAnnos = converter.transform(aspectAnnos)
-
-    // annos to state
-    val state = annosToState(converterAnnos)
-
-    (state, dut.asInstanceOf[M])
-  }
-  def toLowFirrtl(state: firrtl.CircuitState, annos: AnnotationSeq = List()): firrtl.CircuitState = {
+  def elaborate[M <: RawModule](gen: () => M, annotationSeq: AnnotationSeq): (firrtl2.CircuitState, M) =
+    ChiselBridge.elaborate[M](gen, annotationSeq)
+  def toLowFirrtl(state: firrtl2.CircuitState, annos: AnnotationSeq = List()): firrtl2.CircuitState = {
     requireTargetDir(state.annotations)
     val inAnnos = annos ++: stateToAnnos(state)
     val res = firrtlStage.execute(Array("-E", "low"), inAnnos)
     annosToState(res)
   }
-  def lowFirrtlToSystemVerilog(state: firrtl.CircuitState, annos: AnnotationSeq = List()): firrtl.CircuitState = {
+  def lowFirrtlToSystemVerilog(state: firrtl2.CircuitState, annos: AnnotationSeq = List()): firrtl2.CircuitState = {
     requireTargetDir(state.annotations)
     val inAnnos = annos ++: stateToAnnos(state)
     val res = firrtlStage.execute(Array("--start-from", "low", "-E", "sverilog"), inAnnos)
     annosToState(res)
   }
-  def lowFirrtlToVerilog(state: firrtl.CircuitState, annos: AnnotationSeq = List()): firrtl.CircuitState = {
+  def lowFirrtlToVerilog(state: firrtl2.CircuitState, annos: AnnotationSeq = List()): firrtl2.CircuitState = {
     requireTargetDir(state.annotations)
     val inAnnos = annos ++: stateToAnnos(state)
     val res = firrtlStage.execute(Array("--start-from", "low", "-E", "verilog"), inAnnos)
     annosToState(res)
   }
-  private val maybeAspects = new MaybeAspectPhase
-  private val converter = new Convert
-  private def stateToAnnos(state: firrtl.CircuitState): AnnotationSeq = {
+  private def stateToAnnos(state: firrtl2.CircuitState): AnnotationSeq = {
     val annosWithoutCircuit = state.annotations.filterNot(_.isInstanceOf[FirrtlCircuitAnnotation])
     FirrtlCircuitAnnotation(state.circuit) +: annosWithoutCircuit
   }
-  def annosToState(annos: AnnotationSeq): firrtl.CircuitState = {
+  def annosToState(annos: AnnotationSeq): firrtl2.CircuitState = {
     val circuit = annos.collectFirst { case FirrtlCircuitAnnotation(c) => c }.get
     val filteredAnnos = annos.filterNot(isInternalAnno)
-    firrtl.CircuitState(circuit, filteredAnnos)
+    firrtl2.CircuitState(circuit, filteredAnnos)
   }
   private def isInternalAnno(a: Annotation): Boolean = a match {
-    case _: FirrtlCircuitAnnotation | _: DesignAnnotation[_] | _: ChiselCircuitAnnotation | _: DeletedAnnotation |
-        _: EmittedCircuitAnnotation[_] | _: LogLevelAnnotation =>
+    case _: FirrtlCircuitAnnotation | _: DeletedAnnotation | _: EmittedCircuitAnnotation[_] | _: LogLevelAnnotation =>
       true
     case _ => false
   }

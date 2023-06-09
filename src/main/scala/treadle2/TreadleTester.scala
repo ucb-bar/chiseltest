@@ -4,11 +4,11 @@ package treadle2
 
 import java.io.PrintWriter
 import java.util.Calendar
-import firrtl.AnnotationSeq
-import firrtl.ir.ClockType
-import firrtl.options.StageOptions
-import firrtl.options.Viewer.view
-import firrtl.stage.OutputFileAnnotation
+import firrtl2.AnnotationSeq
+import firrtl2.ir.ClockType
+import firrtl2.options.StageOptions
+import firrtl2.options.Viewer.view
+import firrtl2.stage.OutputFileAnnotation
 import treadle2.chronometry.UTC
 import treadle2.executable._
 import treadle2.stage.TreadleTesterPhase
@@ -361,13 +361,13 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 
   /** Returns the number of times every cover statement has been true on a clock edge. */
   def getCoverage(): List[(String, Long)] = {
-    val cov = engine.symbolTable.verifyOps.filter(_.op == firrtl.ir.Formal.Cover)
+    val cov = engine.symbolTable.verifyOps.filter(_.op == firrtl2.ir.Formal.Cover)
     cov.map(c => c.symbol.name -> c.coverCount).toList
   }
 
   /** resets all coverage counters to zero */
   def resetCoverage(): Unit = {
-    val cov = engine.symbolTable.verifyOps.filter(_.op == firrtl.ir.Formal.Cover)
+    val cov = engine.symbolTable.verifyOps.filter(_.op == firrtl2.ir.Formal.Cover)
     cov.foreach { c =>
       c.coverCount = 0
     }

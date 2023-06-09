@@ -3,7 +3,7 @@
 package chiseltest.simulator.ipc
 
 import chiseltest.simulator._
-import logger.LazyLogging
+import firrtl2.logger.LazyLogging
 
 import java.nio.channels.FileChannel
 import scala.collection.immutable.ListMap

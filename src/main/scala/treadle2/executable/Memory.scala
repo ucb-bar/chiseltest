@@ -2,10 +2,10 @@
 
 package treadle2.executable
 
-import firrtl.annotations._
-import firrtl.ir._
-import firrtl.{FileUtils, MemKind, RegKind, WireKind}
-import logger.LazyLogging
+import firrtl2.annotations._
+import firrtl2.ir._
+import firrtl2.{FileUtils, MemKind, RegKind, WireKind}
+import firrtl2.logger.LazyLogging
 import treadle2._
 
 import scala.collection.mutable
@@ -57,15 +57,15 @@ object Memory {
     }
     val memorySymbol = Symbol(expandedName, memory.dataType, MemKind, memory.depth.toInt)
     val addrWidth = IntWidth(requiredBitsForUInt(memory.depth - 1))
-    val addrType = firrtl.ir.UIntType(addrWidth)
+    val addrType = firrtl2.ir.UIntType(addrWidth)
     val dataType: Type = memory.dataType
-    val booleanType = firrtl.ir.UIntType(IntWidth(1))
+    val booleanType = firrtl2.ir.UIntType(IntWidth(1))
 
     val lastValueSymbols = new mutable.ArrayBuffer[Symbol]()
 
     val effectiveReadLatency = memory.readLatency + (if (memory.readUnderWrite == ReadUnderWrite.New) 1 else 0)
 
-    def buildRegisterTriple(baseName: String, index: Int, dataType: firrtl.ir.Type): Seq[Symbol] = {
+    def buildRegisterTriple(baseName: String, index: Int, dataType: firrtl2.ir.Type): Seq[Symbol] = {
 
       val register = Symbol(s"$baseName$index", dataType, RegKind)
       registerNames += register.name

@@ -2,7 +2,7 @@
 
 package treadle2.blackboxes
 
-import firrtl.ir.Type
+import firrtl2.ir.Type
 import treadle2.executable.{NegativeEdge, NoTransition, PositiveEdge, Transition}
 import treadle2.{ScalaBlackBox, _}
 

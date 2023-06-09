@@ -3,7 +3,7 @@
 
 package chiseltest.formal.backends.smt
 
-import firrtl.backends.experimental.smt._
+import firrtl2.backends.experimental.smt._
 import scala.collection.mutable
 
 class CompactSmtEncoding(sys: TransitionSystem) extends TransitionSystemSmtEncoding {

@@ -9,7 +9,7 @@ private object BlackBox {
 
   /** add the `.f` file containing the names of all blackbox verilog files, if it exists */
   def fFileFlags(targetDir: os.Path): Seq[String] = {
-    val fFile = targetDir / firrtl.transforms.BlackBoxSourceHelper.defaultFileListName
+    val fFile = targetDir / firrtl2.transforms.BlackBoxSourceHelper.defaultFileListName
     if (os.exists(fFile)) {
       if (JNAUtils.isWindows) {
         // The canonical path on Windows contains backslashes that

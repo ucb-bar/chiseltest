@@ -2,13 +2,13 @@
 
 package treadle2.stage.phases
 
-import firrtl.PrimOps.{And, Not}
-import firrtl.annotations.NoTargetAnnotation
-import firrtl.ir._
-import firrtl.options.{Dependency, RegisteredTransform, ShellOption}
-import firrtl.passes.ExpandWhensAndCheck
-import firrtl.stage.TransformManager.TransformDependency
-import firrtl.{CircuitState, DependencyAPIMigration, Namespace, Transform}
+import firrtl2.PrimOps.{And, Not}
+import firrtl2.annotations.NoTargetAnnotation
+import firrtl2.ir._
+import firrtl2.options.{Dependency, RegisteredTransform, ShellOption}
+import firrtl2.passes.ExpandWhensAndCheck
+import firrtl2.stage.TransformManager.TransformDependency
+import firrtl2.{CircuitState, DependencyAPIMigration, Namespace, Transform}
 
 /** This controls the handling of the verification formal statements for treadle.
   * currently it does the following
@@ -24,7 +24,7 @@ class HandleFormalStatements extends Transform with RegisteredTransform with Dep
   override def optionalPrerequisites: Seq[TransformDependency] = Seq.empty
 
   override def optionalPrerequisiteOf: Seq[TransformDependency] =
-    firrtl.stage.Forms.MidEmitters
+    firrtl2.stage.Forms.MidEmitters
 
   override def invalidates(a: Transform): Boolean = false
 
@@ -65,14 +65,14 @@ class HandleFormalStatements extends Transform with RegisteredTransform with Dep
       }
 
       s match {
-        case v @ Verification(Formal.Assume, info, clk, cond, en, msg) =>
+        case v @ Verification(Formal.Assume, info, clk, cond, en, msg, name) =>
           if (dropAssumes) {
             EmptyStmt
           } else {
             makeBlock(info, v.name, clk, makeTrigger(cond, en), msg, 0x42)
           }
 
-        case v @ Verification(Formal.Assert, info, clk, cond, en, msg) =>
+        case v @ Verification(Formal.Assert, info, clk, cond, en, msg, name) =>
           makeBlock(info, v.name, clk, makeTrigger(cond, en), msg, 0x41)
 
         case t => t.mapStmt(assertAssumption(namespace, _))

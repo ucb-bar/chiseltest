@@ -4,8 +4,8 @@ package treadle2
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 
-import firrtl.stage.FirrtlSourceAnnotation
-import logger.LazyLogging
+import firrtl2.stage.FirrtlSourceAnnotation
+import firrtl2.logger.LazyLogging
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import treadle2.executable.StopException

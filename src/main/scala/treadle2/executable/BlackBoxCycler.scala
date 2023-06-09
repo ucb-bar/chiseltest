@@ -2,7 +2,7 @@
 
 package treadle2.executable
 
-import firrtl.ir.Info
+import firrtl2.ir.Info
 import treadle2.ScalaBlackBox
 
 /** Implements an assigner that can be scheduled to publish clock transitions

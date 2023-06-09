@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.util.{HasBlackBoxInline, HasBlackBoxResource}
 import chiseltest._
 import chiseltest.simulator.{RequiresVcs, RequiresVerilator}
-import firrtl.options.TargetDirAnnotation
+import firrtl2.options.TargetDirAnnotation
 import org.scalatest.freespec.AnyFreeSpec
 
 class BBAddOne extends HasBlackBoxInline {
@@ -82,6 +82,6 @@ class BlackBoxVerilogDeliverySpec extends AnyFreeSpec with ChiselScalatestTester
     val options = Seq(VcsBackendAnnotation, TargetDirAnnotation(targetDir))
 
     test(new UsesBBAddOne).withAnnotations(options).runPeekPoke(new UsesBBAddOneTester(_))
-    assert(os.exists(os.pwd / os.RelPath(targetDir) / firrtl.transforms.BlackBoxSourceHelper.defaultFileListName))
+    assert(os.exists(os.pwd / os.RelPath(targetDir) / firrtl2.transforms.BlackBoxSourceHelper.defaultFileListName))
   }
 }

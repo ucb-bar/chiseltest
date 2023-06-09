@@ -2,7 +2,7 @@
 // Author: Kevin Laeufer <laeufer@cs.berkeley.edu>
 package chiseltest.formal.backends.smt
 
-import firrtl.backends.experimental.smt._
+import firrtl2.backends.experimental.smt._
 
 private[chiseltest] trait Solver {
   // basic properties

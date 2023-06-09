@@ -2,8 +2,8 @@
 
 package treadle2.blackboxes
 
-import firrtl.options.TargetDirAnnotation
-import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
+import firrtl2.options.TargetDirAnnotation
+import firrtl2.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import treadle2.asyncreset.AsyncResetBlackBoxFactory

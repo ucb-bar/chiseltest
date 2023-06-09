@@ -2,10 +2,10 @@
 
 package treadle2.executable
 
-import firrtl.PrimOps._
-import firrtl._
-import firrtl.annotations.ReferenceTarget
-import firrtl.ir._
+import firrtl2.PrimOps._
+import firrtl2._
+import firrtl2.annotations.ReferenceTarget
+import firrtl2.ir._
 import treadle2._
 import treadle2.blackboxes.PlusArg
 import treadle2.utils.FindModule
@@ -27,10 +27,10 @@ class ExpressionCompiler(
 
   private val externalModuleInputs = new mutable.HashMap[Symbol, ExternalInputParams]
 
-  def getWidth(tpe: firrtl.ir.Type): Int = {
+  def getWidth(tpe: firrtl2.ir.Type): Int = {
     tpe match {
       case GroundType(IntWidth(width)) => width.toInt
-      case _                           => throw TreadleException(s"Unresolved width found in firrtl.ir.Type $tpe")
+      case _                           => throw TreadleException(s"Unresolved width found in firrtl2.ir.Type $tpe")
     }
   }
 
@@ -51,7 +51,7 @@ class ExpressionCompiler(
     expression.tpe match {
       case GroundType(IntWidth(width)) => width.toInt
       case _ =>
-        throw TreadleException(s"Unresolved width found in expression $expression of firrtl.ir.Type ${expression.tpe}")
+        throw TreadleException(s"Unresolved width found in expression $expression of firrtl2.ir.Type ${expression.tpe}")
     }
   }
 
@@ -61,7 +61,7 @@ class ExpressionCompiler(
       case _: SIntType => true
       case ClockType => false
       case _ =>
-        throw TreadleException(s"Unsupported type found in expression $expression of firrtl.ir.Type ${expression.tpe}")
+        throw TreadleException(s"Unsupported type found in expression $expression of firrtl2.ir.Type ${expression.tpe}")
     }
   }
 
@@ -219,7 +219,7 @@ class ExpressionCompiler(
   }
 
   //scalastyle:off method.length
-  def processStatements(modulePrefix: String, circuit: Circuit, statement: firrtl.ir.Statement): Unit = {
+  def processStatements(modulePrefix: String, circuit: Circuit, statement: firrtl2.ir.Statement): Unit = {
     def expand(name: String): String = if (modulePrefix.isEmpty) name else modulePrefix + "." + name
     def moduleName: String = modulePrefix.split(".").lastOption.getOrElse("")
 
@@ -437,7 +437,7 @@ class ExpressionCompiler(
       op:          PrimOp,
       expressions: Seq[Expression],
       ints:        Seq[BigInt],
-      tpe:         firrtl.ir.Type
+      tpe:         firrtl2.ir.Type
     ): ExpressionResult = {
       val arg1 = processExpression(expressions.head)
       val arg1Width = getWidth(expressions.head)
@@ -497,7 +497,7 @@ class ExpressionCompiler(
       op:          PrimOp,
       expressions: Seq[Expression],
       ints:        Seq[BigInt],
-      tpe:         firrtl.ir.Type
+      tpe:         firrtl2.ir.Type
     ): ExpressionResult = {
       val arg1 = processExpression(expressions.head)
       val arg2 = ints.head
@@ -526,7 +526,7 @@ class ExpressionCompiler(
     def unaryOps(
       op:          PrimOp,
       expressions: Seq[Expression],
-      tpe:         firrtl.ir.Type
+      tpe:         firrtl2.ir.Type
     ): ExpressionResult = {
       val arg1 = processExpression(expressions.head)
 
@@ -924,7 +924,7 @@ class ExpressionCompiler(
 
       case _: IsInvalid =>
 
-      case stop @ Stop(info, returnValue, clockExpression, enableExpression) =>
+      case stop @ Stop(info, returnValue, clockExpression, enableExpression, _) =>
         val stopSymbolName = expand(stop.name)
 
         symbolTable.stopToStopInfo.get(stopSymbolName) match {
@@ -956,7 +956,7 @@ class ExpressionCompiler(
             throw TreadleException(s"Could not find symbol for Stop $stop")
         }
 
-      case printf @ Print(info, stringLiteral, argExpressions, clockExpression, enableExpression) =>
+      case printf @ Print(info, stringLiteral, argExpressions, clockExpression, enableExpression, _) =>
         symbolTable.printToPrintInfo.get(printf) match {
           case Some(printInfo) =>
             val intExpression = toIntExpression(enableExpression, s"Error: printf $printf has unknown condition type")
@@ -990,7 +990,15 @@ class ExpressionCompiler(
             throw TreadleException(s"Could not find symbol for Print $printf")
         }
 
-      case verify @ Verification(Formal.Cover, info, clockExpression, predicateExpression, enableExpression, message) =>
+      case verify @ Verification(
+            Formal.Cover,
+            info,
+            clockExpression,
+            predicateExpression,
+            enableExpression,
+            message,
+            _
+          ) =>
         val name = expand(verify.name)
         symbolTable.verifyInfo.get(name) match {
           case Some(verifyInfo) =>
@@ -1051,7 +1059,7 @@ class ExpressionCompiler(
 
   def processModule(modulePrefix: String, myModule: DefModule, circuit: Circuit): Unit = {
     myModule match {
-      case module: firrtl.ir.Module =>
+      case module: firrtl2.ir.Module =>
         if (modulePrefix.isEmpty) {
           processTopLevelClocks(module)
         }
@@ -1065,8 +1073,8 @@ class ExpressionCompiler(
   // scalastyle:off cyclomatic.complexity
   def compile(circuit: Circuit): Unit = {
     val module = FindModule(circuit.main, circuit) match {
-      case regularModule:  firrtl.ir.Module => regularModule
-      case externalModule: firrtl.ir.ExtModule =>
+      case regularModule:  firrtl2.ir.Module => regularModule
+      case externalModule: firrtl2.ir.ExtModule =>
         throw TreadleException(s"Top level module must be a regular module $externalModule")
       case x =>
         throw TreadleException(s"Top level module is not the right kind of module $x")

@@ -3,7 +3,7 @@
 package chiseltest.formal.backends.btor
 
 import chiseltest.formal.backends._
-import firrtl.backends.experimental.smt._
+import firrtl2.backends.experimental.smt._
 
 class BtormcModelChecker(targetDir: os.Path) extends IsModelChecker {
   override val fileExtension = ".btor2"

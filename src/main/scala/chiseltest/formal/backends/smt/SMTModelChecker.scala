@@ -4,7 +4,7 @@
 package chiseltest.formal.backends.smt
 
 import chiseltest.formal.backends._
-import firrtl.backends.experimental.smt._
+import firrtl2.backends.experimental.smt._
 
 case class SMTModelCheckerOptions(checkConstraints: Boolean, checkBadStatesIndividually: Boolean)
 object SMTModelCheckerOptions {

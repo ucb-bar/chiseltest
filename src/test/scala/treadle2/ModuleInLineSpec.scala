@@ -2,8 +2,8 @@
 
 package treadle2
 
-import firrtl.stage.FirrtlSourceAnnotation
-import logger.LazyLogging
+import firrtl2.stage.FirrtlSourceAnnotation
+import firrtl2.logger.LazyLogging
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 

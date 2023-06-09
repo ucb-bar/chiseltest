@@ -2,8 +2,8 @@
 
 package treadle2.blackboxes
 
-import firrtl.stage.FirrtlSourceAnnotation
-import logger.{LazyLogging, LogLevel, Logger}
+import firrtl2.stage.FirrtlSourceAnnotation
+import firrtl2.logger.{LazyLogging, LogLevel, Logger}
 import org.scalatest.freespec.AnyFreeSpec
 import treadle2.{BlackBoxFactoriesAnnotation, TreadleTestHarness, WriteVcdAnnotation}
 

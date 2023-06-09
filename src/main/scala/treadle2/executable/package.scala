@@ -2,7 +2,7 @@
 
 package treadle2
 
-import firrtl.ir.Info
+import firrtl2.ir.Info
 
 package object executable {
   type Big = BigInt

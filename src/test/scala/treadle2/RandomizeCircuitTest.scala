@@ -2,8 +2,8 @@
 
 package treadle2
 
-import firrtl.stage.FirrtlSourceAnnotation
-import logger.{LazyLogging, LogLevel, LogLevelAnnotation}
+import firrtl2.stage.FirrtlSourceAnnotation
+import firrtl2.logger.{LazyLogging, LogLevel, LogLevelAnnotation}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import treadle2.utils.NameBasedRandomNumberGenerator

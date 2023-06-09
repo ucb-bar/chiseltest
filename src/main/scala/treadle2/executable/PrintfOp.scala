@@ -2,8 +2,8 @@
 
 package treadle2.executable
 
-import firrtl.WireKind
-import firrtl.ir._
+import firrtl2.WireKind
+import firrtl2.ir._
 
 import scala.collection.mutable
 

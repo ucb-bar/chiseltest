@@ -2,10 +2,10 @@
 
 package treadle2
 
-import firrtl.annotations.TargetToken.{Instance, OfModule}
-import firrtl.annotations._
-import firrtl.stage.{FirrtlFileAnnotation, FirrtlSourceAnnotation}
-import logger.{LazyLogging, LogLevel, Logger}
+import firrtl2.annotations.TargetToken.{Instance, OfModule}
+import firrtl2.annotations._
+import firrtl2.stage.{FirrtlFileAnnotation, FirrtlSourceAnnotation}
+import firrtl2.logger.{LazyLogging, LogLevel, Logger}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must._
 

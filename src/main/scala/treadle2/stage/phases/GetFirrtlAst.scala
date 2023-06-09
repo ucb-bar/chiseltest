@@ -2,9 +2,9 @@
 
 package treadle2.stage.phases
 
-import firrtl.options.Phase
-import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlFileAnnotation, FirrtlSourceAnnotation}
-import firrtl.{AnnotationSeq, Parser}
+import firrtl2.options.Phase
+import firrtl2.stage.{FirrtlCircuitAnnotation, FirrtlFileAnnotation, FirrtlSourceAnnotation}
+import firrtl2.{AnnotationSeq, Parser}
 
 /** There are multiple ways to get a FirrtlCircuit into treadle.
   * There is a priority to these methods

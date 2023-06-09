@@ -2,8 +2,8 @@
 
 package chiseltest.simulator
 
-import firrtl._
-import firrtl.annotations.NoTargetAnnotation
+import firrtl2._
+import firrtl2.annotations.NoTargetAnnotation
 
 /** context for a running firrtl circuit simulation */
 trait SimulatorContext {

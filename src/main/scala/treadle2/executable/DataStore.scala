@@ -2,7 +2,7 @@
 
 package treadle2.executable
 
-import firrtl.ir.Info
+import firrtl2.ir.Info
 import org.json4s._
 import org.json4s.native.JsonMethods._
 import org.json4s.JsonDSL._

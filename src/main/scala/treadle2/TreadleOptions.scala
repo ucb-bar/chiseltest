@@ -2,11 +2,11 @@
 
 package treadle2
 
-import firrtl.CircuitState
-import firrtl.annotations.{Annotation, NoTargetAnnotation}
-import firrtl.ir.Circuit
-import firrtl.options.{HasShellOptions, RegisteredLibrary, ShellOption, Unserializable}
-import firrtl.stage.{FirrtlFileAnnotation, FirrtlSourceAnnotation}
+import firrtl2.CircuitState
+import firrtl2.annotations.{Annotation, NoTargetAnnotation}
+import firrtl2.ir.Circuit
+import firrtl2.options.{HasShellOptions, RegisteredLibrary, ShellOption, Unserializable}
+import firrtl2.stage.{FirrtlFileAnnotation, FirrtlSourceAnnotation}
 import treadle2.blackboxes.BuiltInBlackBoxFactory
 import treadle2.executable.{ClockInfo, DataStorePlugin, ExecutionEngine, TreadleException}
 import treadle2.stage.phases.HandleFormalStatements

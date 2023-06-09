@@ -3,7 +3,7 @@
 package chiseltest.simulator
 
 import chiseltest.utils.FlatSpecWithTargetDir
-import firrtl._
+import firrtl2._
 import org.scalatest.Tag
 
 /** Base class for all simulator compliance tests. */
@@ -30,7 +30,7 @@ private object ComplianceTest {
       |""".stripMargin
 
   def loadFirrtl(src: String, annos: AnnotationSeq = List()): CircuitState = {
-    val state = CircuitState(firrtl.Parser.parse(src), annos)
+    val state = CircuitState(firrtl2.Parser.parse(src), annos)
     Compiler.toLowFirrtl(state)
   }
 }

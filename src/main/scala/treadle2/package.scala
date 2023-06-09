@@ -2,7 +2,7 @@
 
 package object treadle2 {
 
-  import firrtl.ir._
+  import firrtl2.ir._
 
   val Big0 = BigInt(0)
   val Big1 = BigInt(1)
@@ -26,7 +26,7 @@ package object treadle2 {
   }
   def ceilingLog2(x: Int): Int = scala.math.ceil(scala.math.log(x) / scala.math.log(2)).toInt
 
-  def makeRandom(tpe: firrtl.ir.Type): BigInt = {
+  def makeRandom(tpe: firrtl2.ir.Type): BigInt = {
     tpe match {
       case UIntType(IntWidth(n)) =>
         BigInt(numbits = n.toInt, rnd = random)
