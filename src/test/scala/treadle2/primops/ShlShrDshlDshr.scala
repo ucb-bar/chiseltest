@@ -165,7 +165,7 @@ class ShlShrDshlDshr extends AnyFreeSpec with Matchers with LazyLogging {
   "Dshr should work for pathological edge cases" in {
     def dshrIntFirrtl(width: Int): String = {
       s"""
-         |;buildInfoPackage: chisel3, version: 3.5-SNAPSHOT, scalaVersion: 2.12.17, sbtVersion: 1.3.10
+         |;buildInfoPackage: chisel3, version: 3.5-SNAPSHOT, scalaVersion: 2.12.18, sbtVersion: 1.3.10
          |circuit ShiftTestInt :
          |  module ShiftTestInt :
          |    input clock : Clock
