@@ -6,9 +6,9 @@ name := "chiseltest"
 // we keep in sync with chisel version names
 version := "5.0-SNAPSHOT"
 
-scalaVersion := "2.13.10"
+scalaVersion := "2.13.11"
 
-crossScalaVersions := Seq("2.13.10")
+crossScalaVersions := Seq("2.13.11")
 
 resolvers ++= Resolver.sonatypeOssRepos("snapshots")
 resolvers ++= Resolver.sonatypeOssRepos("releases")
@@ -51,7 +51,7 @@ publishTo := {
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map(
   "chisel3" -> "5.0.0", //"6.0.0-M1+9-f590ac9f-SNAPSHOT",
-  "firrtl" -> "2.0-SNAPSHOT",
+  "firrtl" -> "2.0-SNAPSHOT"
 )
 
 scalacOptions ++= Seq(
@@ -62,7 +62,7 @@ scalacOptions ++= Seq(
   // do not warn about firrtl imports, once the firrtl repo is removed, we will need to import the code
   "-Wconf:cat=deprecation&msg=Importing from firrtl is deprecated:s",
   // do not warn about firrtl deprecations
-  "-Wconf:cat=deprecation&msg=will not be supported as part of the migration to the MLIR-based FIRRTL Compiler:s",
+  "-Wconf:cat=deprecation&msg=will not be supported as part of the migration to the MLIR-based FIRRTL Compiler:s"
 ) ++ {
   CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, n)) if n >= 13 => Seq("-Ymacro-annotations")
