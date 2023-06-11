@@ -2,7 +2,7 @@
 
 package treadle2.chronometry
 
-import firrtl.stage.FirrtlSourceAnnotation
+import firrtl2.stage.FirrtlSourceAnnotation
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import treadle2.executable.ClockInfo

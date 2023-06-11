@@ -16,10 +16,10 @@ limitations under the License.
 
 package treadle2
 
-import firrtl.AnnotationSeq
-import firrtl.options.Shell
-import firrtl.stage.FirrtlCli
-import logger.Logger
+import firrtl2.AnnotationSeq
+import firrtl2.options.Shell
+import firrtl2.stage.FirrtlCli
+import firrtl2.logger.Logger
 
 /** This harness allows command line options to be added more easily to tests when requried
   * and most importantly allows logging to be contained within a Logger.makeScope. Without

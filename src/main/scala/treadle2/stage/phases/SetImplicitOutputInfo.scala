@@ -2,10 +2,10 @@
 
 package treadle2.stage.phases
 
-import firrtl.AnnotationSeq
-import firrtl.options.{Phase, TargetDirAnnotation}
-import firrtl.stage.phases.DriverCompatibility.TopNameAnnotation
-import firrtl.stage.{FirrtlCircuitAnnotation, OutputFileAnnotation}
+import firrtl2.AnnotationSeq
+import firrtl2.options.{Phase, TargetDirAnnotation}
+import firrtl2.stage.phases.DriverCompatibility.TopNameAnnotation
+import firrtl2.stage.{FirrtlCircuitAnnotation, OutputFileAnnotation}
 import treadle2.TreadleCircuitStateAnnotation
 
 /** Set a default output stuff

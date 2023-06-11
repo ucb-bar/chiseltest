@@ -2,9 +2,9 @@
 
 package treadle2
 
-import firrtl.options.TargetDirAnnotation
-import firrtl.stage.FirrtlSourceAnnotation
-import firrtl.{AnnotationSeq, FileUtils}
+import firrtl2.options.TargetDirAnnotation
+import firrtl2.stage.FirrtlSourceAnnotation
+import firrtl2.{AnnotationSeq, FileUtils}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import treadle2.executable.TreadleException

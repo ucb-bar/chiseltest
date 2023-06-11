@@ -5,13 +5,13 @@ package chiseltest.formal.backends
 import chiseltest.formal.backends.btor.BtormcModelChecker
 import chiseltest.formal.backends.smt._
 import chiseltest.formal.{DoNotModelUndef, DoNotOptimizeFormal, FailedBoundedCheckException}
-import firrtl._
-import firrtl.annotations._
-import firrtl.stage._
-import firrtl.backends.experimental.smt.random._
-import firrtl.backends.experimental.smt._
+import firrtl2._
+import firrtl2.annotations._
+import firrtl2.stage._
+import firrtl2.backends.experimental.smt.random._
+import firrtl2.backends.experimental.smt._
 import chiseltest.simulator._
-import firrtl.options.Dependency
+import firrtl2.options.Dependency
 
 sealed trait FormalEngineAnnotation extends NoTargetAnnotation
 
@@ -105,13 +105,13 @@ private[chiseltest] object Maltese {
   private val LoweringAnnos: AnnotationSeq = Seq(
     // we need to flatten the whole circuit
     RunFirrtlTransformAnnotation(Dependency(FlattenPass)),
-    RunFirrtlTransformAnnotation(Dependency[firrtl.passes.InlineInstances])
+    RunFirrtlTransformAnnotation(Dependency[firrtl2.passes.InlineInstances])
   )
 
   private val Optimizations: AnnotationSeq = Seq(
-    RunFirrtlTransformAnnotation(Dependency[firrtl.transforms.ConstantPropagation]),
+    RunFirrtlTransformAnnotation(Dependency[firrtl2.transforms.ConstantPropagation]),
     RunFirrtlTransformAnnotation(Dependency(passes.CommonSubexpressionElimination)),
-    RunFirrtlTransformAnnotation(Dependency[firrtl.transforms.DeadCodeElimination])
+    RunFirrtlTransformAnnotation(Dependency[firrtl2.transforms.DeadCodeElimination])
   )
 
   private val DefRandomAnnos: AnnotationSeq = Seq(

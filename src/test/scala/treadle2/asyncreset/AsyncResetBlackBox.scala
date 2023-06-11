@@ -2,8 +2,8 @@
 
 package treadle2.asyncreset
 
-import firrtl.ir.{Param, Type}
-import logger.LazyLogging
+import firrtl2.ir.{Param, Type}
+import firrtl2.logger.LazyLogging
 import treadle2._
 import treadle2.executable._
 
@@ -60,7 +60,7 @@ class AsyncResetReg(val instanceName: String) extends ScalaBlackBox with LazyLog
 
   override def setParams(params: Seq[Param]): Unit = {
     params.foreach {
-      case firrtl.ir.IntParam("RESET_VALUE", value) =>
+      case firrtl2.ir.IntParam("RESET_VALUE", value) =>
         resetValue = value
       case _ =>
       // ignore

@@ -2,9 +2,9 @@
 
 package treadle2.executable
 
-import firrtl.annotations.ReferenceTarget
-import firrtl.ir.{Info, IntWidth, NoInfo}
-import firrtl.{Kind, WireKind}
+import firrtl2.annotations.ReferenceTarget
+import firrtl2.ir.{Info, IntWidth, NoInfo}
+import firrtl2.{Kind, WireKind}
 import treadle2._
 import treadle2.utils.{BitMasks, BitMasksBigs}
 
@@ -15,7 +15,7 @@ case class Symbol(
   dataKind:   Kind,
   bitWidth:   Int,
   slots:      Int,
-  firrtlType: firrtl.ir.Type,
+  firrtlType: firrtl2.ir.Type,
   info:       Info) {
   var index:          Int = -1
   var cardinalNumber: Int = -1
@@ -92,7 +92,7 @@ case class Symbol(
 object Symbol {
   def apply(
     name:       String,
-    firrtlType: firrtl.ir.Type,
+    firrtlType: firrtl2.ir.Type,
     firrtlKind: Kind = WireKind,
     slots:      Int = 1,
     info:       Info = NoInfo
@@ -130,12 +130,12 @@ object DataSize {
   val IntThreshold = 31
   val LongThreshold = 63
 
-  def getBitWidth(firrtlType: firrtl.ir.Type): Int = {
+  def getBitWidth(firrtlType: firrtl2.ir.Type): Int = {
     firrtlType match {
-      case firrtl.ir.SIntType(IntWidth(bitWidth)) => bitWidth.toInt
-      case firrtl.ir.UIntType(IntWidth(bitWidth)) => bitWidth.toInt
-      case firrtl.ir.ClockType                    => 1
-      case firrtl.ir.AsyncResetType               => 1
+      case firrtl2.ir.SIntType(IntWidth(bitWidth)) => bitWidth.toInt
+      case firrtl2.ir.UIntType(IntWidth(bitWidth)) => bitWidth.toInt
+      case firrtl2.ir.ClockType                    => 1
+      case firrtl2.ir.AsyncResetType               => 1
       case _ =>
         throw TreadleException(s"Error:DataSize doesn't know size of $firrtlType")
     }
@@ -153,7 +153,7 @@ object DataSize {
 
   def apply(bitWidth: BigInt): DataSize = apply(bitWidth.toInt)
 
-  def apply(firrtlType: firrtl.ir.Type): DataSize = {
+  def apply(firrtlType: firrtl2.ir.Type): DataSize = {
     apply(getBitWidth(firrtlType))
   }
 }
@@ -170,12 +170,12 @@ case object UnsignedInt extends DataType {
 object DataType {
   //TODO: (chick) do we need clock and reset types here
 
-  def apply(tpe: firrtl.ir.Type): DataType = {
+  def apply(tpe: firrtl2.ir.Type): DataType = {
     tpe match {
-      case _: firrtl.ir.SIntType => SignedInt
-      case _: firrtl.ir.UIntType => UnsignedInt
-      case firrtl.ir.ClockType      => UnsignedInt
-      case firrtl.ir.AsyncResetType => UnsignedInt
+      case _: firrtl2.ir.SIntType => SignedInt
+      case _: firrtl2.ir.UIntType => UnsignedInt
+      case firrtl2.ir.ClockType      => UnsignedInt
+      case firrtl2.ir.AsyncResetType => UnsignedInt
       case t =>
         throw TreadleException(s"DataType does not know firrtl type $t")
     }

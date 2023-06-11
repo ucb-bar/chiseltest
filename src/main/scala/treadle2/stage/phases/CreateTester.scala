@@ -2,9 +2,9 @@
 
 package treadle2.stage.phases
 
-import firrtl.AnnotationSeq
-import firrtl.options.Phase
-import firrtl.stage.FirrtlCircuitAnnotation
+import firrtl2.AnnotationSeq
+import firrtl2.options.Phase
+import firrtl2.stage.FirrtlCircuitAnnotation
 import treadle2.{TreadleCircuitStateAnnotation, TreadleTester, TreadleTesterAnnotation}
 
 object CreateTester extends Phase {

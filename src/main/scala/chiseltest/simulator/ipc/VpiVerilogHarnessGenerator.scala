@@ -12,10 +12,10 @@ private[chiseltest] object VpiVerilogHarnessGenerator {
     useVpdDump:  Boolean = false,
     useFsdbDump: Boolean = false
   ): String = {
-    val testbenchName = firrtl.Namespace(moduleNames).newName("testbench")
+    val testbenchName = firrtl2.Namespace(moduleNames).newName("testbench")
 
     val dutName = toplevel.name
-    val namespace = firrtl.Namespace(toplevel.portNames)
+    val namespace = firrtl2.Namespace(toplevel.portNames)
 
     toplevel.requireNoMultiClock()
     val clockName = toplevel.clocks.headOption.getOrElse(namespace.newName("clock"))

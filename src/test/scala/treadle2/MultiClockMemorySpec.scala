@@ -2,9 +2,9 @@
 
 package treadle2
 
-import firrtl.options.TargetDirAnnotation
-import firrtl.stage.FirrtlSourceAnnotation
-import logger.LazyLogging
+import firrtl2.options.TargetDirAnnotation
+import firrtl2.stage.FirrtlSourceAnnotation
+import firrtl2.logger.LazyLogging
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import treadle2.executable.{ClockInfo, TreadleException}

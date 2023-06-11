@@ -2,10 +2,10 @@
 
 package treadle2.utils
 
-import firrtl.ir.Circuit
-import firrtl.options.Dependency
-import firrtl.stage.{Forms, TransformManager}
-import firrtl.{CircuitState, DependencyAPIMigration, Emitter, Transform}
+import firrtl2.ir.Circuit
+import firrtl2.options.Dependency
+import firrtl2.stage.{Forms, TransformManager}
+import firrtl2.{CircuitState, DependencyAPIMigration, Emitter, Transform}
 
 import scala.collection.mutable
 
@@ -19,8 +19,8 @@ class AugmentPrintf extends Transform with DependencyAPIMigration {
   override def invalidates(a: Transform): Boolean = false
 
   def apply(circuit: Circuit): Circuit = {
-    import firrtl._
-    import firrtl.ir._
+    import firrtl2._
+    import firrtl2.ir._
     def insert(
       newStmts:        mutable.ArrayBuffer[Statement],
       namespace:       Namespace,
@@ -35,7 +35,7 @@ class AugmentPrintf extends Transform with DependencyAPIMigration {
       wref
     }
 
-    def fixPrintsStmt(namespace: firrtl.Namespace)(s: Statement): Statement =
+    def fixPrintsStmt(namespace: firrtl2.Namespace)(s: Statement): Statement =
       s.mapStmt(fixPrintsStmt(namespace)) match {
         case s: Stop =>
           val newStmts = mutable.ArrayBuffer[Statement]()

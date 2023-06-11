@@ -3,7 +3,7 @@
 package chiseltest.simulator.benchmark
 
 import chiseltest.simulator._
-import firrtl.options.TargetDirAnnotation
+import firrtl2.options.TargetDirAnnotation
 import treadle2.chronometry.Timer
 
 object SimulatorBenchmark extends App {

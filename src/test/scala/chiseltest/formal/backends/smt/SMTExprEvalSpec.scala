@@ -9,7 +9,7 @@ import chiseltest.formal._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.PrivateMethodTester
 
-import firrtl.backends.experimental.smt._
+import firrtl2.backends.experimental.smt._
 
 class SMTExprEvalSpec extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption with PrivateMethodTester {
   behavior of "SMTExprEval" 

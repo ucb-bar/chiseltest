@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.util._
 import chiseltest._
 import chiseltest.simulator.RequiresVerilator
-import firrtl.AnnotationSeq
+import firrtl2.AnnotationSeq
 import org.scalatest.flatspec.AnyFlatSpec
 
 object MyEnum extends ChiselEnum {

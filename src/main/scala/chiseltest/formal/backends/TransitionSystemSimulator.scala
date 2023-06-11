@@ -4,7 +4,7 @@ package chiseltest.formal.backends
 
 import treadle2.vcd
 import chiseltest.formal.backends.smt._
-import firrtl.backends.experimental.smt._
+import firrtl2.backends.experimental.smt._
 
 import scala.collection.mutable
 

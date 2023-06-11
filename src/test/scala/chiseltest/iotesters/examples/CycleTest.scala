@@ -6,7 +6,7 @@ import chisel3._
 import chiseltest._
 import chiseltest.iotesters._
 import chiseltest.simulator.RequiresVerilator
-import firrtl.transforms.DontCheckCombLoopsAnnotation
+import firrtl2.transforms.DontCheckCombLoopsAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 
 class HasCycle extends Module {

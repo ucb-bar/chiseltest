@@ -2,7 +2,7 @@ package chiseltest.iotesters
 
 import chisel3._
 import chiseltest.simulator.SimulatorContext
-import logger.LazyLogging
+import firrtl2.logger.LazyLogging
 
 import scala.collection.immutable
 import scala.collection.mutable

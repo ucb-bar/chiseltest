@@ -3,7 +3,7 @@
 
 package chiseltest.formal.backends.smt
 
-import firrtl.backends.experimental.smt._
+import firrtl2.backends.experimental.smt._
 
 class UnrollSmtEncoding(sys: TransitionSystem) extends TransitionSystemSmtEncoding {
   private def at(sym:  SMTSymbol, step: Int): SMTSymbol = sym.rename(s"${sym.name}@$step")

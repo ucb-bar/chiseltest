@@ -4,7 +4,7 @@ package chiseltest.tests
 
 import chisel3._
 import chiseltest._
-import firrtl.AnnotationSeq
+import firrtl2.AnnotationSeq
 import org.scalatest.freespec.AnyFreeSpec
 
 /**

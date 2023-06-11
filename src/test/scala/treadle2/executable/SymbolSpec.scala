@@ -2,9 +2,9 @@
 
 package treadle2.executable
 
-import firrtl.RegKind
-import firrtl.ir.{IntWidth, NoInfo, SIntType}
-import logger.LazyLogging
+import firrtl2.RegKind
+import firrtl2.ir.{IntWidth, NoInfo, SIntType}
+import firrtl2.logger.LazyLogging
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 

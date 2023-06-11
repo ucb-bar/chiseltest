@@ -3,12 +3,12 @@
 package treadle2
 
 
-import firrtl.AnnotationSeq
-import firrtl.annotations._
-import firrtl.options.TargetDirAnnotation
-import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation}
-import firrtl.stage.{FirrtlSourceAnnotation, FirrtlStage, RunFirrtlTransformAnnotation}
-import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
+import firrtl2.AnnotationSeq
+import firrtl2.annotations._
+import firrtl2.options.TargetDirAnnotation
+import firrtl2.passes.wiring.{SinkAnnotation, SourceAnnotation}
+import firrtl2.stage.{FirrtlSourceAnnotation, FirrtlStage, RunFirrtlTransformAnnotation}
+import firrtl2.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -53,7 +53,7 @@ class BoreSpec extends AnyFreeSpec with Matchers {
       NoDedupAnnotation(ModuleName("BoreTestConstant", CircuitName("BoreTestTop"))),
       SinkAnnotation(ComponentName("y", ModuleName("BoreTestExpect", CircuitName("BoreTestTop"))), "x"),
       NoDedupAnnotation(ModuleName("BoreTestExpect", CircuitName("BoreTestTop"))),
-      RunFirrtlTransformAnnotation(new firrtl.passes.wiring.WiringTransform)
+      RunFirrtlTransformAnnotation(new firrtl2.passes.wiring.WiringTransform)
     )
 
     annos = (new FirrtlStage).transform(annos)

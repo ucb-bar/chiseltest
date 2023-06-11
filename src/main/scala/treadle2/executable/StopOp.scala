@@ -2,7 +2,7 @@
 
 package treadle2.executable
 
-import firrtl.ir.Info
+import firrtl2.ir.Info
 
 case class StopOp(
   symbol:          Symbol,

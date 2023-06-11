@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package treadle2.executable
-import firrtl.ir.Info
+import firrtl2.ir.Info
 
 trait Transition
 

@@ -6,7 +6,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import chiseltest._
 import chisel3._
 
-// most of the tests are inspired by the UndefinedFirrtlSpec in firrtl.backends.experimental.smt.end2end
+// most of the tests are inspired by the UndefinedFirrtlSpec in firrtl2.backends.experimental.smt.end2end
 class UndefinedValuesTests extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption {
   "division by zero" should "result in an arbitrary value" taggedAs FormalTag in {
     // the SMTLib spec defines the result of division by zero to be all 1s

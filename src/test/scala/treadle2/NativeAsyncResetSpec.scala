@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package treadle2
 
-import firrtl.stage.FirrtlSourceAnnotation
+import firrtl2.stage.FirrtlSourceAnnotation
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 

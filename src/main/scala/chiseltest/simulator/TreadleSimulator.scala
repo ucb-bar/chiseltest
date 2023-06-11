@@ -2,9 +2,9 @@
 
 package chiseltest.simulator
 
-import firrtl.annotations.Annotation
-import firrtl.stage.FirrtlCircuitAnnotation
-import firrtl.{AnnotationSeq, CircuitState}
+import firrtl2.annotations.Annotation
+import firrtl2.stage.FirrtlCircuitAnnotation
+import firrtl2.{AnnotationSeq, CircuitState}
 import treadle2.{ClockInfoAnnotation, TreadleTester, TreadleTesterAnnotation}
 import treadle2.executable.{ClockInfo, StopException}
 import treadle2.stage.TreadleTesterPhase

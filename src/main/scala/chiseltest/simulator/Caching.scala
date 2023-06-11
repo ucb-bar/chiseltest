@@ -3,8 +3,8 @@
 package chiseltest.simulator
 
 import chiseltest.internal.CachingAnnotation
-import firrtl._
-import firrtl.annotations._
+import firrtl2._
+import firrtl2.annotations._
 
 import java.security.MessageDigest
 import scala.util.Try
@@ -71,7 +71,7 @@ private object Caching {
     hashStrings(values)
   }
 
-  private def firrtlVersionString: String = firrtl.BuildInfo.toString
+  private def firrtlVersionString: String = firrtl2.BuildInfo.toString
   private def systemVersionStrings: Seq[String] =
     Seq(System.getProperty("java.version"), scala.util.Properties.versionNumberString)
 

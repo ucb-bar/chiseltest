@@ -16,8 +16,8 @@ limitations under the License.
 
 package treadle2.vcd
 
-import firrtl.annotations.{Annotation, NoTargetAnnotation}
-import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
+import firrtl2.annotations.{Annotation, NoTargetAnnotation}
+import firrtl2.options.{HasShellOptions, ShellOption, Unserializable}
 
 sealed trait VcdOption extends Unserializable { this: Annotation => }
 

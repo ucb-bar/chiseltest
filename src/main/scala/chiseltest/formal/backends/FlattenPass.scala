@@ -2,14 +2,14 @@
 
 package chiseltest.formal.backends
 
-import firrtl.analyses.InstanceKeyGraph
-import firrtl.analyses.InstanceKeyGraph.InstanceKey
-import firrtl.annotations._
-import firrtl.options.Dependency
-import firrtl.passes.InlineAnnotation
-import firrtl.stage.Forms
-import firrtl._
-import firrtl.backends.experimental.smt.random.DefRandom
+import firrtl2.analyses.InstanceKeyGraph
+import firrtl2.analyses.InstanceKeyGraph.InstanceKey
+import firrtl2.annotations._
+import firrtl2.options.Dependency
+import firrtl2.passes.InlineAnnotation
+import firrtl2.stage.Forms
+import firrtl2._
+import firrtl2.backends.experimental.smt.random.DefRandom
 
 private case class DoNotInlineAnnotation(target: ModuleTarget) extends SingleTargetAnnotation[ModuleTarget] {
   override def duplicate(n: ModuleTarget) = copy(target = n)
@@ -23,7 +23,7 @@ private case class StateAnnotation(target: ReferenceTarget, pathName: String, da
 
 private object StateAnnotation {
   def apply(target: ReferenceTarget, tpe: ir.Type, depth: BigInt = -1): StateAnnotation = {
-    new StateAnnotation(target, toPathName(target), firrtl.bitWidth(tpe).toInt, depth.toInt)
+    new StateAnnotation(target, toPathName(target), firrtl2.bitWidth(tpe).toInt, depth.toInt)
   }
 
   private def toPathName(t: Target): String = {
@@ -42,16 +42,16 @@ private object FlattenPass extends Transform with DependencyAPIMigration {
   override def prerequisites = Forms.LowForm
   // this pass relies on modules not being dedupped yet (TODO: review that assumption!)
   override def optionalPrerequisiteOf = Seq(
-    Dependency[firrtl.passes.InlineInstances] // this pass generates annotations for the InlineInstances pass!
+    Dependency[firrtl2.passes.InlineInstances] // this pass generates annotations for the InlineInstances pass!
   )
 
   override def optionalPrerequisites = Seq(
     // we want to trace the renaming of the registers created my the mem delay pass
-    Dependency(firrtl.passes.memlib.VerilogMemDelays)
+    Dependency(firrtl2.passes.memlib.VerilogMemDelays)
   )
   override def invalidates(a: Transform): Boolean = false
 
-  override protected def execute(state: firrtl.CircuitState): firrtl.CircuitState = {
+  override protected def execute(state: firrtl2.CircuitState): firrtl2.CircuitState = {
     val doNotInline = state.annotations.collect {
       case DoNotInlineAnnotation(target) if target.circuit == state.circuit.main => target.module
     }

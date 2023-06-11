@@ -4,7 +4,7 @@ package chiseltest.internal
 
 import chisel3.Module
 import chiseltest.TestResult
-import firrtl.annotations.NoTargetAnnotation
+import firrtl2.annotations.NoTargetAnnotation
 
 import scala.util.DynamicVariable
 

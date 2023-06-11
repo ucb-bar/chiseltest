@@ -2,7 +2,7 @@
 
 package treadle2.fixedpoint
 
-import firrtl.stage.FirrtlSourceAnnotation
+import firrtl2.stage.FirrtlSourceAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import treadle2._
