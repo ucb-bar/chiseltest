@@ -9,7 +9,7 @@ import coursier.maven.MavenRepository
 object chiseltest extends mill.Cross[chiseltestCrossModule]("2.13.10")
 
 val defaultVersions = Map(
-  "chisel3" -> "3.6.0"
+  "chisel3" -> "3.6-SNAPSHOT",
 )
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
