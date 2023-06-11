@@ -4,10 +4,10 @@ package treadle2.vcd
 
 import java.io.{ByteArrayOutputStream, File, PrintStream}
 
-import firrtl.options.Viewer.view
-import firrtl.options.{StageOptions, TargetDirAnnotation}
-import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
-import firrtl.util.BackendCompilationUtilities
+import firrtl2.options.Viewer.view
+import firrtl2.options.{StageOptions, TargetDirAnnotation}
+import firrtl2.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
+import firrtl2.util.BackendCompilationUtilities
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import treadle2._

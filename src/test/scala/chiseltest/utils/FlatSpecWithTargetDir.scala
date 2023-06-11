@@ -3,8 +3,8 @@
 package chiseltest.utils
 
 import chiseltest.experimental.sanitizeFileName
-import firrtl.AnnotationSeq
-import firrtl.options.TargetDirAnnotation
+import firrtl2.AnnotationSeq
+import firrtl2.options.TargetDirAnnotation
 import org.scalatest.{Outcome, Tag}
 import org.scalatest.flatspec.AnyFlatSpec
 

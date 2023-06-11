@@ -4,8 +4,8 @@ package treadle2
 
 import java.io.File
 
-import firrtl.options.TargetDirAnnotation
-import firrtl.stage.FirrtlSourceAnnotation
+import firrtl2.options.TargetDirAnnotation
+import firrtl2.stage.FirrtlSourceAnnotation
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 

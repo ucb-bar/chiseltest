@@ -4,7 +4,7 @@ package chiseltest.internal
 
 import chiseltest.Region
 import chisel3._
-import firrtl.AnnotationSeq
+import firrtl2.AnnotationSeq
 
 import scala.collection.mutable
 

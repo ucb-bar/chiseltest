@@ -2,9 +2,9 @@
 
 package treadle2.blackboxes
 
-import firrtl.ir.Type
-import firrtl.stage.FirrtlSourceAnnotation
-import logger.LazyLogging
+import firrtl2.ir.Type
+import firrtl2.stage.FirrtlSourceAnnotation
+import firrtl2.logger.LazyLogging
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import treadle2._

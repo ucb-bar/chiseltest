@@ -3,26 +3,26 @@
 package chiseltest.formal
 
 import chisel3.util.log2Ceil
-import firrtl._
-import firrtl.annotations._
-import firrtl.options.Dependency
-import firrtl.transforms._
+import firrtl2._
+import firrtl2.annotations._
+import firrtl2.options.Dependency
+import firrtl2.transforms._
 
 /** adds an assumption to the toplevel module that all resets are active in the first cycle */
 private object AddResetAssumptionPass extends Transform with DependencyAPIMigration {
   // run on lowered firrtl
   override def prerequisites = Seq(
-    Dependency(firrtl.passes.ExpandWhens),
-    Dependency(firrtl.passes.LowerTypes),
-    Dependency(firrtl.transforms.RemoveReset),
+    Dependency(firrtl2.passes.ExpandWhens),
+    Dependency(firrtl2.passes.LowerTypes),
+    Dependency(firrtl2.transforms.RemoveReset),
     // try to work around dead code elimination removing our registers
-    Dependency[firrtl.transforms.DeadCodeElimination]
+    Dependency[firrtl2.transforms.DeadCodeElimination]
   )
   override def invalidates(a: Transform) = false
   // since we generate PresetRegAnnotations, we need to run after preset propagation
   override def optionalPrerequisites = Seq(Dependency[PropagatePresetAnnotations])
   // we want to run before the actual Verilog is emitted
-  override def optionalPrerequisiteOf = firrtl.stage.Forms.BackendEmitters
+  override def optionalPrerequisiteOf = firrtl2.stage.Forms.BackendEmitters
 
   import FirrtlUtils._
   override def execute(state: CircuitState): CircuitState = {

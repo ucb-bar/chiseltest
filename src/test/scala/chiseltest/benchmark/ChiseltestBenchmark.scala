@@ -7,7 +7,7 @@ import chisel3._
 import chiseltest.internal.NoThreadingAnnotation
 import chiseltest.simulator.SimulatorAnnotation
 import chiseltest.simulator.benchmark.DecoupledGcd
-import firrtl.options.TargetDirAnnotation
+import firrtl2.options.TargetDirAnnotation
 import treadle2.chronometry.Timer
 
 object ChiseltestBenchmark extends App {

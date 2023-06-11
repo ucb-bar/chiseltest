@@ -5,7 +5,7 @@ import chisel3.testers.BasicTester
 import chiseltest.{defaults, ChiselAssertionError, StopException, TimeoutException}
 import chiseltest.coverage.{Coverage, TestCoverage}
 import chiseltest.simulator.{Compiler, DebugPrintWrapper, Simulator, SimulatorContext, StepInterrupted, StepOk}
-import firrtl.AnnotationSeq
+import firrtl2.AnnotationSeq
 
 /** Backend that allows us to run hardware testers in the style of `chisel3.testers.BasicTester` efficiently.
   * @warn this is an internal API, use the wrappers from the chiseltest module instead.

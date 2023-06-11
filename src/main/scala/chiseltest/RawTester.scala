@@ -7,7 +7,7 @@ import chiseltest.experimental.sanitizeFileName
 import chisel3.Module
 import chiseltest.formal.Formal
 import chiseltest.internal.TestEnvInterface.addDefaultTargetDir
-import firrtl.AnnotationSeq
+import firrtl2.AnnotationSeq
 
 /** Used to run simple tests that do not require a scalatest environment in order to run
   * @param testName This will be used to generate a working directory in ./test_run_dir

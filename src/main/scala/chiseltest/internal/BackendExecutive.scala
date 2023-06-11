@@ -7,9 +7,9 @@ import chisel3.reflect.DataMirror
 import chisel3.{Data, Element, Module, Record, Vec}
 import chiseltest.coverage.Coverage
 import chiseltest.simulator.{Compiler, DebugPrintWrapper, Simulator}
-import firrtl.AnnotationSeq
-import firrtl.annotations.ReferenceTarget
-import firrtl.transforms.{CheckCombLoops, CombinationalPath}
+import firrtl2.AnnotationSeq
+import firrtl2.annotations.ReferenceTarget
+import firrtl2.transforms.{CheckCombLoops, CombinationalPath}
 
 object BackendExecutive {
 

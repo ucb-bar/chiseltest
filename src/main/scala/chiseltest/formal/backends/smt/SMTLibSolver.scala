@@ -3,7 +3,7 @@
 
 package chiseltest.formal.backends.smt
 
-import firrtl.backends.experimental.smt._
+import firrtl2.backends.experimental.smt._
 import scala.collection.mutable
 
 object Yices2SMTLib extends Solver {

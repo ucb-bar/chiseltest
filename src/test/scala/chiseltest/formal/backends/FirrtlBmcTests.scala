@@ -3,10 +3,10 @@
 package chiseltest.formal.backends
 
 import chiseltest.formal.{FailedBoundedCheckException, FormalBackendOption, FormalTag}
-import firrtl.annotations._
+import firrtl2.annotations._
 import chiseltest.utils.FlatSpecWithTargetDir
 import chiseltest.simulator.{Compiler, WriteVcdAnnotation}
-import firrtl._
+import firrtl2._
 
 class FirrtlBmcTests extends FlatSpecWithTargetDir {
   behavior of "maltese bmc"
@@ -28,7 +28,7 @@ class FirrtlBmcTests extends FlatSpecWithTargetDir {
   private val PresetAnno = PresetAnnotation(mRef.ref("reset"))
 
   private def loadFirrtl(src: String, annos: AnnotationSeq): CircuitState = {
-    val state = CircuitState(firrtl.Parser.parse(src), annos)
+    val state = CircuitState(firrtl2.Parser.parse(src), annos)
     Compiler.toLowFirrtl(state)
   }
   private def loadFirrtl(src: String): CircuitState =

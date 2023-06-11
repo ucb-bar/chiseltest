@@ -3,7 +3,7 @@ package chiseltest.formal
 import chisel3._
 import chisel3.util._
 import chiseltest._
-import firrtl.AnnotationSeq
+import firrtl2.AnnotationSeq
 import org.scalatest.flatspec.AnyFlatSpec
 
 class MagicPacketTrackerTests extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption {

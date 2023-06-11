@@ -7,7 +7,7 @@ import chiseltest.experimental.sanitizeFileName
 import utest.TestSuite
 import chisel3.Module
 import chiseltest.internal.TestEnvInterface.addDefaultTargetDir
-import firrtl.AnnotationSeq
+import firrtl2.AnnotationSeq
 import utest.framework.Formatter
 
 /** Using utest as test framework

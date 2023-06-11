@@ -2,8 +2,8 @@
 
 package chiseltest.simulator
 
-import firrtl._
-import firrtl.annotations._
+import firrtl2._
+import firrtl2.annotations._
 import chiseltest.simulator.jna._
 
 case object VerilatorBackendAnnotation extends SimulatorAnnotation {

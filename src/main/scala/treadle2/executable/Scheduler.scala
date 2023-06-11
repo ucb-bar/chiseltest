@@ -2,8 +2,8 @@
 
 package treadle2.executable
 
-import firrtl.ir.{Info, NoInfo}
-import logger.LazyLogging
+import firrtl2.ir.{Info, NoInfo}
+import firrtl2.logger.LazyLogging
 
 import scala.collection.mutable
 

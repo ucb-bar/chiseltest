@@ -7,10 +7,11 @@ import org.scalatest.flatspec.AnyFlatSpec
 import chiseltest._
 import chisel3._
 import chisel3.experimental.{ChiselAnnotation, annotate}
-import firrtl.annotations.{Annotation, MemoryArrayInitAnnotation, MemoryScalarInitAnnotation, ReferenceTarget}
-import firrtl.ir.ReadUnderWrite
+import chiseltest.simulator.{Firrtl2AnnotationWrapper, convertTargetToFirrtl2}
+import firrtl2.annotations.{Annotation, MemoryArrayInitAnnotation, MemoryScalarInitAnnotation, ReferenceTarget}
+import firrtl2.ir.ReadUnderWrite
 
-// most of the tests are inspired by the MemorySpec in firrtl.backends.experimental.smt.end2end
+// most of the tests are inspired by the MemorySpec in firrtl2.backends.experimental.smt.end2end
 class MemoryTests extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption {
   "Registered read-first memory" should "return written data after two cycles" taggedAs FormalTag in {
     verify(new ReadFirstMemoryReturnsDataAfterTwoCycles, Seq(BoundedCheck(2), DefaultBackend))
@@ -100,18 +101,18 @@ class SyncMemTestModule(readUnderWrite: ReadUnderWrite) extends Module {
   out := readValue
 }
 
-class ReadFirstMemoryReturnsDataAfterTwoCycles extends SyncMemTestModule(ReadUnderWrite.Old) {
+class ReadFirstMemoryReturnsDataAfterTwoCycles extends SyncMemTestModule(SyncReadMem.ReadFirst) {
   // we assume the we read from the address that we last wrote to
   assume(readAddr === past(writeAddr))
   assert(out === past(in, 2))
 }
 
-class ReadFirstMemoryReturnsDataAfterOneCycle extends SyncMemTestModule(ReadUnderWrite.Old) {
+class ReadFirstMemoryReturnsDataAfterOneCycle extends SyncMemTestModule(SyncReadMem.ReadFirst) {
   assume(readAddr === writeAddr)
   assert(out === past(in))
 }
 
-class WriteFirstMemoryReturnsDataAfterOneCycle extends SyncMemTestModule(ReadUnderWrite.New) {
+class WriteFirstMemoryReturnsDataAfterOneCycle extends SyncMemTestModule(SyncReadMem.WriteFirst) {
   assume(readAddr === writeAddr)
   assert(out === past(in))
 }
@@ -123,7 +124,7 @@ class ReadOnlyMemModule extends Module {
   out := m.read(readAddr)
   def annoMem(a: ReferenceTarget => Annotation): Unit = {
     annotate(new ChiselAnnotation {
-      override def toFirrtl = a(m.toTarget)
+      override def toFirrtl = Firrtl2AnnotationWrapper(a(convertTargetToFirrtl2(m.toTarget)))
     })
   }
 }
@@ -178,7 +179,7 @@ class ReadEnableSyncMemModule extends Module {
   val m = SyncReadMem(4, UInt(8.W))
   // init with all zeros
   annotate(new ChiselAnnotation {
-    override def toFirrtl = MemoryScalarInitAnnotation(m.toTarget, 0)
+    override def toFirrtl = Firrtl2AnnotationWrapper(MemoryScalarInitAnnotation(convertTargetToFirrtl2(m.toTarget), 0))
   })
   // the read port is enabled in even cycles
   val data = m.read(0.U, en)
@@ -202,7 +203,7 @@ class OutOfBoundsValueIs(value: Int) extends Module {
   // memory with three entries initialized to zero
   val m = Mem(3, UInt(8.W))
   annotate(new ChiselAnnotation {
-    override def toFirrtl = MemoryScalarInitAnnotation(m.toTarget, 0)
+    override def toFirrtl = Firrtl2AnnotationWrapper(MemoryScalarInitAnnotation(convertTargetToFirrtl2(m.toTarget), 0))
   })
   out := m.read(readAddr)
   // all in bounds entries should be zero

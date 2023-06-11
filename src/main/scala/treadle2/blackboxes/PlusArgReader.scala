@@ -2,7 +2,7 @@
 
 package treadle2.blackboxes
 
-import firrtl.ir.{IntParam, Param, StringParam, Type}
+import firrtl2.ir.{IntParam, Param, StringParam, Type}
 import treadle2.executable.{Transition, TreadleException}
 import treadle2.{ScalaBlackBox, _}
 

@@ -2,7 +2,7 @@
 
 package treadle2.real
 
-import firrtl.ir.Type
+import firrtl2.ir.Type
 import treadle2._
 
 object DspReal {

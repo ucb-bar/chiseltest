@@ -2,7 +2,7 @@
 // Author: Kevin Laeufer <laeufer@cs.berkeley.edu>
 package chiseltest.formal.backends
 
-import firrtl.backends.experimental.smt._
+import firrtl2.backends.experimental.smt._
 
 private[chiseltest] trait ModelCheckResult {
   def isFail: Boolean

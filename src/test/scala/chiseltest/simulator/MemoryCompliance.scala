@@ -2,7 +2,7 @@
 
 package chiseltest.simulator
 
-import firrtl.annotations.{CircuitTarget, MemoryArrayInitAnnotation, MemoryFileInlineAnnotation, MemoryScalarInitAnnotation}
+import firrtl2.annotations.{CircuitTarget, MemoryArrayInitAnnotation, MemoryFileInlineAnnotation, MemoryScalarInitAnnotation}
 import org.scalatest.Tag
 
 import scala.util.Random

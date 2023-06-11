@@ -8,7 +8,7 @@ import chiseltest.internal.CachingAnnotation
 import chiseltest.simulator.{CachingDebugAnnotation, RequiresVerilator}
 import chiseltest.utils.CaptureStdout
 import chiseltest.tests.StaticModule
-import firrtl.AnnotationSeq
+import firrtl2.AnnotationSeq
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 

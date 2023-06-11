@@ -2,9 +2,9 @@
 
 package treadle2.primops
 
-import firrtl.ir
-import firrtl.ir.Type
-import firrtl.stage.FirrtlSourceAnnotation
+import firrtl2.ir
+import firrtl2.ir.Type
+import firrtl2.stage.FirrtlSourceAnnotation
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import treadle2._
@@ -19,7 +19,7 @@ class BlackBoxTypeParam_1(val name: String) extends ScalaBlackBox {
   override def setParams(params: Seq[ir.Param]): Unit = {
     val p1 = params.find(_.name == "T")
     p1.foreach {
-      case valueParam: firrtl.ir.RawStringParam =>
+      case valueParam: firrtl2.ir.RawStringParam =>
         returnValue = BigInt("deadbeef", 16)
       case _ =>
         throw new Exception("huh? should not get here")

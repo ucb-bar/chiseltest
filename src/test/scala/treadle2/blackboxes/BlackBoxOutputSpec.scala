@@ -2,8 +2,8 @@
 
 package treadle2.blackboxes
 
-import firrtl.ir.Type
-import firrtl.stage.FirrtlSourceAnnotation
+import firrtl2.ir.Type
+import firrtl2.stage.FirrtlSourceAnnotation
 import treadle2._
 import treadle2.executable._
 import org.scalatest.freespec.AnyFreeSpec

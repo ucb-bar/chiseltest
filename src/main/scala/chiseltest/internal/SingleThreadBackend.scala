@@ -4,7 +4,7 @@ import chisel3.{Clock, Data, Module}
 import chiseltest._
 import chiseltest.coverage.TestCoverage
 import chiseltest.simulator.{SimulatorContext, StepInterrupted, StepOk}
-import firrtl.AnnotationSeq
+import firrtl2.AnnotationSeq
 import scala.collection.mutable
 
 /** Chiseltest backend that does not support fork or timescope but is generally faster since it

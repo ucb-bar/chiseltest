@@ -4,7 +4,7 @@ package chiseltest.experimental
 
 import chisel3._
 import chisel3.experimental.{ExtModule, IntParam}
-import firrtl.ir.{Param, Type}
+import firrtl2.ir.{Param, Type}
 import treadle2.executable.{PositiveEdge, Transition}
 import treadle2.{ScalaBlackBox, ScalaBlackBoxFactory}
 
@@ -74,7 +74,7 @@ class AsyncResetRegScalaImpl(instanceName: String) extends ScalaBlackBox {
 
   override def setParams(params: Seq[Param]): Unit = {
     params.foreach {
-      case firrtl.ir.IntParam("RESET_VALUE", value) =>
+      case firrtl2.ir.IntParam("RESET_VALUE", value) =>
         resetValue = value
       case param =>
         println(s"WARNING: treadle black box $instanceName called with Verilog Parameter $param")

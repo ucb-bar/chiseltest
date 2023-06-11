@@ -2,10 +2,10 @@
 
 package treadle2.executable
 
-import firrtl._
-import firrtl.graph.DiGraph
-import firrtl.ir._
-import logger.LazyLogging
+import firrtl2._
+import firrtl2.graph.DiGraph
+import firrtl2.ir._
+import firrtl2.logger.LazyLogging
 import treadle2.utils.FindModule
 import treadle2.{ScalaBlackBox, ScalaBlackBoxFactory}
 
@@ -243,7 +243,7 @@ object SymbolTable extends LazyLogging {
       def getClockSymbol(expression: Expression): Option[Symbol] = {
         val references = expressionToReferences(expression)
         val clocks = references.filter { symbol =>
-          symbol.firrtlType == firrtl.ir.ClockType
+          symbol.firrtlType == firrtl2.ir.ClockType
         }
         clocks.headOption
       }
@@ -252,7 +252,7 @@ object SymbolTable extends LazyLogging {
         if (!clockSignals.contains(clockName)) {
           clockSignals.add(clockName)
           val prevClockName = makePreviousValue(clockName)
-          val symbol = Symbol.apply(prevClockName, tpe, firrtl.NodeKind, info = info)
+          val symbol = Symbol.apply(prevClockName, tpe, firrtl2.NodeKind, info = info)
           addSymbol(symbol)
         }
       }
@@ -341,7 +341,7 @@ object SymbolTable extends LazyLogging {
         case DefNode(info, name, expression) =>
           logger.debug(s"declaration:DefNode:$name:${expression.serialize} ${expressionToReferences(expression)}")
           val expandedName = expand(name)
-          val symbol = Symbol(expandedName, expression.tpe, firrtl.NodeKind, info = info)
+          val symbol = Symbol(expandedName, expression.tpe, firrtl2.NodeKind, info = info)
           addSymbol(symbol)
           addDependency(symbol, expressionToReferences(expression))
           if (expression.tpe == ClockType) {
@@ -394,7 +394,7 @@ object SymbolTable extends LazyLogging {
           val values = moduleMemoryToMemorySymbol.getOrElseUpdate(moduleMemory, new mutable.HashSet)
           values += memorySymbols.head
 
-        case stop @ Stop(info, _, clockExpression, enableExpression) =>
+        case stop @ Stop(info, _, clockExpression, enableExpression, _) =>
           getClockSymbol(clockExpression) match {
             case Some(_) =>
               assert(stop.name.nonEmpty, "Stop statements require a non-empty name!")
@@ -421,7 +421,7 @@ object SymbolTable extends LazyLogging {
               throw TreadleException(s"Can't find clock for $stop")
           }
 
-        case print @ Print(info, _, args, clockExpression, enableExpression) =>
+        case print @ Print(info, _, args, clockExpression, enableExpression, _) =>
           getClockSymbol(clockExpression) match {
             case Some(_) =>
               assert(print.name.nonEmpty, "Print statements require a non-empty name!")
@@ -448,7 +448,7 @@ object SymbolTable extends LazyLogging {
               throw TreadleException(s"Can't find clock for $print")
           }
 
-        case verify @ Verification(Formal.Cover, info, clockExpression, predicateExpression, enableExpression, _) =>
+        case verify @ Verification(Formal.Cover, info, clockExpression, predicateExpression, enableExpression, _, _) =>
           /* do something good here */
           getClockSymbol(clockExpression) match {
             case Some(_) =>
@@ -565,8 +565,8 @@ object SymbolTable extends LazyLogging {
     }
 
     val module = FindModule(circuit.main, circuit) match {
-      case regularModule:  firrtl.ir.Module => regularModule
-      case externalModule: firrtl.ir.ExtModule =>
+      case regularModule:  firrtl2.ir.Module => regularModule
+      case externalModule: firrtl2.ir.ExtModule =>
         throw TreadleException(s"Top level module must be a regular module $externalModule")
       case x =>
         throw TreadleException(s"Top level module is not the right kind of module $x")
@@ -625,7 +625,7 @@ object SymbolTable extends LazyLogging {
       try {
         symbolTable.childrenOf.linearize
       } catch {
-        case e: firrtl.graph.CyclicException =>
+        case e: firrtl2.graph.CyclicException =>
           val badNode = e.node.asInstanceOf[Symbol]
           println(s"Combinational loop detected at $badNode")
           if (allowCycles) {

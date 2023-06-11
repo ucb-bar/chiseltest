@@ -2,7 +2,7 @@
 
 package treadle2.executable
 
-import firrtl.ir._
+import firrtl2.ir._
 
 /** Created by chick on 4/21/16.
   */

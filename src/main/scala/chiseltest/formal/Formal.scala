@@ -7,9 +7,9 @@ import chiseltest.HasTestName
 import chiseltest.formal.backends.FormalEngineAnnotation
 import chiseltest.internal.TestEnvInterface
 import chiseltest.simulator.{Compiler, WriteVcdAnnotation}
-import firrtl.{AnnotationSeq, CircuitState}
-import firrtl.annotations.NoTargetAnnotation
-import firrtl.transforms.formal.DontAssertSubmoduleAssumptionsAnnotation
+import firrtl2.{AnnotationSeq, CircuitState}
+import firrtl2.annotations.NoTargetAnnotation
+import firrtl2.transforms.formal.DontAssertSubmoduleAssumptionsAnnotation
 
 sealed trait FormalOp extends NoTargetAnnotation
 case class BoundedCheck(kMax: Int = -1) extends FormalOp

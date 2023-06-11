@@ -2,13 +2,12 @@
 
 package chiseltest.iotesters.examples
 
-import java.io.File
 import chisel3._
 import chisel3.util._
 import chiseltest._
 import chiseltest.iotesters._
 import chiseltest.simulator.RequiresVerilator
-import firrtl.options.TargetDirAnnotation
+import firrtl2.options.TargetDirAnnotation
 import treadle2.chronometry.Timer
 import org.scalatest.flatspec.AnyFlatSpec
 

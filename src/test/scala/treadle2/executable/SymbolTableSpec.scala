@@ -4,10 +4,10 @@ package treadle2.executable
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 
-import firrtl.graph.CyclicException
-import firrtl.stage.FirrtlSourceAnnotation
-import firrtl.transforms.DontCheckCombLoopsAnnotation
-import logger.LazyLogging
+import firrtl2.graph.CyclicException
+import firrtl2.stage.FirrtlSourceAnnotation
+import firrtl2.transforms.DontCheckCombLoopsAnnotation
+import firrtl2.logger.LazyLogging
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import treadle2._

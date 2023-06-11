@@ -2,7 +2,7 @@
 
 package treadle2
 
-import firrtl.ir.{Param, Type}
+import firrtl2.ir.{Param, Type}
 import treadle2.blackboxes.PlusArg
 import treadle2.executable.Transition
 
