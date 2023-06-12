@@ -9,7 +9,7 @@ import coursier.maven.MavenRepository
 object chiseltest extends mill.Cross[chiseltestCrossModule]("2.13.10")
 
 val defaultVersions = Map(
-  "chisel3" -> "3.6-SNAPSHOT"
+  "chisel3" -> "3.6-SNAPSHOT",
 )
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
@@ -62,7 +62,7 @@ class chiseltestCrossModule(val crossScalaVersion: String)
 
   override def ivyDeps = T {
     Agg(
-      ivy"org.scalatest::scalatest:3.2.16",
+      ivy"org.scalatest::scalatest:3.2.15",
       ivy"com.lihaoyi::utest:0.8.1",
       ivy"net.java.dev.jna:jna:5.13.0"
     ) ++ chisel3IvyDeps
