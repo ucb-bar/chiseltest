@@ -4,6 +4,8 @@ import chisel3.RawModule
 import chisel3.stage._
 import chisel3.stage.phases._
 import chisel3.experimental.EnumAnnotations.{EnumComponentAnnotation, EnumDefAnnotation, EnumVecAnnotation}
+import firrtl.passes.InlineAnnotation
+import firrtl.transforms.FlattenAnnotation
 // this imports the [[firrtl]] package from Chisel (not to be confused with the firrtl2 compiler!
 import firrtl._
 import firrtl.ir._
@@ -112,18 +114,34 @@ private object ChiselBridge {
     case MemoryLoadFileType.Binary => firrtl2.annotations.MemoryLoadFileType.Binary
   }
   private def convert(anno: Annotation): firrtl2.annotations.Annotation = anno match {
+    // our special annotation to allow the injection of "firrtl2" annotations
     case Firrtl2AnnotationWrapper(anno) => anno
+    // black box related annotations (from ExtModule)
     case firrtl.transforms.BlackBoxInlineAnno(target, name, text) =>
       firrtl2.transforms.BlackBoxInlineAnno(convert(target), name, text)
+    case firrtl.transforms.BlackBoxPathAnno(target, path) =>
+      firrtl2.transforms.BlackBoxPathAnno(convert(target), path)
+    case firrtl.transforms.BlackBoxTargetDirAnno(targetDir) =>
+      firrtl2.transforms.BlackBoxTargetDirAnno(targetDir)
+    case firrtl.transforms.BlackBoxResourceFileNameAnno(resourceFileName) =>
+      firrtl2.transforms.BlackBoxResourceFileNameAnno(resourceFileName)
+    // wiring annos (from Boring Utils)
     case SourceAnnotation(target, pin) => firrtl2.passes.wiring.SourceAnnotation(convert(target), pin)
     case SinkAnnotation(target, pin)   => firrtl2.passes.wiring.SinkAnnotation(convertNamed(target), pin)
-    case DontTouchAnnotation(target)   => firrtl2.transforms.DontTouchAnnotation(convert(target))
-    case NoDedupAnnotation(target)     => firrtl2.transforms.NoDedupAnnotation(convert(target))
+    // Inline.scala
+    case InlineAnnotation(target)  => firrtl2.passes.InlineAnnotation(convertNamed(target))
+    case FlattenAnnotation(target) => firrtl2.transforms.FlattenAnnotation(convertNamed(target))
+    case NoDedupAnnotation(target) => firrtl2.transforms.NoDedupAnnotation(convert(target))
+    // don't touch
+    case DontTouchAnnotation(target) => firrtl2.transforms.DontTouchAnnotation(convert(target))
+    // memory annotations
     case MemoryFileInlineAnnotation(target, filename, hexOrBinary) =>
       firrtl2.annotations.MemoryFileInlineAnnotation(convert(target), filename, convert(hexOrBinary))
+    // enum annotations
     case a: EnumComponentAnnotation => UnsupportedAnnotation("EnumComponentAnnotation", a.toString)
     case a: EnumDefAnnotation       => UnsupportedAnnotation("EnumDefAnnotation", a.toString)
     case a: EnumVecAnnotation       => UnsupportedAnnotation("EnumVecAnnotation", a.toString)
+    //
     case _ => throw new NotImplementedError(s"TODO: convert ${anno}")
   }
 
