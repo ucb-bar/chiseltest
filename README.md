@@ -158,7 +158,7 @@ import chisel3.stage.PrintFullStackTraceAnnotation
 // ...
 
     // Inside your test spec
-    test(new MyModule).withAnnotations(Seq(PrintFullStackTraceAnnotation)) { c =>
+    test(new MyModule).withChiselAnnotations(Seq(PrintFullStackTraceAnnotation)) { c =>
       // test body here
     }
 ```

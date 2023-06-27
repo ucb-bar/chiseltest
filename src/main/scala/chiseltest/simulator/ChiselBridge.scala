@@ -51,10 +51,14 @@ private object ChiselBridge {
   private val maybeAspects = new MaybeAspectPhase
   private val converter = new Convert
 
-  def elaborate[M <: RawModule](gen: () => M, userAnnos: firrtl2.AnnotationSeq): (firrtl2.CircuitState, M) = {
+  def elaborate[M <: RawModule](
+    gen:         () => M,
+    userAnnos:   firrtl2.AnnotationSeq,
+    chiselAnnos: firrtl.AnnotationSeq
+  ): (firrtl2.CircuitState, M) = {
     // run Builder.build(Module(gen()))
     val genAnno = ChiselGeneratorAnnotation(gen)
-    val elaborationAnnos: firrtl.AnnotationSeq = elaboratePhase.transform(Seq(genAnno))
+    val elaborationAnnos: firrtl.AnnotationSeq = elaboratePhase.transform(genAnno +: chiselAnnos)
 
     // extract elaborated module
     val dut: M = elaborationAnnos.collectFirst { case DesignAnnotation(d) => d }.get.asInstanceOf[M]

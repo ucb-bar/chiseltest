@@ -53,7 +53,7 @@ object SimulatorBenchmark extends App {
 
 
   // elaborate the design and compile to low firrtl
-  val (highFirrtl, _) = Compiler.elaborate(() => new DecoupledGcd(bitWidth = 60), Seq(targetDir))
+  val (highFirrtl, _) = Compiler.elaborate(() => new DecoupledGcd(bitWidth = 60), Seq(targetDir), Seq())
   val lowFirrtl = Compiler.toLowFirrtl(highFirrtl)
   println(s"Compiled ${lowFirrtl.circuit.main}")
   val dut = sim.createContext(lowFirrtl)

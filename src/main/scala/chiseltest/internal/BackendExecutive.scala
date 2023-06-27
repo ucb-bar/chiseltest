@@ -13,10 +13,14 @@ import firrtl2.transforms.{CheckCombLoops, CombinationalPath}
 
 object BackendExecutive {
 
-  def start[T <: Module](dutGen: () => T, testersAnnotationSeq: AnnotationSeq): BackendInstance[T] = {
+  def start[T <: Module](
+    dutGen:               () => T,
+    testersAnnotationSeq: AnnotationSeq,
+    chiselAnnos:          firrtl.AnnotationSeq
+  ): BackendInstance[T] = {
 
     // elaborate the design
-    val (highFirrtl, dut) = Compiler.elaborate(dutGen, testersAnnotationSeq)
+    val (highFirrtl, dut) = Compiler.elaborate(dutGen, testersAnnotationSeq, chiselAnnos)
 
     // extract port names
     val portNames = DataMirror.modulePorts(dut).flatMap { case (name, data) => getDataNames(name, data).toList }.toMap

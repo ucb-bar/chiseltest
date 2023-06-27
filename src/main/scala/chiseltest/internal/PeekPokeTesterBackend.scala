@@ -20,8 +20,13 @@ object PeekPokeTesterBackend {
   private val testContext = new DynamicVariable[Option[IOTestersContext]](None)
   private[chiseltest] def ctx = testContext.value
 
-  def run[T <: Module](dutGen: () => T, testerGen: T => PeekPokeTester[T], annos: AnnotationSeq): AnnotationSeq = {
-    val (sim, covAnnos, dut) = createTester(dutGen, defaults.addDefaultSimulator(annos))
+  def run[T <: Module](
+    dutGen:      () => T,
+    testerGen:   T => PeekPokeTester[T],
+    annos:       AnnotationSeq,
+    chiselAnnos: firrtl.AnnotationSeq
+  ): AnnotationSeq = {
+    val (sim, covAnnos, dut) = createTester(dutGen, defaults.addDefaultSimulator(annos), chiselAnnos)
     // extract port names
     val portNames = DataMirror.modulePorts(dut).flatMap { case (name, data) => getDataNames(name, data).toList }.toMap
     val localCtx = IOTestersContext(sim, portNames)
