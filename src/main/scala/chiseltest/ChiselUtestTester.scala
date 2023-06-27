@@ -80,6 +80,6 @@ trait ChiselUtestTester extends TestSuite with TestEnvInterface {
 
     val newAnnos = addDefaultTargetDir(sanitizeFileName(testName), annotationSeq)
     batchedFailures.clear()
-    Context.run(defaults.createDefaultTester(() => dutGen, newAnnos), this, testFn)
+    Context.run(defaults.createDefaultTester(() => dutGen, newAnnos, Seq()), this, testFn)
   }
 }

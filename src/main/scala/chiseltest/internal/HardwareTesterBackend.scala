@@ -13,9 +13,16 @@ import firrtl2.AnnotationSeq
   */
 object HardwareTesterBackend {
   import TesterUtils._
-  def run[T <: Module](dutGen: () => T, annos: AnnotationSeq, timeout: Int, expectFail: Boolean): AnnotationSeq = {
+  def run[T <: Module](
+    dutGen:      () => T,
+    annos:       AnnotationSeq,
+    timeout:     Int,
+    expectFail:  Boolean,
+    chiselAnnos: firrtl.AnnotationSeq = Seq()
+  ): AnnotationSeq = {
     require(timeout >= 0, s"Negative timeout $timeout is not supported! Use 0 to disable the timeout.")
-    val (tester, covAnnos, _) = createTester(addFinishToBasicTester(dutGen), defaults.addDefaultSimulator(annos))
+    val (tester, covAnnos, _) =
+      createTester(addFinishToBasicTester(dutGen), defaults.addDefaultSimulator(annos), chiselAnnos)
 
     // we always perform a reset
     tester.poke("reset", 1)
@@ -96,9 +103,13 @@ private object TesterUtils {
     } else { Seq() }
   }
 
-  def createTester[T <: Module](dutGen: () => T, annos: AnnotationSeq): (SimulatorContext, AnnotationSeq, T) = {
+  def createTester[T <: Module](
+    dutGen:      () => T,
+    annos:       AnnotationSeq,
+    chiselAnnos: firrtl.AnnotationSeq
+  ): (SimulatorContext, AnnotationSeq, T) = {
     // elaborate the design and compile to low firrtl
-    val (highFirrtl, dut) = Compiler.elaborate(dutGen, annos)
+    val (highFirrtl, dut) = Compiler.elaborate(dutGen, annos, chiselAnnos)
     val lowFirrtl = Compiler.toLowFirrtl(highFirrtl)
 
     // extract coverage information

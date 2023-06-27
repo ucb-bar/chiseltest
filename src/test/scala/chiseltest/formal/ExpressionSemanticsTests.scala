@@ -43,7 +43,7 @@ class DivisionAndRemainderCircuit() extends Module {
 class DivisionAndRemainderOracle(testName: String) {
   private val sim = {
     val annos = TestEnvInterface.addDefaultTargetDir(testName, Seq())
-    val (hi, _) = chiseltest.simulator.Compiler.elaborate(() => new DivisionAndRemainderCircuit, annos)
+    val (hi, _) = chiseltest.simulator.Compiler.elaborate(() => new DivisionAndRemainderCircuit, annos, Seq())
     val lo = chiseltest.simulator.Compiler.toLowFirrtl(hi, Seq(WriteVcdAnnotation))
     chiseltest.simulator.TreadleBackendAnnotation.getSimulator.createContext(lo)
   }
