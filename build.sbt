@@ -4,7 +4,7 @@ organization := "edu.berkeley.cs"
 name := "chiseltest"
 
 // we keep in sync with chisel version names
-version := "5.0-SNAPSHOT"
+version := "5.0.0"
 
 scalaVersion := "2.13.10"
 
