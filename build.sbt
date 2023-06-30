@@ -50,8 +50,8 @@ publishTo := {
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map(
-  "chisel3" -> "5.0.0", //"6.0.0-M1+9-f590ac9f-SNAPSHOT",
-  "firrtl" -> "2.0-SNAPSHOT",
+  "chisel3" -> "5.0.0",
+  "firrtl" -> "5.0.0",
 )
 
 scalacOptions ++= Seq(

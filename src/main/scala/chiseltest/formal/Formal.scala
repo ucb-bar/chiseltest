@@ -29,9 +29,9 @@ private[chiseltest] object FailedBoundedCheckException {
 
 /** Adds the `verify` command for formal checks to a ChiselScalatestTester */
 trait Formal { this: HasTestName =>
-  def verify[T <: Module](dutGen: => T, annos: AnnotationSeq): Unit = {
+  def verify[T <: Module](dutGen: => T, annos: AnnotationSeq, chiselAnnos: firrtl.AnnotationSeq = Seq()): Unit = {
     val withTargetDir = TestEnvInterface.addDefaultTargetDir(getTestName, annos)
-    Formal.verify(dutGen, withTargetDir)
+    Formal.verify(dutGen, withTargetDir, chiselAnnos)
   }
 }
 
@@ -45,13 +45,13 @@ case object DoNotModelUndef extends NoTargetAnnotation
 case object DoNotOptimizeFormal extends NoTargetAnnotation
 
 private object Formal {
-  def verify[T <: Module](dutGen: => T, annos: AnnotationSeq): Unit = {
+  def verify[T <: Module](dutGen: => T, annos: AnnotationSeq, chiselAnnos: firrtl.AnnotationSeq): Unit = {
     val ops = getOps(annos)
     assert(ops.nonEmpty, "No verification operation was specified!")
     val withDefaults = addDefaults(annos)
 
     // elaborate the design and compile to low firrtl
-    val (highFirrtl, _) = Compiler.elaborate(() => dutGen, withDefaults)
+    val (highFirrtl, _) = Compiler.elaborate(() => dutGen, withDefaults, chiselAnnos)
     val lowFirrtl = Compiler.toLowFirrtl(highFirrtl, Seq(DontAssertSubmoduleAssumptionsAnnotation))
 
     // add reset assumptions

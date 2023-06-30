@@ -22,9 +22,14 @@ private class RawTester(testName: String) extends TestEnvInterface with HasTestN
     Context.run(tester, this, testFn)
   }
 
-  def test[T <: Module](dutGen: => T, annotationSeq: AnnotationSeq)(testFn: T => Unit): TestResult = {
+  def test[T <: Module](
+    dutGen:        => T,
+    annotationSeq: AnnotationSeq,
+    chiselAnnos:   firrtl.AnnotationSeq = Seq()
+  )(testFn:        T => Unit
+  ): TestResult = {
     val newAnnos = addDefaultTargetDir(sanitizeFileName(testName), annotationSeq)
-    runTest(defaults.createDefaultTester(() => dutGen, newAnnos))(testFn)
+    runTest(defaults.createDefaultTester(() => dutGen, newAnnos, chiselAnnos))(testFn)
   }
 
   override def getTestName = testName
