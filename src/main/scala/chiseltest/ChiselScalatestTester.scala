@@ -21,14 +21,15 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
   override def getTestName: String = sanitizeFileName(scalaTestContext.value.get.name)
 
   class TestBuilder[T <: Module](
-    val dutGen:        () => T,
-    val annotationSeq: AnnotationSeq) {
+    val dutGen:              () => T,
+    val annotationSeq:       AnnotationSeq,
+    val chiselAnnotationSeq: firrtl.AnnotationSeq) {
     def getTestName: String = {
       sanitizeFileName(scalaTestContext.value.get.name)
     }
 
     def apply(testFn: T => Unit): TestResult = {
-      runTest(defaults.createDefaultTester(dutGen, finalAnnos))(testFn)
+      runTest(defaults.createDefaultTester(dutGen, finalAnnos, chiselAnnotationSeq))(testFn)
     }
 
     private def finalAnnos: AnnotationSeq = {
@@ -41,14 +42,18 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     }
 
     def run(testFn: T => Unit, annotations: AnnotationSeq): TestResult = {
-      runTest(defaults.createDefaultTester(dutGen, annotations))(testFn)
+      runTest(defaults.createDefaultTester(dutGen, annotations, chiselAnnotationSeq))(testFn)
     }
 
     // TODO: in the future, allow reset and re-use of a compiled design to avoid recompilation cost per test
     val outer: ChiselScalatestTester = ChiselScalatestTester.this
 
     def withAnnotations(annotationSeq: AnnotationSeq): TestBuilder[T] = {
-      new TestBuilder[T](dutGen, this.annotationSeq ++ annotationSeq)
+      new TestBuilder[T](dutGen, this.annotationSeq ++ annotationSeq, this.chiselAnnotationSeq)
+    }
+
+    def withChiselAnnotations(chiselAnnotationSeq: firrtl.AnnotationSeq): TestBuilder[T] = {
+      new TestBuilder[T](dutGen, this.annotationSeq, this.chiselAnnotationSeq ++ chiselAnnotationSeq)
     }
 
     /** Resets and then executes the circuit until a timeout or a stop or assertion failure.
@@ -69,7 +74,7 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
 
     /** Executes a tester extending [[chiseltest.iotesters.PeekPokeTester]]. */
     def runPeekPoke(tester: T => PeekPokeTester[T]): Unit = {
-      new TestResult(PeekPokeTesterBackend.run(dutGen, tester, finalAnnos))
+      new TestResult(PeekPokeTesterBackend.run(dutGen, tester, finalAnnos, chiselAnnotationSeq))
     }
   }
 
@@ -143,6 +148,6 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     * @return
     */
   def test[T <: Module](dutGen: => T): TestBuilder[T] = {
-    new TestBuilder(() => dutGen, Seq())
+    new TestBuilder(() => dutGen, Seq(), Seq())
   }
 }
