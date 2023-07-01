@@ -17,8 +17,12 @@ package object defaults {
     * @tparam T              dut type
     * @return                a backend for the dut type
     */
-  def createDefaultTester[T <: Module](dutGen: () => T, annotationSeq: AnnotationSeq): BackendInstance[T] = {
-    BackendExecutive.start(dutGen, addDefaultSimulator(annotationSeq))
+  def createDefaultTester[T <: Module](
+    dutGen:        () => T,
+    annotationSeq: AnnotationSeq,
+    chiselAnnos:   firrtl.AnnotationSeq
+  ): BackendInstance[T] = {
+    BackendExecutive.start(dutGen, addDefaultSimulator(annotationSeq), chiselAnnos)
   }
 
   private[chiseltest] def addDefaultSimulator(annotationSeq: AnnotationSeq): AnnotationSeq = {

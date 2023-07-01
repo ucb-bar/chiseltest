@@ -11,8 +11,12 @@ import firrtl2.logger.{LogLevelAnnotation, Logger}
 
 private[chiseltest] object Compiler {
 
-  def elaborate[M <: RawModule](gen: () => M, annotationSeq: AnnotationSeq): (firrtl2.CircuitState, M) =
-    ChiselBridge.elaborate[M](gen, annotationSeq)
+  def elaborate[M <: RawModule](
+    gen:           () => M,
+    annotationSeq: AnnotationSeq,
+    chiselAnnos:   firrtl.AnnotationSeq
+  ): (firrtl2.CircuitState, M) =
+    ChiselBridge.elaborate[M](gen, annotationSeq, chiselAnnos)
   def toLowFirrtl(state: firrtl2.CircuitState, annos: AnnotationSeq = List()): firrtl2.CircuitState = {
     requireTargetDir(state.annotations)
     val inAnnos = annos ++: stateToAnnos(state)
