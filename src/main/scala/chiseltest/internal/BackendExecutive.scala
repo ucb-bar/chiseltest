@@ -23,7 +23,7 @@ object BackendExecutive {
     val (highFirrtl, dut) = Compiler.elaborate(dutGen, testersAnnotationSeq, chiselAnnos)
 
     // extract port names
-    val portNames = DataMirror.modulePorts(dut).flatMap { case (name, data) => getDataNames(name, data).toList }.toMap
+    val portNames = DataMirror.fullModulePorts(dut).map(_.swap).toMap
 
     // compile to low firrtl
     val lowFirrtl = Compiler.toLowFirrtl(highFirrtl)
@@ -54,15 +54,6 @@ object BackendExecutive {
   }
 
   private def componentToName(component: ReferenceTarget): String = component.name
-
-  /** Returns a Seq of (data reference, fully qualified element names) for the input.
-    * name is the name of data
-    */
-  private def getDataNames(name: String, data: Data): Seq[(Data, String)] = Seq(data -> name) ++ (data match {
-    case _: Element => Seq()
-    case b: Record  => b.elements.toSeq.flatMap { case (n, e) => getDataNames(s"${name}_$n", e) }
-    case v: Vec[_]  => v.zipWithIndex.flatMap { case (e, i) => getDataNames(s"${name}_$i", e) }
-  })
 
   /** This creates some kind of map of combinational paths between inputs and outputs.
     *
