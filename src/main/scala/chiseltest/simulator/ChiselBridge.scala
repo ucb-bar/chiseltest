@@ -221,13 +221,18 @@ private object ChiselBridge {
     case Connect(info, loc, expr)   => firrtl2.ir.Connect(convert(info), convert(loc), convert(expr))
     case Conditionally(info, pred, conseq, alt) =>
       firrtl2.ir.Conditionally(convert(info), convert(pred), convert(conseq), convert(alt))
-    case EmptyStmt                => firrtl2.ir.EmptyStmt
-    case Block(stmts)             => firrtl2.ir.Block(stmts.map(convert))
-    case DefWire(info, name, tpe) => firrtl2.ir.DefWire(convert(info), name, convert(tpe))
-    case DefRegister(info, name, tpe, clock, reset, init) =>
+    case EmptyStmt                           => firrtl2.ir.EmptyStmt
+    case Block(stmts)                        => firrtl2.ir.Block(stmts.map(convert))
+    case DefWire(info, name, tpe)            => firrtl2.ir.DefWire(convert(info), name, convert(tpe))
+    case DefRegister(info, name, tpe, clock) =>
+      // default is a self reset with a zero reset signal
+      val reset = firrtl2.Utils.zero
+      val firrtl2Tpe = convert(tpe)
+      val init = firrtl2.ir.Reference(name, firrtl2Tpe, firrtl2.RegKind, firrtl2.SourceFlow)
+      firrtl2.ir.DefRegister(convert(info), name, firrtl2Tpe, convert(clock), reset, init)
+    case DefRegisterWithReset(info, name, tpe, clock, reset, init) =>
       firrtl2.ir.DefRegister(convert(info), name, convert(tpe), convert(clock), convert(reset), convert(init))
     case DefInstance(info, name, module, tpe) => firrtl2.ir.DefInstance(convert(info), name, module, convert(tpe))
-    case PartialConnect(info, loc, expr)      => firrtl2.ir.PartialConnect(convert(info), convert(loc), convert(expr))
     case Attach(info, exprs)                  => firrtl2.ir.Attach(convert(info), exprs.map(convert))
     case s: Stop => firrtl2.ir.Stop(convert(s.info), s.ret, convert(s.clk), convert(s.en), name = s.name)
     case p: Print =>

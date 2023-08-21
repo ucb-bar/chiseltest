@@ -4,7 +4,7 @@ organization := "edu.berkeley.cs"
 name := "chiseltest"
 
 // we keep in sync with chisel version names
-version := "5.0-SNAPSHOT"
+version := "6.0-SNAPSHOT"
 
 scalaVersion := "2.13.10"
 
@@ -50,8 +50,8 @@ publishTo := {
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map(
-  "chisel3" -> "5.0.0",
-  "firrtl" -> "5.0.0",
+  "chisel3" -> "6.0.0-M2",
+  "firrtl" -> "6.0-SNAPSHOT",
 )
 
 scalacOptions ++= Seq(
