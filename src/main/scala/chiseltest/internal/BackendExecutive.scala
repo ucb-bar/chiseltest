@@ -19,7 +19,7 @@ object BackendExecutive {
     val (highFirrtl, dut) = Compiler.elaborate(dutGen, testersAnnotationSeq)
 
     // extract port names
-    val portNames = DataMirror.modulePorts(dut).flatMap { case (name, data) => getDataNames(name, data).toList }.toMap
+    val portNames = DataMirror.fullModulePorts(dut).map(_.swap).toMap
 
     // compile to low firrtl
     val lowFirrtl = Compiler.toLowFirrtl(highFirrtl)

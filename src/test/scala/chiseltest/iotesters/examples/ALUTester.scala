@@ -36,7 +36,7 @@ class ALU extends Module {
 
   private val mux_alu_opcode = io.alu_opcode(AluOpCode.length - 1, 0)
 
-  io.out := MuxLookup(mux_alu_opcode, "hDEADF00D".U,
+  io.out := MuxLookup(mux_alu_opcode, "hDEADF00D".U)(
     Seq(
       AluOpCode.Add -> (io.in1 + io.in2),
       AluOpCode.Sub -> (io.in1 - io.in2),
