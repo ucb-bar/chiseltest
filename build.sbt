@@ -72,7 +72,7 @@ scalacOptions ++= Seq(
 
 libraryDependencies ++= Seq(
   "org.chipsalliance" %% "chisel" % defaultVersions("chisel3"),
-  "edu.berkeley.cs" %% "firrtl" % defaultVersions("firrtl"),
+  "edu.berkeley.cs" %% "firrtl2" % defaultVersions("firrtl"),
   "org.scalatest" %% "scalatest" % "3.2.15",
   "com.lihaoyi" %% "utest" % "0.8.1",
   "net.java.dev.jna" % "jna" % "5.13.0",
