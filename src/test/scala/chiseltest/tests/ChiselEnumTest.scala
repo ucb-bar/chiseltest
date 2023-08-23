@@ -36,7 +36,9 @@ class ChiselEnumTest extends AnyFlatSpec with ChiselScalatestTester {
         val in = Input(UInt(2.W))
         val out = Output(EnumExample())
       })
-      io.out := io.in.asTypeOf(chiselTypeOf(io.out))
+      val (value, safe) = EnumExample.safe(io.in)
+      chisel3.assert(safe)
+      io.out := value
     }) { c =>
       c.io.in.poke(0.U)
       c.io.out.expect(EnumExample.e0)

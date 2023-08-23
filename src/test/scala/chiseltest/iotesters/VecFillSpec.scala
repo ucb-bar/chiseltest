@@ -8,7 +8,7 @@ import chiseltest._
 
 class VF extends Module {
   val io = IO(new Bundle {
-    val addr = Input(UInt(8.W))
+    val addr = Input(UInt(4.W))
     val value = Output(UInt(8.W))
   })
 
