@@ -28,7 +28,7 @@ object PeekPokeTesterBackend {
   ): AnnotationSeq = {
     val (sim, covAnnos, dut) = createTester(dutGen, defaults.addDefaultSimulator(annos), chiselAnnos)
     // extract port names
-    val portNames = DataMirror.modulePorts(dut).flatMap { case (name, data) => getDataNames(name, data).toList }.toMap
+    val portNames = DataMirror.fullModulePorts(dut).map(_.swap).toMap
     val localCtx = IOTestersContext(sim, portNames)
 
     // run tests
@@ -47,13 +47,6 @@ object PeekPokeTesterBackend {
     // if we get here we were successful!
     finish(sim, covAnnos)
   }
-
-  /** Returns a Seq of (data reference, fully qualified element names) for the input. name is the name of data. */
-  private def getDataNames(name: String, data: Data): Seq[(Data, String)] = Seq(data -> name) ++ (data match {
-    case _: Element => Seq()
-    case b: Record  => b.elements.toSeq.flatMap { case (n, e) => getDataNames(s"${name}_$n", e) }
-    case v: Vec[_]  => v.zipWithIndex.flatMap { case (e, i) => getDataNames(s"${name}_$i", e) }
-  })
 
 }
 
