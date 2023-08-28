@@ -5,12 +5,13 @@ package chiseltest.simulator
 import chisel3.RawModule
 import firrtl2.{AnnotationSeq, EmittedCircuitAnnotation}
 import firrtl2.annotations.{Annotation, DeletedAnnotation}
-import firrtl2.options.TargetDirAnnotation
-import firrtl2.stage.{FirrtlCircuitAnnotation, FirrtlStage}
+import firrtl2.options.{Dependency, TargetDirAnnotation}
+import firrtl2.stage.{FirrtlCircuitAnnotation, FirrtlStage, RunFirrtlTransformAnnotation}
 import firrtl2.logger.{LogLevelAnnotation, Logger}
 
 private[chiseltest] object Compiler {
-
+  private val defaultPasses = Seq(Dependency(chiseltest.sequences.ConvertCirctSequenceIntrinsics))
+  private def defaultPassesAnnos = defaultPasses.map(p => RunFirrtlTransformAnnotation(p))
   def elaborate[M <: RawModule](
     gen:           () => M,
     annotationSeq: AnnotationSeq,
@@ -19,20 +20,14 @@ private[chiseltest] object Compiler {
     ChiselBridge.elaborate[M](gen, annotationSeq, chiselAnnos)
   def toLowFirrtl(state: firrtl2.CircuitState, annos: AnnotationSeq = List()): firrtl2.CircuitState = {
     requireTargetDir(state.annotations)
-    val inAnnos = annos ++: stateToAnnos(state)
+    val inAnnos = defaultPassesAnnos ++: annos ++: stateToAnnos(state)
     val res = firrtlStage.execute(Array("-E", "low"), inAnnos)
     annosToState(res)
   }
   def lowFirrtlToSystemVerilog(state: firrtl2.CircuitState, annos: AnnotationSeq = List()): firrtl2.CircuitState = {
     requireTargetDir(state.annotations)
-    val inAnnos = annos ++: stateToAnnos(state)
+    val inAnnos = defaultPassesAnnos ++: annos ++: stateToAnnos(state)
     val res = firrtlStage.execute(Array("--start-from", "low", "-E", "sverilog"), inAnnos)
-    annosToState(res)
-  }
-  def lowFirrtlToVerilog(state: firrtl2.CircuitState, annos: AnnotationSeq = List()): firrtl2.CircuitState = {
-    requireTargetDir(state.annotations)
-    val inAnnos = annos ++: stateToAnnos(state)
-    val res = firrtlStage.execute(Array("--start-from", "low", "-E", "verilog"), inAnnos)
     annosToState(res)
   }
   private def stateToAnnos(state: firrtl2.CircuitState): AnnotationSeq = {
