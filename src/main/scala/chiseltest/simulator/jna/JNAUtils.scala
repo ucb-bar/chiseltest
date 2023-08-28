@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package chiseltest.simulator.jna
+
+import chiseltest.simulator.jni._
 import com.sun.jna._
 
 object JNAUtils {
@@ -76,6 +78,12 @@ object JNAUtils {
     val initFoo = so.getFunction("sim_init")
     val sPtr = initFoo.invokePointer(Array())
     new TesterSharedLibInterface(so = so, sPtr = sPtr)
+  }
+
+  def compileAndLoadJNIClass(bridgeLib: JniAPI, libPath: os.Path): (Int, Long) = {
+    val soId = bridgeLib.load_so(libPath.toString())
+    val sPtr = bridgeLib.call_sim_init(soId)
+    (soId, sPtr)
   }
 
   private def cType(tpe: String): String = tpe.toLowerCase match {

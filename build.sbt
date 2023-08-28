@@ -88,3 +88,5 @@ libraryDependencies ++= Seq(
       )
   }
 }
+
+fork := true

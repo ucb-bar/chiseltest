@@ -5,6 +5,7 @@ package chiseltest.simulator
 import firrtl2._
 import firrtl2.annotations._
 import chiseltest.simulator.jna._
+import chiseltest.simulator.jni._
 
 case object VerilatorBackendAnnotation extends SimulatorAnnotation {
   override def getSimulator: Simulator = VerilatorSimulator
@@ -12,6 +13,9 @@ case object VerilatorBackendAnnotation extends SimulatorAnnotation {
 
 /** verilator specific options */
 trait VerilatorOption extends NoTargetAnnotation
+
+/** adds switch between JNI and JNA backend, default is JNI * */
+case class UseJNI(switch: Boolean) extends VerilatorOption
 
 /** adds flags to the invocation of verilator */
 case class VerilatorFlags(flags: Seq[String]) extends VerilatorOption
@@ -78,6 +82,10 @@ private object VerilatorSimulator extends Simulator {
   private def majorVersion: Int = version._1
   private def minorVersion: Int = version._2
 
+  // TODO - unsure if there's a better way of doing this
+  private var useJNI:    Boolean = true
+  private var bridgeLib: JniAPI = null
+
   /** start a new simulation
     *
     * @param state LoFirrtl circuit + annotations
@@ -108,8 +116,27 @@ private object VerilatorSimulator extends Simulator {
     }
 
     val args = getSimulatorArgs(state)
-    val lib = JNAUtils.compileAndLoadJNAClass(libPath)
-    new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, args, Some(readCoverage))
+    if (useJNI) {
+      if (bridgeLib == null) {
+        bridgeLib = new JniAPI(targetDir)
+      }
+      // println("using jni")
+      val (soId, simStatePtr) = JNAUtils.compileAndLoadJNIClass(bridgeLib, libPath)
+      new JNISimulatorContext(
+        bridgeLib,
+        soId,
+        simStatePtr,
+        targetDir,
+        toplevel,
+        VerilatorSimulator,
+        args,
+        Some(readCoverage)
+      )
+    } else {
+      // println("using jna")
+      val lib = JNAUtils.compileAndLoadJNAClass(libPath)
+      new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, args, Some(readCoverage))
+    }
   }
 
   private def createContextFromScratch(state: CircuitState): SimulatorContext = {
@@ -155,8 +182,29 @@ private object VerilatorSimulator extends Simulator {
     }
 
     val args = getSimulatorArgs(state)
-    val lib = JNAUtils.compileAndLoadJNAClass(libPath)
-    new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, args, Some(readCoverage))
+    // TODO: allow for switching between JNA and JNI
+
+    if (useJNI) {
+      if (bridgeLib == null) {
+        bridgeLib = new JniAPI(targetDir)
+      }
+      // println("using jni")
+      val (soId, simStatePtr) = JNAUtils.compileAndLoadJNIClass(bridgeLib, libPath)
+      new JNISimulatorContext(
+        bridgeLib,
+        soId,
+        simStatePtr,
+        targetDir,
+        toplevel,
+        VerilatorSimulator,
+        args,
+        Some(readCoverage)
+      )
+    } else {
+      // println("using jna")
+      val lib = JNAUtils.compileAndLoadJNAClass(libPath)
+      new JNASimulatorContext(lib, targetDir, toplevel, VerilatorSimulator, args, Some(readCoverage))
+    }
   }
 
   private def saveCoverageAnnos(targetDir: os.Path, annos: AnnotationSeq): Unit = {
@@ -266,6 +314,7 @@ private object VerilatorSimulator extends Simulator {
 
     // combine all flags
     val userFlags = annos.collectFirst { case VerilatorFlags(f) => f }.getOrElse(Seq.empty)
+    useJNI = annos.collectFirst { case UseJNI(f) => f }.getOrElse(true)
     val waveformFlags = waveformExt match {
       case "vcd" => List("--trace")
       case "fst" => List("--trace-fst")

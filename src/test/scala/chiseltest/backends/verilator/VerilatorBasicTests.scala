@@ -4,7 +4,7 @@ package chiseltest.backends.verilator
 import chisel3._
 import chiseltest._
 import chiseltest.simulator.RequiresVerilator
-import chiseltest.tests.{PassthroughModule, StaticModule}
+import chiseltest.tests.{StaticModule, PassthroughModule}
 import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
