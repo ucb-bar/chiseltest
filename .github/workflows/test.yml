@@ -24,7 +24,6 @@ jobs:
         with:
           distribution: 'adopt'
           java-version: ${{ matrix.jvm }}
-          cache: 'sbt'
       - name: Test
         run: sbt ++${{ matrix.scala }} "testOnly chiseltest.** -- -l RequiresVcs -l RequiresVerilator -l Formal -l RequiresIcarus"
 
@@ -175,7 +174,6 @@ jobs:
         with:
           distribution: 'adopt'
           java-version: ${{ matrix.jvm }}
-          cache: 'sbt'
       - name: Test
         run: sbt ++${{ matrix.scala }} "testOnly treadle2.**"
 
