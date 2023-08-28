@@ -86,7 +86,7 @@ case class PastSignalAnnotation(target: ReferenceTarget) extends SingleTargetAnn
   override def duplicate(n: ReferenceTarget): PastSignalAnnotation = copy(target = n)
 }
 
-class SafePastSignalsPass extends Transform with DependencyAPIMigration {
+class SafePastSignalsPass extends Transform {
   override def prerequisites =
     firrtl2.stage.Forms.LowForm :+ Dependency(EnsureNamedStatements)
   override def invalidates(a: Transform) = false

@@ -14,7 +14,7 @@ import scala.collection.mutable
 /** Turns (experimental) `DefRandom` statements into registers in order to be able
   * to replay verification results on a simulator like treadle
   */
-private object DefRandToRegisterPass extends Transform with DependencyAPIMigration {
+private object DefRandToRegisterPass extends Transform {
   override def prerequisites = Forms.LowForm
 
   override def optionalPrerequisiteOf = Seq(

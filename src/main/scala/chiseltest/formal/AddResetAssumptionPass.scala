@@ -9,7 +9,7 @@ import firrtl2.options.Dependency
 import firrtl2.transforms._
 
 /** adds an assumption to the toplevel module that all resets are active in the first cycle */
-private object AddResetAssumptionPass extends Transform with DependencyAPIMigration {
+private object AddResetAssumptionPass extends Transform {
   // run on lowered firrtl
   override def prerequisites = Seq(
     Dependency(firrtl2.passes.ExpandWhens),

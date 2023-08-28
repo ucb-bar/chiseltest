@@ -38,7 +38,7 @@ private object StateAnnotation {
 }
 
 /** Annotates the complete hierarchy to be flattened. */
-private object FlattenPass extends Transform with DependencyAPIMigration {
+private object FlattenPass extends Transform {
   override def prerequisites = Forms.LowForm
   // this pass relies on modules not being dedupped yet (TODO: review that assumption!)
   override def optionalPrerequisiteOf = Seq(

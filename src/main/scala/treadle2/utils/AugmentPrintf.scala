@@ -5,14 +5,14 @@ package treadle2.utils
 import firrtl2.ir.Circuit
 import firrtl2.options.Dependency
 import firrtl2.stage.{Forms, TransformManager}
-import firrtl2.{CircuitState, DependencyAPIMigration, Emitter, Transform}
+import firrtl2.{CircuitState, Emitter, Transform}
 
 import scala.collection.mutable
 
 /** Printf statements that print registers will show wrong values
   * unless this pass adds a delay for each register
   */
-class AugmentPrintf extends Transform with DependencyAPIMigration {
+class AugmentPrintf extends Transform {
   override def prerequisites:          Seq[TransformManager.TransformDependency] = Forms.LowForm
   override def optionalPrerequisites:  Seq[TransformManager.TransformDependency] = Forms.LowFormOptimized
   override def optionalPrerequisiteOf: Seq[Dependency[Emitter]] = Forms.LowEmitters

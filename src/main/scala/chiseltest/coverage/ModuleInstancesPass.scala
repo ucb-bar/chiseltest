@@ -17,7 +17,7 @@ import firrtl2.stage.TransformManager.TransformDependency
   * It can also be useful for coverage metrics that want to convert the per instance counts
   * reported into per module counts.
   */
-object ModuleInstancesPass extends Transform with DependencyAPIMigration {
+object ModuleInstancesPass extends Transform {
   override def prerequisites: Seq[TransformDependency] = Forms.LowForm
   // we needs to run *after* any transform that changes the hierarchy
   override def optionalPrerequisites: Seq[TransformDependency] = Seq(Dependency[InlineInstances])
