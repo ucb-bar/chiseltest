@@ -2,7 +2,7 @@
 
 package chiseltest.utils
 
-import chiseltest.experimental.sanitizeFileName
+import chiseltest.internal.sanitizeFileName
 import firrtl2.AnnotationSeq
 import firrtl2.options.TargetDirAnnotation
 import org.scalatest.{Outcome, Tag}

@@ -4,7 +4,7 @@ package chiseltest.experimental.tests
 
 import chisel3._
 import chiseltest._
-import chiseltest.experimental.sanitizeFileName
+import chiseltest.internal.sanitizeFileName
 import chiseltest.simulator.{RequiresVcs, VcsFlags, VcsSimFlags}
 import firrtl2.AnnotationSeq
 import org.scalatest.flatspec.AnyFlatSpec

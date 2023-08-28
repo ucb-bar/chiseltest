@@ -5,11 +5,8 @@ package chiseltest.tests
 import java.io.{ByteArrayOutputStream, File, PrintStream}
 
 import chisel3._
-import chisel3.stage.ChiselOutputFileAnnotation
 import chiseltest._
-import chiseltest.experimental.sanitizeFileName
-import firrtl2.options.OutputAnnotationFileAnnotation
-import firrtl2.stage.OutputFileAnnotation
+import chiseltest.internal.sanitizeFileName
 import treadle2.{VerboseAnnotation, WriteVcdAnnotation}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
