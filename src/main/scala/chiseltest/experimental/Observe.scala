@@ -6,11 +6,7 @@ import chisel3._
 import chisel3.util.experimental._
 
 object observe {
-  def apply[T <: Data](signal: T): T = {
-    val wire = WireInit(0.U.asTypeOf(chiselTypeOf(signal)))
-    BoringUtils.bore(signal, Seq(wire))
-    wire
-  }
+  def apply[T <: Data](signal: T): T = BoringUtils.bore(signal)
 }
 
 object expose {
@@ -73,8 +69,7 @@ object expose {
     */
   def apply[T <: Data](signal: T): T = {
     val ob = IO(Output(chiselTypeOf(signal)))
-    ob := 0.U.asTypeOf(chiselTypeOf(signal))
-    BoringUtils.bore(signal, Seq(ob))
+    ob := BoringUtils.bore(signal)
     ob
   }
 }
