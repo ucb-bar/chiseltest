@@ -112,7 +112,7 @@ private object VerilatorCoverage {
   * This helps us map coverage points as reported by Verilator to
   * the standard coverage map required by the simulator backend interface.
   */
-private object FindCoverPointsPass extends Transform with DependencyAPIMigration {
+private object FindCoverPointsPass extends Transform {
   override def prerequisites: Seq[TransformDependency] = Forms.LowForm
   // we needs to run *after* any transform that changes the hierarchy or renames cover points
   override def optionalPrerequisites: Seq[TransformDependency] =

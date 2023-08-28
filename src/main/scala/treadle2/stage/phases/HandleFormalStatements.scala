@@ -8,7 +8,7 @@ import firrtl2.ir._
 import firrtl2.options.{Dependency, RegisteredTransform, ShellOption}
 import firrtl2.passes.ExpandWhensAndCheck
 import firrtl2.stage.TransformManager.TransformDependency
-import firrtl2.{CircuitState, DependencyAPIMigration, Namespace, Transform}
+import firrtl2.{CircuitState, Namespace, Transform}
 
 /** This controls the handling of the verification formal statements for treadle.
   * currently it does the following
@@ -17,7 +17,7 @@ import firrtl2.{CircuitState, DependencyAPIMigration, Namespace, Transform}
   * but assume statement can be dropped by using "tr-ignore-format-assumes" or [IgnoreFormalAssumesAnnotation]
   * cover statement are currently skipped
   */
-class HandleFormalStatements extends Transform with RegisteredTransform with DependencyAPIMigration {
+class HandleFormalStatements extends Transform with RegisteredTransform {
 
   override def prerequisites: Seq[TransformDependency] = Seq(Dependency[ExpandWhensAndCheck])
 
