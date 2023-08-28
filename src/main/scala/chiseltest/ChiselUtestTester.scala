@@ -3,7 +3,6 @@
 package chiseltest
 
 import chiseltest.internal._
-import chiseltest.experimental.sanitizeFileName
 import utest.TestSuite
 import chisel3.Module
 import chiseltest.internal.TestEnvInterface.addDefaultTargetDir

@@ -3,8 +3,7 @@ package chiseltest.backends.verilator
 
 import chisel3._
 import chiseltest._
-import chiseltest.experimental.sanitizeFileName
-import chiseltest.internal.CachingAnnotation
+import chiseltest.internal.{CachingAnnotation, sanitizeFileName}
 import chiseltest.simulator.{CachingDebugAnnotation, RequiresVerilator}
 import chiseltest.utils.CaptureStdout
 import chiseltest.tests.StaticModule
