@@ -6,7 +6,6 @@ import chisel3._
 import chisel3.ltl._
 import chisel3.ltl.Sequence._
 
-
 class SimpleAssertionModule extends Module {
   val a = IO(Input(Bool()))
   AssertProperty(a)

@@ -7,14 +7,14 @@ import firrtl2.stage.Forms
 import firrtl2.transforms.DedupModules
 import scala.collection.mutable
 
-
 /** Replaces circt sequence intrinsics with a synthesizable version. */
 object ConvertCirctSequenceIntrinsics extends Transform {
   override def invalidates(a: Transform) = false
   override def prerequisites = Forms.Resolved
   // this should run before we remove whens and deduplication
   override def optionalPrerequisiteOf = Seq(
-    Dependency[ExpandWhensAndCheck], Dependency[DedupModules]
+    Dependency[ExpandWhensAndCheck],
+    Dependency[DedupModules]
   )
 
   private val Intrinsics = Set(
@@ -28,7 +28,7 @@ object ConvertCirctSequenceIntrinsics extends Transform {
   )
 
   private def findIntrinsicMapping(circuit: ir.Circuit): Map[String, String] =
-    circuit.modules.collect{ case e: ir.ExtModule if Intrinsics.contains(e.defname) => e.name -> e.defname }.toMap
+    circuit.modules.collect { case e: ir.ExtModule if Intrinsics.contains(e.defname) => e.name -> e.defname }.toMap
 
   override protected def execute(state: CircuitState): CircuitState = {
     // scan ext modules to see if there are any CIRCT intrinsics handled by this pass
@@ -45,7 +45,7 @@ object ConvertCirctSequenceIntrinsics extends Transform {
 
     // replace intrinsics in modules
     val modules = withoutIntrinsicsModules.map {
-      case m : ir.Module => onModule(m, intrinsics)
+      case m: ir.Module => onModule(m, intrinsics)
       case other => other
     }
 
@@ -61,7 +61,11 @@ object ConvertCirctSequenceIntrinsics extends Transform {
     m
   }
 
-  private case class IntModule(name: String, kind: String, inputs: Map[String, ir.RefLikeExpression], outputs: Map[String, ir.RefLikeExpression])
+  private case class IntModule(
+    name:    String,
+    kind:    String,
+    inputs:  Map[String, ir.RefLikeExpression],
+    outputs: Map[String, ir.RefLikeExpression])
   private case class Ctx(intrinsics: Map[String, String])
 
   private def onStmt(s: ir.Statement): ir.Statement = {
