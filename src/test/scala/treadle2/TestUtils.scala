@@ -11,8 +11,10 @@ object TestUtils {
 
   /** returns a BigInt with specified width, negative width (-width) returns negative number with width
     *
-    * @param width bit width of BigInt to generate
-    * @return A BigInt
+    * @param width
+    *   bit width of BigInt to generate
+    * @return
+    *   A BigInt
     */
   def allOnes(width: Int): BigInt = {
     if (width == 0) {
@@ -60,8 +62,10 @@ object TestUtils {
   }
 
   /** computes the smallest and largest values that will fit in an SInt
-    * @param width width of SInt
-    * @return tuple(minVale, maxValue)
+    * @param width
+    *   width of SInt
+    * @return
+    *   tuple(minVale, maxValue)
     */
   def extremaOfSIntOfWidth(width: Int): (BigInt, BigInt) = {
     val nearestPowerOf2 = BigInt("1" + ("0" * (width - 1)), 2)
@@ -72,11 +76,13 @@ object TestUtils {
 import treadle2.TestUtils._
 
 // scalastyle:off magic.number
-/** Is an iterator for a list of values limited to those within (-1,0,+1) of a power of two, including the
-  * min and max and one to the inside of those values
+/** Is an iterator for a list of values limited to those within (-1,0,+1) of a power of two, including the min and max
+  * and one to the inside of those values
   *
-  * @param minValue width to start generator at
-  * @param maxValue width where generator will stop (inclusive)
+  * @param minValue
+  *   width to start generator at
+  * @param maxValue
+  *   width where generator will stop (inclusive)
   */
 class IntWidthTestValuesGenerator(minValue: Int = 0, maxValue: Int = TestUtils.MaxTestingWidth) extends Iterator[Int] {
   assert(maxValue >= minValue)

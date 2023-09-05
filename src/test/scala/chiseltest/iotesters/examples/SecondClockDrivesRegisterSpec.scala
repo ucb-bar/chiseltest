@@ -9,7 +9,6 @@ import chiseltest.{ChiselScalatestTester, VerilatorBackendAnnotation}
 import chiseltest.simulator.RequiresVerilator
 import org.scalatest.freespec.AnyFreeSpec
 
-
 class SecondClockDrivesRegisterSpec extends AnyFreeSpec with ChiselScalatestTester {
   class SecondClock extends Module {
     val inClock = IO(Input(Bool()))

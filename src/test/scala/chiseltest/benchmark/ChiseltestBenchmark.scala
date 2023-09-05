@@ -21,14 +21,14 @@ object ChiseltestBenchmark extends App {
     dut.reset.poke(false.B)
 
     dut.output.ready.poke(true.B)
-    for((i, j, expected) <- testValues) {
+    for ((i, j, expected) <- testValues) {
       dut.input.bits.value1.poke(i.U)
       dut.input.bits.value2.poke(j.U)
       dut.input.valid.poke(true.B)
       dut.clock.step(1)
       cycles += 1
 
-      while(!dut.output.valid.peek().litToBoolean) {
+      while (!dut.output.valid.peek().litToBoolean) {
         dut.clock.step(1)
         cycles += 1
       }
@@ -42,13 +42,14 @@ object ChiseltestBenchmark extends App {
   // select and load simulator
   val sim: SimulatorAnnotation = args.headOption match {
     case None => VerilatorBackendAnnotation
-    case Some(name) => name.toLowerCase match {
-      case "verilator" => VerilatorBackendAnnotation
-      case "treadle2" => TreadleBackendAnnotation
-      case "iverilog" => IcarusBackendAnnotation
-      case "vcd" => VcsBackendAnnotation
-      case other => throw new RuntimeException(s"Unknown simulator option: $other")
-    }
+    case Some(name) =>
+      name.toLowerCase match {
+        case "verilator" => VerilatorBackendAnnotation
+        case "treadle2"  => TreadleBackendAnnotation
+        case "iverilog"  => IcarusBackendAnnotation
+        case "vcd"       => VcsBackendAnnotation
+        case other       => throw new RuntimeException(s"Unknown simulator option: $other")
+      }
   }
   val simName = sim.getSimulator.name
 
@@ -57,7 +58,10 @@ object ChiseltestBenchmark extends App {
 
   val repetitions = 6
   val numMax = 200
-  val testValues = for {x <- 2 to numMax; y <- 2 to numMax} yield (BigInt(x), BigInt(y), computeGcd(x, y))
+  val testValues = for {
+    x <- 2 to numMax
+    y <- 2 to numMax
+  } yield (BigInt(x), BigInt(y), computeGcd(x, y))
   val t = new Timer
   var cycles = 0L
 

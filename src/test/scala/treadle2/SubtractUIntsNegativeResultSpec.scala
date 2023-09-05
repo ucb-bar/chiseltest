@@ -8,10 +8,9 @@ import firrtl2.stage.FirrtlSourceAnnotation
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-/** Demonstrates that subtraction of UInts results in a negative that is
-  * sign extended only to the size correct for the subtraction arguments
-  * and not the resulting wire, for example
-  * c10 <= asUInt(sub(UInt<2>("h1"), UInt<3>("h2"))) yields 1111 (4bits) not 1111111111 (10) bits
+/** Demonstrates that subtraction of UInts results in a negative that is sign extended only to the size correct for the
+  * subtraction arguments and not the resulting wire, for example c10 <= asUInt(sub(UInt<2>("h1"), UInt<3>("h2")))
+  * yields 1111 (4bits) not 1111111111 (10) bits
   */
 class SubtractUIntsNegativeResultSpec extends AnyFreeSpec with Matchers {
   val firrtl: String =

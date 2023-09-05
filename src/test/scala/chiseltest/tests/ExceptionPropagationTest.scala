@@ -9,7 +9,7 @@ import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ExceptionPropagationTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "Testers2"
+  behavior.of("Testers2")
 
   class PropagationTestException extends Exception
 
@@ -26,7 +26,7 @@ class ExceptionPropagationTest extends AnyFlatSpec with ChiselScalatestTester {
       test(new StaticModule(false.B)) { c =>
         fork {
           throw new PropagationTestException
-        } .join()
+        }.join()
       }
     }
   }

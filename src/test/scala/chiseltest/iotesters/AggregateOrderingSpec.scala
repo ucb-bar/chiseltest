@@ -6,12 +6,11 @@ import chisel3._
 import chiseltest._
 import org.scalatest.freespec.AnyFreeSpec
 
-
-/**
-  * Passes a Vec of elements with one cycle delay
-  * This is part of an example of using poke on a Vector input
-  * @param numberOfElements  number of elements to be sorted
-  * @param elementGenerator  generator for kind of elements to be sorted
+/** Passes a Vec of elements with one cycle delay This is part of an example of using poke on a Vector input
+  * @param numberOfElements
+  *   number of elements to be sorted
+  * @param elementGenerator
+  *   generator for kind of elements to be sorted
   */
 class VecPassThrough(val numberOfElements: Int, elementGenerator: => UInt) extends Module {
   val io = IO(new Bundle {
@@ -28,9 +27,7 @@ class VecPassThrough(val numberOfElements: Int, elementGenerator: => UInt) exten
   io.outVectorAsUInt := io.inVector.asUInt
 }
 
-/**
-  * Passes a Bundle of elements with one cycle delay
-  * This is part of an example of using poke on a Bundle input
+/** Passes a Bundle of elements with one cycle delay This is part of an example of using poke on a Bundle input
   */
 class BundlePassThrough extends Module {
   val io = IO(new Bundle {
@@ -53,11 +50,11 @@ class PassThroughBundle extends Bundle {
   val u3 = UInt(27.W)
 }
 
-/**
-  * Demonstrate that calling poke with a IndexedSeq of BigInts
-  * will poke the individual elements of a Bundle, first element of Seq goes to first element in bundle
+/** Demonstrate that calling poke with a IndexedSeq of BigInts will poke the individual elements of a Bundle, first
+  * element of Seq goes to first element in bundle
   *
-  * @param c is the device under test
+  * @param c
+  *   is the device under test
   */
 class BundlePeekPokeTester(c: BundlePassThrough) extends PeekPokeTester(c) {
   private val numberOfElements = 3
@@ -82,14 +79,12 @@ class BundlePeekPokeTester(c: BundlePassThrough) extends PeekPokeTester(c) {
   println(s"output peeked individually         ${individuallyPeekedOutputs.mkString(",")}")
 }
 
-
-/**
-  * Demonstrate that calling poke with a IndexedSeq of BigInts
-  * will poke the individual elements of a Vec, perversely the first element of the seq will go into the last
-  * element of the Vec and so on.  Equally perversely the peek on the Vec will place the first element of the
-  * Vec into the first element of the resulting Seq
+/** Demonstrate that calling poke with a IndexedSeq of BigInts will poke the individual elements of a Vec, perversely
+  * the first element of the seq will go into the last element of the Vec and so on. Equally perversely the peek on the
+  * Vec will place the first element of the Vec into the first element of the resulting Seq
   *
-  * @param c is the device under test
+  * @param c
+  *   is the device under test
   */
 class VecPeekPokeTester(c: VecPassThrough) extends PeekPokeTester(c) {
   private val numberOfElements = c.numberOfElements
@@ -121,9 +116,7 @@ class VecPeekPokeTester(c: VecPassThrough) extends PeekPokeTester(c) {
   println(s"output peeked individually         ${individuallyPeekedOutputs.mkString(",")}")
 }
 
-/**
-  * Passes a Vec of elements with one cycle delay
-  * This is part of an example of using poke on a Vector input
+/** Passes a Vec of elements with one cycle delay This is part of an example of using poke on a Vector input
   */
 class AggregatePassThrough(aggregateGenerator: => Aggregate) extends Module {
   val io = IO(new Bundle {
@@ -142,15 +135,14 @@ class AggregatePassThrough(aggregateGenerator: => Aggregate) extends Module {
   io.outputFromUInt := aggregateRegister.asTypeOf(aggregateGenerator)
 }
 
-/**
-  * Demonstrate that calling poke with a IndexedSeq of BigInts
-  * will poke the individual elements of a Vec
+/** Demonstrate that calling poke with a IndexedSeq of BigInts will poke the individual elements of a Vec
   *
-  * @param c is the device under test
+  * @param c
+  *   is the device under test
   */
 class AggregateOrderingTester(c: AggregatePassThrough, numberOfElements: Int) extends PeekPokeTester(c) {
 
-  private val startValue = if(numberOfElements < 7) "a" else "0"
+  private val startValue = if (numberOfElements < 7) "a" else "0"
   private val inputArray = IndexedSeq.tabulate(numberOfElements) { x => BigInt(startValue, 16) + x }
 
   poke(c.io.inputAggregate, inputArray)
@@ -159,14 +151,16 @@ class AggregateOrderingTester(c: AggregatePassThrough, numberOfElements: Int) ex
   step(1)
 
   private val peekedOutput = peek(c.io.outputAggregate)
-  private val peekedUInt   = peek(c.io.aggregateAsUInt)
+  private val peekedUInt = peek(c.io.aggregateAsUInt)
   private val peekedOutputFromUInt = peek(c.io.outputFromUInt)
 
   println(s"input array that will be poked   " + inputArray.map { bigInt => bigInt.toString(16) }.mkString(""))
   println(s"peek of the input                " + peekedInput.map { bigInt => bigInt.toString(16) }.mkString(""))
   println(s"peek of the output               " + peekedOutput.map { bigInt => bigInt.toString(16) }.mkString(""))
   println(s"peek of the input as UInt        " + peekedUInt.toString(16))
-  println(s"peek of input fromBits of asUInt " + peekedOutputFromUInt.map { bigInt => bigInt.toString(16) }.mkString(""))
+  println(
+    s"peek of input fromBits of asUInt " + peekedOutputFromUInt.map { bigInt => bigInt.toString(16) }.mkString("")
+  )
 }
 
 class Bundle5 extends Bundle {

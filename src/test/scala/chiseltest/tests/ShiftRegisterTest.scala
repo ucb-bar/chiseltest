@@ -9,7 +9,7 @@ import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ShiftRegisterTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "Testers2"
+  behavior.of("Testers2")
 
   it should "test shift registers with abstractions" in {
     // TODO: this actually relies on total thread ordering

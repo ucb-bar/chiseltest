@@ -6,7 +6,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import chiseltest._
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{ChiselAnnotation, annotate}
+import chisel3.experimental.{annotate, ChiselAnnotation}
 
 // very similar to the firrtl example in the backend tests, but in this case we rely on the fact
 // that the high level interface is going to ensure that the design is reset for a single cycle!
@@ -41,7 +41,7 @@ class ResetCountCheckModule(resetCycles: Int) extends Module {
 }
 
 class ResetAssumptionTests extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption {
-  behavior of "AddResetAssumptionPass"
+  behavior.of("AddResetAssumptionPass")
 
   it should "not add any reset assumptions with ResetOption(0)" taggedAs FormalTag in {
     // this would normally pass, but since we removed the reset assumption it does not!
@@ -51,7 +51,7 @@ class ResetAssumptionTests extends AnyFlatSpec with ChiselScalatestTester with F
   }
 
   it should "always check for k steps after reset " taggedAs FormalTag in {
-    Seq(1,2,3,4).foreach { ii =>
+    Seq(1, 2, 3, 4).foreach { ii =>
       assertThrows[FailedBoundedCheckException] {
         verify(new FailAfterModule(2), Seq(BoundedCheck(kMax = 2), ResetOption(cycles = ii), DefaultBackend))
       }
@@ -59,7 +59,7 @@ class ResetAssumptionTests extends AnyFlatSpec with ChiselScalatestTester with F
   }
 
   it should "reset for the right amount of cycles" taggedAs FormalTag in {
-    Seq(1,2,3,4).foreach { ii =>
+    Seq(1, 2, 3, 4).foreach { ii =>
       verify(new ResetCountCheckModule(ii), Seq(BoundedCheck(kMax = 2), ResetOption(cycles = ii), DefaultBackend))
     }
   }

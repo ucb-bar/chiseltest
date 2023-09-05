@@ -7,9 +7,9 @@ import chiseltest._
 import org.scalatest.freespec.AnyFreeSpec
 
 class UsesVec extends Module {
-  val in   = IO(Input(Vec(4, UInt(5.W))))
+  val in = IO(Input(Vec(4, UInt(5.W))))
   val addr = IO(Input(UInt(8.W)))
-  val out  = IO(Output(UInt(5.W)))
+  val out = IO(Output(UInt(5.W)))
 
   out := in(addr)
 }
@@ -22,7 +22,7 @@ class UsesVecSpec extends AnyFreeSpec with ChiselScalatestTester {
       c.in(2).poke(7.U)
       c.in(3).poke(8.U)
 
-      for(vecIndex <- c.in.indices) {
+      for (vecIndex <- c.in.indices) {
         c.addr.poke(vecIndex.U)
         c.out.expect((vecIndex + 5).U)
       }

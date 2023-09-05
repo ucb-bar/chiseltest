@@ -14,17 +14,19 @@ class BBAddOne extends HasBlackBoxInline {
     val in = Input(UInt(16.W))
     val out = Output(UInt(16.W))
   }).suggestName("io")
-  setInline("BBAddOne.v",
-  """
-    |module BBAddOne(
-    |    input  [15:0] in,
-    |    output reg [15:0] out
-    |);
-    |  always @* begin
-    |    out = in + 1;
-    |  end
-    |endmodule
-  """.stripMargin)
+  setInline(
+    "BBAddOne.v",
+    """
+      |module BBAddOne(
+      |    input  [15:0] in,
+      |    output reg [15:0] out
+      |);
+      |  always @* begin
+      |    out = in + 1;
+      |  end
+      |endmodule
+  """.stripMargin
+  )
 }
 
 class BBAddTwo extends HasBlackBoxResource {

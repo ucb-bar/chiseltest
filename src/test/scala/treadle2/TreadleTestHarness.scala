@@ -21,13 +21,13 @@ import firrtl2.options.Shell
 import firrtl2.stage.FirrtlCli
 import firrtl2.logger.Logger
 
-/** This harness allows command line options to be added more easily to tests when requried
-  * and most importantly allows logging to be contained within a Logger.makeScope. Without
-  * this parallel running tests that use logging step on each others logger settings
+/** This harness allows command line options to be added more easily to tests when requried and most importantly allows
+  * logging to be contained within a Logger.makeScope. Without this parallel running tests that use logging step on each
+  * others logger settings
   */
 object TreadleTestHarness {
-  //Note: typically shell here would need to include something like a TreadleCli in order to get options
-  //but since treadle is a registered library treadles options are picked up automagically
+  // Note: typically shell here would need to include something like a TreadleCli in order to get options
+  // but since treadle is a registered library treadles options are picked up automagically
   val shell: Shell = new Shell("treadle2") with FirrtlCli
 
   def apply(

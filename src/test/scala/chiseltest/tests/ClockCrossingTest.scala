@@ -9,7 +9,7 @@ import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ClockCrossingTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "Testers2 with clock crossing signals"
+  behavior.of("Testers2 with clock crossing signals")
 
   it should "test crossing from a 2:1 divider domain" in {
     test(new Module {
@@ -31,13 +31,13 @@ class ClockCrossingTest extends AnyFlatSpec with ChiselScalatestTester {
       io.mainOut := mainReg
     }) { c =>
       c.io.divIn.poke(0x42.U)
-      c.io.mainOut.expect(0.U)  // initial register value
+      c.io.mainOut.expect(0.U) // initial register value
       c.clock.step(1)
-      c.io.mainOut.expect(1.U)  // initial value of divReg
-      c.clock.step(1)  // for divided clock to have a rising edge
-      c.io.mainOut.expect(1.U)  // one-cycle-delaye divReg
-      c.clock.step(1)  // for main clock register to propagate
-      c.io.mainOut.expect(0x42.U)  // updated value propagates
+      c.io.mainOut.expect(1.U) // initial value of divReg
+      c.clock.step(1) // for divided clock to have a rising edge
+      c.io.mainOut.expect(1.U) // one-cycle-delaye divReg
+      c.clock.step(1) // for main clock register to propagate
+      c.io.mainOut.expect(0x42.U) // updated value propagates
     }
   }
 }

@@ -52,7 +52,7 @@ abstract class StopAssertAssumeCompliance(sim: Simulator, tag: Tag = DefaultTag)
       |""".stripMargin
 
   private def start(withVCD: Boolean = false): SimulatorContext = {
-    val annos = if(withVCD) Seq(WriteVcdAnnotation) else Seq()
+    val annos = if (withVCD) Seq(WriteVcdAnnotation) else Seq()
     val dut = load(src, annos)
     // set every input to zero by default
     dut.poke("stop0En", 0)
@@ -90,7 +90,7 @@ abstract class StopAssertAssumeCompliance(sim: Simulator, tag: Tag = DefaultTag)
     val r0 = dut.step()
     assert(r0.asInstanceOf[StepInterrupted].after == 1)
     assert(r0.asInstanceOf[StepInterrupted].isFailure)
-    if(sim == TreadleSimulator) { // only treadle will report the exact statements that were triggered
+    if (sim == TreadleSimulator) { // only treadle will report the exact statements that were triggered
       assert(r0.asInstanceOf[StepInterrupted].sources == List("stop0", "stop1", "stop2", "stop3"))
     }
 
@@ -105,7 +105,7 @@ abstract class StopAssertAssumeCompliance(sim: Simulator, tag: Tag = DefaultTag)
     val r1 = dut.step()
     assert(r1.asInstanceOf[StepInterrupted].after == 1)
     assert(!r1.asInstanceOf[StepInterrupted].isFailure)
-    if(sim == TreadleSimulator) { // only treadle will report the exact statements that were triggered
+    if (sim == TreadleSimulator) { // only treadle will report the exact statements that were triggered
       assert(r1.asInstanceOf[StepInterrupted].sources == List("stop0"))
     }
 
@@ -123,7 +123,7 @@ abstract class StopAssertAssumeCompliance(sim: Simulator, tag: Tag = DefaultTag)
     val r0 = dut.step()
     assert(r0.asInstanceOf[StepInterrupted].after == 1)
     assert(r0.asInstanceOf[StepInterrupted].isFailure)
-    if(sim == TreadleSimulator) { // only treadle will report the exact statements that were triggered
+    if (sim == TreadleSimulator) { // only treadle will report the exact statements that were triggered
       assert(r0.asInstanceOf[StepInterrupted].sources == List("c0.stop0", "c0.stop1", "c0.stop2", "c0.stop3"))
     }
 
@@ -141,7 +141,7 @@ abstract class StopAssertAssumeCompliance(sim: Simulator, tag: Tag = DefaultTag)
     val r1 = dut.step()
     assert(r1.asInstanceOf[StepInterrupted].after == 1)
     assert(!r1.asInstanceOf[StepInterrupted].isFailure)
-    if(sim == TreadleSimulator) { // only treadle will report the exact statements that were triggered
+    if (sim == TreadleSimulator) { // only treadle will report the exact statements that were triggered
       assert(r1.asInstanceOf[StepInterrupted].sources == List("c0.stop0"))
     }
 

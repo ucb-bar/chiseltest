@@ -98,11 +98,11 @@ class ReadyValidEnumShifter(val delay: Int) extends Module {
     val out = ValidIO(MyEnum())
   })
 
-  val cnt = RegInit(0.U(log2Ceil(delay+1).W))
+  val cnt = RegInit(0.U(log2Ceil(delay + 1).W))
   val req_fire = io.in.ready && io.in.valid
 
   cnt := 0.U
-  when (req_fire || (cnt > 0.U && cnt < delay.U)) {
+  when(req_fire || (cnt > 0.U && cnt < delay.U)) {
     cnt := cnt + 1.U
   }
 
@@ -121,12 +121,12 @@ class EnumSpec extends AnyFlatSpec with ChiselScalatestTester {
 
     test(new EnumVecPassThrough(256)).withAnnotations(options).runPeekPoke(new EnumVecPeekPokeTester(_))
 
-    if(!skipMem) {
+    if (!skipMem) {
       test(new EnumMem(256)).withAnnotations(options).runPeekPoke(new EnumMemPeekPokeTester(_))
     }
   }
 
-  behavior of "Enum PeekPokeTesters"
+  behavior.of("Enum PeekPokeTesters")
 
   it should "work with a treadle backend" in {
     testPeekPoke(Seq(TreadleBackendAnnotation), skipMem = false)

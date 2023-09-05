@@ -9,7 +9,7 @@ import org.scalatest.matchers.should.Matchers
 class MemRegTester extends AnyFlatSpec with Matchers with LazyLogging {
   behavior.of("MemReg")
 
-  //scalastyle:off
+  // scalastyle:off
   def riscMemRegTest(): Unit = {
     val riscFirrtl: String =
       s"""

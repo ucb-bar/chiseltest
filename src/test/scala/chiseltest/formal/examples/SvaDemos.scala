@@ -4,16 +4,14 @@ package chiseltest.formal.examples
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{ChiselAnnotation, annotate}
+import chisel3.experimental.{annotate, ChiselAnnotation}
 import chiseltest._
 import chiseltest.formal._
 import org.scalatest.flatspec.AnyFlatSpec
 import chiseltest.formal.FormalTag
 
-/** These small examples demonstrate how the chisel Past operator can be used
-  * to emulate simple SVA constructs.
-  * All demos are based on the awesome SVA tutorial from SymbioticEDA:
-  * https://github.com/SymbioticEDA/sva-demos
+/** These small examples demonstrate how the chisel Past operator can be used to emulate simple SVA constructs. All
+  * demos are based on the awesome SVA tutorial from SymbioticEDA: https://github.com/SymbioticEDA/sva-demos
   */
 class SvaDemos extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption {
   "Demo1" should "fail a bounded check 17 cycles after reset" taggedAs FormalTag in {
@@ -23,14 +21,14 @@ class SvaDemos extends AnyFlatSpec with ChiselScalatestTester with Formal with F
     assert(e.failAt == 17)
   }
 
-  Seq("A" -> (() => new SvaDemo2), "B" -> (() => new SvaDemo2B), "C" -> (() => new SvaDemo2C))
-  .foreach { case (n, gen) =>
-    s"Demo2$n" should "fail a bounded check 15 cycles after reset" taggedAs FormalTag in {
-      val e = intercept[FailedBoundedCheckException] {
-        verify(gen(), Seq(BoundedCheck(20), DefaultBackend))
+  Seq("A" -> (() => new SvaDemo2), "B" -> (() => new SvaDemo2B), "C" -> (() => new SvaDemo2C)).foreach {
+    case (n, gen) =>
+      s"Demo2$n" should "fail a bounded check 15 cycles after reset" taggedAs FormalTag in {
+        val e = intercept[FailedBoundedCheckException] {
+          verify(gen(), Seq(BoundedCheck(20), DefaultBackend))
+        }
+        assert(e.failAt == 15)
       }
-      assert(e.failAt == 15)
-    }
   }
 
   "Demo3" should "fail a bounded check 16 cycles after reset" taggedAs FormalTag in {
@@ -45,8 +43,8 @@ class SvaDemo1 extends SvaDemoModule {
   seqs(
     //       01234567890123456789
     reset = "-_____-____-________",
-    a     = "_--___-___-______-__",
-    b     = "__--__-__________-__",
+    a = "_--___-___-______-__",
+    b = "__--__-__________-__"
   )
 
   // we can replace the a |=> b with our past operator
@@ -57,8 +55,8 @@ class SvaDemo2 extends SvaDemoModule {
   seqs(
     //       0123456789012345678901
     reset = "-_____-_______________",
-    a     = "_-____-_______-_______",
-    b     = "___-__-__________-____",
+    a = "_-____-_______-_______",
+    b = "___-__-__________-____"
   )
 
   // we need to manually express the two different possibilities
@@ -70,8 +68,8 @@ class SvaDemo2B extends SvaDemoModule {
   seqs(
     //       0123456789012345678901
     reset = "-_____-_______________",
-    a     = "_-____-___-___-_______",
-    b     = "___-__-____-_____-____",
+    a = "_-____-___-___-_______",
+    b = "___-__-____-_____-____"
   )
 
   // we need to manually express the two different possibilities
@@ -83,8 +81,8 @@ class SvaDemo2C extends SvaDemoModule {
   seqs(
     //       0123456789012345678901
     reset = "-_____-_______________",
-    a     = "_-____-_______-_______",
-    b     = "---------------__-----",
+    a = "_-____-_______-_______",
+    b = "---------------__-----"
   )
 
   // we need to manually express the two different possibilities
@@ -96,9 +94,9 @@ class SvaDemo3 extends SvaDemoModule {
   seqs(
     //       0123456789012345678901
     reset = "-_______-___________",
-    a     = "_--___-_______-_____",
-    b     = "__--___-________--__",
-    c     = "____-_____________-_",
+    a = "_--___-_______-_____",
+    b = "__--___-________--__",
+    c = "____-_____________-_"
   )
 
   // we need to manually express the property
@@ -129,9 +127,9 @@ class SvaDemoModule extends Module {
     withReset(false.B) {
       assume(reset.asBool === r)
     }
-    if(aStr.nonEmpty) a := seq(aStr)
-    if(bStr.nonEmpty) b := seq(bStr)
-    if(cStr.nonEmpty) c := seq(cStr)
+    if (aStr.nonEmpty) a := seq(aStr)
+    if (bStr.nonEmpty) b := seq(bStr)
+    if (cStr.nonEmpty) c := seq(cStr)
   }
 }
 

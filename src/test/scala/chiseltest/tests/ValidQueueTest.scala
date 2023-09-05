@@ -17,9 +17,8 @@ class ValidQueueModule(typeGen: Data, val delay: Int) extends Module {
   out := Pipe(in, delay)
 }
 
-
 class ValidQueueTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "Testers2 with ValidQueue"
+  behavior.of("Testers2 with ValidQueue")
 
   it should "pass through elements, using enqueueNow" in {
     test(new ValidQueueModule(UInt(8.W), delay = 3)) { c =>
@@ -29,8 +28,8 @@ class ValidQueueTest extends AnyFlatSpec with ChiselScalatestTester {
       c.out.expectInvalid()
       c.in.enqueueNow(42.U)
       parallel(
-          c.out.expectDequeue(42.U),
-          c.in.enqueueNow(43.U)
+        c.out.expectDequeue(42.U),
+        c.in.enqueueNow(43.U)
       )
       c.out.expectDequeue(43.U)
     }
@@ -85,17 +84,16 @@ class ValidQueueTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   class TriQueueModule(typeGen: Data, delay: Int) extends Module {
-    val in0  = IO(Flipped(Valid(typeGen)))
+    val in0 = IO(Flipped(Valid(typeGen)))
     val out0 = IO(Valid(typeGen))
     out0 := Pipe(in0, delay)
-    val in1  = IO(Flipped(Valid(typeGen)))
+    val in1 = IO(Flipped(Valid(typeGen)))
     val out1 = IO(Valid(typeGen))
     out1 := Pipe(in1, delay)
-    val in2  = IO(Flipped(Valid(typeGen)))
+    val in2 = IO(Flipped(Valid(typeGen)))
     val out2 = IO(Valid(typeGen))
     out2 := Pipe(in2, delay)
   }
-
 
   it should "Work with Bundles" in {
     test(new TriQueueModule(new TriBundle, 1)).withAnnotations(Seq(VerboseAnnotation)) { c =>

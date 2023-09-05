@@ -10,24 +10,24 @@ import firrtl2.transforms.DontCheckCombLoopsAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 
 class HasCycle extends Module {
-  val io = IO( new Bundle {
+  val io = IO(new Bundle {
     val a = Input(Bool())
     val o = Output(Bool())
   })
 
   val b = Wire(Bool())
-  b := b&&io.a
+  b := b && io.a
 
   io.o := b
 }
 
-class HasCycleTester( c:HasCycle) extends PeekPokeTester(c) {
-  poke( c.io.a, 0)
+class HasCycleTester(c: HasCycle) extends PeekPokeTester(c) {
+  poke(c.io.a, 0)
   step(1)
 }
 
 class HasCycleTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "HasCycle"
+  behavior.of("HasCycle")
 
   it should "work in treadle" in {
     // for treadle we need to use a treadle specific annotation: AllowCyclesAnnotation
@@ -36,7 +36,8 @@ class HasCycleTest extends AnyFlatSpec with ChiselScalatestTester {
       .runPeekPoke(new HasCycleTester(_))
   }
   it should "work in verilator" taggedAs RequiresVerilator in {
-    test(new HasCycle).withAnnotations(Seq(DontCheckCombLoopsAnnotation, VerilatorBackendAnnotation))
+    test(new HasCycle)
+      .withAnnotations(Seq(DontCheckCombLoopsAnnotation, VerilatorBackendAnnotation))
       .runPeekPoke(new HasCycleTester(_))
   }
 }

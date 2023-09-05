@@ -122,7 +122,6 @@ class VCDSpec extends AnyFlatSpec with Matchers {
     c2.serialize should be("1%")
   }
 
-
   behavior.of("vcd log containing negative numbers")
 
   it should "work correctly and be runnable from vcd output file" in {

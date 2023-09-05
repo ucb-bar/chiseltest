@@ -3,7 +3,7 @@ package chiseltest.backends.verilator
 
 import chisel3._
 import chiseltest._
-import chiseltest.internal.{CachingAnnotation, sanitizeFileName}
+import chiseltest.internal.{sanitizeFileName, CachingAnnotation}
 import chiseltest.simulator.{CachingDebugAnnotation, RequiresVerilator}
 import chiseltest.utils.CaptureStdout
 import chiseltest.tests.StaticModule
@@ -12,7 +12,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class VerilatorCachingTests extends AnyFlatSpec with ChiselScalatestTester with Matchers {
-  behavior of "Testers2 with Verilator and caching"
+  behavior.of("Testers2 with Verilator and caching")
 
   val default = Seq(VerilatorBackendAnnotation)
   val withCaching = Seq(VerilatorBackendAnnotation, CachingAnnotation, CachingDebugAnnotation)
@@ -68,7 +68,6 @@ class VerilatorCachingTests extends AnyFlatSpec with ChiselScalatestTester with 
   private def testDir: os.Path = os.pwd / "test_run_dir" / sanitizeFileName(scalaTestContext.value.get.name)
 
   private def startWithEmptyTestDir(): Unit = {
-    if(os.exists(testDir)) { os.remove.all(testDir) }
+    if (os.exists(testDir)) { os.remove.all(testDir) }
   }
 }
-

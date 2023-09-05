@@ -45,6 +45,7 @@ final class CustomBundle(elts: (String, Data)*) extends Record {
   val elements = ListMap(elts.map { case (field, elt) => field -> elt.cloneType }: _*)
   def apply(elt: String): Data = elements(elt)
 }
+
 /** taken from https://github.com/schoeberl/chisel-examples/blob/master/src/main/scala/simple/Alu.scala */
 class Alu(size: Int) extends Module {
   val io = IO(new Bundle {

@@ -7,9 +7,8 @@ import chisel3.util._
 import chiseltest.simulator.RequiresVerilator
 import org.scalatest.flatspec.AnyFlatSpec
 
-
 class VerilogBlackBoxTests extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "Verilog Blackboxes"
+  behavior.of("Verilog Blackboxes")
 
   def doTest(dut: UsesBBAddOne): Unit = {
     dut.io.in.poke(1.U)
@@ -20,18 +19,18 @@ class VerilogBlackBoxTests extends AnyFlatSpec with ChiselScalatestTester {
     dut.clock.step()
   }
 
-  it should "be copied over so that they are accessible to Verilator"  taggedAs RequiresVerilator in {
+  it should "be copied over so that they are accessible to Verilator" taggedAs RequiresVerilator in {
     test(new UsesBBAddOne).withAnnotations(Seq(VerilatorBackendAnnotation))(doTest)
   }
 }
-
 
 class BBAddOne extends HasBlackBoxInline {
   val io = IO(new Bundle {
     val in = Input(UInt(16.W))
     val out = Output(UInt(16.W))
   }).suggestName("io")
-  setInline("BBAddOne.v",
+  setInline(
+    "BBAddOne.v",
     """
       |module BBAddOne(
       |    input  [15:0] in,
@@ -41,7 +40,8 @@ class BBAddOne extends HasBlackBoxInline {
       |    out = in + 1;
       |  end
       |endmodule
-  """.stripMargin)
+  """.stripMargin
+  )
 }
 
 class BBAddTwo extends HasBlackBoxResource {

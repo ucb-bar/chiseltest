@@ -8,7 +8,6 @@ import chiseltest.iotesters._
 import org.scalatest.flatspec.AnyFlatSpec
 import chiseltest.simulator.RequiresVerilator
 
-
 class MultiIOAdder extends Module {
   val a = IO(Input(UInt(4.W)))
   val b = IO(Input(UInt(4.W)))
@@ -29,7 +28,7 @@ class MultiIOAdderTester(c: MultiIOAdder) extends PeekPokeTester(c) {
 }
 
 class ModuleSpec extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "MuiltiIOAdder"
+  behavior.of("MuiltiIOAdder")
 
   it should "test correctly for every i/o combination with verilator" taggedAs RequiresVerilator in {
     test(new MultiIOAdder).withAnnotations(Seq(VerilatorBackendAnnotation)).runPeekPoke(new MultiIOAdderTester(_))

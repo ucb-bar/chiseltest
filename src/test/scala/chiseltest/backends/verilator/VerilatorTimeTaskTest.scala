@@ -8,7 +8,7 @@ import chiseltest.simulator.RequiresVerilator
 import org.scalatest.flatspec.AnyFlatSpec
 
 class VerilatorTimeTaskTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "Verilator backend"
+  behavior.of("Verilator backend")
 
   val annos = Seq(VerilatorBackendAnnotation)
 
@@ -18,16 +18,18 @@ class VerilatorTimeTaskTest extends AnyFlatSpec with ChiselScalatestTester {
         val clock = Input(Clock())
         val out = Output(UInt(64.W))
       })
-      setInline(s"${this.name}.v",
-      s"""module ${this.name}(
-         |  input clock,
-         |  output reg [63:0] out
-         |);
-         |  always @(posedge clock) begin
-         |    out <= $$time;
-         |  end
-         |endmodule
-         |""".stripMargin)
+      setInline(
+        s"${this.name}.v",
+        s"""module ${this.name}(
+           |  input clock,
+           |  output reg [63:0] out
+           |);
+           |  always @(posedge clock) begin
+           |    out <= $$time;
+           |  end
+           |endmodule
+           |""".stripMargin
+      )
     }
 
     test(new Module {
@@ -35,7 +37,7 @@ class VerilatorTimeTaskTest extends AnyFlatSpec with ChiselScalatestTester {
       val inst = Module(new BlackBoxTime)
       inst.io.clock := clock
       out := inst.io.out
-      }).withAnnotations(annos) { c =>
+    }).withAnnotations(annos) { c =>
       // Check that time increments, each clock edge is counts as 1 so a step is 2
       val start = c.out.peek().litValue
       c.clock.step()

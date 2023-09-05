@@ -2,7 +2,6 @@
 
 package chiseltest.iotesters.examples
 
-
 import chisel3._
 import chiseltest.iotesters._
 import chisel3.util.experimental.loadMemoryFromFileInline
@@ -11,12 +10,11 @@ import chiseltest.simulator.RequiresVerilator
 import firrtl2.options.TargetDirAnnotation
 import org.scalatest.freespec.AnyFreeSpec
 
-
 class UsesMem(memoryDepth: Int, memoryType: Bits) extends Module {
   val io = IO(new Bundle {
     val address = Input(UInt(memoryType.getWidth.W))
-    val value   = Output(memoryType)
-    val value2  = Output(memoryType)
+    val value = Output(memoryType)
+    val value2 = Output(memoryType)
   })
 
   val memory = Mem(memoryDepth, memoryType)
@@ -34,7 +32,7 @@ class UsesMem(memoryDepth: Int, memoryType: Bits) extends Module {
 class UsesMemLow(memoryDepth: Int, memoryType: Data) extends Module {
   val io = IO(new Bundle {
     val address = Input(UInt(memoryType.getWidth.W))
-    val value   = Output(memoryType)
+    val value = Output(memoryType)
   })
 
   val memory = Mem(memoryDepth, memoryType)
@@ -45,7 +43,7 @@ class UsesMemLow(memoryDepth: Int, memoryType: Data) extends Module {
 }
 
 class LoadMemoryFromFileTester(c: UsesMem) extends PeekPokeTester(c) {
-  for(addr <- 0 until 8) {
+  for (addr <- 0 until 8) {
     poke(c.io.address, addr)
     step(1)
     println(f"peek from $addr ${peek(c.io.value)}%x ${peek(c.io.value2)}%x")
@@ -55,7 +53,7 @@ class LoadMemoryFromFileTester(c: UsesMem) extends PeekPokeTester(c) {
 }
 
 class LoadMemoryFromFileSpec extends AnyFreeSpec with ChiselScalatestTester {
-  "Users can specify a source file to load memory from"  taggedAs RequiresVerilator in {
+  "Users can specify a source file to load memory from" taggedAs RequiresVerilator in {
 
     val targetDir = TargetDirAnnotation("test_run_dir/load_mem_test")
     test(new UsesMem(memoryDepth = 8, memoryType = UInt(16.W)))

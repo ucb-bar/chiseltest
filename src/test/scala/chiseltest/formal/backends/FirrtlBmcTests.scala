@@ -9,7 +9,7 @@ import chiseltest.simulator.{Compiler, WriteVcdAnnotation}
 import firrtl2._
 
 class FirrtlBmcTests extends FlatSpecWithTargetDir {
-  behavior of "maltese bmc"
+  behavior.of("maltese bmc")
 
   private def DefaultBackend: FormalEngineAnnotation = FormalBackendOption.getEngine(configMap)
   private val mRef = CircuitTarget("test").module("test")
@@ -42,7 +42,7 @@ class FirrtlBmcTests extends FlatSpecWithTargetDir {
   }
 
   it should "fail after the appropriate amount of cycles" taggedAs FormalTag in {
-    Seq(1,2,3,10,20,100).foreach { ii =>
+    Seq(1, 2, 3, 10, 20, 100).foreach { ii =>
       val state = loadFirrtl(failAfter(ii))
 
       val e = intercept[FailedBoundedCheckException] {
@@ -87,7 +87,7 @@ class FirrtlBmcTests extends FlatSpecWithTargetDir {
 
     // this should fail and produce a VCD
     val vcdFile = targetDir / "test.vcd"
-    if(os.exists(vcdFile)) { os.remove(vcdFile) }
+    if (os.exists(vcdFile)) { os.remove(vcdFile) }
     assertThrows[FailedBoundedCheckException] {
       Maltese.bmc(state.circuit, VCD +: DefaultBackend +: state.annotations, kMax = 6)
     }

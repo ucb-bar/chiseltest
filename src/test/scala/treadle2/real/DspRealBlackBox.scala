@@ -13,9 +13,12 @@ abstract class DspRealTwoArgumentToDouble extends ScalaBlackBox {
 
   /** sub-classes must implement this two argument function
     *
-    * @param double1 first operand
-    * @param double2 second operand
-    * @return        double operation result
+    * @param double1
+    *   first operand
+    * @param double2
+    *   second operand
+    * @return
+    *   double operation result
     */
   def twoOp(double1: Double, double2: Double): Double
 
@@ -40,8 +43,10 @@ abstract class DspRealOneArgumentToDouble extends ScalaBlackBox {
 
   /** sub-classes must implement this two argument function
     *
-    * @param double1 first operand
-    * @return        double operation result
+    * @param double1
+    *   first operand
+    * @return
+    *   double operation result
     */
   def oneOp(double1: Double): Double
 
@@ -65,9 +70,12 @@ abstract class DspRealTwoArgumentToBoolean extends ScalaBlackBox {
 
   /** sub-classes must implement this two argument function
     *
-    * @param double1 first operand
-    * @param double2 second operand
-    * @return        boolean operation result
+    * @param double1
+    *   first operand
+    * @param double2
+    *   second operand
+    * @return
+    *   boolean operation result
     */
   def twoOp(double1: Double, double2: Double): Boolean
 

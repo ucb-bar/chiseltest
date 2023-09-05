@@ -9,7 +9,7 @@ import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class TimescopeTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "Testers2 timescopes"
+  behavior.of("Testers2 timescopes")
 
   it should "revert signals at the end" in {
     test(new PassthroughModule(UInt(8.W))) { c =>

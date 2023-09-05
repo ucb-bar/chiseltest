@@ -10,7 +10,7 @@ import org.scalatest.matchers
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ThreadSafetyLocatorTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "Testers2 thread safety checker"
+  behavior.of("Testers2 thread safety checker")
 
   it should "locate source lines for simultaneous pokes from parallel threads" in {
     val exceptionMessage = intercept[ThreadOrderDependentException] {
@@ -24,7 +24,7 @@ class ThreadSafetyLocatorTest extends AnyFlatSpec with ChiselScalatestTester {
         }.join()
       }
     }.getMessage
-    exceptionMessage should include ("ThreadSafetyLocatorTest.scala:22")
-    exceptionMessage should include ("ThreadSafetyLocatorTest.scala:19")
+    exceptionMessage should include("ThreadSafetyLocatorTest.scala:22")
+    exceptionMessage should include("ThreadSafetyLocatorTest.scala:19")
   }
 }

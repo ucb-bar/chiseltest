@@ -11,28 +11,25 @@ class GcdInputBundle(val w: Int) extends Bundle {
 }
 
 class GcdOutputBundle(override val w: Int) extends GcdInputBundle(w) {
-  val gcd    = UInt(w.W)
+  val gcd = UInt(w.W)
 }
 
-/**
-  * Compute Gcd using subtraction method.
-  * Subtracts the smaller from the larger until register y is zero.
-  * value input register x is then the Gcd.
-  * Unless first input is zero then the Gcd is y.
-  * Can handle stalls on the producer or consumer side
+/** Compute Gcd using subtraction method. Subtracts the smaller from the larger until register y is zero. value input
+  * register x is then the Gcd. Unless first input is zero then the Gcd is y. Can handle stalls on the producer or
+  * consumer side
   */
 class DecoupledGcd(val bitWidth: Int) extends Module {
   val input = IO(Flipped(Decoupled(new GcdInputBundle(bitWidth))))
   val output = IO(Decoupled(new GcdOutputBundle(bitWidth)))
 
-  val xInitial    = Reg(UInt(bitWidth.W))
-  val yInitial    = Reg(UInt(bitWidth.W))
-  val x           = Reg(UInt(bitWidth.W))
-  val y           = Reg(UInt(bitWidth.W))
-  val busy        = RegInit(false.B)
+  val xInitial = Reg(UInt(bitWidth.W))
+  val yInitial = Reg(UInt(bitWidth.W))
+  val x = Reg(UInt(bitWidth.W))
+  val y = Reg(UInt(bitWidth.W))
+  val busy = RegInit(false.B)
   val resultValid = RegInit(false.B)
 
-  input.ready := ! busy
+  input.ready := !busy
   output.valid := resultValid
   output.bits := DontCare
 
@@ -42,7 +39,7 @@ class DecoupledGcd(val bitWidth: Int) extends Module {
 //  printf("%d xi  %d yi  %d c  %d x  %d y  %d busy  %d valid  out\n",
 //    xInitial, yInitial, cycle, x, y, busy.asUInt, resultValid.asUInt)
 
-  when(busy)  {
+  when(busy) {
     when(x >= y) {
       x := x - y
     }.otherwise {

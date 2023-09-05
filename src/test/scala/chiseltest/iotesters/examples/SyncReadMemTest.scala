@@ -7,10 +7,9 @@ import chiseltest.ChiselScalatestTester
 import chiseltest.iotesters._
 import org.scalatest.freespec.AnyFreeSpec
 
-
 class HasSyncReadMem extends Module {
-  val readAddr  = IO(Input(UInt(16.W)))
-  val readData  = IO(Output(UInt(16.W)))
+  val readAddr = IO(Input(UInt(16.W)))
+  val readData = IO(Output(UInt(16.W)))
   val writeAddr = IO(Input(UInt(16.W)))
   val writeData = IO(Input(UInt(16.W)))
   val writeEnable = IO(Input(Bool()))
@@ -37,7 +36,7 @@ class SyncReadMemTest extends AnyFreeSpec with ChiselScalatestTester {
         poke(dut.readAddr, i)
         step(1)
         val memValue = peek(dut.readData)
-        assert(memValue  == i + 30)
+        assert(memValue == i + 30)
         logger.info(s"$i -> $memValue")
       }
       for (i <- 0 until 8) {

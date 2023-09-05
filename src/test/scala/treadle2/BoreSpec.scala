@@ -2,7 +2,6 @@
 
 package treadle2
 
-
 import firrtl2.AnnotationSeq
 import firrtl2.annotations._
 import firrtl2.options.TargetDirAnnotation

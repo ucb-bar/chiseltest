@@ -20,7 +20,7 @@ abstract class StepCompliance(sim: Simulator, tag: Tag = DefaultTag) extends Com
       |
       |""".stripMargin
 
-  it should "be able to step a simple circuit with a single clock" taggedAs(tag) in {
+  it should "be able to step a simple circuit with a single clock" taggedAs (tag) in {
     val dut = load(base)
     // note: the value of the register at the beginning of the simulation is undefined
     dut.poke("in", 0)
@@ -44,7 +44,7 @@ abstract class StepCompliance(sim: Simulator, tag: Tag = DefaultTag) extends Com
       |    out <= not(in)
       |""".stripMargin
 
-  it should "throw an exception when trying to step a circuit with no clock" taggedAs(tag) in {
+  it should "throw an exception when trying to step a circuit with no clock" taggedAs (tag) in {
     val dut = load(combCircuit)
     assertThrows[NoClockException] {
       dut.step()
@@ -52,7 +52,7 @@ abstract class StepCompliance(sim: Simulator, tag: Tag = DefaultTag) extends Com
     dut.finish()
   }
 
-  it should "support stepping multiple cycles" taggedAs(tag) in {
+  it should "support stepping multiple cycles" taggedAs (tag) in {
     val src = CounterGen(List("clock"))
     val dut = load(src) // a counter with the standard "clock" clock
     dut.poke("reset", 1)
@@ -70,7 +70,7 @@ abstract class StepCompliance(sim: Simulator, tag: Tag = DefaultTag) extends Com
     dut.finish()
   }
 
-  it should "support stepping a clock that is not named 'clock'" taggedAs(tag) in {
+  it should "support stepping a clock that is not named 'clock'" taggedAs (tag) in {
     val clock = "test123"
     val dut = load(CounterGen(List(clock))) // a counter with a single clock with non standard name
     dut.poke("reset", 1)
@@ -88,7 +88,6 @@ abstract class StepCompliance(sim: Simulator, tag: Tag = DefaultTag) extends Com
     dut.finish()
   }
 
-
 }
 
 private object CounterGen {
@@ -98,8 +97,12 @@ private object CounterGen {
       clocks.map(c => s"    output ${c}_count: UInt<32>") ++
       List("") ++
       clocks.flatMap { c =>
-        List(s"    reg ${c}_r : UInt<32>, $c with :", s"      reset => (reset, UInt(0))",
-          s"    ${c}_r <= add(${c}_r, UInt(1))", s"    ${c}_count <= ${c}_r")
+        List(
+          s"    reg ${c}_r : UInt<32>, $c with :",
+          s"      reset => (reset, UInt(0))",
+          s"    ${c}_r <= add(${c}_r, UInt(1))",
+          s"    ${c}_count <= ${c}_r"
+        )
       }
   }.mkString("\n") + "\n"
 }

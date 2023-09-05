@@ -8,11 +8,11 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class VcsBasicTests extends AnyFlatSpec with ChiselScalatestTester with Matchers {
-  behavior of "Testers2 with Vcs"
+  behavior.of("Testers2 with Vcs")
 
   val annos = Seq(VcsBackendAnnotation)
 
-  it should "build and simulate a basic test with input and output" taggedAs(RequiresVcs) in {
+  it should "build and simulate a basic test with input and output" taggedAs (RequiresVcs) in {
     test(new Module {
       val io = IO(new Bundle {
         val in = Input(UInt(8.W))

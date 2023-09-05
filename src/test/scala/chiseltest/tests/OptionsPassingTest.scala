@@ -12,7 +12,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class OptionsPassingTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
-  behavior of "Testers2"
+  behavior.of("Testers2")
 
   it should "write vcd output when passing in a WriteVcdAnnotation" in {
     test(new Module {
@@ -29,9 +29,11 @@ class OptionsPassingTest extends AnyFlatSpec with ChiselScalatestTester with Mat
       c.io.b.expect(42.U)
     }
 
-    val testDir = new File("test_run_dir" +
-      File.separator +
-      sanitizeFileName(s"Testers2 should write vcd output when passing in a WriteVcdAnnotation"))
+    val testDir = new File(
+      "test_run_dir" +
+        File.separator +
+        sanitizeFileName(s"Testers2 should write vcd output when passing in a WriteVcdAnnotation")
+    )
 
     val vcdFileOpt = testDir.listFiles.find { f =>
       f.getPath.endsWith(".vcd")

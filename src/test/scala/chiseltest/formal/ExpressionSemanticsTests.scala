@@ -7,7 +7,7 @@ import firrtl2.AnnotationSeq
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ExpressionSemanticsTests extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption {
-  behavior of "formal backend"
+  behavior.of("formal backend")
   it should "ensure that division by a power of two is always the same as a shift" taggedAs FormalTag in {
     verify(new DivisionVsShiftTest, Seq(BoundedCheck(1), DefaultBackend))
   }
@@ -26,7 +26,8 @@ class DivisionVsShiftTest extends Module {
   powers.foreach { case (ii, pow) =>
     val msg1 = s"num / $pow == num >> $ii" // this works around the fact that s".." is forbidden in the assert
     assert(numerator / pow.U === (numerator >> ii.U), msg1)
-    val msg2 = s"num / $pow == num[${width-1}:$ii]" // this works around the fact that s".." is forbidden in the assert
+    val msg2 =
+      s"num / $pow == num[${width - 1}:$ii]" // this works around the fact that s".." is forbidden in the assert
     assert(numerator / pow.U === numerator.head(width - ii), msg2)
   }
 }
@@ -69,7 +70,10 @@ class DivisionAndRemainderOracle(testName: String) {
 
 class DivisionAndRemainderTest(oracle: DivisionAndRemainderOracle) extends Module {
   // we ignore the case where den is 0 since the result is undefined
-  val testValues = for {x <- 0 to 3; y <- 1 to 7} yield (x, y)
+  val testValues = for {
+    x <- 0 to 3
+    y <- 1 to 7
+  } yield (x, y)
   testValues.foreach { case (num, den) =>
     val div = oracle.div(num, den)
     val rem = oracle.rem(num, den)

@@ -4,10 +4,9 @@ import chiseltest._
 import chisel3._
 import org.scalatest.flatspec.AnyFlatSpec
 
-
 // define the behavior of peek/poke/expect on ground type pins of the design
 class GroundTypeTests extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "chiseltest interface"
+  behavior.of("chiseltest interface")
 
   it should "allow poking UInt ports with a BigInt" in {
     test(new PassthroughModule(UInt(4.W))) { c =>

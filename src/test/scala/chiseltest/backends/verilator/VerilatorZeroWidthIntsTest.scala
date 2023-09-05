@@ -10,7 +10,7 @@ import org.scalatest.freespec.AnyFreeSpec
 class VerilatorZeroWidthIntsTest extends AnyFreeSpec with ChiselScalatestTester {
   private val annos = Seq(VerilatorBackendAnnotation)
 
-  "peek, poke and expect zero width UInt" taggedAs RequiresVerilator  in {
+  "peek, poke and expect zero width UInt" taggedAs RequiresVerilator in {
     test(new PassthroughModule(UInt(0.W))).withAnnotations(annos) { c =>
       c.in.poke(0.U(0.W))
       c.in.expect(0.U(0.W))
@@ -22,7 +22,7 @@ class VerilatorZeroWidthIntsTest extends AnyFreeSpec with ChiselScalatestTester 
     }
   }
 
-  "peek, poke and expect zero width SInt" taggedAs RequiresVerilator  in {
+  "peek, poke and expect zero width SInt" taggedAs RequiresVerilator in {
     test(new PassthroughModule(SInt(0.W))).withAnnotations(annos) { c =>
       c.in.poke(0.S(0.W))
       c.in.expect(0.S(0.W))

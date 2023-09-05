@@ -499,7 +499,7 @@ class RegisterSpec extends AnyFreeSpec with Matchers {
         dontTouchAnnotation324
       )
 
-      //TODO: Reintroduce this test when register presets are implemented
+      // TODO: Reintroduce this test when register presets are implemented
       "With not preset annotations register starts at zero" ignore {
         TreadleTestHarness(
           Seq(FirrtlSourceAnnotation(input)) ++ dontTouches
@@ -523,7 +523,7 @@ class RegisterSpec extends AnyFreeSpec with Matchers {
         }
       }
 
-      //TODO: Reintroduce this test when register presets are implemented
+      // TODO: Reintroduce this test when register presets are implemented
       "With preset annotations register starts at init value" ignore {
         val presetAnnotation1 = PresetAnnotation(Target.deserialize("~Foo|Foo>reset").asInstanceOf[ReferenceTarget])
         val presetAnnotation2 =

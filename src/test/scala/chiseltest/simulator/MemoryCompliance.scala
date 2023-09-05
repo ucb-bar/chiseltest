@@ -2,14 +2,19 @@
 
 package chiseltest.simulator
 
-import firrtl2.annotations.{CircuitTarget, MemoryArrayInitAnnotation, MemoryFileInlineAnnotation, MemoryScalarInitAnnotation}
+import firrtl2.annotations.{
+  CircuitTarget,
+  MemoryArrayInitAnnotation,
+  MemoryFileInlineAnnotation,
+  MemoryScalarInitAnnotation
+}
 import org.scalatest.Tag
 
 import scala.util.Random
 
-/** Compliance tests for the `peek` and `poke` functions of the [[SimulatorContext]] interface.  */
+/** Compliance tests for the `peek` and `poke` functions of the [[SimulatorContext]] interface. */
 abstract class MemoryCompliance(sim: Simulator, tag: Tag = DefaultTag) extends ComplianceTest(sim, tag) {
-  behavior of sim.name
+  behavior.of(sim.name)
 
   private val readMem =
     """circuit test:

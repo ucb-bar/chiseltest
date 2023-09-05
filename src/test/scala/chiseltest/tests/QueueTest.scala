@@ -9,9 +9,8 @@ import chiseltest._
 import chisel3.util._
 import org.scalatest.flatspec.AnyFlatSpec
 
-
 class QueueTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "Testers2 with Queue"
+  behavior.of("Testers2 with Queue")
 
   it should "pass through elements, using enqueueNow" in {
     test(new QueueModule(UInt(8.W), 2)) { c =>
@@ -21,8 +20,8 @@ class QueueTest extends AnyFlatSpec with ChiselScalatestTester {
       c.out.expectInvalid()
       c.in.enqueueNow(42.U)
       parallel(
-          c.out.expectDequeueNow(42.U),
-          c.in.enqueueNow(43.U)
+        c.out.expectDequeueNow(42.U),
+        c.in.enqueueNow(43.U)
       )
       c.out.expectDequeueNow(43.U)
     }
@@ -38,9 +37,9 @@ class QueueTest extends AnyFlatSpec with ChiselScalatestTester {
       }
 
       c.out.expectInvalid()
-      c.clock.step(1)  // wait for first element to enqueue
+      c.clock.step(1) // wait for first element to enqueue
       c.out.expectDequeueNow(42.U)
-      c.out.expectPeek(43.U)  // check that queue stalls
+      c.out.expectPeek(43.U) // check that queue stalls
       c.clock.step(1)
       c.out.expectDequeueNow(43.U)
       c.out.expectDequeueNow(44.U)
@@ -63,14 +62,14 @@ class QueueTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
-  it should "work with IrrevocableIO" in{
-    test(new Module{
-      val io = IO(new Bundle{
+  it should "work with IrrevocableIO" in {
+    test(new Module {
+      val io = IO(new Bundle {
         val in = Flipped(Irrevocable(UInt(8.W)))
         val out = Irrevocable(UInt(8.W))
       })
       io.out <> Queue(io.in)
-    }){c =>
+    }) { c =>
       c.io.in.initSource().setSourceClock(c.clock)
       c.io.out.initSink().setSinkClock(c.clock)
       parallel(
@@ -90,7 +89,7 @@ class QueueTest extends AnyFlatSpec with ChiselScalatestTester {
       }
 
       c.out.expectInvalid()
-      c.clock.step(1)  // wait for first element to enqueue
+      c.clock.step(1) // wait for first element to enqueue
       c.out.expectDequeueNow(0.U)
       c.clock.step(1)
       c.out.expectDequeueNow(0.U)

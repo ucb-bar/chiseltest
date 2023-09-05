@@ -18,7 +18,7 @@ class OpaqueTypeTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   class OpaquePassthrough[T <: Data](data: T) extends Module {
-    val in: OpaqueRecord[T] = IO(Input(new OpaqueRecord(data)))
+    val in:  OpaqueRecord[T] = IO(Input(new OpaqueRecord(data)))
     val out: OpaqueRecord[T] = IO(Output(new OpaqueRecord(data)))
     out := in
   }
@@ -40,7 +40,7 @@ class OpaqueTypeTest extends AnyFlatSpec with ChiselScalatestTester {
     test(new OpaquePassthrough(_val.cloneType))
       .runPeekPoke(new PokeExpectTester(_, _val))
 
-  behavior of "OpaqueType"
+  behavior.of("OpaqueType")
 
   it should "poke and expect successfully" in {
     testPokeExpect(4.U(6.W))

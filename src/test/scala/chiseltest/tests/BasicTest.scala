@@ -11,7 +11,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class BasicTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
-  behavior of "Testers2"
+  behavior.of("Testers2")
 
   it should "test static circuits" in {
     test(new StaticModule(42.U)) { c =>
@@ -60,19 +60,27 @@ class BasicTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
   it should "test record partial poke" in {
     val typ = new CustomBundle("foo" -> UInt(32.W), "bar" -> UInt(32.W))
     test(new PassthroughModule(typ)) { c =>
-      c.in.pokePartial(typ.Lit(
-        _.elements("foo") -> 4.U
-      ))
-      c.out.expectPartial(typ.Lit(
-        _.elements("foo") -> 4.U
-      ))
-      c.in.pokePartial(typ.Lit(
-        _.elements("bar") -> 5.U
-      ))
-      c.out.expect(typ.Lit(
-        _.elements("foo") -> 4.U,
-        _.elements("bar") -> 5.U
-      ))
+      c.in.pokePartial(
+        typ.Lit(
+          _.elements("foo") -> 4.U
+        )
+      )
+      c.out.expectPartial(
+        typ.Lit(
+          _.elements("foo") -> 4.U
+        )
+      )
+      c.in.pokePartial(
+        typ.Lit(
+          _.elements("bar") -> 5.U
+        )
+      )
+      c.out.expect(
+        typ.Lit(
+          _.elements("foo") -> 4.U,
+          _.elements("bar") -> 5.U
+        )
+      )
     }
   }
 
@@ -80,13 +88,17 @@ class BasicTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
     val typ = new CustomBundle("foo" -> UInt(32.W), "bar" -> UInt(32.W))
     assertThrows[exceptions.TestFailedException] {
       test(new PassthroughModule(typ)) { c =>
-        c.in.pokePartial(typ.Lit(
-          _.elements("foo") -> 4.U
-        ))
-        c.out.expect(typ.Lit(
-          _.elements("foo") -> 4.U,
-          _.elements("bar") -> 5.U
-        ))
+        c.in.pokePartial(
+          typ.Lit(
+            _.elements("foo") -> 4.U
+          )
+        )
+        c.out.expect(
+          typ.Lit(
+            _.elements("foo") -> 4.U,
+            _.elements("bar") -> 5.U
+          )
+        )
       }
     }
   }
@@ -95,13 +107,17 @@ class BasicTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
     val typ = new CustomBundle("foo" -> UInt(32.W), "bar" -> UInt(32.W))
     assertThrows[exceptions.TestFailedException] {
       test(new PassthroughModule(typ)) { c =>
-        c.in.poke(typ.Lit(
-          _.elements("foo") -> 4.U,
-          _.elements("bar") -> 5.U
-        ))
-        c.out.expectPartial(typ.Lit(
-          _.elements("foo") -> 5.U
-        ))
+        c.in.poke(
+          typ.Lit(
+            _.elements("foo") -> 4.U,
+            _.elements("bar") -> 5.U
+          )
+        )
+        c.out.expectPartial(
+          typ.Lit(
+            _.elements("foo") -> 5.U
+          )
+        )
       }
     }
   }
@@ -111,7 +127,7 @@ class BasicTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
       test(new StaticModule(42.U)) { c =>
         c.out.expect(0.U, "user-defined failure message =(")
       }
-    }.getMessage should include ("user-defined failure message =(")
+    }.getMessage should include("user-defined failure message =(")
   }
 
   it should "test inputless sequential circuits" in {
@@ -174,7 +190,7 @@ class BasicTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
       c.io.out.expect(42.U)
 
       c.reset.poke(true.B)
-      c.io.out.expect(42.U)  // sync reset not effective until next clk
+      c.io.out.expect(42.U) // sync reset not effective until next clk
       c.clock.step()
       c.io.out.expect(0.U)
 

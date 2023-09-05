@@ -7,8 +7,7 @@ import chiseltest._
 import chiseltest.formal._
 import org.scalatest.flatspec.AnyFlatSpec
 
-/** Chisel versions of the quizzes from ZipCPU:
-  * http://zipcpu.com/quiz/quizzes.html
+/** Chisel versions of the quizzes from ZipCPU: http://zipcpu.com/quiz/quizzes.html
   */
 class ZipCpuQuizzes extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption {
   "Quiz1" should "pass with assumption" taggedAs FormalTag in {
@@ -83,7 +82,7 @@ class Quiz1(withAssume: Boolean) extends Module {
   val counter = RegInit(0.U(16.W))
   counter := counter + 1.U
   assert(counter <= 10.U) // reduced from 100 -> 10 to make it fail faster
-  if(withAssume) {
+  if (withAssume) {
     assume(counter <= 9.U)
   }
 }
@@ -93,7 +92,8 @@ class Quiz2(withInit: Boolean) extends Module {
   val iStartSignal = IO(Input(Bool()))
   val oBusy = IO(Output(Bool()))
   val MaxAmount = 4.U(16.W) // reduced from 22 -> 4 for faster checking
-  val counter = if(withInit) { RegInit(0.U(16.W)) } else { Reg(UInt(16.W)) }
+  val counter = if (withInit) { RegInit(0.U(16.W)) }
+  else { Reg(UInt(16.W)) }
 
   when(iStartSignal && counter === 0.U) {
     counter := MaxAmount - 1.U
@@ -151,7 +151,7 @@ class Quiz7(fixed: Boolean) extends Module {
   }
   oBusy := counter =/= 0.U
 
-  if(fixed) {
+  if (fixed) {
     when(past(iStartSignal) && past(counter === 0.U)) {
       assert(counter === 3.U) // reduced from 21 -> 3 for faster checking
     }

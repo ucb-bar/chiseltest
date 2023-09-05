@@ -10,10 +10,8 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.util.DynamicVariable
 
-
 /** Extends this to get a FlatSpec with a convenient way to get a unique target directory for your test */
 abstract class FlatSpecWithTargetDir extends AnyFlatSpec {
-
 
   // Provide test fixture data as part of 'global' context during test runs
   private val scalaTestContext = new DynamicVariable[Option[NoArgTest]](None)
@@ -29,10 +27,9 @@ abstract class FlatSpecWithTargetDir extends AnyFlatSpec {
   protected def targetDirAnno = TargetDirAnnotation("test_run_dir/" + getTestName)
   protected def targetDir = os.pwd / os.RelPath(targetDirAnno.directory)
   protected def withTargetDir(annos: AnnotationSeq): AnnotationSeq = {
-    if (annos.exists(_.isInstanceOf[TargetDirAnnotation])) { annos
-    } else { targetDirAnno +: annos }
+    if (annos.exists(_.isInstanceOf[TargetDirAnnotation])) { annos }
+    else { targetDirAnno +: annos }
   }
-
 
   def getTestName: String = {
     sanitizeFileName(scalaTestContext.value.get.name)

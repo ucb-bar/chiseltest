@@ -6,8 +6,8 @@ import chiseltest.ChiselScalatestTester
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-/** Example of test that is "shared by multiple fixture objects
-  * More information on https://www.scalatest.org/user_guide/sharing_tests
+/** Example of test that is "shared by multiple fixture objects More information on
+  * https://www.scalatest.org/user_guide/sharing_tests
   */
 
 trait AluBehavior {
@@ -68,13 +68,12 @@ trait AluBehavior {
   }
 }
 
-
 // This test case is written in a style that is finely granular, with one test case per operation and input-output combination.
 // There currently isn't consensus on a recommended test granularity, but factors to consider include:
 // - granularity of test failures
 // - number of test cases reported
 class AluTest extends AnyFlatSpec with AluBehavior with ChiselScalatestTester with Matchers {
-  behavior of "ALU"
+  behavior.of("ALU")
   val testData: List[(Int, Int)] = List[(Int, Int)](
     (1, 2),
     (3, 4),
@@ -82,9 +81,9 @@ class AluTest extends AnyFlatSpec with AluBehavior with ChiselScalatestTester wi
   )
   testData.foreach { data =>
     // TODO: re-use a single DUT elaboration / compilation, once https://github.com/ucb-bar/chisel-testers2/issues/212 is resolved
-    it should behave like testAddition(data._1, data._2, 4)
-    it should behave like testSubtraction(data._1, data._2, 4)
-    it should behave like testOr(data._1, data._2, 4)
-    it should behave like testAnd(data._1, data._2, 4)
+    (it should behave).like(testAddition(data._1, data._2, 4))
+    (it should behave).like(testSubtraction(data._1, data._2, 4))
+    (it should behave).like(testOr(data._1, data._2, 4))
+    (it should behave).like(testAnd(data._1, data._2, 4))
   }
 }

@@ -7,9 +7,9 @@ import chiseltest._
 import firrtl2.AnnotationSeq
 import org.scalatest.freespec.AnyFreeSpec
 
-/**
-  * circuit that illustrates usage of async register
-  * @param resetValue value on reset
+/** circuit that illustrates usage of async register
+  * @param resetValue
+  *   value on reset
   */
 class AsyncResetRegModule(resetValue: Int) extends Module {
   val io = IO(new Bundle {
@@ -42,7 +42,7 @@ class AsyncResetFeedbackModule() extends Module {
 class AsyncResetTest extends AnyFreeSpec with ChiselScalatestTester {
 
   val annotations: AnnotationSeq = {
-    if(true) Seq() else Seq(VerilatorBackendAnnotation)
+    if (true) Seq() else Seq(VerilatorBackendAnnotation)
   }
 
   "register is set to reset value (1), after tester startup's default reset" in {
@@ -149,4 +149,3 @@ class AsyncResetTest extends AnyFreeSpec with ChiselScalatestTester {
     }
   }
 }
-

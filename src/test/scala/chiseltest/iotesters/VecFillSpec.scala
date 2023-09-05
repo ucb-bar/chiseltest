@@ -19,7 +19,7 @@ class VF extends Module {
 }
 
 class VFTester(c: VF) extends PeekPokeTester(c) {
-  for(i <- 0 until 11) {
+  for (i <- 0 until 11) {
     poke(c.io.addr, i)
     expect(c.io.value, i)
     step(1)

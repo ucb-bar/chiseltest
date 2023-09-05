@@ -7,7 +7,7 @@ import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ThreadOrderTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "ChiselTest thread ordering"
+  behavior.of("ChiselTest thread ordering")
 
   it should "run child threads immediately, then on future cycles before parent threads" in {
     // TODO: can this be done without using shared variables?

@@ -9,7 +9,7 @@ import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ThreadSafetyTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "Testers2 thread safety checker"
+  behavior.of("Testers2 thread safety checker")
 
   it should "disallow simultaneous pokes from parallel threads" in {
     assertThrows[ThreadOrderDependentException] {
@@ -17,10 +17,10 @@ class ThreadSafetyTest extends AnyFlatSpec with ChiselScalatestTester {
         fork {
           c.in.poke(true.B)
           c.clock.step(1)
-        } .fork {
+        }.fork {
           c.in.poke(true.B)
           c.clock.step(1)
-        } .join()
+        }.join()
       }
     }
   }
@@ -31,10 +31,10 @@ class ThreadSafetyTest extends AnyFlatSpec with ChiselScalatestTester {
         fork {
           c.in.expect(true.B)
           c.clock.step(1)
-        } .fork {
+        }.fork {
           c.in.poke(true.B)
           c.clock.step(1)
-        } .join()
+        }.join()
       }
     }
   }
@@ -45,7 +45,7 @@ class ThreadSafetyTest extends AnyFlatSpec with ChiselScalatestTester {
       fork {
         c.in.poke(true.B)
         c.clock.step(1)
-      } .join()
+      }.join()
     }
   }
 
@@ -55,7 +55,7 @@ class ThreadSafetyTest extends AnyFlatSpec with ChiselScalatestTester {
       fork {
         c.in.expect(true.B)
         c.clock.step(1)
-      } .join()
+      }.join()
     }
   }
 
@@ -116,7 +116,7 @@ class ThreadSafetyTest extends AnyFlatSpec with ChiselScalatestTester {
             c.clock.step(2)
           }
           c.clock.step(1)
-        } .join()
+        }.join()
         c.clock.step(1)
       }
     }
@@ -137,10 +137,10 @@ class ThreadSafetyTest extends AnyFlatSpec with ChiselScalatestTester {
         fork {
           c.in.poke(true.B)
           c.clock.step(1)
-        } .fork {
+        }.fork {
           c.clock.step(1)
           c.in.expect(true.B)
-        } .join()
+        }.join()
       }
     }
   }

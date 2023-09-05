@@ -3,21 +3,28 @@
 package chiseltest.coverage
 
 import chisel3.Module
-import chisel3.stage.{ChiselGeneratorAnnotation}
+import chisel3.stage.ChiselGeneratorAnnotation
 import chiseltest.ChiselScalatestTester
 import chiseltest.internal.sanitizeFileName
-import firrtl2.{AnnotationSeq, EmittedFirrtlCircuitAnnotation, EmittedFirrtlModuleAnnotation, EmittedVerilogCircuitAnnotation, EmittedVerilogModuleAnnotation}
+import firrtl2.{
+  AnnotationSeq,
+  EmittedFirrtlCircuitAnnotation,
+  EmittedFirrtlModuleAnnotation,
+  EmittedVerilogCircuitAnnotation,
+  EmittedVerilogModuleAnnotation
+}
 import firrtl2.options.TargetDirAnnotation
 import org.scalatest.TestSuite
 
 import java.io.File
 
-/** Base trait for tests that need to compile a circuit and inspect the resulting firrtl / Verilog  */
+/** Base trait for tests that need to compile a circuit and inspect the resulting firrtl / Verilog */
 trait CompilerTest extends ChiselScalatestTester { this: TestSuite =>
   protected def annos: AnnotationSeq = Seq()
 
   /** @return the emitted firrtl/Verilog source code and the annotations produced by running the ChiselStage */
-  protected def compile[M <: Module](gen: => M, target: String, a: AnnotationSeq = List(), ll: String = "warn"): (String, AnnotationSeq) = ???
+  protected def compile[M <: Module](gen: => M, target: String, a: AnnotationSeq = List(), ll: String = "warn")
+    : (String, AnnotationSeq) = ???
   // TODO
 //  {
 //    val stage = new ChiselStage

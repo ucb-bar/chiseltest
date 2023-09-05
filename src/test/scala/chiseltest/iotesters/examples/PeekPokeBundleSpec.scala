@@ -20,16 +20,16 @@ class PeekPokeBundleSpec extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   class MyBundle extends Bundle {
-   val aUInt4 = UInt(4.W)
-   val aSInt5 = SInt(5.W)
-   val aBundle = new ABundle()
-   val aBottomBool = Bool()
-   val anEnum = MyEnum()
- }
+    val aUInt4 = UInt(4.W)
+    val aSInt5 = SInt(5.W)
+    val aBundle = new ABundle()
+    val aBottomBool = Bool()
+    val anEnum = MyEnum()
+  }
 
   // A trivial circuit that copies its input to its output.
   class MyCircuit extends Module {
-    val io = IO( new Bundle {
+    val io = IO(new Bundle {
       val in = Input(new MyBundle())
       val out = Output(new MyBundle())
     })
@@ -42,10 +42,10 @@ class PeekPokeBundleSpec extends AnyFlatSpec with ChiselScalatestTester {
     // This is extremely fragile. The map definitions must match the order of element definitions in the Bundle
     //  we're about to peek or poke.
     val myBundleMap = mutable.LinkedHashMap[String, BigInt]() ++ List[(String, BigInt)](
-      "aUInt4"	-> BigInt(3),
-      "aSInt5"	-> BigInt(2),
-      "aBundle.aBool"	-> BigInt(1),
-      "aBottomBool"	-> BigInt(0),
+      "aUInt4" -> BigInt(3),
+      "aSInt5" -> BigInt(2),
+      "aBundle.aBool" -> BigInt(1),
+      "aBottomBool" -> BigInt(0),
       "anEnum" -> MyEnum.e1
     )
     poke(dut.io.in, myBundleMap.values.toIndexedSeq)
@@ -57,10 +57,10 @@ class PeekPokeBundleSpec extends AnyFlatSpec with ChiselScalatestTester {
   class BundlePeekPokeTesterMap(dut: MyCircuit = new MyCircuit) extends PeekPokeTester(dut) {
     // If only we had Bundle literals ...
     val myBundleMap = mutable.LinkedHashMap[String, BigInt]() ++ List[(String, BigInt)](
-      "aUInt4"	-> BigInt(4),
-      "aSInt5"	-> BigInt(5),
-      "aBundle.aBool"	-> BigInt(0),
-      "aBottomBool"	-> BigInt(1),
+      "aUInt4" -> BigInt(4),
+      "aSInt5" -> BigInt(5),
+      "aBundle.aBool" -> BigInt(0),
+      "aBottomBool" -> BigInt(1),
       "anEnum" -> MyEnum.e1
     )
     poke(dut.io.in, myBundleMap.toMap)
@@ -70,7 +70,7 @@ class PeekPokeBundleSpec extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   // The test.
-  behavior of "PeekPokeBundleSpec"
+  behavior.of("PeekPokeBundleSpec")
 
   it should "poke and peek bundles with LinkedHashMap values" in {
     test(new MyCircuit).runPeekPoke(new BundlePeekPokeTesterMapVals(_))

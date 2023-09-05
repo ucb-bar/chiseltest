@@ -2,10 +2,8 @@
 
 package chiseltest.iotesters.examples
 
-/**
-  * This example shows how to initialize bundles with methods.
-  * Such methods need not set all fields.
-  * This illustrates a way of preserving fields values that were not specified by the method
+/** This example shows how to initialize bundles with methods. Such methods need not set all fields. This illustrates a
+  * way of preserving fields values that were not specified by the method
   */
 
 import chisel3._
@@ -19,8 +17,8 @@ class MyBundle extends Bundle {
 }
 
 object MyBundle {
-  /**
-    * initialize x and y
+
+  /** initialize x and y
     * @return
     */
   def init1: MyBundle = {
@@ -30,8 +28,7 @@ object MyBundle {
     wire
   }
 
-  /**
-    * This init does not take an existing bundle to preserve unspecified values
+  /** This init does not take an existing bundle to preserve unspecified values
     * @return
     */
   def setYTo5(): MyBundle = {
@@ -41,10 +38,12 @@ object MyBundle {
     wire.y := 5.U
     wire
   }
-  /**
-    * This init takes an existing bundle to preserve unspecified values, in this case wire.y
-    * @param newX new value for x
-    * @param current set this to preserve existing values for fields not set
+
+  /** This init takes an existing bundle to preserve unspecified values, in this case wire.y
+    * @param newX
+    *   new value for x
+    * @param current
+    *   set this to preserve existing values for fields not set
     * @return
     */
   def setX(newX: Int, current: MyBundle): MyBundle = {
@@ -56,7 +55,7 @@ object MyBundle {
 }
 
 class UseMyBundle extends Module {
-  val io = IO(new Bundle{
+  val io = IO(new Bundle {
     val trigger = Input(UInt(2.W))
     val outB = Output(new MyBundle)
     val outC = Output(new MyBundle)
@@ -66,7 +65,7 @@ class UseMyBundle extends Module {
   val regB = RegInit(MyBundle.init1)
   val regC = RegInit(MyBundle.init1)
 
-  when (io.trigger === 1.U) {
+  when(io.trigger === 1.U) {
     regB := MyBundle.setYTo5()
     regC := MyBundle.setX(7, regC)
   }.elsewhen(io.trigger === 2.U) {
@@ -80,11 +79,12 @@ class UseMyBundle extends Module {
 
 class UseMyBundleTester(c: UseMyBundle) extends PeekPokeTester(c) {
   def show(): Unit = {
-    //scalastyle:off regex
+    // scalastyle:off regex
     println(
       s"trigger: ${peek(c.io.trigger)}" +
-      s" -- out b x ${peek(c.io.outB.x)}  y ${peek(c.io.outB.y)}" +
-      s" -- out c x ${peek(c.io.outC.x)}  y ${peek(c.io.outC.y)}")
+        s" -- out b x ${peek(c.io.outB.x)}  y ${peek(c.io.outB.y)}" +
+        s" -- out c x ${peek(c.io.outC.x)}  y ${peek(c.io.outC.y)}"
+    )
   }
   reset()
 

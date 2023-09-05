@@ -6,7 +6,7 @@ import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class PrintPeekPokeTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "PrintPeekPoke"
+  behavior.of("PrintPeekPoke")
 
   it should "print test interactions to stdout" in {
     val (_, out) = utils.CaptureStdout {
