@@ -8,7 +8,8 @@ import treadle2.{ScalaBlackBox, _}
 
 /** Allows overriding values at simulation time
   *
-  * @param instanceName name assigned to instance
+  * @param instanceName
+  *   name assigned to instance
   */
 class PlusArgReader(val instanceName: String) extends ScalaBlackBox {
   override def name: String = "plusarg_reader"

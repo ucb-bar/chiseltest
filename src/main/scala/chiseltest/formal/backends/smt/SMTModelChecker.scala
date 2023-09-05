@@ -153,8 +153,8 @@ trait TransitionSystemSmtEncoding {
   def defineHeader(ctx:   SolverContext): Unit
   def init(ctx:           SolverContext): Unit
   def unroll(ctx:         SolverContext): Unit
-  def getConstraint(name: String):        BVExpr
+  def getConstraint(name: String): BVExpr
   def getAssertion(name:  String): BVExpr
-  def getSignalAt(sym:    BVSymbol, k: Int): BVExpr
+  def getSignalAt(sym:    BVSymbol, k:    Int): BVExpr
   def getSignalAt(sym:    ArraySymbol, k: Int): ArrayExpr
 }

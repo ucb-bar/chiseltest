@@ -224,7 +224,7 @@ private[chiseltest] class TransitionSystemSimulator(
       .map(_._1)
     def failedMsg(name: String): String = {
       val expr = simpl(sys.signals.find(_.name == name).get.e)
-      //val syms = symbolsToString(Context.findSymbols(expr)).mkString(", ")
+      // val syms = symbolsToString(Context.findSymbols(expr)).mkString(", ")
       s"$name: $expr"
     }
     def failedPropertiesMsg: String =

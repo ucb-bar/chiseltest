@@ -7,8 +7,8 @@ import chiseltest.simulator.{SimulatorContext, StepInterrupted, StepOk}
 import firrtl2.AnnotationSeq
 import scala.collection.mutable
 
-/** Chiseltest backend that does not support fork or timescope but is generally faster since it
-  * does not need to launch any Java threads.
+/** Chiseltest backend that does not support fork or timescope but is generally faster since it does not need to launch
+  * any Java threads.
   */
 class SingleThreadBackend[T <: Module](
   val dut:                T,

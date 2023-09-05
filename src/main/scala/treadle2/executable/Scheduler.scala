@@ -7,13 +7,13 @@ import firrtl2.logger.LazyLogging
 
 import scala.collection.mutable
 
-/** The scheduler holds the ordered assignment statements of the entire circuit.
-  * Clocks have magic shadow symbols "clockName/prev". These shadows are
-  * used to make the circuit evaluation idempotent, i.e. evaluating the
-  * circuit at the moment of an positive clock transition can be done
-  * repeatedly and registers will only be advanced on the first call.
+/** The scheduler holds the ordered assignment statements of the entire circuit. Clocks have magic shadow symbols
+  * "clockName/prev". These shadows are used to make the circuit evaluation idempotent, i.e. evaluating the circuit at
+  * the moment of an positive clock transition can be done repeatedly and registers will only be advanced on the first
+  * call.
   *
-  * @param symbolTable symbol table is used to find orphans
+  * @param symbolTable
+  *   symbol table is used to find orphans
   */
 class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
 
@@ -110,7 +110,8 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
   }
 
   /** Execute the seq of assigners
-    * @param assigners list of assigners
+    * @param assigners
+    *   list of assigners
     */
   private def executeAssigners(assigners: Seq[Assigner]): Unit = {
     var index = 0
@@ -122,13 +123,13 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
     }
   }
 
-  /**  updates signals that depend on inputs
+  /** updates signals that depend on inputs
     */
   def executeCombinationalAssigns(): Unit = {
     executeAssigners(combinationalAssigns.toSeq)
   }
 
-  /**  updates signals that depend on inputs
+  /** updates signals that depend on inputs
     */
   def executeOrphanedAssigns(): Unit = {
     executeAssigners(orphanedAssigns.toSeq)

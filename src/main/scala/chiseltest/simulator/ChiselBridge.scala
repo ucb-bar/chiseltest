@@ -106,7 +106,7 @@ private object ChiselBridge {
     firrtl2.annotations.ModuleTarget(m.circuit, m.module)
   private def convert(c: ComponentName): firrtl2.annotations.ComponentName =
     firrtl2.annotations.ComponentName(c.name, convert(c.module))
-  private def convert(c:      CircuitName): firrtl2.annotations.CircuitName = firrtl2.annotations.CircuitName(c.name)
+  private def convert(c: CircuitName): firrtl2.annotations.CircuitName = firrtl2.annotations.CircuitName(c.name)
   private def convertNamed(n: Named): firrtl2.annotations.Named = n match {
     case target: Target      => ???
     case c:      CircuitName => convert(c)

@@ -12,7 +12,7 @@ private[chiseltest] trait SMTEvalCtx {
   def getArraySymbol(name:     String): ArrayValue
   def startVariableScope(name: String, value: BigInt): Unit
   def endVariableScope(name:   String): Unit
-  def constArray(indexWidth:   Int, value: BigInt): ArrayValue
+  def constArray(indexWidth:   Int, value:    BigInt): ArrayValue
 }
 
 private[chiseltest] trait ArrayValue {
@@ -23,7 +23,11 @@ private[chiseltest] trait ArrayValue {
 
 private[chiseltest] object SMTExprEval {
 
-  def eval(expr: BVExpr)(implicit ctx: SMTEvalCtx): BigInt = {
+  def eval(
+    expr: BVExpr
+  )(
+    implicit ctx: SMTEvalCtx
+  ): BigInt = {
     val value = expr match {
       case BVLiteral(value, _)            => value
       case BVSymbol(name, _)              => ctx.getBVSymbol(name)
@@ -73,7 +77,11 @@ private[chiseltest] object SMTExprEval {
     value
   }
 
-  def evalArray(expr: ArrayExpr)(implicit ctx: SMTEvalCtx): ArrayValue = expr match {
+  def evalArray(
+    expr: ArrayExpr
+  )(
+    implicit ctx: SMTEvalCtx
+  ): ArrayValue = expr match {
     case s: ArraySymbol => ctx.getArraySymbol(s.name)
     case ArrayConstant(e, indexWidth) =>
       ctx.constArray(indexWidth, eval(e))
@@ -94,7 +102,7 @@ private[chiseltest] object SMTExprEval {
   }
   private def doBVSlice(e:  BigInt, hi:    Int, lo: Int): BigInt = (e >> lo) & mask(hi - lo + 1)
   private def doBVNot(e:    BigInt, width: Int): BigInt = flipBits(e, width)
-  private def doBVNegate(e: BigInt, width: Int):    BigInt = sub(0, e, width)
+  private def doBVNegate(e: BigInt, width: Int): BigInt = sub(0, e, width)
   private def doBVEqual(a:  BigInt, b:     BigInt): BigInt = bool(a == b)
   @tailrec
   private def doBVCompare(op: Compare.Value, a: BigInt, b: BigInt, width: Int, signed: Boolean): BigInt = {

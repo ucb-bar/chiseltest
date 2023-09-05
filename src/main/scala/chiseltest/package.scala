@@ -76,7 +76,7 @@ package object chiseltest {
       }
     }
     def expect(value: UInt): Unit = expectInternal(value.litValue, None)
-    def expect(value: UInt, message: => String): Unit = expectInternal(value.litValue, Some(() => message))
+    def expect(value: UInt, message:   => String): Unit = expectInternal(value.litValue, Some(() => message))
     def expect(value: BigInt): Unit = expectInternal(value, None)
     def expect(value: BigInt, message: => String): Unit = expectInternal(value, Some(() => message))
     def peekInt(): BigInt = if (!isZeroWidth) { Context().backend.peekBits(x) }
@@ -107,7 +107,7 @@ package object chiseltest {
       }
     }
     def expect(value: SInt): Unit = expectInternal(value.litValue, None)
-    def expect(value: SInt, message: => String): Unit = expectInternal(value.litValue, Some(() => message))
+    def expect(value: SInt, message:   => String): Unit = expectInternal(value.litValue, Some(() => message))
     def expect(value: BigInt): Unit = expectInternal(value, None)
     def expect(value: BigInt, message: => String): Unit = expectInternal(value, Some(() => message))
     def peekInt(): BigInt = if (!isZeroWidth) { Context().backend.peekBits(x) }
@@ -123,21 +123,19 @@ package object chiseltest {
 
   implicit class testableRecord[T <: Record](x: T) {
 
-    /** Poke the given signal with a [[Record.litValue()]]
-      * Literals of this Record can be instantiated with
+    /** Poke the given signal with a [[Record.litValue()]] Literals of this Record can be instantiated with
       * {{{
       *   someRecord.Lit(_.elements("foo") -> 4.U)
       * }}}
-      * `pokePartial` will only poke [[Input]] signals of `x`,
-      * and elements of `x` which contain no literal will be ignored.
+      * `pokePartial` will only poke [[Input]] signals of `x`, and elements of `x` which contain no literal will be
+      * ignored.
       */
     def pokePartial(value: T): Unit = {
       require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
       x.pokeInternal(value, allowPartial = true)
     }
 
-    /** Check the given signal with a [[Record.litValue()]];
-      * elements of `x` which contain no literal will be ignored.
+    /** Check the given signal with a [[Record.litValue()]]; elements of `x` which contain no literal will be ignored.
       */
     def expectPartial(value: T): Unit = {
       require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
@@ -147,21 +145,19 @@ package object chiseltest {
 
   implicit class testableVec[T <: Vec[_]](x: T) {
 
-    /** Poke the given signal with a [[Vec.litValue()]]
-      * Literals of this Record can be instantiated with
+    /** Poke the given signal with a [[Vec.litValue()]] Literals of this Record can be instantiated with
       * {{{
       *   someVec.Lit(_.elements("foo") -> 4.U)
       * }}}
-      * `pokePartial` will only poke [[Input]] signals of `x`,
-      * and elements of `x` which contain no literal will be ignored.
+      * `pokePartial` will only poke [[Input]] signals of `x`, and elements of `x` which contain no literal will be
+      * ignored.
       */
     def pokePartial(value: T): Unit = {
       require(DataMirror.checkTypeEquivalence(x, value), s"Vec type mismatch")
       x.pokeInternal(value, allowPartial = true)
     }
 
-    /** Check the given signal with a [[Vec.litValue()]];
-      * elements of `x` which contain no literal will be ignored.
+    /** Check the given signal with a [[Vec.litValue()]]; elements of `x` which contain no literal will be ignored.
       */
     def expectPartial(value: T): Unit = {
       require(DataMirror.checkTypeEquivalence(x, value), s"Vec type mismatch")
@@ -177,7 +173,7 @@ package object chiseltest {
     private def isAllowedNonLitGround(value: T, allowPartial: Boolean, op: String): Boolean = {
       val isGroundType = value match {
         case _: Vec[_] | _: Record => false
-        case _ => true
+        case _                     => true
       }
       val isZeroWidthInt = value match {
         case v: Bits if v.widthOption.contains(0) => true
@@ -271,9 +267,12 @@ package object chiseltest {
     def expect(value: T): Unit = expectInternal(value, None, allowPartial = false)
     def expect(value: T, message: => String): Unit = expectInternal(value, Some(() => message), allowPartial = false)
 
-    /** @return the single clock that drives the source of this signal.
-      * @throws ClockResolutionException if sources of this signal have more than one, or zero clocks
-      * @throws ClockResolutionException if sinks of this signal have an associated clock
+    /** @return
+      *   the single clock that drives the source of this signal.
+      * @throws ClockResolutionException
+      *   if sources of this signal have more than one, or zero clocks
+      * @throws ClockResolutionException
+      *   if sinks of this signal have an associated clock
       */
     def getSourceClock(): Clock = {
       Context().backend.getSourceClocks(x).toList match {
@@ -431,8 +430,8 @@ package object chiseltest {
       Context().backend.step(x, cycles)
     }
 
-    /** Returns the current step, i.e., the number of clock cycles performed by the test so far,
-      * excluding any initial reset cycles performed by the chiseltest library at the start of the test.
+    /** Returns the current step, i.e., the number of clock cycles performed by the test so far, excluding any initial
+      * reset cycles performed by the chiseltest library at the start of the test.
       */
     def getStepCount: Long = {
       Context().backend.getStepCount(x)
@@ -460,8 +459,8 @@ package object chiseltest {
     }
   }
 
-  /** Provides clock-resolution-specific abstractions on top of getVar/setVar.
-    * For library builders, not top-level test writers.
+  /** Provides clock-resolution-specific abstractions on top of getVar/setVar. For library builders, not top-level test
+    * writers.
     */
   object ClockResolutionUtils {
     def setClock(driverKey: Any, wire: Data, clock: Clock): Unit = {
@@ -475,7 +474,7 @@ package object chiseltest {
           setClock(driverKey, wire, clock)
           clock
         case Some(clock: Clock) => clock
-        case Some(other) => throw new ClockResolutionException(s"$other is not a clock")
+        case Some(other)        => throw new ClockResolutionException(s"$other is not a clock")
       }
     }
   }

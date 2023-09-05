@@ -8,8 +8,10 @@ import treadle2.executable.ExecutionEngine
 import treadle2.vcd.{VCD, Wire}
 
 /** Executes a vcd file as a script against a [[TreadleTester]] instance.
-  * @param tester  the circuit to be updated
-  * @param vcd     the vcd values to use
+  * @param tester
+  *   the circuit to be updated
+  * @param vcd
+  *   the vcd values to use
   */
 class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
   val events:  Array[Long] = vcd.events
@@ -52,7 +54,8 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
   }
 
   /** Does the symbol name exist in the engine
-    * @param symbolName symbol of interest
+    * @param symbolName
+    *   symbol of interest
     * @return
     */
   def hasName(symbolName: String): Boolean = {
@@ -90,8 +93,10 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
   }
 
   /** Test that a wire is set to the correct value, print if error or verbose
-    * @param wire      wire to check
-    * @param newValue  value it should be
+    * @param wire
+    *   wire to check
+    * @param newValue
+    *   value it should be
     */
   def checkValue(wire: Wire, newValue: BigInt): Unit = {
     val fullName = wire.fullName
@@ -124,10 +129,11 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
     }
   }
 
-  /** poke the top level inputs, if the input is a clock
-    * call the associated assigner so that dependent registers get flipped
+  /** poke the top level inputs, if the input is a clock call the associated assigner so that dependent registers get
+    * flipped
     *
-    * @param eventNumber current time from VCS file.
+    * @param eventNumber
+    *   current time from VCS file.
     */
   def setInputs(eventNumber: Int): Unit = {
     if (indexOutOfRange(eventNumber, "setInputs")) return
@@ -151,7 +157,8 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
   }
 
   /** poke every changed wire with it's new value
-    * @param eventNumber current time from VCS file.
+    * @param eventNumber
+    *   current time from VCS file.
     */
   def setAllWires(eventNumber: Int): Unit = {
     if (indexOutOfRange(eventNumber, "setAllWires")) return
@@ -169,9 +176,12 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
   }
 
   /** Test wires at specified time index, args control just outputs or all non-input wires
-    * @param eventNumber    time index to test
-    * @param justOutputs  can verify outputs or all wires that are not top-level inputs
-    * @param clearResult  repl want this to clear all the time, but can override to accumulate stats
+    * @param eventNumber
+    *   time index to test
+    * @param justOutputs
+    *   can verify outputs or all wires that are not top-level inputs
+    * @param clearResult
+    *   repl want this to clear all the time, but can override to accumulate stats
     */
   def testWires(eventNumber: Int, justOutputs: Boolean, clearResult: Boolean = true): Unit = {
     if (clearResult) clearTestResults()
@@ -215,7 +225,8 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
   }
 
   /** Show information about the event at the specified time index
-    * @param eventNumber  the event number
+    * @param eventNumber
+    *   the event number
     * @return
     */
   def eventSummary(eventNumber: Int): String = {
@@ -259,14 +270,16 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
   }
 
   /** just like it says
-    * @param eventNumber event number
+    * @param eventNumber
+    *   event number
     */
   def setNextEvent(eventNumber: Int): Unit = {
     nextEvent = eventNumber
   }
 
   /** Short cut to set next event number and run
-    * @param eventNumber event number
+    * @param eventNumber
+    *   event number
     */
   def executeEvent(eventNumber: Int): Unit = {
     nextEvent = eventNumber

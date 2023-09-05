@@ -168,7 +168,7 @@ case object UnsignedInt extends DataType {
 }
 
 object DataType {
-  //TODO: (chick) do we need clock and reset types here
+  // TODO: (chick) do we need clock and reset types here
 
   def apply(tpe: firrtl2.ir.Type): DataType = {
     tpe match {

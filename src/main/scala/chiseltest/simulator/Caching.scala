@@ -10,7 +10,8 @@ import java.security.MessageDigest
 import scala.util.Try
 
 /** Enables debug output from the caching system.
-  * @warn this is an internal debug annotation, use at your own risk!
+  * @warn
+  *   this is an internal debug annotation, use at your own risk!
   */
 case object CachingDebugAnnotation extends NoTargetAnnotation
 

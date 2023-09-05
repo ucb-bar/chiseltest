@@ -91,11 +91,11 @@ class SymbolTable(val nameToSymbol: mutable.HashMap[String, Symbol]) {
     }
   }
 
-  /** Find all the sources of symbol that are not non-clock inputs.
-    * Sinks are used here because we are working with the parents of graph
-    * This was needed because clocks of memory or other submodules may have
-    * a non-trivial connection to parent clocks
-    * @param symbol sinks needed for this
+  /** Find all the sources of symbol that are not non-clock inputs. Sinks are used here because we are working with the
+    * parents of graph This was needed because clocks of memory or other submodules may have a non-trivial connection to
+    * parent clocks
+    * @param symbol
+    *   sinks needed for this
     * @return
     */
   def getSourcesOf(symbol: Symbol): Set[Symbol] = {
@@ -162,7 +162,7 @@ object SymbolTable extends LazyLogging {
 
   def apply(nameToSymbol: mutable.HashMap[String, Symbol]): SymbolTable = new SymbolTable(nameToSymbol)
 
-  //scalastyle:off cyclomatic.complexity method.length
+  // scalastyle:off cyclomatic.complexity method.length
   def apply(
     circuit:           Circuit,
     blackBoxFactories: Seq[ScalaBlackBoxFactory] = Seq.empty,

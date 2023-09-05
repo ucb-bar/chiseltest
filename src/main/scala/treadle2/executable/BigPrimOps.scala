@@ -144,8 +144,10 @@ case class XorBigs(f1: FuncBig, f2: FuncBig, resultWidth: Int) extends BigExpres
 }
 
 /** are all bits set
-  * @param f1 value to be `and` reduced
-  * @param width result bit size
+  * @param f1
+  *   value to be `and` reduced
+  * @param width
+  *   result bit size
   */
 case class AndrBigs(f1: FuncBig, width: Int) extends IntExpressionResult {
   private val bitMask = BitMasks.getBitMasksBigs(width).allBitsMask
@@ -156,8 +158,10 @@ case class AndrBigs(f1: FuncBig, width: Int) extends IntExpressionResult {
 }
 
 /** are any bits set
-  * @param f1 value to be `or` reduced
-  * @param width result bit size
+  * @param f1
+  *   value to be `or` reduced
+  * @param width
+  *   result bit size
   */
 case class OrrBigs(f1: FuncBig, width: Int) extends IntExpressionResult {
   private val bitMask = BitMasks.getBitMasksBigs(width).allBitsMask
@@ -170,8 +174,10 @@ case class OrrBigs(f1: FuncBig, width: Int) extends IntExpressionResult {
 }
 
 /** are all bits set
-  * @param f1 value to be `xor` reduced
-  * @param width result bit size
+  * @param f1
+  *   value to be `xor` reduced
+  * @param width
+  *   result bit size
   */
 case class XorrBigs(f1: FuncBig, width: Int) extends IntExpressionResult {
   private val bitMask = BitMasks.getBitMasksBigs(width).allBitsMask

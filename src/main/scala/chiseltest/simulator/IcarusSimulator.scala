@@ -52,7 +52,8 @@ private object IcarusSimulator extends Simulator with LazyLogging {
 
   /** start a new simulation
     *
-    * @param state LoFirrtl circuit + annotations
+    * @param state
+    *   LoFirrtl circuit + annotations
     */
   override def createContext(state: CircuitState): SimulatorContext = {
     // we will create the simulation in the target directory

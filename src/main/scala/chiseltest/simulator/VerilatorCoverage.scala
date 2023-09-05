@@ -13,10 +13,9 @@ import firrtl2.transforms.EnsureNamedStatements
 
 import scala.collection.mutable
 
-/** Verilator generates a `coverage.dat` file with one entry for every cover statement.
-  * Unfortunately the unique name of the coverage statement gets lost, however, since the
-  * (System)Verilog emitter maintains the order of the coverage statements, we can just
-  * sort them by line number and compare them to the coverage statements in LoFirrtl.
+/** Verilator generates a `coverage.dat` file with one entry for every cover statement. Unfortunately the unique name of
+  * the coverage statement gets lost, however, since the (System)Verilog emitter maintains the order of the coverage
+  * statements, we can just sort them by line number and compare them to the coverage statements in LoFirrtl.
   */
 private object VerilatorCoverage {
 
@@ -108,9 +107,8 @@ private object VerilatorCoverage {
   private case class CoverageEntry(file: String, line: Int, path: String, count: Long)
 }
 
-/** Generates a list of cover points in each module.
-  * This helps us map coverage points as reported by Verilator to
-  * the standard coverage map required by the simulator backend interface.
+/** Generates a list of cover points in each module. This helps us map coverage points as reported by Verilator to the
+  * standard coverage map required by the simulator backend interface.
   */
 private object FindCoverPointsPass extends Transform {
   override def prerequisites: Seq[TransformDependency] = Forms.LowForm

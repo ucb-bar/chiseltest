@@ -77,10 +77,10 @@ class ExecutionEngine(
     scheduler.setVerboseAssign(verbose)
   }
 
-  /** turns on evaluator debugging.  Can make output quite
-    * verbose.
+  /** turns on evaluator debugging. Can make output quite verbose.
     *
-    * @param isVerbose  The desired verbose setting
+    * @param isVerbose
+    *   The desired verbose setting
     */
   def setVerbose(isVerbose: Boolean = true): Unit = {
     verbose = isVerbose
@@ -153,7 +153,8 @@ class ExecutionEngine(
 
   /** Randomize the circuits registers and memories
     *
-    * @param additonalSeed a seed to move change all the random numbers generated
+    * @param additonalSeed
+    *   a seed to move change all the random numbers generated
     */
   def randomize(additonalSeed: Long = 0L): Unit = {
     val randomGenerator = new NameBasedRandomNumberGenerator
@@ -226,14 +227,18 @@ class ExecutionEngine(
     }
   }
 
-  /** Update the dataStore with the supplied information.
-    * IMPORTANT: This should never be used internally.
+  /** Update the dataStore with the supplied information. IMPORTANT: This should never be used internally.
     *
-    * @param name  name of value to set
-    * @param value new concrete value
-    * @param force allows setting components other than top level inputs
-    * @param registerPoke changes which side of a register is poked
-    * @return the concrete value that was derived from type and value
+    * @param name
+    *   name of value to set
+    * @param value
+    *   new concrete value
+    * @param force
+    *   allows setting components other than top level inputs
+    * @param registerPoke
+    *   changes which side of a register is poked
+    * @return
+    *   the concrete value that was derived from type and value
     */
   // scalastyle:off cyclomatic.complexity method.length
   def setValue(
@@ -297,11 +302,12 @@ class ExecutionEngine(
     value
   }
 
-  /** Update the dataStore with the supplied information.
-    * IMPORTANT: This should never be used internally.
+  /** Update the dataStore with the supplied information. IMPORTANT: This should never be used internally.
     *
-    * @param symbol symbol to set
-    * @param value new concrete value
+    * @param symbol
+    *   symbol to set
+    * @param value
+    *   new concrete value
     */
   // scalastyle:off cyclomatic.complexity method.length
   def setIntValue(
@@ -364,7 +370,8 @@ class ExecutionEngine(
 
   /** returns all the symbols identified by the provided referenceTarget
     *
-    * @param referenceTarget identifies a symbol or symbols
+    * @param referenceTarget
+    *   identifies a symbol or symbols
     * @return
     */
   def referenceTargetToSymbols(referenceTarget: ReferenceTarget): Seq[Symbol] = {
@@ -426,8 +433,8 @@ class ExecutionEngine(
 
   private val stopHappenedSymbolOpt = symbolTable.get(StopOp.stopHappenedName)
 
-  /** When a stop is triggered during execution the StopException generated is not thrown
-    * and instead is placed here so it can be accessed at the end of execution
+  /** When a stop is triggered during execution the StopException generated is not thrown and instead is placed here so
+    * it can be accessed at the end of execution
     */
   def lastStopException: Option[StopException] = pLastStopException
 
@@ -504,7 +511,7 @@ class ExecutionEngine(
       ("-" * fieldsHeader.length)
   }
 
-  def getInfoString: String = "Info" //TODO (chick) flesh this out
+  def getInfoString: String = "Info" // TODO (chick) flesh this out
   def getPrettyString: String = {
     header + "\n" +
       dataInColumns
@@ -542,10 +549,12 @@ object ExecutionEngine extends LazyLogging {
 
   val VCDHookName = "log-vcd"
 
-  //scalastyle:off method.length
+  // scalastyle:off method.length
   /** Factory to create an execution engine
-    * @param annotationSeq  annotations control all
-    * @param wallTime       external synthetic simple time
+    * @param annotationSeq
+    *   annotations control all
+    * @param wallTime
+    *   external synthetic simple time
     * @return
     */
   def apply(annotationSeq: AnnotationSeq, wallTime: UTC): ExecutionEngine = {

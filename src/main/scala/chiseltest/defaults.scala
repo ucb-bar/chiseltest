@@ -12,10 +12,14 @@ package object defaults {
 
   /** Creates a DefaultTester from the desired backend
     *
-    * @param dutGen          device under test
-    * @param annotationSeq   initial annotations
-    * @tparam T              dut type
-    * @return                a backend for the dut type
+    * @param dutGen
+    *   device under test
+    * @param annotationSeq
+    *   initial annotations
+    * @tparam T
+    *   dut type
+    * @return
+    *   a backend for the dut type
     */
   def createDefaultTester[T <: Module](
     dutGen:        () => T,

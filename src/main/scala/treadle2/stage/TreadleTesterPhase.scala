@@ -6,8 +6,7 @@ import firrtl2.AnnotationSeq
 import firrtl2.options.Phase
 import treadle2.stage.phases._
 
-/** When returns the annotation list with a TreadleTester constructed
-  * from either a circuit, a file, or a string
+/** When returns the annotation list with a TreadleTester constructed from either a circuit, a file, or a string
   */
 class TreadleTesterPhase extends Phase {
   private val phases: Seq[Phase] = Seq(

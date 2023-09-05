@@ -93,8 +93,7 @@ class ValidDriver[T <: Data](x: ValidIO[T]) {
     }
   }
 
-  /** This does not advance time, unlike expectDequeue
-    * this method will throw an error if valid has not been asserted
+  /** This does not advance time, unlike expectDequeue this method will throw an error if valid has not been asserted
     */
   def expectPeek(data: T): Unit = {
     fork.withRegion(Monitor) {

@@ -2,17 +2,18 @@
 
 package treadle2.executable
 
-/** ClockInfo associates a clock with the given name and period and offset
-  * The period is in an arbitrary number of ticks.  The VCD logger currently
-  * sets these ticks to be nanosecond(ns).
-  * The first up transition takes place after initialOffset ticks.
-  * One or more clocks can be specified through the TreadleOptions clockInfo as a Seq of ClockInfo's
-  * or from string command line based --fint-clock-info or -fici
-  * which use the format clock-name[:period[:initial-offset] ]
+/** ClockInfo associates a clock with the given name and period and offset The period is in an arbitrary number of
+  * ticks. The VCD logger currently sets these ticks to be nanosecond(ns). The first up transition takes place after
+  * initialOffset ticks. One or more clocks can be specified through the TreadleOptions clockInfo as a Seq of
+  * ClockInfo's or from string command line based --fint-clock-info or -fici which use the format
+  * clock-name[:period[:initial-offset] ]
   *
-  * @param name           the signal name of a clock
-  * @param period         how many ticks between rising edges of this clock
-  * @param initialOffset  the tick where the first up transition takes place.
+  * @param name
+  *   the signal name of a clock
+  * @param period
+  *   how many ticks between rising edges of this clock
+  * @param initialOffset
+  *   the tick where the first up transition takes place.
   */
 case class ClockInfo(
   name:          String = ClockInfo.DefaultName,
@@ -34,7 +35,7 @@ case class ClockInfo(
   }
 }
 
-/** The default settings for a single clock are here.  Units are in arbitrary ticks
+/** The default settings for a single clock are here. Units are in arbitrary ticks
   */
 object ClockInfo {
   val DefaultName:   String = "clock"

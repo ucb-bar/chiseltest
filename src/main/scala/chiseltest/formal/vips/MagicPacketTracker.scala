@@ -5,12 +5,12 @@ import chisel3.util._
 
 /** Tracks random packets for formally verifying FIFOs
   *
-  *  This ensures that when some data enters the FIFO, it will always be dequeued after the correct number of elements.
-  *  So essentially we are verifying data integrity. Note that this does not imply that the FIFO has no bugs
-  *  since e.g., a FIFO that never allows elements to be enqueued would easily pass our assertions.
+  * This ensures that when some data enters the FIFO, it will always be dequeued after the correct number of elements.
+  * So essentially we are verifying data integrity. Note that this does not imply that the FIFO has no bugs since e.g.,
+  * a FIFO that never allows elements to be enqueued would easily pass our assertions.
   *
-  *  This module was inspired by the MagicPacketTracker used in the evaluation of the following paper:
-  *  Mann, Makai, and Clark Barrett. "Partial order reduction for deep bug finding in synchronous hardware.", CAV'20.
+  * This module was inspired by the MagicPacketTracker used in the evaluation of the following paper: Mann, Makai, and
+  * Clark Barrett. "Partial order reduction for deep bug finding in synchronous hardware.", CAV'20.
   */
 object MagicPacketTracker {
   def apply[D <: Data](enq: ValidIO[D], deq: ValidIO[D], depth: Int, debugPrint: Boolean): Unit = {

@@ -10,9 +10,12 @@ case object NegativeEdge extends Transition
 case object NoTransition extends Transition
 
 /** Used internally by assigners that care about clock transitions
-  * @param clockSymbol the clock
-  * @param prevClockSymbol the previous state of the clock
-  * @param dataStore needed to get current and prev values
+  * @param clockSymbol
+  *   the clock
+  * @param prevClockSymbol
+  *   the previous state of the clock
+  * @param dataStore
+  *   needed to get current and prev values
   */
 case class ClockTransitionGetter(clockSymbol: Symbol, prevClockSymbol: Symbol, dataStore: DataStore) {
   private val clockIndex = clockSymbol.index

@@ -30,7 +30,7 @@ private[chiseltest] trait SolverContext {
     doSetLogic(logic)
     pLogic = Some(logic)
   }
-  def getLogic: Option[String] = pLogic
+  def getLogic:   Option[String] = pLogic
   def stackDepth: Int // returns the size of the push/pop stack
   def push():     Unit
   def pop():      Unit
@@ -42,8 +42,8 @@ private[chiseltest] trait SolverContext {
     doCheck(produceModel)
   }
   def runCommand(cmd: SMTCommand): Unit
-  def queryModel(e:   BVSymbol):   Option[BigInt]
-  def getValue(e:     BVExpr):     Option[BigInt]
+  def queryModel(e:   BVSymbol): Option[BigInt]
+  def getValue(e:     BVExpr): Option[BigInt]
   def getValue(e:     ArrayExpr): Seq[(Option[BigInt], BigInt)]
   def setOption(name: String, value: String): Unit
 

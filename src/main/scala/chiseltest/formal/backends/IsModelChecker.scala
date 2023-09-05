@@ -5,7 +5,7 @@ package chiseltest.formal.backends
 import firrtl2.backends.experimental.smt._
 
 private[chiseltest] trait ModelCheckResult {
-  def isFail: Boolean
+  def isFail:    Boolean
   def isSuccess: Boolean = !isFail
 }
 private[chiseltest] case class ModelCheckSuccess() extends ModelCheckResult { override def isFail: Boolean = false }

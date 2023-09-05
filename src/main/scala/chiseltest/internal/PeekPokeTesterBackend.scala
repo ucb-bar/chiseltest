@@ -12,7 +12,8 @@ import scala.util.DynamicVariable
 
 /** Backend that allows us to run old-style "PeekPoke" testers.
   *
-  * @warn this is an internal API, use the wrappers from the chiseltest module instead.
+  * @warn
+  *   this is an internal API, use the wrappers from the chiseltest module instead.
   */
 object PeekPokeTesterBackend {
   import TesterUtils._

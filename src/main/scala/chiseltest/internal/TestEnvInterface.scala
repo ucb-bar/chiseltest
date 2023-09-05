@@ -18,8 +18,7 @@ trait TestEnvInterface {
 
   def topFileName: Option[String]
 
-  /** Logs a tester failure at this point.
-    * Failures queued until the next checkpoint.
+  /** Logs a tester failure at this point. Failures queued until the next checkpoint.
     */
   def testerFail(msg: String): Unit = {
     batchedFailures += new FailedExpectException(msg, 4)
@@ -39,8 +38,8 @@ trait TestEnvInterface {
     }
   }
 
-  /** Adds a failure message with correct stack trace to the batched failures.
-    * Failures queued until the next checkpoint.
+  /** Adds a failure message with correct stack trace to the batched failures. Failures queued until the next
+    * checkpoint.
     */
   def signalExpectFailure(message: String): Unit = {
     val trace = new Throwable
@@ -72,11 +71,13 @@ trait TestEnvInterface {
 
 private[chiseltest] object TestEnvInterface {
 
-  /** Will add a TargetDirAnnotation with defaultDir with "test_run_dir" path prefix to the annotations
-    * if there is not a TargetDirAnnotation already present
+  /** Will add a TargetDirAnnotation with defaultDir with "test_run_dir" path prefix to the annotations if there is not
+    * a TargetDirAnnotation already present
     *
-    * @param defaultDir     a default directory
-    * @param annotationSeq  annotations to add it to, unless one is already there
+    * @param defaultDir
+    *   a default directory
+    * @param annotationSeq
+    *   annotations to add it to, unless one is already there
     * @return
     */
   def addDefaultTargetDir(defaultDir: String, annotationSeq: AnnotationSeq): AnnotationSeq = {

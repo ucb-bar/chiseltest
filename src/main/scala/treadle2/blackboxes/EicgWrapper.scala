@@ -54,7 +54,7 @@ class EicgWrapper(val instanceName: String) extends ScalaBlackBox {
   }
 
   override def getDependencies: Seq[(String, Set[String])] = {
-    //TODO: This is the current form, but errors reported from users still using 8 month old
+    // TODO: This is the current form, but errors reported from users still using 8 month old
 //    Seq("out" -> Set("in", "en", "test_en"))
     Seq("out" -> Set("in", "en"))
   }

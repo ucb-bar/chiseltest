@@ -11,9 +11,9 @@ object observe {
 
 object expose {
 
-  /** The method `expose` allows one to bring to a wrapped module, signals from instantiated sub-modules so
-    * they can be tested by peek/poke chiseltest. This avoid cluttering the original module with signals that
-    * would be used only by the test harness.
+  /** The method `expose` allows one to bring to a wrapped module, signals from instantiated sub-modules so they can be
+    * tested by peek/poke chiseltest. This avoid cluttering the original module with signals that would be used only by
+    * the test harness.
     *
     * Usage:
     *
@@ -38,8 +38,8 @@ object expose {
     *  )}
     * }}}
     *
-    * Then in your spec, test the `Top` module with `chiseltest` and `scalatest` while exposing the signal from
-    * the submodule to the testbench:
+    * Then in your spec, test the `Top` module with `chiseltest` and `scalatest` while exposing the signal from the
+    * submodule to the testbench:
     * {{{
     * import chisel3._
     * import chiseltest._

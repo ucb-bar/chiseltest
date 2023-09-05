@@ -57,15 +57,19 @@ object BackendExecutive {
 
   /** This creates some kind of map of combinational paths between inputs and outputs.
     *
-    * @param dut       use this to figure out which paths involve top level iO
-    * @param paths     combinational paths found by firrtl pass CheckCombLoops
-    * @param dataNames a map between a port's Data and it's string name
-    * @param componentToName used to map [[ReferenceTarget]]s  found in paths into correct local string form
+    * @param dut
+    *   use this to figure out which paths involve top level iO
+    * @param paths
+    *   combinational paths found by firrtl pass CheckCombLoops
+    * @param dataNames
+    *   a map between a port's Data and it's string name
+    * @param componentToName
+    *   used to map [[ReferenceTarget]]s found in paths into correct local string form
     * @return
     */
-  //TODO: better name
-  //TODO: check for aliasing in here
-  //TODO graceful error message if there is an unexpected combinational path element?
+  // TODO: better name
+  // TODO: check for aliasing in here
+  // TODO graceful error message if there is an unexpected combinational path element?
   private def combinationalPathsToData(
     dut:             BaseModule,
     paths:           Seq[CombinationalPath],

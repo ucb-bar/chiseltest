@@ -7,7 +7,7 @@ import scala.collection.mutable
 abstract class DataStorePlugin {
   def executionEngine: ExecutionEngine
   def dataStore:       DataStore
-  var isEnabled: Boolean = false
+  var isEnabled:       Boolean = false
 
   def setEnabled(enabled: Boolean): Unit = {
     isEnabled = enabled

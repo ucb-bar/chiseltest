@@ -4,8 +4,7 @@ package chiseltest.formal
 import chisel3.util.log2Ceil
 import firrtl2._
 
-/** firrtl utility functions used in our passes.
-  * At some point, these could be moved into the firrtl repo.
+/** firrtl utility functions used in our passes. At some point, these could be moved into the firrtl repo.
   */
 private object FirrtlUtils {
   def plusOne(e: ir.Expression): ir.Expression = {
@@ -42,7 +41,7 @@ private object FirrtlUtils {
     val hasAsyncReset = reset.tpe match {
       case ir.AsyncResetType => true
       case ir.UIntType(_)    => false
-      case other             => throw new RuntimeException(s"Invalid reset expression: ${reset.serialize} : ${other.serialize}")
+      case other => throw new RuntimeException(s"Invalid reset expression: ${reset.serialize} : ${other.serialize}")
     }
     val tpe: ir.Type = (next, init) match {
       case (None, None) =>

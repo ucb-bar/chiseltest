@@ -25,7 +25,8 @@ private object TreadleSimulator extends Simulator {
 
   /** start a new simulation
     *
-    * @param state LoFirrtl circuit + annotations
+    * @param state
+    *   LoFirrtl circuit + annotations
     */
   override def createContext(state: CircuitState): SimulatorContext = {
     // we need to annotate clocks for treadle to recognize them
@@ -82,7 +83,7 @@ private class TreadleContext(tester: TreadleTester, toplevel: TopmoduleInfo) ext
   }
 
   override def peek(signal:       String): BigInt = tester.peek(signal)
-  override def peekMemory(signal: String, index: Long): BigInt = tester.peekMemory(signal, index.toInt)
+  override def peekMemory(signal: String, index: Long):   BigInt = tester.peekMemory(signal, index.toInt)
   override def poke(signal:       String, value: BigInt): Unit = tester.poke(signal, value)
   override def pokeMemory(signal: String, index: Long, value: BigInt): Unit =
     tester.pokeMemory(signal, index.toInt, value)

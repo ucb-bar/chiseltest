@@ -21,7 +21,7 @@ package object executable {
   trait Assigner {
     val symbol: Symbol
     val info:   Info
-    def run: FuncUnit
+    def run:    FuncUnit
     def render: String = symbol.render
 
     def setLeanMode(isLean: Boolean): Unit = {}

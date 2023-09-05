@@ -22,7 +22,6 @@ object PlusArg {
   }
 }
 
-/** Convenience class that holds a parsed Plus Arg
-  * Command line form of a plus_arg is +<name>=<value>
+/** Convenience class that holds a parsed Plus Arg Command line form of a plus_arg is +<name>=<value>
   */
 case class PlusArg(name: String, value: String)

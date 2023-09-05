@@ -10,9 +10,8 @@ import treadle2.ScalaBlackBox
 
 import scala.collection.mutable
 
-/** Creates a data store for the three underlying data types.
-  * The meaning of the values of each slot must be maintained outside of this class.
-  * This class only supports (2 ** 31) - 1 of any ints, longs or bigs.
+/** Creates a data store for the three underlying data types. The meaning of the values of each slot must be maintained
+  * outside of this class. This class only supports (2 ** 31) - 1 of any ints, longs or bigs.
   */
 //scalastyle:off number.of.methods
 class DataStore(dataStoreAllocator: DataStoreAllocator) extends HasDataArrays {
@@ -113,7 +112,7 @@ class DataStore(dataStoreAllocator: DataStoreAllocator) extends HasDataArrays {
   }
 
   def showIndirectAssignment(symbol: Symbol, value: BigInt, index: Int): Unit = {
-    //TODO (chick) Need to build in display of index computation
+    // TODO (chick) Need to build in display of index computation
     val showValue = symbol.normalize(value)
     println(s"${symbol.name}($index) <= $showValue")
   }
@@ -430,7 +429,7 @@ class DataStore(dataStoreAllocator: DataStoreAllocator) extends HasDataArrays {
     }
   }
 
-  //scalastyle:off cyclomatic.complexity method.length
+  // scalastyle:off cyclomatic.complexity method.length
   def serialize: String = {
 
     val nextForData = Seq(IntSize, LongSize, BigSize).map { size =>

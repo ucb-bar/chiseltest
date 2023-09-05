@@ -8,13 +8,14 @@ import treadle2.utils.NumberHelpers
 
 import scala.util.matching.Regex
 
-/** Controls whether a given memory cell should be logged to vcd output
-  * if logAllRadixOpt is defined then all indices for all memories should be logged
-  * otherwise if memory has an entry then check the memory index
-  * if the set contains -1 then all indices should be logged for that memory
+/** Controls whether a given memory cell should be logged to vcd output if logAllRadixOpt is defined then all indices
+  * for all memories should be logged otherwise if memory has an entry then check the memory index if the set contains
+  * -1 then all indices should be logged for that memory
   *
-  * @param logAllRadixOpt  if defined then log all memories using this radix
-  * @param memoriesTracked    map of memories to the set of indices that should be logged
+  * @param logAllRadixOpt
+  *   if defined then log all memories using this radix
+  * @param memoriesTracked
+  *   map of memories to the set of indices that should be logged
   */
 class VcdMemoryLoggingController(
   logAllRadixOpt:  Option[Int] = None,
@@ -24,11 +25,13 @@ class VcdMemoryLoggingController(
     s"$name(${BigInt(index).toString(radix)})"
   }
 
-  /** generate a vcd element name for a given memory location
-    *  checking whether the memory and the particular offset is being tracked
+  /** generate a vcd element name for a given memory location checking whether the memory and the particular offset is
+    * being tracked
     *
-    * @param symbol memory symbol to find key for
-    * @param offset index being referenced for memory
+    * @param symbol
+    *   memory symbol to find key for
+    * @param offset
+    *   index being referenced for memory
     * @return
     */
   def vcdKey(symbol: Symbol, offset: Int): Option[String] = {
@@ -48,10 +51,11 @@ class VcdMemoryLoggingController(
     }
   }
 
-  /** Builds a list of all tracked memories and the locations within them that are tracked
-    * This is used to construct the VCD directory
+  /** Builds a list of all tracked memories and the locations within them that are tracked This is used to construct the
+    * VCD directory
     *
-    * @param memorySymbol Memory symbol to generate tracked names for
+    * @param memorySymbol
+    *   Memory symbol to generate tracked names for
     * @return
     */
   def getIndexedNames(memorySymbol: Symbol): Seq[String] = {
@@ -84,8 +88,10 @@ object VcdMemoryLoggingController extends LazyLogging {
 
   /** Build a VcdMemoryLoggingController from a list of commands
     *
-    * @param commands    a list of strings containing logging instructions
-    * @param symbolTable use to check for symbols that are memories
+    * @param commands
+    *   a list of strings containing logging instructions
+    * @param symbolTable
+    *   use to check for symbols that are memories
     * @return
     */
   def apply(commands: Seq[String], symbolTable: SymbolTable): VcdMemoryLoggingController = {

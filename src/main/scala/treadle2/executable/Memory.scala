@@ -23,23 +23,24 @@ import scala.collection.mutable
 // wires
 ////////////////////////////////////////////////////////////////////////////////
 
-/** Provides three different aspects of the code necessary to create read and write
-  * register pipelines. The three cases are:
-  *  - Adding the symbols for the registers to be created
-  *  - Adding the rendering code necessary to Expression views of the pipelines
-  *  - Actually adding the pipeline registers.
+/** Provides three different aspects of the code necessary to create read and write register pipelines. The three cases
+  * are:
+  *   - Adding the symbols for the registers to be created
+  *   - Adding the rendering code necessary to Expression views of the pipelines
+  *   - Actually adding the pipeline registers.
   *
-  *  NOTE: See IMPORTANT NOTE above.
+  * NOTE: See IMPORTANT NOTE above.
   */
 object Memory {
-  //scalastyle:off method.length
-  /** Builds all the symbols and dependencies for the specified memory.
-    * Pipelines are constructed as registers with a regular name and
-    * a /in name.  Data travels up-index through a pipeline for both
-    * read and write pipelines.
-    * @param defMemory               the specified memory
-    * @param expandedName            the full name of the memory
-    * @param sensitivityGraphBuilder external graph of dependencies
+  // scalastyle:off method.length
+  /** Builds all the symbols and dependencies for the specified memory. Pipelines are constructed as registers with a
+    * regular name and a /in name. Data travels up-index through a pipeline for both read and write pipelines.
+    * @param defMemory
+    *   the specified memory
+    * @param expandedName
+    *   the full name of the memory
+    * @param sensitivityGraphBuilder
+    *   external graph of dependencies
     * @return
     */
   def buildSymbols(
@@ -228,10 +229,14 @@ object Memory {
   }
 
   /** Construct views for all the memory elements
-    * @param defMemory    current memory
-    * @param expandedName full path name
-    * @param scheduler    handle to execution components
-    * @param expressionViews   where to store the generated views
+    * @param defMemory
+    *   current memory
+    * @param expandedName
+    *   full path name
+    * @param scheduler
+    *   handle to execution components
+    * @param expressionViews
+    *   where to store the generated views
     */
   def buildMemoryExpressions(
     defMemory:    DefMemory,
@@ -362,10 +367,14 @@ object Memory {
   }
 
   /** Construct the machinery to move data into and out of the memory stack
-    * @param defMemory    current memory
-    * @param expandedName full path name
-    * @param scheduler    handle to execution components
-    * @param compiler     needed for assigner generation
+    * @param defMemory
+    *   current memory
+    * @param expandedName
+    *   full path name
+    * @param scheduler
+    *   handle to execution components
+    * @param compiler
+    *   needed for assigner generation
     */
   def buildMemoryInternals(
     defMemory:    DefMemory,

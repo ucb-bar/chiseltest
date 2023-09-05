@@ -6,11 +6,9 @@ import firrtl2.options.Phase
 import firrtl2.stage.{FirrtlCircuitAnnotation, FirrtlFileAnnotation, FirrtlSourceAnnotation}
 import firrtl2.{AnnotationSeq, Parser}
 
-/** There are multiple ways to get a FirrtlCircuit into treadle.
-  * There is a priority to these methods
-  * 1. Specify a Firrtl AST with the FirrtlCircuitAnnotation
-  * 2. Specify Firrtl text with a FirrtlSourceAnnotation
-  * 3. Specify a file containing Firrtl with the FirrtlFileAnnotation
+/** There are multiple ways to get a FirrtlCircuit into treadle. There is a priority to these methods
+  *   1. Specify a Firrtl AST with the FirrtlCircuitAnnotation 2. Specify Firrtl text with a FirrtlSourceAnnotation 3.
+  *      Specify a file containing Firrtl with the FirrtlFileAnnotation
   */
 object GetFirrtlAst extends Phase {
   override def transform(annotationSeq: AnnotationSeq): AnnotationSeq = {

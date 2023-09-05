@@ -12,12 +12,14 @@ trait SimulatorContext {
   def sim: Simulator
 
   /** Step the main clock `n` times. Throws a [[NoClockException]] if the circuit does not have a clock input.
-    * @return [[StepInterrupted]] if a stop/assert/assume statement fired during execution, [[StepOk]] otherwise.
+    * @return
+    *   [[StepInterrupted]] if a stop/assert/assume statement fired during execution, [[StepOk]] otherwise.
     */
   def step(n: Int = 1): StepResult
 
   /** Returns the latest value of an output or input port on the top-level module.
-    * @note the simulator has to take care of recomputing signals after any change
+    * @note
+    *   the simulator has to take care of recomputing signals after any change
     */
   def peek(signal: String): BigInt
 
@@ -25,7 +27,8 @@ trait SimulatorContext {
   def poke(signal: String, value: BigInt): Unit
 
   /** Returns the latest value of a memory location. Only supported by some simulators.
-    * @note the simulator has to take care of recomputing signals after any change
+    * @note
+    *   the simulator has to take care of recomputing signals after any change
     */
   def peekMemory(signal: String, index: Long): BigInt = {
     throw new NotImplementedError(s"${sim.name} does not support accessing memories!")
@@ -37,20 +40,26 @@ trait SimulatorContext {
   }
 
   /** Needs to be called after the context is no longer needed.
-    * @note only after `finish` has been successfully returned is a potential waveform file guaranteed to exists on disk.
-    * @note after `finish` no other functions besides `sim` or `getCoverage` may be called.
+    * @note
+    *   only after `finish` has been successfully returned is a potential waveform file guaranteed to exists on disk.
+    * @note
+    *   after `finish` no other functions besides `sim` or `getCoverage` may be called.
     */
   def finish(): Unit
 
   /** Returns the current value of the coverage counters.
-    * @note only some simulators support calling `getCoverage` _before_ `finish`
-    * @note for more information on the coverage format, please consult the documentation for [[chiseltest.coverage.TestCoverage]]
+    * @note
+    *   only some simulators support calling `getCoverage` _before_ `finish`
+    * @note
+    *   for more information on the coverage format, please consult the documentation for
+    *   [[chiseltest.coverage.TestCoverage]]
     */
   def getCoverage(): List[(String, Long)] =
     throw new NotImplementedError(s"${sim.name} does not support coverage!")
 
   /** Resets all coverage counters to zero.
-    * @note Not supported by all simulators. Must result in a [[NotImplementedError]] if not supported.
+    * @note
+    *   Not supported by all simulators. Must result in a [[NotImplementedError]] if not supported.
     */
   def resetCoverage(): Unit =
     throw new NotImplementedError(s"${sim.name} does not support coverage!")
@@ -60,9 +69,12 @@ sealed trait StepResult
 case object StepOk extends StepResult
 
 /** Indicates that an interrupt (active stop or assertion failure) was raised during the execution of a `step`.
-  * @param after number of steps after which the execution was stopped. Always > 0 and <= `n`.
-  * @param isFailure true if the interrupt involved a stop with non-zero return code or an assertion/assumption violation.
-  * @param sources optional list of hierarchical names of stop/assert/assume statements that were triggered.
+  * @param after
+  *   number of steps after which the execution was stopped. Always > 0 and <= `n`.
+  * @param isFailure
+  *   true if the interrupt involved a stop with non-zero return code or an assertion/assumption violation.
+  * @param sources
+  *   optional list of hierarchical names of stop/assert/assume statements that were triggered.
   */
 case class StepInterrupted(after: Int, isFailure: Boolean, sources: Seq[String]) extends StepResult
 
@@ -87,7 +99,8 @@ trait Simulator {
   def supportsLiveCoverage: Boolean = false
 
   /** start a new simulation
-    * @param state LoFirrtl circuit + annotations
+    * @param state
+    *   LoFirrtl circuit + annotations
     */
   def createContext(state: CircuitState): SimulatorContext
 }
@@ -124,8 +137,8 @@ case object WriteFsdbAnnotation extends WriteWaveformAnnotation {
 
 case class PlusArgsAnnotation(plusArgs: Seq[String]) extends NoTargetAnnotation
 
-/** enables more verbose print outs from the simulator creation and execution
-  * that might be helpful in debugging simulator behavior
+/** enables more verbose print outs from the simulator creation and execution that might be helpful in debugging
+  * simulator behavior
   */
 case object SimulatorDebugAnnotation extends NoTargetAnnotation
 
@@ -208,8 +221,8 @@ private[chiseltest] object TopmoduleInfo {
 
 private object GetModuleNames {
 
-  /** Extracts the names of all modules in the circuit.
-    * This is useful to avoid a testbench name that clashes with existing modules.
+  /** Extracts the names of all modules in the circuit. This is useful to avoid a testbench name that clashes with
+    * existing modules.
     */
   def apply(circuit: ir.Circuit): Seq[String] = {
     circuit.modules.flatMap {

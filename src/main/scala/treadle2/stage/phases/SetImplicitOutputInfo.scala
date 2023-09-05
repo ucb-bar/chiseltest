@@ -8,9 +8,8 @@ import firrtl2.stage.phases.DriverCompatibility.TopNameAnnotation
 import firrtl2.stage.{FirrtlCircuitAnnotation, OutputFileAnnotation}
 import treadle2.TreadleCircuitStateAnnotation
 
-/** Set a default output stuff
-  * Sets the default target directory if one has not been defined
-  * and uses the circuit name unless there is as TopName override
+/** Set a default output stuff Sets the default target directory if one has not been defined and uses the circuit name
+  * unless there is as TopName override
   */
 object SetImplicitOutputInfo extends Phase {
   override def transform(annotationSeq: AnnotationSeq): AnnotationSeq = {

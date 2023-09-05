@@ -10,12 +10,10 @@ import firrtl2.passes.ExpandWhensAndCheck
 import firrtl2.stage.TransformManager.TransformDependency
 import firrtl2.{CircuitState, Namespace, Transform}
 
-/** This controls the handling of the verification formal statements for treadle.
-  * currently it does the following
-  * converts assert statements to a printf / stop block
-  * by default it will also do this for assumne statements
-  * but assume statement can be dropped by using "tr-ignore-format-assumes" or [IgnoreFormalAssumesAnnotation]
-  * cover statement are currently skipped
+/** This controls the handling of the verification formal statements for treadle. currently it does the following
+  * converts assert statements to a printf / stop block by default it will also do this for assumne statements but
+  * assume statement can be dropped by using "tr-ignore-format-assumes" or [IgnoreFormalAssumesAnnotation] cover
+  * statement are currently skipped
   */
 class HandleFormalStatements extends Transform with RegisteredTransform {
 
