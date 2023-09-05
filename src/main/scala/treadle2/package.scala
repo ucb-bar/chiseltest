@@ -18,8 +18,8 @@ package object treadle2 {
 
   def boolToInt(condition:    Boolean): Int = if (condition) 1 else 0
   def boolToBigInt(condition: Boolean): BigInt = if (condition) 1 else 0
-  def widthToInt(width:       Width): Int = width.asInstanceOf[IntWidth].width.toInt
-  def typeToWidth(tpe:        Type): Int = tpe match {
+  def widthToInt(width:       Width):   Int = width.asInstanceOf[IntWidth].width.toInt
+  def typeToWidth(tpe: Type): Int = tpe match {
     case UIntType(w) => widthToInt(w)
     case SIntType(w) => widthToInt(w)
     case ClockType   => 1
@@ -39,7 +39,8 @@ package object treadle2 {
 
   /** Utility function that computes bits required for a number
     *
-    * @param n number of interest
+    * @param n
+    *   number of interest
     * @return
     */
   def computeBits(n: BigInt): Int = {
@@ -47,8 +48,10 @@ package object treadle2 {
   }
 
   /** computes the smallest and largest values that will fit in an SInt
-    * @param width width of SInt
-    * @return tuple(minVale, maxValue)
+    * @param width
+    *   width of SInt
+    * @return
+    *   tuple(minVale, maxValue)
     */
   def extremaOfSIntOfWidth(width: Int): (BigInt, BigInt) = {
     val nearestPowerOf2 = BigInt("1" + ("0" * (width - 1)), 2)
@@ -56,8 +59,10 @@ package object treadle2 {
   }
 
   /** computes the smallest and largest values that will fit in a UInt
-    * @param width width of SInt
-    * @return tuple(minVale, maxValue)
+    * @param width
+    *   width of SInt
+    * @return
+    *   tuple(minVale, maxValue)
     */
   def extremaOfUIntOfWidth(width: Int): (BigInt, BigInt) = {
     if (width == 1) {
@@ -68,13 +73,13 @@ package object treadle2 {
     }
   }
 
-  /** return the smallest number of bits required to hold the given number in
-    * an SInt
-    * Note: positive numbers will get one minimum width one higher than would be
-    * required for a UInt
+  /** return the smallest number of bits required to hold the given number in an SInt Note: positive numbers will get
+    * one minimum width one higher than would be required for a UInt
     *
-    * @param num number to find width for
-    * @return minimum required bits for an SInt
+    * @param num
+    *   number to find width for
+    * @return
+    *   minimum required bits for an SInt
     */
   def requiredBitsForSInt(num: BigInt): Int = {
     if (num == Big0 || num == -Big1) {
@@ -88,11 +93,12 @@ package object treadle2 {
     }
   }
 
-  /** return the smallest number of bits required to hold the given number in
-    * an UInt
+  /** return the smallest number of bits required to hold the given number in an UInt
     *
-    * @param num number to find width for
-    * @return    minimum required bits for an SInt
+    * @param num
+    *   number to find width for
+    * @return
+    *   minimum required bits for an SInt
     */
   def requiredBitsForUInt(num: BigInt): Int = {
     if (num == Big0) {

@@ -7,10 +7,11 @@ import treadle2.executable.Big
 import scala.collection.concurrent.TrieMap
 
 object BitUtils {
-  //================= Int Section ======================
+  // ================= Int Section ======================
   /** creates a mask for all bits
     *
-    * @param bitWidth size of signal
+    * @param bitWidth
+    *   size of signal
     * @return
     */
   def makeMaskInt(bitWidth: Int): Int = {
@@ -19,7 +20,8 @@ object BitUtils {
 
   /** creates a mask for only the unsigned bits
     *
-    * @param bitWidth size of signal
+    * @param bitWidth
+    *   size of signal
     * @return
     */
   def makeUnsignedMaskInt(bitWidth: Int): Int = {
@@ -28,7 +30,8 @@ object BitUtils {
 
   /** creates a mask for just the sign bit
     *
-    * @param bitWidth size of signal
+    * @param bitWidth
+    *   size of signal
     * @return
     */
   def makeMsbMaskInt(bitWidth: Int): Int = {
@@ -37,7 +40,8 @@ object BitUtils {
 
   /** creates the next power of two, a mask with just one bit at bitWidth + 1
     *
-    * @param bitWidth size of signal
+    * @param bitWidth
+    *   size of signal
     * @return
     */
   def makeNextPowerOfTwoInt(bitWidth: Int): Int = {
@@ -50,10 +54,11 @@ object BitUtils {
     result
   }
 
-  //================= Long Section ======================
+  // ================= Long Section ======================
   /** creates a mask for all bits
     *
-    * @param bitWidth size of signal
+    * @param bitWidth
+    *   size of signal
     * @return
     */
   def makeMaskLong(bitWidth: Int): Long = {
@@ -62,7 +67,8 @@ object BitUtils {
 
   /** creates a mask for only the unsigned bits
     *
-    * @param bitWidth size of signal
+    * @param bitWidth
+    *   size of signal
     * @return
     */
   def makeUnsignedMaskLong(bitWidth: Int): Int = {
@@ -71,7 +77,8 @@ object BitUtils {
 
   /** creates a mask for just the sign bit
     *
-    * @param bitWidth size of signal
+    * @param bitWidth
+    *   size of signal
     * @return
     */
   def makeMsbMaskLong(bitWidth: Int): Long = {
@@ -80,7 +87,8 @@ object BitUtils {
 
   /** creates the next power of two, a mask with just one bit at bitWidth + 1
     *
-    * @param bitWidth size of signal
+    * @param bitWidth
+    *   size of signal
     * @return
     */
   def makeNextPowerOfTwoLong(bitWidth: Int): Long = {
@@ -93,9 +101,10 @@ object BitUtils {
     result
   }
 
-  //================= Big Section ======================
+  // ================= Big Section ======================
   /** creates a mask for all bits
-    * @param bitWidth size of signal
+    * @param bitWidth
+    *   size of signal
     * @return
     */
   def makeMaskBig(bitWidth: Int): Big = {
@@ -103,7 +112,8 @@ object BitUtils {
   }
 
   /** creates a mask for only the unsigned bits
-    * @param bitWidth size of signal
+    * @param bitWidth
+    *   size of signal
     * @return
     */
   def makeUnsignedMaskBig(bitWidth: Int): Big = {
@@ -111,7 +121,8 @@ object BitUtils {
   }
 
   /** creates a mask for just the sign bit
-    * @param bitWidth size of signal
+    * @param bitWidth
+    *   size of signal
     * @return
     */
   def makeMsbMaskBig(bitWidth: Int): Big = {
@@ -119,7 +130,8 @@ object BitUtils {
   }
 
   /** creates the next power of two, a mask with just one bit at bitWidth + 1
-    * @param bitWidth size of signal
+    * @param bitWidth
+    *   size of signal
     * @return
     */
   def makeNextPowerOfTwoBig(bitWidth: Int): Big = {
@@ -171,9 +183,9 @@ object BitMasks {
   private val alreadyCreatedLongs = new TrieMap[Int, BitMasksLongs]
   private val alreadyCreatedBigs = new TrieMap[Int, BitMasksBigs]
 
-  /** Factory for BitMasksInts
-    * makes sure there is only one instance per bitWidth
-    * @param bitWidth  signal size
+  /** Factory for BitMasksInts makes sure there is only one instance per bitWidth
+    * @param bitWidth
+    *   signal size
     * @return
     */
   def getBitMasksInts(bitWidth: Int): BitMasksInts = {
@@ -186,9 +198,9 @@ object BitMasks {
     }
   }
 
-  /** Factory for BitMasksBigs
-    * makes sure there is only one instance per bitWidth
-    * @param bitWidth  signal size
+  /** Factory for BitMasksBigs makes sure there is only one instance per bitWidth
+    * @param bitWidth
+    *   signal size
     * @return
     */
   def getBitMasksLongs(bitWidth: Int): BitMasksLongs = {
@@ -200,9 +212,9 @@ object BitMasks {
     }
   }
 
-  /** Factory for BitMasksBigs
-    * makes sure there is only one instance per bitWidth
-    * @param bitWidth  signal size
+  /** Factory for BitMasksBigs makes sure there is only one instance per bitWidth
+    * @param bitWidth
+    *   signal size
     * @return
     */
   def getBitMasksBigs(bitWidth: Int): BitMasksBigs = {

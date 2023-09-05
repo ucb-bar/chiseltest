@@ -43,17 +43,18 @@ case class PrintfOp(
   def makeChar(b:   BigInt): Char = b.toChar
   def toBinary(b:   BigInt): String = b.toString(2)
 
-  /** Create a format string and a list format functions in order to implement the printf
-    * Figures out how many columns each output field show have from the bit widths
-    * We do this to match verilator's printf behavior more closely.
-    * The problem type is binary that does not have a %-conversion code and char which requires
-    * a non-numeric value. This is why the format functions are BigInt => Any
+  /** Create a format string and a list format functions in order to implement the printf Figures out how many columns
+    * each output field show have from the bit widths We do this to match verilator's printf behavior more closely. The
+    * problem type is binary that does not have a %-conversion code and char which requires a non-numeric value. This is
+    * why the format functions are BigInt => Any
     *
-    * @param formatString  The raw format string from the firrtl printf statement
-    * @param bitWidths     The bit widths of each argument
+    * @param formatString
+    *   The raw format string from the firrtl printf statement
+    * @param bitWidths
+    *   The bit widths of each argument
     * @return
     */
-  //scalastyle:off method.length cyclomatic.complexity
+  // scalastyle:off method.length cyclomatic.complexity
   def constructFormatter(formatString: String, bitWidths: Seq[Int]): (String, Seq[BigInt => Any]) = {
     val outBuffer = new StringBuilder
     var s = formatString

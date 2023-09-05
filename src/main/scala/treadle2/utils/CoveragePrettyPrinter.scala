@@ -7,12 +7,11 @@ import firrtl2.options.{HasShellOptions, Shell, ShellOption, Stage, StageMain, U
 import firrtl2.{annoSeqToSeq, AnnotationSeq, FileUtils}
 import firrtl2.logger.Logger
 
-/** A Prototype rendering program to add coverage information to the
-  * printout of a firrtl file that contains coverage statements and
-  * that has been run through treadle
+/** A Prototype rendering program to add coverage information to the printout of a firrtl file that contains coverage
+  * statements and that has been run through treadle
   *
-  * TODO: Possibly try to do this with firrtl transforms instead of text based processing
-  * TODO: May need to also match on coverage message
+  * TODO: Possibly try to do this with firrtl transforms instead of text based processing TODO: May need to also match
+  * on coverage message
   */
 class CoveragePrettyPrinter extends Stage {
   override val shell: Shell = new Shell("coverage-pretty-printer") with CoveragePrettyPrinterCli

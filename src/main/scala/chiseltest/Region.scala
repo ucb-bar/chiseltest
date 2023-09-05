@@ -2,9 +2,9 @@
 
 package chiseltest
 
-/** Base class for regions, akin to Verilog regions for ordering events between threads within the same timestep.
-  * order is the order regions run in, with 0 being the default, and incrementing regions running later.
-  * TODO: have a more extensible ordering than ints.
+/** Base class for regions, akin to Verilog regions for ordering events between threads within the same timestep. order
+  * is the order regions run in, with 0 being the default, and incrementing regions running later. TODO: have a more
+  * extensible ordering than ints.
   */
 sealed class Region {
   protected def getPos(): Int = {

@@ -26,8 +26,8 @@ class StopException(message: String) extends Exception(message)
 /** Indicates that a Chisel `assert(...)` or `assume(...)` statement has failed. */
 class ChiselAssertionError(message: String) extends Exception(message)
 
-/** Indicates that a value used in a poke/expect is not a literal.
-  * It could be hardware or a DontCare which is only allowed when using pokePartial/expectPartial.
+/** Indicates that a value used in a poke/expect is not a literal. It could be hardware or a DontCare which is only
+  * allowed when using pokePartial/expectPartial.
   */
 class NonLiteralValueError(val value: chisel3.Data, val signal: chisel3.Data, op: String)
     extends Exception(

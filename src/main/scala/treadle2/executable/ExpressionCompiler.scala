@@ -103,7 +103,7 @@ class ExpressionCompiler(
     }
   }
 
-  //scalastyle:off cyclomatic.complexity method.length
+  // scalastyle:off cyclomatic.complexity method.length
   def makeAssigner(
     symbol:                 Symbol,
     expressionResult:       ExpressionResult,
@@ -218,7 +218,7 @@ class ExpressionCompiler(
     addAssigner(assigner)
   }
 
-  //scalastyle:off method.length
+  // scalastyle:off method.length
   def processStatements(modulePrefix: String, circuit: Circuit, statement: firrtl2.ir.Statement): Unit = {
     def expand(name: String): String = if (modulePrefix.isEmpty) name else modulePrefix + "." + name
     def moduleName: String = modulePrefix.split(".").lastOption.getOrElse("")
@@ -906,7 +906,7 @@ class ExpressionCompiler(
                 case _ =>
               }
             } else {
-              //TODO: (Chick) We could use
+              // TODO: (Chick) We could use
               // makeAssigner(registerOut, posEdgeMux, info = info)
               // but it causes a slight performance regression
               val drivingClockOption = getDrivingClock(clockExpression)

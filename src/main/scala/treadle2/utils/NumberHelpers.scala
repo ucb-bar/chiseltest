@@ -12,7 +12,8 @@ object NumberHelpers {
 
   /** Parse a string with an optional radix prefix and return the number and the radix
     *
-    * @param numberString string representation of number with possible radix prefix
+    * @param numberString
+    *   string representation of number with possible radix prefix
     */
   def parseBigIntWithRadix(numberString: String): (BigInt, Int) = {
     def parseWithRadix(numString: String, radix: Int): (BigInt, Int) = {
@@ -37,17 +38,19 @@ object NumberHelpers {
 
   /** Parse a string with an optional radix prefix and return the number
     *
-    * @param numberString  string containing a number
+    * @param numberString
+    *   string containing a number
     */
   def parseBigInt(numberString: String): BigInt = {
     parseBigIntWithRadix(numberString)._1
   }
 
-  /** Parses a list of numbers separated by commas and allowing ranges "x-y" in place of a number
-    * numbers must be positive, returns a list of indices and remembers the one radix used
-    * Examples 10-100 or o7-o11 or 0xAA-0xBB or hA1,hA2,hA3
+  /** Parses a list of numbers separated by commas and allowing ranges "x-y" in place of a number numbers must be
+    * positive, returns a list of indices and remembers the one radix used Examples 10-100 or o7-o11 or 0xAA-0xBB or
+    * hA1,hA2,hA3
     *
-    * @param rangeString  A string list of numbers
+    * @param rangeString
+    *   A string list of numbers
     */
   def parseIntRangeWithRadix(rangeString: String): IndicesAndRadix = {
     var radix = Option.empty[Int]

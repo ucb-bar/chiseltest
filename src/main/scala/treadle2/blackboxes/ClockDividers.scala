@@ -6,17 +6,12 @@ import firrtl2.ir.Type
 import treadle2._
 import treadle2.executable._
 
-/** This black-boxes a Clock Divider by 2.
-  * The output clock is phase-aligned to the input clock.
-  * If you use this in synthesis, make sure your sdc
-  * declares that you want it to do the same.
+/** This black-boxes a Clock Divider by 2. The output clock is phase-aligned to the input clock. If you use this in
+  * synthesis, make sure your sdc declares that you want it to do the same.
   *
-  * Because Chisel does not support
-  * blocking assignments, it is impossible
-  * to create a deterministic divided clock.
+  * Because Chisel does not support blocking assignments, it is impossible to create a deterministic divided clock.
   *
-  *  output  clk_out Divided Clock
-  *  input   clk_in  Clock Input
+  * output clk_out Divided Clock input clk_in Clock Input
   */
 class ClockDivider2(val instanceName: String) extends ScalaBlackBox {
   override def name: String = "ClockDivider2"
@@ -48,17 +43,12 @@ class ClockDivider2(val instanceName: String) extends ScalaBlackBox {
   }
 }
 
-/** This black-boxes a Clock Divider by 3.
-  * The output clock is phase-aligned to the input clock.
-  * If you use this in synthesis, make sure your sdc
-  * declares that you want it to do the same.
+/** This black-boxes a Clock Divider by 3. The output clock is phase-aligned to the input clock. If you use this in
+  * synthesis, make sure your sdc declares that you want it to do the same.
   *
-  * Because Chisel does not support
-  * blocking assignments, it is impossible
-  * to create a deterministic divided clock.
+  * Because Chisel does not support blocking assignments, it is impossible to create a deterministic divided clock.
   *
-  *  output  clk_out Divided Clock
-  *  input   clk_in  Clock Input
+  * output clk_out Divided Clock input clk_in Clock Input
   */
 class ClockDivider3(val instanceName: String) extends ScalaBlackBox {
   override def name: String = "ClockDivider3"

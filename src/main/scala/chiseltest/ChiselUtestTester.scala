@@ -42,8 +42,8 @@ trait ChiselUtestTester extends TestSuite with TestEnvInterface {
     }
   }
 
-  /** Since [[utest.test]] collides with [[chisel3.tester.RawTester.test]], it is renamed to [[testCircuit]],
-    * Here is a example to constructs a unit test harness for the Chisel Module PlusOne generated as dutGen.
+  /** Since [[utest.test]] collides with [[chisel3.tester.RawTester.test]], it is renamed to [[testCircuit]], Here is a
+    * example to constructs a unit test harness for the Chisel Module PlusOne generated as dutGen.
     * {{{
     *   testCircuit(new PlusOne) { c =>
     *     // body of the unit test, c is a a reference
@@ -64,9 +64,12 @@ trait ChiselUtestTester extends TestSuite with TestEnvInterface {
     *   }
     * }}}
     *
-    * @note This API is experimental and forward compatibility is not yet guaranteed
-    * @param dutGen A generator of a Chisel Module
-    * @tparam T The DUT type, must be a subclass of Module
+    * @note
+    *   This API is experimental and forward compatibility is not yet guaranteed
+    * @param dutGen
+    *   A generator of a Chisel Module
+    * @tparam T
+    *   The DUT type, must be a subclass of Module
     */
   def testCircuit[T <: Module](
     dutGen:        => T,

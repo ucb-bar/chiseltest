@@ -23,14 +23,13 @@ object Pokeable {
 
   def unapply(elem: Element): Option[Element with IsRuntimePokeable] = elem match {
     case _: Bits | _: EnumType => Some(elem.asInstanceOf[Element with IsRuntimePokeable])
-    case _ => None
+    case _                     => None
   }
 }
 
-/** Legacy PeekPokeTester made to work with the new chiseltest infrastructure.
-  * This code is meant to help port legacy tests, but may be deprecated in the
-  * future.
-  * Adapted from the original sources at: https://github.com/freechipsproject/chisel-testers/
+/** Legacy PeekPokeTester made to work with the new chiseltest infrastructure. This code is meant to help port legacy
+  * tests, but may be deprecated in the future. Adapted from the original sources at:
+  * https://github.com/freechipsproject/chisel-testers/
   */
 abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
   implicit def longToInt(x: Long): Int = x.toInt
@@ -92,7 +91,7 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
 
   def peek(path: String) = backend.peek(path)
 
-  private def fullSignalName(e:   Data): String = dataNames(e)
+  private def fullSignalName(e: Data): String = dataNames(e)
   private def fullSignalName(mem: MemBase[_]): String =
     mem.pathName.split("""\.""").tail.mkString(".")
 
@@ -118,26 +117,30 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
     case None        => chisel3.internal.firrtl.UnknownWidth()
   }
 
-  /** Locate a specific bundle element, given a name path.
-    * TODO: Handle Vecs
+  /** Locate a specific bundle element, given a name path. TODO: Handle Vecs
     *
-    * @param path - js (presumably bundles) terminating in a non-bundle (e.g., Bits) element.
-    * @param bundle - bundle containing the element
-    * @return the element (as Element)
+    * @param path
+    *   \- js (presumably bundles) terminating in a non-bundle (e.g., Bits) element.
+    * @param bundle
+    *   \- bundle containing the element
+    * @return
+    *   the element (as Element)
     */
   @tailrec
   private def getBundleElement(path: List[String], bundle: immutable.SeqMap[String, Data]): Element = {
     (path, bundle(path.head)) match {
       case (_ :: Nil, element: Element) => element
-      case (_ :: tail, b: Bundle) => getBundleElement(tail, b.elements)
-      case _ => throw new Exception(s"peek/poke bundle element mismatch $path")
+      case (_ :: tail, b: Bundle)       => getBundleElement(tail, b.elements)
+      case _                            => throw new Exception(s"peek/poke bundle element mismatch $path")
     }
   }
 
   /** Poke a Bundle given a map of elements and values.
     *
-    * @param signal the bundle to be poked
-    * @param map a map from names (using '.' to delimit bundle elements), to BigInt values
+    * @param signal
+    *   the bundle to be poked
+    * @param map
+    *   a map from names (using '.' to delimit bundle elements), to BigInt values
     */
   def poke(signal: Bundle, map: Map[String, BigInt]): Unit = {
     val circuitElements = signal.elements
@@ -153,8 +156,10 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
 
   /** Old "flatten" functionality.
     *
-    * @param signal - Chisel type for which individual elements are required.
-    * @return [[IndexedSeq[Element]]]
+    * @param signal
+    *   \- Chisel type for which individual elements are required.
+    * @return
+    *   [[IndexedSeq[Element]]]
     */
   private def extractElementBits(signal: Data): IndexedSeq[Element] = {
     signal match {
@@ -201,13 +206,16 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
     extractElementBits(signal).map(x => backend.peek(fullSignalName(x)))
   }
 
-  /** Populate a map of names ("dotted Bundles) to Elements.
-    * TODO: Deal with Vecs
+  /** Populate a map of names ("dotted Bundles) to Elements. TODO: Deal with Vecs
     *
-    * @param map the map to be constructed
-    * @param indexPrefix an array of Bundle name prefixes
-    * @param signalName the signal to be added to the map
-    * @param signalData the signal object to be added to the map
+    * @param map
+    *   the map to be constructed
+    * @param indexPrefix
+    *   an array of Bundle name prefixes
+    * @param signalName
+    *   the signal to be added to the map
+    * @param signalData
+    *   the signal object to be added to the map
     */
   private def setBundleElement(
     map:         mutable.LinkedHashMap[String, Element],
@@ -230,8 +238,10 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
 
   /** Peek an aggregate (Bundle) signal.
     *
-    * @param signal the signal to peek
-    * @return a map of signal names ("dotted" Bundle) to BigInt values.
+    * @param signal
+    *   the signal to peek
+    * @return
+    *   a map of signal names ("dotted" Bundle) to BigInt values.
     */
   def peek(signal: Bundle): mutable.LinkedHashMap[String, BigInt] = {
     val elemMap = mutable.LinkedHashMap[String, Element]()
@@ -284,12 +294,14 @@ abstract class PeekPokeTester[T <: Module](val dut: T) extends LazyLogging {
     }
   }
 
-  /** Return true or false if an aggregate signal (Bundle) matches the expected map of values.
-    * TODO: deal with Vecs
+  /** Return true or false if an aggregate signal (Bundle) matches the expected map of values. TODO: deal with Vecs
     *
-    * @param signal the Bundle to "expect"
-    * @param expected a map of signal names ("dotted" Bundle notation) to BigInt values
-    * @return true if the specified values match, false otherwise.
+    * @param signal
+    *   the Bundle to "expect"
+    * @param expected
+    *   a map of signal names ("dotted" Bundle notation) to BigInt values
+    * @return
+    *   true if the specified values match, false otherwise.
     */
   def expect(signal: Bundle, expected: Map[String, BigInt]): Boolean = {
     val elemMap = mutable.LinkedHashMap[String, Element]()

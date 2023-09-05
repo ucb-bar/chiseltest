@@ -9,7 +9,8 @@ import chiseltest.internal.TestEnvInterface.addDefaultTargetDir
 import firrtl2.AnnotationSeq
 
 /** Used to run simple tests that do not require a scalatest environment in order to run
-  * @param testName This will be used to generate a working directory in ./test_run_dir
+  * @param testName
+  *   This will be used to generate a working directory in ./test_run_dir
   */
 private class RawTester(testName: String) extends TestEnvInterface with HasTestName with Formal {
   // Provide test fixture data as part of 'global' context during test runs
@@ -34,13 +35,12 @@ private class RawTester(testName: String) extends TestEnvInterface with HasTestN
   override def getTestName = testName
 }
 
-/** This is a simple tester that does not require that it be within the scope of a scalatest
-  * in order to run. This form is suitable for running in the Jupyter notebook.
+/** This is a simple tester that does not require that it be within the scope of a scalatest in order to run. This form
+  * is suitable for running in the Jupyter notebook.
   */
 object RawTester {
 
-  /** Run one test
-    * General use looks like
+  /** Run one test General use looks like
     * {{{
     *   test(new PlusOne) { c =>
     *     // body of the unit test, c is a a reference
@@ -49,11 +49,15 @@ object RawTester {
     *   }
     * }}}
     *
-    * @note every test should use a different name, it, suitably sanitized, is used as the subdirectory in the
-    *       test_run_dir directory
-    * @param dutGen    The generator of the device under tests
-    * @param testFn    The block of code that implements the test
-    * @tparam T        The type of device, derived from dutGen
+    * @note
+    *   every test should use a different name, it, suitably sanitized, is used as the subdirectory in the test_run_dir
+    *   directory
+    * @param dutGen
+    *   The generator of the device under tests
+    * @param testFn
+    *   The block of code that implements the test
+    * @tparam T
+    *   The type of device, derived from dutGen
     */
   def test[T <: Module](
     dutGen:        => T,
@@ -66,19 +70,23 @@ object RawTester {
     tester.test(dutGen, annotationSeq)(testFn)
   }
 
-  /** Run a formal check.
-    * General use looks like
+  /** Run a formal check. General use looks like
     * {{{
     *   import chiseltest.formal._
     *   verify(new FailAfterModule(2), Seq(BoundedCheck(kMax = 2)), "FailAfterModule Test")
     * }}}
     *
-    * @note every test should use a different name, it, suitably sanitized, is used as the subdirectory in the
-    *       test_run_dir directory
-    * @param dutGen The generator of the device under tests
-    * @param annos  Annotations including the verification command to be executed.
-    * @param testName Optional test name that will be converted into a test directory name.
-    * @tparam T        The type of device, derived from dutGen
+    * @note
+    *   every test should use a different name, it, suitably sanitized, is used as the subdirectory in the test_run_dir
+    *   directory
+    * @param dutGen
+    *   The generator of the device under tests
+    * @param annos
+    *   Annotations including the verification command to be executed.
+    * @param testName
+    *   Optional test name that will be converted into a test directory name.
+    * @tparam T
+    *   The type of device, derived from dutGen
     */
   def verify[T <: Module](dutGen: => T, annos: AnnotationSeq, testName: String = ""): Unit = {
     def randomTestName = s"chisel_test_${System.currentTimeMillis()}"

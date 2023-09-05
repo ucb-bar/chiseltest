@@ -14,10 +14,14 @@ import scala.concurrent.{blocking, Await, ExecutionContext, Future}
 import scala.sys.process._
 
 /** This context works with a simulation binary that communicates through shared memory.
-  * @param cmd command to launch the simulation binary
-  * @param toplevel information about the interface exposed by the module at the top of the RTL hierarchy
-  * @param sim simulator that generated the binary
-  * @param verbose show verbose messages from simulator
+  * @param cmd
+  *   command to launch the simulation binary
+  * @param toplevel
+  *   information about the interface exposed by the module at the top of the RTL hierarchy
+  * @param sim
+  *   simulator that generated the binary
+  * @param verbose
+  *   show verbose messages from simulator
   */
 private[chiseltest] class IPCSimulatorContext(
   cmd:              Seq[String],
@@ -70,7 +74,7 @@ private[chiseltest] class IPCSimulatorContext(
     processBuilder.run(processLogger)
   }
 
-  //initialize simulator process
+  // initialize simulator process
   private val cwd = os.pwd
   private[chiseltest] val process = startProcess(cmd, _logs, cwd)
 
@@ -133,9 +137,10 @@ private[chiseltest] class IPCSimulatorContext(
       // We assume the error string is the last log entry.
       val errorString = if (_logs.nonEmpty) {
         _logs.last
-      } else {
-        "test application exit"
-      } + " - exit code %d".format(exitCode)
+      } else
+        {
+          "test application exit"
+        } + " - exit code %d".format(exitCode)
       dumpLogs()
       isRunning = false
       throw TestApplicationException(exitCode, errorString)
@@ -144,8 +149,10 @@ private[chiseltest] class IPCSimulatorContext(
 
   /** A busy-wait loop that monitors exitValue so we don't loop forever if the test application exits for some reason.
     *
-    * @param block  a thunk that determines when complete
-    * @param loop   a thunk to keep running until block is true or exitValue says completed.
+    * @param block
+    *   a thunk that determines when complete
+    * @param loop
+    *   a thunk to keep running until block is true or exitValue says completed.
     */
   private def mwhile(block: => Boolean)(loop: => Unit): Unit = {
     while (!exitValue.isCompleted && block) {
@@ -436,8 +443,8 @@ private class Channel(cwd: os.Path, name: String) {
     while (buffer.get(1) == 1 && buffer.get(2) == 0) {}
   }
   def release(): Unit = { buffer.put(0, 0.toByte) }
-  def ready: Boolean = buffer.get(3) == 0
-  def valid: Boolean = buffer.get(3) == 1
+  def ready:     Boolean = buffer.get(3) == 0
+  def valid:     Boolean = buffer.get(3) == 1
   def produce(): Unit = { buffer.put(3, 1.toByte) }
   def consume(): Unit = { buffer.put(3, 0.toByte) }
   def update(idx: Int, data: Long): Unit = {

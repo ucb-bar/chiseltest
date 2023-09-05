@@ -13,23 +13,17 @@ import firrtl2.transforms.EnsureNamedStatements
 
 import scala.collection.mutable
 
-/** Delays a signal for verification purposes.
-  * Any stop, assert, assign or cover statement that the result is used in will be automatically guarded
-  * by the time necessary for all past values to become available.
-  * E.g.:
-  * @example {{{
-  *   assert(past(out) === past(past(in)))
-  * }}}
-  * is equivalent to:
-  * @example {{{
-  *   when(cyclesSinceReset >= 2.U) {
-  *     assert(RegNext(out) === RegNext(RegNext(in)))
-  *   }
-  * }}}
+/** Delays a signal for verification purposes. Any stop, assert, assign or cover statement that the result is used in
+  * will be automatically guarded by the time necessary for all past values to become available. E.g.:
+  * @example
+  *   {{{assert(past(out) === past(past(in)))}}} is equivalent to:
+  * @example
+  *   {{{when(cyclesSinceReset >= 2.U) { assert(RegNext(out) === RegNext(RegNext(in))) }}}}
   *
-  * @warn: Currently `Past` is only supported in [[chisel3.Module]] with a single reset or clock domains.
-  *        Please file an issue with a detailed description of your use-case and the intended behavior
-  *        and we will try to add support for you usage of `withReset` or `withClock`.
+  * @warn:
+  *   Currently `Past` is only supported in [[chisel3.Module]] with a single reset or clock domains. Please file an
+  *   issue with a detailed description of your use-case and the intended behavior and we will try to add support for
+  *   you usage of `withReset` or `withClock`.
   */
 object past {
   def apply[T <: Data](signal: T, delayBy: Int = 1): T = {

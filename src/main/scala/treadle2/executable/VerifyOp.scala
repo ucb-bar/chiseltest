@@ -7,12 +7,18 @@ import firrtl2.ir._
 
 /** This handles the processing of coverage statements
   *
-  * @param symbol            machine generated symbol for each statement encountered
-  * @param info              source information
-  * @param message           message associated with statement
-  * @param clockTransition   updates clockCount when this is is PosEdge
-  * @param predicate         only increments coverCount if this is true
-  * @param enable            only increments coverCount if this is true
+  * @param symbol
+  *   machine generated symbol for each statement encountered
+  * @param info
+  *   source information
+  * @param message
+  *   message associated with statement
+  * @param clockTransition
+  *   updates clockCount when this is is PosEdge
+  * @param predicate
+  *   only increments coverCount if this is true
+  * @param enable
+  *   only increments coverCount if this is true
   */
 case class VerifyOp(
   symbol:          Symbol,

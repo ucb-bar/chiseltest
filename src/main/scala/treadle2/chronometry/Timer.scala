@@ -15,7 +15,7 @@ object Timer {
 }
 
 class Timer {
-  //noinspection VarCouldBeVal
+  // noinspection VarCouldBeVal
   var enabled: Boolean = true
   val timingLog = new mutable.HashMap[String, TimerEvent]
 

@@ -58,7 +58,7 @@ object Btor2WitnessParser {
       val parts = line.split(" ").toIndexedSeq
       def uintStartingAt(ii: Int) = Integer.parseUnsignedInt(line.substring(ii))
 
-      //print(state)
+      // print(state)
 
       def finishWitness(): State = {
         witnesses.append(
@@ -134,12 +134,12 @@ object Btor2WitnessParser {
           }
         }
       }
-      //println(s" -> $state")
+      // println(s" -> $state")
     }
 
     breakable {
       lines.foreach { ll =>
-        //println(ll.trim)
+        // println(ll.trim)
         parseLine(ll.trim)
         if (done) break()
       }

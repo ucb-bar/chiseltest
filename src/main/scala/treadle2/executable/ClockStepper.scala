@@ -13,7 +13,7 @@ trait ClockStepper {
   def getCycleCount: Long = cycleCount
   def addTask(taskTime: Long)(task: () => Unit): Unit
   val clockAssigners: mutable.HashMap[Symbol, ClockAssigners] = new mutable.HashMap()
-  def bumpClock(clockSymbol: Symbol, value: BigInt): Unit = {}
+  def bumpClock(clockSymbol:   Symbol, value: BigInt): Unit = {}
   def combinationalBump(value: Long): Unit = {}
 }
 
@@ -52,8 +52,10 @@ case class SimpleSingleClockStepper(
   var combinationalBumps: Long = 0L
 
   /** This function is (and should only) be used by the VcdReplayTester
-    * @param clockSymbol clock to bump
-    * @param value        new clock value should be zero or one, all non-zero values are treated as one
+    * @param clockSymbol
+    *   clock to bump
+    * @param value
+    *   new clock value should be zero or one, all non-zero values are treated as one
     */
   override def bumpClock(clockSymbol: Symbol, value: BigInt): Unit = {
     engine.setValue(clockSymbol.name, value)
@@ -66,13 +68,13 @@ case class SimpleSingleClockStepper(
   }
 
   /** Execute specified number of clock cycles (steps)
-    * @param steps number of clock cycles to advance
+    * @param steps
+    *   number of clock cycles to advance
     */
-  //scalastyle:off method.length
+  // scalastyle:off method.length
   override def run(steps: Int): Unit = {
 
-    /** This handles the possibility that a reset clearing was scheduled to occur during the time
-      * interval
+    /** This handles the possibility that a reset clearing was scheduled to occur during the time interval
       */
     def handlePossibleReset(increment: Long): Long = {
       if (resetTaskTime > wallTime.currentTime && wallTime.currentTime + increment >= resetTaskTime) {
@@ -154,12 +156,14 @@ case class SimpleSingleClockStepper(
 }
 
 //TODO (Chick) Add support for combinational delays here.
-/** Manage multiple top-level clocks
-  * step is interpreted here to mean advance to the next clock cycle considering all the clocks
-  *      multiple clocks may fire at that time
-  * @param engine         engine for this stepper
-  * @param clockInfoList  externally specified clocks and their properties
-  * @param wallTime       handle to top level wall time
+/** Manage multiple top-level clocks step is interpreted here to mean advance to the next clock cycle considering all
+  * the clocks multiple clocks may fire at that time
+  * @param engine
+  *   engine for this stepper
+  * @param clockInfoList
+  *   externally specified clocks and their properties
+  * @param wallTime
+  *   handle to top level wall time
   */
 class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], wallTime: UTC) extends ClockStepper {
   val dataStore: DataStore = engine.dataStore
@@ -187,8 +191,10 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
   }
 
   /** This function is (and should only) be used by the VcdReplayTester
-    * @param clockSymbol clock to bump
-    * @param value        new clock value should be zero or one, all non-zero values are treated as one
+    * @param clockSymbol
+    *   clock to bump
+    * @param value
+    *   new clock value should be zero or one, all non-zero values are treated as one
     */
   override def bumpClock(clockSymbol: Symbol, value: BigInt): Unit = {
     val assigner = clockAssigners(clockSymbol)
@@ -200,7 +206,8 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
   }
 
   /** One step is defined here as the running until the next up clock transition
-    * @param steps the number of up clocks to find and execute
+    * @param steps
+    *   the number of up clocks to find and execute
     */
   override def run(steps: Int): Unit = {
 

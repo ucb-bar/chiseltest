@@ -4,8 +4,8 @@ package chiseltest.simulator.jna
 
 import chiseltest.simulator.{PinInfo, TopmoduleInfo}
 
-/** Generates the Module specific verilator harness cpp file for verilator compilation.
-  *  This version generates a harness that can be called into through the JNI.
+/** Generates the Module specific verilator harness cpp file for verilator compilation. This version generates a harness
+  * that can be called into through the JNI.
   */
 private[chiseltest] object VerilatorCppJNAHarnessGenerator {
   def codeGen(
@@ -189,118 +189,120 @@ static sim_state* create_sim_state() {
     }
 
     val codeBuffer = new StringBuilder
-    codeBuffer.append(s"""#include "$dutVerilatorClassName.h"
-                         |#include "verilated.h"
-                         |
-                         |#define TOP_CLASS $dutVerilatorClassName
-                         |
-                         |#ifndef VM_TRACE_FST
-                         |#define VM_TRACE_FST 0
-                         |#endif
-                         |
-                         |static const bool verbose = $verbose;
-                         |
-                         |#if VM_TRACE
-                         |#if VM_TRACE_FST
-                         |  #include "verilated_fst_c.h"
-                         |  #define VERILATED_C VerilatedFstC
-                         |#else // !(VM_TRACE_FST)
-                         |  #include "verilated_vcd_c.h"
-                         |  #define VERILATED_C VerilatedVcdC
-                         |#endif
-                         |#else // !(VM_TRACE)
-                         |  #define VERILATED_C VerilatedVcdC
-                         |#endif
-                         |#include <iostream>
-                         |
-                         |
-                         |// Override Verilator definition so first $$finish ends simulation
-                         |// Note: VL_USER_FINISH needs to be defined when compiling Verilator code
-                         |static bool encounteredFinish = false;
-                         |void vl_finish(const char* filename, int linenum, const char* hier) {
-                         |  // std::cout << "finish! (" << filename << ", " << linenum << ", " << hier << ")" << std::endl;
-                         |  $verilatorRunFlushCallback
-                         |  encounteredFinish = true;
-                         |}
-                         |
-                         |
-                         |static bool encounteredFatal = false;
-                         |void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg) {
-                         |  std::cerr << "fatal! (" << filename << ", " << linenum << ", " << hier << ", " << msg << ")" << std::endl;
-                         |  $verilatorRunFlushCallback
-                         |  encounteredFatal = true;
-                         |}
-                         |
-                         |
-                         |static bool encounteredStop = false;
-                         |void vl_stop(const char* filename, int linenum, const char* hier) {
-                         |  // std::cout << "stop! (" << filename << ", " << linenum << ", " << hier << ")" << std::endl;
-                         |  $verilatorRunFlushCallback
-                         |  encounteredStop = true;
-                         |}
-                         |
-                         |
-                         |// Global because older versions of verilator do not support contexts
-                         |static vluint64_t global_time = 0;
-                         |double sc_time_stamp () { return global_time; }
-                         |
-                         |static void _startCoverageAndDump(VERILATED_C** tfp, const std::string& dumpfile, TOP_CLASS* top) {
-                         |$coverageInit
-                         |#if VM_TRACE || VM_COVERAGE
-                         |    Verilated::traceEverOn(true);
-                         |#endif
-                         |#if VM_TRACE
-                         |    if (verbose) VL_PRINTF(\"Enabling waves..\\n\");
-                         |    *tfp = new VERILATED_C;
-                         |    top->trace(*tfp, 99);
-                         |    (*tfp)->open(dumpfile.c_str());
-                         |#endif
-                         |}
-                         |
-                         |static int64_t _step(VERILATED_C* tfp, TOP_CLASS* top, vluint64_t& main_time) {
-                         |    $clockLow
-                         |    global_time = main_time;
-                         |    top->eval();
-                         |#if VM_TRACE
-                         |    if (tfp) tfp->dump(main_time);
-                         |#endif
-                         |    main_time++;
-                         |    $clockHigh
-                         |    global_time = main_time;
-                         |    top->eval();
-                         |#if VM_TRACE
-                         |    if (tfp) tfp->dump(main_time);
-                         |#endif
-                         |    main_time++;
-                         |    if(encounteredStop) {
-                         |      // vl_stop is called by verilator when an assertion fails or when the fatal command is executed
-                         |      encounteredStop = false;
-                         |      encounteredFinish = false;
-                         |      return 2;
-                         |    } else if(encounteredFinish) {
-                         |      // vl_finish is called by verilator when a finish command is executed (stop(0))
-                         |      encounteredFinish = false;
-                         |      return 1;
-                         |    } else if(encounteredFatal) {
-                         |      encounteredFatal = false;
-                         |      return 3;
-                         |    }
-                         |    return 0;
-                         |}
-                         |
-                         |static void _finish(VERILATED_C* tfp, TOP_CLASS* top) {
-                         |#if VM_TRACE
-                         |  if (tfp) tfp->close();
-                         |  delete tfp;
-                         |#endif
-                         |#if VM_COVERAGE
-                         |  VerilatedCov::write(R"($targetDir/coverage.dat)");
-                         |#endif
-                         |  top->final();
-                         |  // TODO: re-enable!
-                         |  // delete top;
-                         |}
-                         |""".stripMargin)
+    codeBuffer.append(
+      s"""#include "$dutVerilatorClassName.h"
+         |#include "verilated.h"
+         |
+         |#define TOP_CLASS $dutVerilatorClassName
+         |
+         |#ifndef VM_TRACE_FST
+         |#define VM_TRACE_FST 0
+         |#endif
+         |
+         |static const bool verbose = $verbose;
+         |
+         |#if VM_TRACE
+         |#if VM_TRACE_FST
+         |  #include "verilated_fst_c.h"
+         |  #define VERILATED_C VerilatedFstC
+         |#else // !(VM_TRACE_FST)
+         |  #include "verilated_vcd_c.h"
+         |  #define VERILATED_C VerilatedVcdC
+         |#endif
+         |#else // !(VM_TRACE)
+         |  #define VERILATED_C VerilatedVcdC
+         |#endif
+         |#include <iostream>
+         |
+         |
+         |// Override Verilator definition so first $$finish ends simulation
+         |// Note: VL_USER_FINISH needs to be defined when compiling Verilator code
+         |static bool encounteredFinish = false;
+         |void vl_finish(const char* filename, int linenum, const char* hier) {
+         |  // std::cout << "finish! (" << filename << ", " << linenum << ", " << hier << ")" << std::endl;
+         |  $verilatorRunFlushCallback
+         |  encounteredFinish = true;
+         |}
+         |
+         |
+         |static bool encounteredFatal = false;
+         |void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg) {
+         |  std::cerr << "fatal! (" << filename << ", " << linenum << ", " << hier << ", " << msg << ")" << std::endl;
+         |  $verilatorRunFlushCallback
+         |  encounteredFatal = true;
+         |}
+         |
+         |
+         |static bool encounteredStop = false;
+         |void vl_stop(const char* filename, int linenum, const char* hier) {
+         |  // std::cout << "stop! (" << filename << ", " << linenum << ", " << hier << ")" << std::endl;
+         |  $verilatorRunFlushCallback
+         |  encounteredStop = true;
+         |}
+         |
+         |
+         |// Global because older versions of verilator do not support contexts
+         |static vluint64_t global_time = 0;
+         |double sc_time_stamp () { return global_time; }
+         |
+         |static void _startCoverageAndDump(VERILATED_C** tfp, const std::string& dumpfile, TOP_CLASS* top) {
+         |$coverageInit
+         |#if VM_TRACE || VM_COVERAGE
+         |    Verilated::traceEverOn(true);
+         |#endif
+         |#if VM_TRACE
+         |    if (verbose) VL_PRINTF(\"Enabling waves..\\n\");
+         |    *tfp = new VERILATED_C;
+         |    top->trace(*tfp, 99);
+         |    (*tfp)->open(dumpfile.c_str());
+         |#endif
+         |}
+         |
+         |static int64_t _step(VERILATED_C* tfp, TOP_CLASS* top, vluint64_t& main_time) {
+         |    $clockLow
+         |    global_time = main_time;
+         |    top->eval();
+         |#if VM_TRACE
+         |    if (tfp) tfp->dump(main_time);
+         |#endif
+         |    main_time++;
+         |    $clockHigh
+         |    global_time = main_time;
+         |    top->eval();
+         |#if VM_TRACE
+         |    if (tfp) tfp->dump(main_time);
+         |#endif
+         |    main_time++;
+         |    if(encounteredStop) {
+         |      // vl_stop is called by verilator when an assertion fails or when the fatal command is executed
+         |      encounteredStop = false;
+         |      encounteredFinish = false;
+         |      return 2;
+         |    } else if(encounteredFinish) {
+         |      // vl_finish is called by verilator when a finish command is executed (stop(0))
+         |      encounteredFinish = false;
+         |      return 1;
+         |    } else if(encounteredFatal) {
+         |      encounteredFatal = false;
+         |      return 3;
+         |    }
+         |    return 0;
+         |}
+         |
+         |static void _finish(VERILATED_C* tfp, TOP_CLASS* top) {
+         |#if VM_TRACE
+         |  if (tfp) tfp->close();
+         |  delete tfp;
+         |#endif
+         |#if VM_COVERAGE
+         |  VerilatedCov::write(R"($targetDir/coverage.dat)");
+         |#endif
+         |  top->final();
+         |  // TODO: re-enable!
+         |  // delete top;
+         |}
+         |""".stripMargin
+    )
 
     codeBuffer.toString()
   }

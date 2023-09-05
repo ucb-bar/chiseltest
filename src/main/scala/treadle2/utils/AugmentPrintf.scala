@@ -9,8 +9,7 @@ import firrtl2.{CircuitState, Emitter, Transform}
 
 import scala.collection.mutable
 
-/** Printf statements that print registers will show wrong values
-  * unless this pass adds a delay for each register
+/** Printf statements that print registers will show wrong values unless this pass adds a delay for each register
   */
 class AugmentPrintf extends Transform {
   override def prerequisites:          Seq[TransformManager.TransformDependency] = Forms.LowForm

@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package chiseltest.simulator
 
-/** Wraps a [[SimulatorContext]] and prints the result of all operations performed on
-  * it to stdout
+/** Wraps a [[SimulatorContext]] and prints the result of all operations performed on it to stdout
   */
 class DebugPrintWrapper(inner: SimulatorContext) extends SimulatorContext {
   private var cycle: Long = 0

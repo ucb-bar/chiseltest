@@ -16,16 +16,15 @@ import treadle2.stage.TreadleTesterPhase
 //TODO: Indirect assignments to external modules input is possibly not handled correctly
 //TODO: Force values should work with multi-slot symbols
 
-/** Works a lot like the chisel classic tester compiles a firrtl input string
-  * and allows poke, peek, expect and step
+/** Works a lot like the chisel classic tester compiles a firrtl input string and allows poke, peek, expect and step
   *
-  * pokes invalidate the underlying circuit
-  * peek, expect and step, recompute (re-validate) the circuit before executing
+  * pokes invalidate the underlying circuit peek, expect and step, recompute (re-validate) the circuit before executing
   *
-  * Important note: port names in LoFirrtl have replaced dot notation with underscore notation
-  * so that io.a.b must be referenced as io_a_b
+  * Important note: port names in LoFirrtl have replaced dot notation with underscore notation so that io.a.b must be
+  * referenced as io_a_b
   *
-  * @param annotationSeq   firrtl circuit and parameters for tester are to be found here
+  * @param annotationSeq
+  *   firrtl circuit and parameters for tester are to be found here
   */
 //class TreadleTester(input: String, optionsManager: HasTreadleSuite = TreadleTester.getDefaultManager) {
 class TreadleTester(annotationSeq: AnnotationSeq) {
@@ -105,11 +104,12 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
       new MultiClockStepper(engine = this.engine, clockInfoList, wallTime)
   }
 
-  /** Advance time in ticks of the [[treadle2.chronometry.UTC]] wallTime, the default is picoseconds, but can be
-    * read by the scaleName of the wallTime.  One should probably be advancing by some simple factor
-    * of a clock period. The clockInfoList of the options should define this (could be more than one).
+  /** Advance time in ticks of the [[treadle2.chronometry.UTC]] wallTime, the default is picoseconds, but can be read by
+    * the scaleName of the wallTime. One should probably be advancing by some simple factor of a clock period. The
+    * clockInfoList of the options should define this (could be more than one).
     *
-    * @param interval units are in units of the [[wallTime]] scale.
+    * @param interval
+    *   units are in units of the [[wallTime]] scale.
     */
   def advanceTime(interval: Long): Unit = {
     assert(interval >= 0L, "TreadleTester#advanceTime called with negative value")
@@ -215,8 +215,10 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 
   /** Indicate failure due to an exception.
     *
-    * @param ex exception causing the failure
-    * @param msg optional message to be printed
+    * @param ex
+    *   exception causing the failure
+    * @param msg
+    *   optional message to be printed
     */
   def fail(ex: Throwable, msg: Option[String] = None): Nothing = {
     engine.writeVCD()
@@ -257,13 +259,13 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     }
   }
 
-  /** Pokes value to the port referenced by string
-    * Warning: pokes to components other than input ports is currently
-    * not supported but does not cause an error warning
-    * This feature should be supported soon
+  /** Pokes value to the port referenced by string Warning: pokes to components other than input ports is currently not
+    * supported but does not cause an error warning This feature should be supported soon
     *
-    * @param name the name of a port
-    * @param value a value to put on that port
+    * @param name
+    *   the name of a port
+    * @param value
+    *   a value to put on that port
     */
   def poke(name: String, value: BigInt): Unit = {
     try {
@@ -277,8 +279,10 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 
   /** inspect a value of a named circuit component
     *
-    * @param name the name of a circuit component
-    * @return A BigInt value currently set at name
+    * @param name
+    *   the name of a circuit component
+    * @return
+    *   A BigInt value currently set at name
     */
   def peek(name: String): BigInt = {
     if (engine.inputsChanged) {
@@ -296,8 +300,10 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 
   /** require that a value be present on the named component
     *
-    * @param name component name
-    * @param expectedValue the BigInt value required
+    * @param name
+    *   component name
+    * @param expectedValue
+    *   the BigInt value required
     */
   def expect(name: String, expectedValue: BigInt, message: String = ""): Unit = {
     val value = peek(name)
@@ -312,10 +318,11 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 
   def cycleCount: Long = clockStepper.cycleCount
 
-  /** Cycles the circuit n steps (with a default of one)
-    * At each step registers and memories are advanced and all other elements recomputed
+  /** Cycles the circuit n steps (with a default of one) At each step registers and memories are advanced and all other
+    * elements recomputed
     *
-    * @param n cycles to perform
+    * @param n
+    *   cycles to perform
     */
   def step(n: Int = 1): Unit = {
     if (engine.verbose) println(s"In step at ${wallTime.currentTime}")
@@ -324,9 +331,12 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 
   /** Pokes value to the named memory at offset
     *
-    * @param name  the name of a memory
-    * @param index the offset in the memory
-    * @param value a value to put on that port
+    * @param name
+    *   the name of a memory
+    * @param index
+    *   the offset in the memory
+    * @param value
+    *   a value to put on that port
     */
   def pokeMemory(name: String, index: Int, value: BigInt): Unit = {
     engine.symbolTable.get(name) match {
@@ -348,8 +358,10 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 
   /** require that a value be present on the named component
     *
-    * @param name component name
-    * @param expectedValue the BigInt value required
+    * @param name
+    *   component name
+    * @param expectedValue
+    *   the BigInt value required
     */
   def expectMemory(name: String, index: Int, expectedValue: BigInt, message: String = ""): Unit = {
     val value = peekMemory(name, index)
@@ -420,8 +432,9 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 object TreadleTester {
 
   /** Create a treadle tester
-    * @param annotations  Annotations containing all the metadata required for execution
-    *                     typical list should include a FirrtlSourceAnnotation
+    * @param annotations
+    *   Annotations containing all the metadata required for execution typical list should include a
+    *   FirrtlSourceAnnotation
     * @return
     */
   def apply(annotations: AnnotationSeq): TreadleTester = {

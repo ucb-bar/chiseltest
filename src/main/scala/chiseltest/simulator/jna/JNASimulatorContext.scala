@@ -6,12 +6,18 @@ import chiseltest.simulator._
 import firrtl2.logger.LazyLogging
 
 /** This context works with a simulation binary that communicates through the Java Native Access library.
-  * @param so interface to the dynamic simulation library
-  * @param targetDir simulation target directory
-  * @param toplevel information about the interface exposed by the module at the top of the RTL hierarchy
-  * @param sim simulator that generated the binary
-  * @param args command line arguments to the simulator (eg. Verilog plusargs)
-  * @param readCoverageFile function that parses the coverage file and returns the list of counts
+  * @param so
+  *   interface to the dynamic simulation library
+  * @param targetDir
+  *   simulation target directory
+  * @param toplevel
+  *   information about the interface exposed by the module at the top of the RTL hierarchy
+  * @param sim
+  *   simulator that generated the binary
+  * @param args
+  *   command line arguments to the simulator (eg. Verilog plusargs)
+  * @param readCoverageFile
+  *   function that parses the coverage file and returns the list of counts
   */
 private[chiseltest] class JNASimulatorContext(
   so:               TesterSharedLibInterface,

@@ -11,11 +11,9 @@ import firrtl2.passes.InlineInstances
 import firrtl2.stage.Forms
 import firrtl2.stage.TransformManager.TransformDependency
 
-/** Generates a list of instance paths for every module: [[ModuleInstancesAnnotation]]
-  * This pass is used by the Verilator backend to convert cover points reported by Verilator
-  * into the common format.
-  * It can also be useful for coverage metrics that want to convert the per instance counts
-  * reported into per module counts.
+/** Generates a list of instance paths for every module: [[ModuleInstancesAnnotation]] This pass is used by the
+  * Verilator backend to convert cover points reported by Verilator into the common format. It can also be useful for
+  * coverage metrics that want to convert the per instance counts reported into per module counts.
   */
 object ModuleInstancesPass extends Transform {
   override def prerequisites: Seq[TransformDependency] = Forms.LowForm

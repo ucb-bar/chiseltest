@@ -173,8 +173,10 @@ case class XorInts(f1: FuncInt, f2: FuncInt, resultWidth: Int) extends IntExpres
 }
 
 /** are all bits set
-  * @param f1 value to be `and` reduced
-  * @param width result bit size
+  * @param f1
+  *   value to be `and` reduced
+  * @param width
+  *   result bit size
   */
 case class AndrInts(f1: FuncInt, width: Int) extends IntExpressionResult {
   private val bitMask = BitMasks.getBitMasksInts(width).allBitsMask
@@ -186,8 +188,10 @@ case class AndrInts(f1: FuncInt, width: Int) extends IntExpressionResult {
 }
 
 /** are any bits set
-  * @param f1 value to be `or` reduced
-  * @param width result bit size
+  * @param f1
+  *   value to be `or` reduced
+  * @param width
+  *   result bit size
   */
 case class OrrInts(f1: FuncInt, width: Int) extends IntExpressionResult {
   private val mask = BitMasks.getBitMasksInts(width).allBitsMask
@@ -200,8 +204,10 @@ case class OrrInts(f1: FuncInt, width: Int) extends IntExpressionResult {
 }
 
 /** are all bits set
-  * @param f1 value to be `xor` reduced
-  * @param width result bit size
+  * @param f1
+  *   value to be `xor` reduced
+  * @param width
+  *   result bit size
   */
 case class XorrInts(f1: FuncInt, width: Int) extends IntExpressionResult {
   private val mask = BitMasks.getBitMasksInts(width).allBitsMask
@@ -258,7 +264,7 @@ case class IsPosEdge(symbol: Symbol, symbolPreviousValue: Symbol, dataStore: Dat
 case class UndefinedInts(width: Int) {
   val maxValue: Int = 1 << width
   def apply(): Int = {
-    //TODO: (chick) parameterize to random|0|current
+    // TODO: (chick) parameterize to random|0|current
     treadle2.random.nextInt(maxValue)
   }
 }

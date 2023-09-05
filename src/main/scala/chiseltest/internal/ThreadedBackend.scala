@@ -27,14 +27,14 @@ case class ForkBuilder(name: Option[String], region: Option[Region], threads: Se
 /** Base trait for backends implementing concurrency by threading.
   *
   * Implements these BackendInterface methods:
-  * - doFork
-  * - doJoin
+  *   - doFork
+  *   - doJoin
   *
   * Provides these methods for use by subclasses:
-  * - doPoke, doPeek, which logs peek and poke actions for cross-thread-interaction checking
-  * - newTimescope, closeTimescope: provides record-keeping for timescopes
-  * - runThreads: runs all threads waiting on a set of clocks
-  * - scheduler: called from within a test thread, suspends the current thread and runs the next one
+  *   - doPoke, doPeek, which logs peek and poke actions for cross-thread-interaction checking
+  *   - newTimescope, closeTimescope: provides record-keeping for timescopes
+  *   - runThreads: runs all threads waiting on a set of clocks
+  *   - scheduler: called from within a test thread, suspends the current thread and runs the next one
   */
 trait ThreadedBackend[T <: Module] extends BackendInterface {
   def dut: T
@@ -138,12 +138,12 @@ trait ThreadedBackend[T <: Module] extends BackendInterface {
       timescope match {
         case timescope: RootTimescope                                 => (timescope, actionId)
         case timescope: Timescope if timescope.pokes.contains(signal) => (timescope, actionId)
-        case timescope: HasParent                                     => getNearestPoke(signal, timescope.parentTimescope, timescope.parentActionId)
+        case timescope: HasParent => getNearestPoke(signal, timescope.parentTimescope, timescope.parentActionId)
       }
 
-    /** Returns the linear path from startTimescope (as the first element, inclusive)
-      * to destTimescope (as the last element, inclusive)
-      * destActionId is the actionId in destTimescope to the next timescope (or the action of interest)
+    /** Returns the linear path from startTimescope (as the first element, inclusive) to destTimescope (as the last
+      * element, inclusive) destActionId is the actionId in destTimescope to the next timescope (or the action of
+      * interest)
       */
     def getLinearPath(
       startTimescope: HasOverridingPokes,
@@ -209,16 +209,16 @@ trait ThreadedBackend[T <: Module] extends BackendInterface {
   // TODO: should this last until the next associated clock edge?
   private[chiseltest] val signalPeeks = new mutable.HashMap[Data, mutable.ListBuffer[PeekRecord]]
 
-  /** Logs a poke operation for later checking.
-    * Returns whether to execute it, based on priorities compared to other active pokes.
+  /** Logs a poke operation for later checking. Returns whether to execute it, based on priorities compared to other
+    * active pokes.
     */
   def doPoke(signal: Data, value: BigInt, trace: Throwable): Unit = {
     val timescope = currentThread.get.getTimescope
     // On the first poke, add a link from the previous timescope
     if (!timescope.pokes.contains(signal)) {
 
-      /** Return if the timescope modified signal before childTimescope spawned
-        * (or, if childTimescope considers timescope a parent wrt the signal)
+      /** Return if the timescope modified signal before childTimescope spawned (or, if childTimescope considers
+        * timescope a parent wrt the signal)
         */
       def timescopeContainsThreadSignal(
         signal:         Data,
@@ -237,7 +237,7 @@ trait ThreadedBackend[T <: Module] extends BackendInterface {
         childTimescope: BaseTimescope
       ): HasOverridingPokes = {
         (timescope, childTimescope) match {
-          case (timescope: RootTimescope, _) => timescope
+          case (timescope: RootTimescope, _)                                            => timescope
           case (timescope: Timescope, _: Timescope) if timescope.pokes.contains(signal) => timescope
           case (timescope: Timescope, childTimescope: ThreadRootTimescope)
               if timescopeContainsThreadSignal(signal, timescope, childTimescope) =>
@@ -322,8 +322,8 @@ trait ThreadedBackend[T <: Module] extends BackendInterface {
     }.toMap
   }
 
-  /** Starts a new timestep, checking if there were any conflicts on the previous timestep (and
-    * throwing exceptions if there were).
+  /** Starts a new timestep, checking if there were any conflicts on the previous timestep (and throwing exceptions if
+    * there were).
     */
   def timestep(): Unit = {
     // Check peeks first, before timescope overridingPokes gets purged
@@ -441,7 +441,7 @@ trait ThreadedBackend[T <: Module] extends BackendInterface {
       }
     }
 
-    //noinspection ScalaUnusedSymbol
+    // noinspection ScalaUnusedSymbol
     // Check that there is a clean poke ordering, and build a map of pokes Data -> Timescope
     // TODO: structurally nasty =(, and currently pokeTimescopes is un-used
     val pokeTimescopes = rootTimescope.get.overridingPokes.toMap.map { case (signal, _) =>
@@ -484,8 +484,8 @@ trait ThreadedBackend[T <: Module] extends BackendInterface {
       topTimescope.asInstanceOf[Timescope]
     }
 
-    //noinspection ConvertExpressionToSAM
-    //TODO: code analysis suggests "Convert expression to Single Abstract Method", will that work?
+    // noinspection ConvertExpressionToSAM
+    // TODO: code analysis suggests "Convert expression to Single Abstract Method", will that work?
     val thread = new Thread(new Runnable {
       def run(): Unit = {
         try {
@@ -525,16 +525,14 @@ trait ThreadedBackend[T <: Module] extends BackendInterface {
     private[chiseltest] var clocks = mutable.Set[Clock]()
   }
 
-  /** Runs the specified threads, blocking this thread while those are running.
-    * Newly formed threads or unblocked join threads will also run.
-    * Returns a list of threads run (either passed in, newly forked, or joined) that are waiting
+  /** Runs the specified threads, blocking this thread while those are running. Newly formed threads or unblocked join
+    * threads will also run. Returns a list of threads run (either passed in, newly forked, or joined) that are waiting
     * on a clock edge.
     *
-    * TODO: uses shared schedule state, as an optimization (so that control doesn't need to return
-    * to the driver thread between runs. But control still needs to return to the calling thread
-    * between timesteps.
-    * TODO: this provides a separation which isolates the threading infrastructure from clock
-    * control, but there are other structures which accomplish the same thing.
+    * TODO: uses shared schedule state, as an optimization (so that control doesn't need to return to the driver thread
+    * between runs. But control still needs to return to the calling thread between timesteps. TODO: this provides a
+    * separation which isolates the threading infrastructure from clock control, but there are other structures which
+    * accomplish the same thing.
     */
   protected def runThreads(clocks: Set[Clock]): Unit = {
     // TODO validate and order incoming thread order
@@ -576,14 +574,12 @@ trait ThreadedBackend[T <: Module] extends BackendInterface {
     schedulerState.clocks.clear()
   }
 
-  /** Invokes the thread scheduler, which should be done anytime a thread needs to pass time.
-    * Prior to this call: caller should add itself to the blocked / joined threads list
-    * (unless terminating).
-    * After this call: caller should block on its semaphore (unless terminating). currentThread
-    * will no longer be valid.
+  /** Invokes the thread scheduler, which should be done anytime a thread needs to pass time. Prior to this call: caller
+    * should add itself to the blocked / joined threads list (unless terminating). After this call: caller should block
+    * on its semaphore (unless terminating). currentThread will no longer be valid.
     *
-    * Unblocks the next thread to be run, possibly also also stepping time via advanceTime().
-    * When there are no more active threads, unblocks the driver thread via driverSemaphore.
+    * Unblocks the next thread to be run, possibly also also stepping time via advanceTime(). When there are no more
+    * active threads, unblocks the driver thread via driverSemaphore.
     */
   protected def scheduler(): Unit = {
     def threadCanRun(thread: TesterThread): Boolean = {
@@ -623,8 +619,8 @@ trait ThreadedBackend[T <: Module] extends BackendInterface {
     }
   }
 
-  /** Called on thread completion to remove this thread from the running list.
-    * Does not terminate the thread, does not schedule the next thread.
+  /** Called on thread completion to remove this thread from the running list. Does not terminate the thread, does not
+    * schedule the next thread.
     */
   protected def threadFinished(thread: TesterThread): Unit = {
     allThreads -= thread

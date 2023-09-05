@@ -16,35 +16,43 @@ import firrtl2.options.Dependency
 sealed trait FormalEngineAnnotation extends NoTargetAnnotation
 
 /** Use a SMTLib based model checker with the CVC4 SMT solver.
-  * @note CVC4 often performs better than Z3.
+  * @note
+  *   CVC4 often performs better than Z3.
   */
 case object CVC4EngineAnnotation extends FormalEngineAnnotation
 
 /** Use a SMTLib based model checker with the Z3 SMT solver.
-  * @note Z3 is the most widely available and easiest to install SMT solver.
+  * @note
+  *   Z3 is the most widely available and easiest to install SMT solver.
   */
 case object Z3EngineAnnotation extends FormalEngineAnnotation
 
 /** Uses the btormc model checker from the boolector code base.
-  * @note btormc is generally faster than Z3 or CVC4 but needs to be built from source
+  * @note
+  *   btormc is generally faster than Z3 or CVC4 but needs to be built from source
   */
 case object BtormcEngineAnnotation extends FormalEngineAnnotation
 
 /** Use a SMTLib based model checker with the yices2 SMT solver.
-  * @note yices2 often performs better than Z3 or CVC4.
-  * @note yices2 is not supported yet, because we have not figured out yet how to deal with memory initialization
+  * @note
+  *   yices2 often performs better than Z3 or CVC4.
+  * @note
+  *   yices2 is not supported yet, because we have not figured out yet how to deal with memory initialization
   */
 private case object Yices2EngineAnnotation extends FormalEngineAnnotation
 
 /** Use a SMTLib based model checker with the boolector SMT solver.
-  * @note boolector often performs better than Z3 or CVC4.
-  * @note boolecter is not supported, because some bugs that were fixed in bitwuzla still remain in boolector
-  *       leading to crashes when trying to get-value of arrays.
+  * @note
+  *   boolector often performs better than Z3 or CVC4.
+  * @note
+  *   boolecter is not supported, because some bugs that were fixed in bitwuzla still remain in boolector leading to
+  *   crashes when trying to get-value of arrays.
   */
 private case object BoolectorEngineAnnotation extends FormalEngineAnnotation
 
 /** Use a SMTLib based model checker with the bitwuzla SMT solver.
-  * @note bitwuzla often performs better than Z3 or CVC4.
+  * @note
+  *   bitwuzla often performs better than Z3 or CVC4.
   */
 case object BitwuzlaEngineAnnotation extends FormalEngineAnnotation
 

@@ -16,9 +16,8 @@ import firrtl2.options.StageMain
 import scala.collection.mutable.ArrayBuffer
 import scala.util.matching.Regex
 
-/** This effective stage main exercises vcd reading and optionally writing
-  * and depending up filtering options can pull out only those change values that
-  * are specific to a particular module
+/** This effective stage main exercises vcd reading and optionally writing and depending up filtering options can pull
+  * out only those change values that are specific to a particular module
   */
 object VCD {
   val Version = "0.2"
@@ -115,16 +114,21 @@ object VCD {
   }
 }
 
-/** Accumulates changes to wires in a running circuit.  If a wire is changed that it doesn't know about it
-  * will add it to the list.  Only actual changed values will be seen in final output.  This version only supports
-  * a single top level scope because right now that is what the firrtl-engine supports.  It probably is not too
-  * too hard to add, all wires are initialized to 'x' in this version.
+/** Accumulates changes to wires in a running circuit. If a wire is changed that it doesn't know about it will add it to
+  * the list. Only actual changed values will be seen in final output. This version only supports a single top level
+  * scope because right now that is what the firrtl-engine supports. It probably is not too too hard to add, all wires
+  * are initialized to 'x' in this version.
   *
-  * @param date date file was created
-  * @param version this software version, but I suppose this could be a DUT version
-  * @param comment could be a comment
-  * @param timeScale seems to be more text (I like to work in picoseconds)
-  * @param scope Not really used here except as the name of the top level module
+  * @param date
+  *   date file was created
+  * @param version
+  *   this software version, but I suppose this could be a DUT version
+  * @param comment
+  *   could be a comment
+  * @param timeScale
+  *   seems to be more text (I like to work in picoseconds)
+  * @param scope
+  *   Not really used here except as the name of the top level module
   */
 case class VCD(
   date:                   String,
@@ -227,8 +231,10 @@ case class VCD(
   }
 
   /** reports whether value is a change from the last recorded value for wireName
-    * @param wireName name of wire
-    * @param value    value of wire
+    * @param wireName
+    *   name of wire
+    * @param value
+    *   value of wire
     * @return
     */
   def isNewValue(wireName: String, value: BigInt): Boolean = {
@@ -249,13 +255,17 @@ case class VCD(
     suffix.startsWith("_") || wireName.contains("/")
   }
 
-  /** Change wire value if it is different that its the last recorded value
-    * Add it to the wires if this wire has not been seen before
+  /** Change wire value if it is different that its the last recorded value Add it to the wires if this wire has not
+    * been seen before
     *
-    * @param wireName name of wire
-    * @param value    value of wire
-    * @param width    width of wire (needed for header info)
-    * @return         false if the value is not different
+    * @param wireName
+    *   name of wire
+    * @param value
+    *   value of wire
+    * @param width
+    *   width of wire (needed for header info)
+    * @return
+    *   false if the value is not different
     */
   def wireChanged(wireName: String, value: BigInt, width: Int = 1): Boolean = {
     if (wiresToIgnore.contains(wireName)) return false
@@ -371,10 +381,13 @@ case class Wire(name: String, id: String, width: Int, path: Array[String] = Arra
 
 /** A Record of a change to a wire.
   *
-  * @note hashCode and equals are overridden so that sets of Change can only hold one value for a specific wire
+  * @note
+  *   hashCode and equals are overridden so that sets of Change can only hold one value for a specific wire
   *
-  * @param wire  wire that was changed
-  * @param value the value this wire now has
+  * @param wire
+  *   wire that was changed
+  * @param value
+  *   the value this wire now has
   */
 case class Change(wire: Wire, value: BigInt) {
   def serialize: String = {

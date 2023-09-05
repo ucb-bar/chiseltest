@@ -24,9 +24,9 @@ class SensitivityGraphBuilder {
   def getChildrenOfDiGraph: DiGraph[Symbol] = DiGraph(childrenOf)
   def getParentsOfDiGraph:  DiGraph[Symbol] = DiGraph(parentsOf)
 
-  /** Find all sources that are not inputs or registers.  These should be initialized
-    * once at beginning of simulation
-    * @param symbolTable used for testing properties of symbols
+  /** Find all sources that are not inputs or registers. These should be initialized once at beginning of simulation
+    * @param symbolTable
+    *   used for testing properties of symbols
     * @return
     */
   def orphans(symbolTable: SymbolTable): Seq[Symbol] = {

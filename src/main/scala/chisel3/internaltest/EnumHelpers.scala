@@ -4,9 +4,8 @@ package chisel3.internaltest
 
 import chisel3.EnumType
 
-/** Helper functions to allow for peeks and better debugging of ChiselEnums.
-  * This needs to be in a `chisel3` package in order to access the package private
-  * `factory` field of EnumType.
+/** Helper functions to allow for peeks and better debugging of ChiselEnums. This needs to be in a `chisel3` package in
+  * order to access the package private `factory` field of EnumType.
   */
 object EnumHelpers {
   def fromBits[T <: EnumType](tpe: T, bits: BigInt): T = {

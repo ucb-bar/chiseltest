@@ -11,8 +11,8 @@ import firrtl2.transforms.DontTouchAnnotation
 
 import scala.collection.mutable
 
-/** Turns (experimental) `DefRandom` statements into registers in order to be able
-  * to replay verification results on a simulator like treadle
+/** Turns (experimental) `DefRandom` statements into registers in order to be able to replay verification results on a
+  * simulator like treadle
   */
 private object DefRandToRegisterPass extends Transform {
   override def prerequisites = Forms.LowForm

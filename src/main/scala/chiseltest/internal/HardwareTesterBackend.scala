@@ -8,8 +8,10 @@ import chiseltest.simulator.{Compiler, DebugPrintWrapper, Simulator, SimulatorCo
 import firrtl2.AnnotationSeq
 
 /** Backend that allows us to run hardware testers in the style of `chisel3.testers.BasicTester` efficiently.
-  * @warn this is an internal API, use the wrappers from the chiseltest module instead.
-  * @note if the dut extends [[chisel3.testers.BasicTester]] the `finish` method will be called
+  * @warn
+  *   this is an internal API, use the wrappers from the chiseltest module instead.
+  * @note
+  *   if the dut extends [[chisel3.testers.BasicTester]] the `finish` method will be called
   */
 object HardwareTesterBackend {
   import TesterUtils._
@@ -80,7 +82,9 @@ object HardwareTesterBackend {
     }
   }
 
-  /** creates a wrapper function that calls the finish method iff the generated module extends [[chisel3.testers.BasicTester]] */
+  /** creates a wrapper function that calls the finish method iff the generated module extends
+    * [[chisel3.testers.BasicTester]]
+    */
   private def addFinishToBasicTester[T <: Module](dutGen: () => T): () => T = () => {
     val tester = dutGen()
     tester match {
