@@ -7,10 +7,8 @@ import chiseltest._
 import chiseltest.internal.NoThreadingAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 
-
-
 class GetStepCountTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "Testers2 clock getStep"
+  behavior.of("Testers2 clock getStep")
 
   private def runTest(c: StaticModule[_]): Unit = {
     assert(c.clock.getStepCount == 0)
@@ -30,7 +28,7 @@ class GetStepCountTest extends AnyFlatSpec with ChiselScalatestTester {
 
   private def randomClockStepper(rand: scala.util.Random, c: StaticModule[_], maxCycles: Int): Unit = {
     var count = 0
-    while(count < maxCycles) {
+    while (count < maxCycles) {
       val delta = rand.nextInt(3) + 1
       c.clock.step(delta)
       count += delta

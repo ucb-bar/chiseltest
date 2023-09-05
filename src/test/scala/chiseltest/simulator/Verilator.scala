@@ -7,7 +7,8 @@ import chiseltest.utils.CaptureStdout
 import org.scalatest.Tag
 import chiseltest.utils.FlatSpecWithTargetDir
 
-/** To disable tests that require the commercial VCS simulator use the following: `sbt testOnly -- -l RequiresVerilator` */
+/** To disable tests that require the commercial VCS simulator use the following: `sbt testOnly -- -l RequiresVerilator`
+  */
 object RequiresVerilator extends Tag("RequiresVerilator")
 
 class VerilatorBasicCompliance extends BasicCompliance(VerilatorSimulator, RequiresVerilator)

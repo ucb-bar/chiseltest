@@ -170,7 +170,7 @@ class MemoryInitializationTest extends AnyFreeSpec with Matchers with LazyLoggin
       Seq(
         FirrtlSourceAnnotation(firrtlText),
         SaveFirrtlAtLoadAnnotation,
-        //out1
+        // out1
         MemoryScalarInitAnnotation(CircuitTarget("Topper").module("Topper").ref("memory1"), 7),
         // out5
         MemoryRandomInitAnnotation(CircuitTarget("Topper").module("Topper").ref("memory2")),

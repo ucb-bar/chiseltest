@@ -11,7 +11,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class BundleLiteralsSpec extends AnyFlatSpec with ChiselScalatestTester with Matchers {
-  behavior of "Testers2"
+  behavior.of("Testers2")
 
   class DoubleElements extends Bundle {
     val a = UInt(8.W)
@@ -61,8 +61,8 @@ class BundleLiteralsSpec extends AnyFlatSpec with ChiselScalatestTester with Mat
     test(new PassthroughModule(new DoubleElements)) { c =>
       c.in.poke(chiselTypeOf(c.in).Lit(_.a -> 0.U, _.b -> 1.U))
       val output = c.out.peek()
-      output.a.litValue should be (0)
-      output.b.litValue should be (1)
+      output.a.litValue should be(0)
+      output.b.litValue should be(1)
     }
   }
 

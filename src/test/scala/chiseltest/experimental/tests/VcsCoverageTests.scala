@@ -19,11 +19,11 @@ private class TestModule extends Module {
 }
 
 class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Matchers {
-  behavior of "Testers2"
+  behavior.of("Testers2")
 
   private def SimAndCompileFlags(flags: Seq[String]): AnnotationSeq = Seq(VcsFlags(flags), VcsSimFlags(flags))
 
-  it should "allow specifying line coverage for Vcs" taggedAs(RequiresVcs) in {
+  it should "allow specifying line coverage for Vcs" taggedAs (RequiresVcs) in {
     clean()
     val annos = Seq(VcsBackendAnnotation) ++ SimAndCompileFlags(Seq("-cm", "line"))
     runTest(annos)
@@ -31,7 +31,7 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
     // TODO: check output file
   }
 
-  it should "allow specifying toggle coverage for Vcs" taggedAs(RequiresVcs) in {
+  it should "allow specifying toggle coverage for Vcs" taggedAs (RequiresVcs) in {
     clean()
     val annos = Seq(VcsBackendAnnotation) ++ SimAndCompileFlags(Seq("-cm", "tgl"))
     runTest(annos)
@@ -39,7 +39,7 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
     // TODO: check output file
   }
 
-  it should "allow specifying branch coverage for Vcs" taggedAs(RequiresVcs) in {
+  it should "allow specifying branch coverage for Vcs" taggedAs (RequiresVcs) in {
     clean()
     val annos = Seq(VcsBackendAnnotation) ++ SimAndCompileFlags(Seq("-cm", "branch"))
     runTest(annos)
@@ -47,7 +47,7 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
     // TODO: check output file
   }
 
-  it should "allow specifying conditional coverage for Vcs" taggedAs(RequiresVcs) in {
+  it should "allow specifying conditional coverage for Vcs" taggedAs (RequiresVcs) in {
     clean()
     val annos = Seq(VcsBackendAnnotation) ++ SimAndCompileFlags(Seq("-cm", "cond"))
     runTest(annos)
@@ -55,7 +55,7 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
     // TODO: check output file
   }
 
-  it should "allow specifying structural coverage for Vcs" taggedAs(RequiresVcs) in {
+  it should "allow specifying structural coverage for Vcs" taggedAs (RequiresVcs) in {
     clean()
     val annos = Seq(VcsBackendAnnotation) ++ SimAndCompileFlags(Seq("-cm", "line+tgl+branch+cond"))
     runTest(annos)
@@ -63,7 +63,7 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
     // TODO: check output file
   }
 
-  it should "allow specifying user coverage for Vcs" taggedAs(RequiresVcs) in {
+  it should "allow specifying user coverage for Vcs" taggedAs (RequiresVcs) in {
     clean()
     val annos = Seq(VcsBackendAnnotation) ++ SimAndCompileFlags(Seq("-cm", "assert"))
     runTest(annos)
@@ -96,6 +96,6 @@ class VcsCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Match
   private def testDir: os.Path = os.pwd / "test_run_dir" / sanitizeFileName(scalaTestContext.value.get.name)
 
   private def clean(): Unit = {
-    if(os.exists(testDir)) { os.remove.all(testDir) }
+    if (os.exists(testDir)) { os.remove.all(testDir) }
   }
 }

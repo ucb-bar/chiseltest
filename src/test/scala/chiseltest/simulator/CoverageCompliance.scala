@@ -6,9 +6,9 @@ import org.scalatest.Tag
 
 import scala.util.Random
 
-/** Compliance tests for the `getCoverage` and `resetCoverage` functions of the [[SimulatorContext]] interface.  */
+/** Compliance tests for the `getCoverage` and `resetCoverage` functions of the [[SimulatorContext]] interface. */
 abstract class CoverageCompliance(sim: Simulator, tag: Tag = DefaultTag) extends ComplianceTest(sim, tag) {
-  behavior of sim.name
+  behavior.of(sim.name)
 
   private val testSrc =
     """circuit Foo :
@@ -37,9 +37,8 @@ abstract class CoverageCompliance(sim: Simulator, tag: Tag = DefaultTag) extends
       |    io.out <= c.io.out
       |""".stripMargin
 
-
-  if(!sim.supportsCoverage) {
-    it should "throw a NotImplemented error when trying to call getCoverage" taggedAs(tag) in {
+  if (!sim.supportsCoverage) {
+    it should "throw a NotImplemented error when trying to call getCoverage" taggedAs (tag) in {
       val dut = load(testSrc)
       performDutTest(dut)
       dut.finish()
@@ -49,22 +48,25 @@ abstract class CoverageCompliance(sim: Simulator, tag: Tag = DefaultTag) extends
     }
   }
 
-  if(sim.supportsCoverage) {
-    it should "return coverage info after a test was performed" taggedAs(tag) in {
+  if (sim.supportsCoverage) {
+    it should "return coverage info after a test was performed" taggedAs (tag) in {
       val dut = load(testSrc)
       performDutTest(dut)
       dut.finish()
 
       val cov = dut.getCoverage()
       assert(cov.size == 2)
-      assert(cov == List(
-        "c.r_one" -> 7, "c.r_zero" -> 5
-      ))
+      assert(
+        cov == List(
+          "c.r_one" -> 7,
+          "c.r_zero" -> 5
+        )
+      )
     }
   }
 
-  if(!sim.supportsLiveCoverage) {
-    it should "throw a NotImplemented error when trying to call getCoverage before finish" taggedAs(tag) in {
+  if (!sim.supportsLiveCoverage) {
+    it should "throw a NotImplemented error when trying to call getCoverage before finish" taggedAs (tag) in {
       val dut = load(testSrc)
       performDutTest(dut)
       assertThrows[NotImplementedError] {
@@ -73,7 +75,7 @@ abstract class CoverageCompliance(sim: Simulator, tag: Tag = DefaultTag) extends
       dut.finish()
     }
 
-    it should "throw a NotImplemented error when trying to call resetCoverage" taggedAs(tag) in {
+    it should "throw a NotImplemented error when trying to call resetCoverage" taggedAs (tag) in {
       val dut = load(testSrc)
       performDutTest(dut)
       dut.finish()
@@ -82,7 +84,7 @@ abstract class CoverageCompliance(sim: Simulator, tag: Tag = DefaultTag) extends
       }
     }
 
-    it should "throw a NotImplemented error when trying to call resetCoverage before finish" taggedAs(tag) in {
+    it should "throw a NotImplemented error when trying to call resetCoverage before finish" taggedAs (tag) in {
       val dut = load(testSrc)
       performDutTest(dut)
       assertThrows[NotImplementedError] {
@@ -92,42 +94,51 @@ abstract class CoverageCompliance(sim: Simulator, tag: Tag = DefaultTag) extends
     }
   }
 
-  if(sim.supportsLiveCoverage) {
-    it should "when live coverage is supported, regular coverage must also be supported" taggedAs(tag) in {
+  if (sim.supportsLiveCoverage) {
+    it should "when live coverage is supported, regular coverage must also be supported" taggedAs (tag) in {
       assert(sim.supportsCoverage)
     }
 
-    it should "return coverage info during a test" taggedAs(tag) in {
+    it should "return coverage info during a test" taggedAs (tag) in {
       val dut = load(testSrc)
       performDutTest(dut)
 
       val cov = dut.getCoverage()
       assert(cov.size == 2)
-      assert(cov == List(
-        "c.r_one" -> 7, "c.r_zero" -> 5
-      ))
+      assert(
+        cov == List(
+          "c.r_one" -> 7,
+          "c.r_zero" -> 5
+        )
+      )
 
       // more testing
       performDutTest(dut)
 
       val cov2 = dut.getCoverage()
       assert(cov2.size == 2)
-      assert(cov2 == List(
-        "c.r_one" -> 14, "c.r_zero" -> 10
-      ))
+      assert(
+        cov2 == List(
+          "c.r_one" -> 14,
+          "c.r_zero" -> 10
+        )
+      )
 
       dut.finish()
     }
 
-    it should "support resetting the coverage counters to zero" taggedAs(tag) in {
+    it should "support resetting the coverage counters to zero" taggedAs (tag) in {
       val dut = load(testSrc)
       performDutTest(dut)
 
       val cov = dut.getCoverage()
       assert(cov.size == 2)
-      assert(cov == List(
-        "c.r_one" -> 7, "c.r_zero" -> 5
-      ))
+      assert(
+        cov == List(
+          "c.r_one" -> 7,
+          "c.r_zero" -> 5
+        )
+      )
 
       // more testing
       dut.resetCoverage()
@@ -135,13 +146,15 @@ abstract class CoverageCompliance(sim: Simulator, tag: Tag = DefaultTag) extends
 
       val cov2 = dut.getCoverage()
       assert(cov2.size == 2)
-      assert(cov2 == List(
-        "c.r_one" -> 7, "c.r_zero" -> 5
-      ))
+      assert(
+        cov2 == List(
+          "c.r_one" -> 7,
+          "c.r_zero" -> 5
+        )
+      )
     }
 
   }
-
 
   // perform some testing with the dut in order to generate interesting waveforms
   private def performDutTest(dut: SimulatorContext): Unit = {

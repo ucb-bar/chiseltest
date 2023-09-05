@@ -48,7 +48,7 @@ class PastMemTestModule extends Module {
 }
 
 class SafePastSpec extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption {
-  behavior of "Safe Past"
+  behavior.of("Safe Past")
 
   (0 until 3).foreach { ii =>
     it should s"guard the assertions appropriately (style=$ii)" taggedAs FormalTag in {

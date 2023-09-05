@@ -22,7 +22,7 @@ class MemoryShape extends Bundle {
 class HasComplexMemory(memoryDepth: Int) extends Module {
   val io = IO(new Bundle {
     val address = Input(UInt(log2Ceil(memoryDepth).W))
-    val value   = Output(new MemoryShape)
+    val value = Output(new MemoryShape)
   })
 
   val memory = Mem(memoryDepth, new MemoryShape)
@@ -34,7 +34,7 @@ class HasComplexMemory(memoryDepth: Int) extends Module {
 
 class HasComplexMemoryTester(c: HasComplexMemory) extends PeekPokeTester(c) {
   var boolValue: Int = 0
-  for(addr <- 0 until 8) {
+  for (addr <- 0 until 8) {
     poke(c.io.address, addr)
     step(1)
     println(f"peek from $addr ${peek(c.io.value.a)}%x ${peek(c.io.value.b)}%x ${peek(c.io.value.c)}%x")
@@ -44,7 +44,6 @@ class HasComplexMemoryTester(c: HasComplexMemory) extends PeekPokeTester(c) {
     boolValue = 1 - boolValue
   }
 }
-
 
 class ComplexMemoryLoadingSpec extends AnyFreeSpec with ChiselScalatestTester {
   "memory loading should be possible with complex memories" ignore { // TODO: make loadMemoryInline work with non-ground type memories
@@ -62,12 +61,14 @@ class ComplexMemoryLoadingSpec extends AnyFreeSpec with ChiselScalatestTester {
     Files.copy(getClass.getResourceAsStream("/iotesters/mem3.txt"), path3, REPLACE_EXISTING)
 
     "should work with treadle" in {
-      test(new HasComplexMemory(memoryDepth = 8)).withAnnotations(Seq(targetDirOption))
+      test(new HasComplexMemory(memoryDepth = 8))
+        .withAnnotations(Seq(targetDirOption))
         .runPeekPoke(new HasComplexMemoryTester(_))
     }
 
     "should work with verilator" in {
-      test(new HasComplexMemory(memoryDepth = 8)).withAnnotations(Seq(targetDirOption, VerilatorBackendAnnotation))
+      test(new HasComplexMemory(memoryDepth = 8))
+        .withAnnotations(Seq(targetDirOption, VerilatorBackendAnnotation))
         .runPeekPoke(new HasComplexMemoryTester(_))
     }
   }

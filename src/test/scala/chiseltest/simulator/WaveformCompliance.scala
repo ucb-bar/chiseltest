@@ -36,7 +36,7 @@ abstract class WaveformCompliance(sim: Simulator, tag: Tag = DefaultTag) extends
       |""".stripMargin
 
   val waveformExtensions = Set("vcd", "txt", "fst", "vpd", "lxt", "lxt2", "fsdb")
-  it should "not create a waveform file when no WriteWaveformAnnotation is provided" taggedAs(tag) in {
+  it should "not create a waveform file when no WriteWaveformAnnotation is provided" taggedAs (tag) in {
     performDutTest(Seq())
     val dumps = testDirFiles().filter(f => waveformExtensions.contains(f.last.split('.').last))
     assert(dumps.isEmpty, s"Found waveform dump files $dumps even though no WriteWaveformAnnotation was provided!")
@@ -44,7 +44,7 @@ abstract class WaveformCompliance(sim: Simulator, tag: Tag = DefaultTag) extends
 
   sim.waveformFormats.foreach { anno =>
     val format = anno.format
-    it should s"generate a $format waveform dump at the end of simulation" taggedAs(tag) in {
+    it should s"generate a $format waveform dump at the end of simulation" taggedAs (tag) in {
       performDutTest(Seq(anno))
       val dumpFile = targetDir / ("Foo." + format)
       checkWavedump(dumpFile, format)

@@ -36,7 +36,7 @@ class Test1Module(withSubmodules: Boolean = false) extends Module {
   val cover_chain_en = RegInit(0.U(3.W))
   cover_chain_en := a
 
-  if(withSubmodules) {
+  if (withSubmodules) {
     val c0 = Module(new SubModule1).suggestName("c0")
     c0.a := a
     val c1 = Module(new SubModule1).suggestName("c1")

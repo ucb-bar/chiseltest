@@ -6,14 +6,14 @@ import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
-class CustomTestNameModule extends Module{
-  val in  = IO(Input (Bool()))
+class CustomTestNameModule extends Module {
+  val in = IO(Input(Bool()))
   val out = IO(Output(Bool()))
   out := ~in
 }
 
 class RawTesterCustomTestNameTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "RawTester"
+  behavior.of("RawTester")
 
   val annos = Seq()
 

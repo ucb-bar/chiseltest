@@ -45,9 +45,12 @@ class UndefinedValuesTests extends AnyFlatSpec with ChiselScalatestTester with F
     // this is a regression test for a bug where we failed to replay failures when the
     // random (i.e. arbitrary value) signal was in a submodule
     val e = intercept[FailedBoundedCheckException] {
-      verify(new Module {
-        val inst = Module(new InvalidSignalIs(0))
-      }, Seq(BoundedCheck(1), DefaultBackend))
+      verify(
+        new Module {
+          val inst = Module(new InvalidSignalIs(0))
+        },
+        Seq(BoundedCheck(1), DefaultBackend)
+      )
     }
     assert(e.failAt == 0)
   }

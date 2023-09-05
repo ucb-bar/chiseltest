@@ -8,7 +8,7 @@ import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ClockDividerTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "Testers2 with a clock divider"
+  behavior.of("Testers2 with a clock divider")
 
   it should "test 1:2 clock divider counter" in {
     test(new Module {
@@ -41,13 +41,13 @@ class ClockDividerTest extends AnyFlatSpec with ChiselScalatestTester {
         c.clock.step()
         c.io.mainOut.expect(3.U)
         c.io.divOut.expect(1.U)
-      } .fork {
+      }.fork {
         c.io.mainOut.expect(0.U)
         c.io.divOut.expect(0.U)
         c.io.divClock.step()
         c.io.mainOut.expect(2.U)
         c.io.divOut.expect(1.U)
-      } .join()
+      }.join()
     }
   }
 }

@@ -6,11 +6,10 @@ import org.scalatest.flatspec.AnyFlatSpec
 import chiseltest._
 import chisel3._
 
-
 class BasicBoundedCheckTests extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption {
-  behavior of "verify command"
+  behavior.of("verify command")
 
-  it should "support modules that do not have any asserts (trivial pass!)"  taggedAs FormalTag in {
+  it should "support modules that do not have any asserts (trivial pass!)" taggedAs FormalTag in {
     verify(new AdderWithoutAsserts, Seq(BoundedCheck(1), DefaultBackend))
   }
 
@@ -91,7 +90,7 @@ class DanielModuleWithBadAssertion extends Module {
   io.a := aReg
   io.b := bReg
 
-  when (io.in) {
+  when(io.in) {
     aReg := true.B
     bReg := false.B
   }.otherwise {
@@ -115,7 +114,7 @@ class DanielModuleWithGoodAssertion extends Module {
   io.a := aReg
   io.b := bReg
 
-  when (io.in) {
+  when(io.in) {
     aReg := true.B
     bReg := false.B
   }.otherwise {

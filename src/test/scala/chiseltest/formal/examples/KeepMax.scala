@@ -16,16 +16,15 @@ class KeepMaxVerify extends AnyFlatSpec with ChiselScalatestTester with Formal w
   }
 }
 
-
-/** KeepMax demo by Tom Alcorn
-  * src: https://github.com/tdb-alcorn/chisel-formal/blob/master/src/test/scala/chisel3/formal/SanitySpec.scala
+/** KeepMax demo by Tom Alcorn src:
+  * https://github.com/tdb-alcorn/chisel-formal/blob/master/src/test/scala/chisel3/formal/SanitySpec.scala
   */
 class KeepMax(width: Int) extends Module {
   val in = IO(Input(UInt(width.W)))
   val out = IO(Output(UInt(width.W)))
 
   val max = RegInit(0.U(width.W))
-  when (in > max) {
+  when(in > max) {
     max := in
   }
   out := max

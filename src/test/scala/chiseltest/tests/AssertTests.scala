@@ -17,7 +17,7 @@ class AssertTestBench() extends Module {
 }
 
 class AssertTests extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "Assert"
+  behavior.of("Assert")
 
   val annotations = Seq(VerilatorBackendAnnotation)
 

@@ -9,7 +9,7 @@ import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class RegionsTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "Testers2 Regions"
+  behavior.of("Testers2 Regions")
 
   it should "resolve read-after-write dependencies" in {
     test(new PassthroughModule(UInt(8.W))) { c =>
@@ -18,35 +18,42 @@ class RegionsTest extends AnyFlatSpec with ChiselScalatestTester {
         c.clock.step()
         c.in.poke(70.U)
         c.clock.step()
-      }.fork.withRegion(Monitor) {
-        c.in.expect(42.U)
-        c.clock.step()
-        c.in.expect(70.U)
-      }.joinAndStep(c.clock)
+      }.fork
+        .withRegion(Monitor) {
+          c.in.expect(42.U)
+          c.clock.step()
+          c.in.expect(70.U)
+        }
+        .joinAndStep(c.clock)
     }
   }
 
   it should "resolve read-after-write dependencies, even if threads in opposite order" in {
     test(new PassthroughModule(UInt(8.W))) { c =>
-      fork.withRegion(Monitor) {
-        c.in.expect(42.U)
-        c.clock.step()
-        c.in.expect(70.U)
-      }.fork {
-        c.in.poke(42.U)
-        c.clock.step()
-        c.in.poke(70.U)
-        c.clock.step()
-      }.joinAndStep(c.clock)
+      fork
+        .withRegion(Monitor) {
+          c.in.expect(42.U)
+          c.clock.step()
+          c.in.expect(70.U)
+        }
+        .fork {
+          c.in.poke(42.U)
+          c.clock.step()
+          c.in.poke(70.U)
+          c.clock.step()
+        }
+        .joinAndStep(c.clock)
     }
   }
 
   it should "not allow joining from a later region" in {
     assertThrows[TemporalParadox] {
       test(new PassthroughModule(UInt(8.W))) { c =>
-        fork.withRegion(Monitor) {
-          c.clock.step()
-        }.join()
+        fork
+          .withRegion(Monitor) {
+            c.clock.step()
+          }
+          .join()
       }
     }
   }
@@ -58,10 +65,12 @@ class RegionsTest extends AnyFlatSpec with ChiselScalatestTester {
         c.in.poke(42.U)
         c.clock.step()
       }
-      fork.withRegion(Monitor) {
-        thread.join()
-        c.out.expect(42.U)
-      }.joinAndStep(c.clock)
+      fork
+        .withRegion(Monitor) {
+          thread.join()
+          c.out.expect(42.U)
+        }
+        .joinAndStep(c.clock)
     }
   }
 }

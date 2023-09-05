@@ -11,8 +11,8 @@ import treadle2.executable._
 
 //scalastyle:off magic.number
 
-/** Illustrate a black box that has multiple outputs
-  * This one creates 3 outputs each with a different increment of the input
+/** Illustrate a black box that has multiple outputs This one creates 3 outputs each with a different increment of the
+  * input
   */
 class HasCustomFinish extends ScalaBlackBox {
   override def name: String = "HasCustomFinish"
@@ -84,7 +84,7 @@ class BlackBoxFinishSpec extends AnyFreeSpec with Matchers {
           tester.step()
         }
       }
-      //Note: TreadleTestHarness calls finish which makes this work
+      // Note: TreadleTestHarness calls finish which makes this work
       customFinishFactory.clockUpCount should be >= 10
       customFinishFactory.finishWasRun should be(true)
     }

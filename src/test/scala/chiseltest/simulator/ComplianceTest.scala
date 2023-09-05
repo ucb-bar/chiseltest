@@ -8,7 +8,7 @@ import org.scalatest.Tag
 
 /** Base class for all simulator compliance tests. */
 abstract class ComplianceTest(sim: Simulator, protected val tag: Tag) extends FlatSpecWithTargetDir {
-  behavior of sim.name
+  behavior.of(sim.name)
 
   import ComplianceTest._
 

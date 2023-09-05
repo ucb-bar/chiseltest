@@ -2,14 +2,13 @@
 
 package chiseltest.tests
 
-
 import chisel3._
 import chiseltest._
 import org.scalatest.exceptions.TestFailedException
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ChiselEnumTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "Testers2"
+  behavior.of("Testers2")
 
   object EnumExample extends ChiselEnum {
     val e0, e1, e2 = Value
@@ -59,7 +58,7 @@ class ChiselEnumTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.in.poke(0.U)
       val output = c.io.out.peek()
       assert(output.litValue == 0)
-      assert(output.getClass  == c.io.out.getClass)
+      assert(output.getClass == c.io.out.getClass)
     }
   }
 

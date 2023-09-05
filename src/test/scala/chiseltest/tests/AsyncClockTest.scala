@@ -8,7 +8,7 @@ import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class AsyncClockTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "Testers2 with clock crossing signals"
+  behavior.of("Testers2 with clock crossing signals")
 
   it should "work with async clock signals" in {
     test(new Module {
@@ -25,24 +25,24 @@ class AsyncClockTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.in.poke(0.U)
       c.inClk.poke(true.B)
-      c.clock.step()  // easy mode: realtime advances
+      c.clock.step() // easy mode: realtime advances
       c.out.expect(0.U)
 
       c.in.poke(42.U)
-      c.out.expect(0.U)  // output shouldn't change
-      c.clock.step()  // ... even if realtime advances
+      c.out.expect(0.U) // output shouldn't change
+      c.clock.step() // ... even if realtime advances
       c.out.expect(0.U)
-      c.inClk.poke(false.B)  // or on a negedge
+      c.inClk.poke(false.B) // or on a negedge
       c.out.expect(0.U)
 
-      c.inClk.poke(true.B)  // but should update on posedge, even if realtime not udpated
+      c.inClk.poke(true.B) // but should update on posedge, even if realtime not udpated
       c.out.expect(42.U)
       c.inClk.poke(false.B)
       c.out.expect(42.U)
 
       c.in.poke(43.U)
       c.inClk.poke(true.B)
-      c.inClk.poke(false.B)  // hard mode, no circuit prop at all
+      c.inClk.poke(false.B) // hard mode, no circuit prop at all
       c.out.expect(43.U)
     }
   }
@@ -62,12 +62,12 @@ class AsyncClockTest extends AnyFlatSpec with ChiselScalatestTester {
       c.inClk.poke(false.B)
 
       c.inRst.poke(true.B)
-      c.inClk.poke(true.B);  c.inClk.poke(false.B)
+      c.inClk.poke(true.B); c.inClk.poke(false.B)
       c.out.expect(0.U)
       c.inRst.poke(false.B)
 
       c.in.poke(42.U)
-      c.clock.step()  // easy mode: realtime advances
+      c.clock.step() // easy mode: realtime advances
       c.inClk.poke(true.B)
       c.clock.step()
       c.inClk.poke(false.B)
@@ -75,7 +75,7 @@ class AsyncClockTest extends AnyFlatSpec with ChiselScalatestTester {
       c.out.expect(42.U)
 
       c.inRst.poke(true.B)
-      c.inClk.poke(true.B);  c.inClk.poke(false.B)
+      c.inClk.poke(true.B); c.inClk.poke(false.B)
       c.out.expect(0.U)
     }
   }

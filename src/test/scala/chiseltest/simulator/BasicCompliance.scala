@@ -7,14 +7,15 @@ import firrtl2.options.TargetDirAnnotation
 import org.scalatest.Tag
 
 /** tests some basic functionality that should be supported by all simulators */
-abstract class BasicCompliance(sim: Simulator, tag: Tag = DefaultTag, skipSimRefTest: Boolean = false) extends ComplianceTest(sim, tag) {
-  it should "be available" taggedAs(tag) in {
+abstract class BasicCompliance(sim: Simulator, tag: Tag = DefaultTag, skipSimRefTest: Boolean = false)
+    extends ComplianceTest(sim, tag) {
+  it should "be available" taggedAs (tag) in {
     assert(sim.isAvailable)
   }
 
   private val standardCircuit = ComplianceTest.StandardInverter
 
-  it should "be able to load and execute a simple combinatorial inverter generated from Chisel" taggedAs(tag)in {
+  it should "be able to load and execute a simple combinatorial inverter generated from Chisel" taggedAs (tag) in {
     val dut = load(standardCircuit)
     dut.poke("io_in", 1)
     assert(dut.peek("io_out") == 0)
@@ -23,14 +24,14 @@ abstract class BasicCompliance(sim: Simulator, tag: Tag = DefaultTag, skipSimRef
     dut.finish()
   }
 
-  it should "provide a reference to the simulator from the dut context object" taggedAs(tag) in {
+  it should "provide a reference to the simulator from the dut context object" taggedAs (tag) in {
     assume(!skipSimRefTest)
     val dut = load(standardCircuit)
     assert(dut.sim == sim)
     dut.finish()
   }
 
-  it should "be able to create two independent simulators for the same circuit" taggedAs(tag) in {
+  it should "be able to create two independent simulators for the same circuit" taggedAs (tag) in {
     val dut0 = load(standardCircuit)
     // note: while we need to be able to create two simulators,
     // creating them in the same target dir isn't necessarily supported
@@ -49,19 +50,19 @@ abstract class BasicCompliance(sim: Simulator, tag: Tag = DefaultTag, skipSimRef
 
   private def staticModule(num: Int) =
     s"""circuit Foo :
-      |  module Foo :
-      |    output num: UInt<30>
-      |
-      |    num <= UInt($num)
-      |""".stripMargin
+       |  module Foo :
+       |    output num: UInt<30>
+       |
+       |    num <= UInt($num)
+       |""".stripMargin
 
-  it should "be able to simulate a circuit with no inputs" taggedAs(tag) in {
+  it should "be able to simulate a circuit with no inputs" taggedAs (tag) in {
     val dut = load(staticModule(1234))
     assert(dut.peek("num") == 1234)
     dut.finish()
   }
 
-  it should "be able to simulate different circuits at the same time" taggedAs(tag) in {
+  it should "be able to simulate different circuits at the same time" taggedAs (tag) in {
     // note: while we need to be able to create two simulators,
     // creating them in the same target dir isn't necessarily supported
     val nums = Seq(123, 432, 555)
@@ -86,7 +87,7 @@ abstract class BasicCompliance(sim: Simulator, tag: Tag = DefaultTag, skipSimRef
       |    io.out <= _io_out_T @[main.scala 12:10]
       |""".stripMargin
 
-  it should "be able to load and execute a simple circuit without a reset input" taggedAs(tag) in {
+  it should "be able to load and execute a simple circuit without a reset input" taggedAs (tag) in {
     // while Chisel will always add a reset input to a Module, we want this firrtl simulator interface
     // to work with arbitrary firrtl circuits, even if they do not contain a `reset` input
     val dut = load(standardNoReset)
@@ -106,7 +107,7 @@ abstract class BasicCompliance(sim: Simulator, tag: Tag = DefaultTag, skipSimRef
       |    io.out <= _io_out_T @[main.scala 12:10]
       |""".stripMargin
 
-  it should "be able to load and execute a simple circuit without a clock input or reset" taggedAs(tag) in {
+  it should "be able to load and execute a simple circuit without a clock input or reset" taggedAs (tag) in {
     // while Chisel will always add a reset input to a Module, we want this firrtl simulator interface
     // to work with arbitrary firrtl circuits, even if they do not contain a `clock` input
     val dut = load(standardNoResetNoClock)
@@ -117,7 +118,7 @@ abstract class BasicCompliance(sim: Simulator, tag: Tag = DefaultTag, skipSimRef
     dut.finish()
   }
 
-  it should "not generate any files in the target dir directly" taggedAs(tag) in {
+  it should "not generate any files in the target dir directly" taggedAs (tag) in {
     // we expect simulators to create most of their files in a subdirectory
     // only the firrtl, (System)Verilog and C++ test bench files should be in the directory
     val allowedExts = Seq("sv", "fir", "cpp", "h", "tab", "key", "dat")
@@ -129,16 +130,17 @@ abstract class BasicCompliance(sim: Simulator, tag: Tag = DefaultTag, skipSimRef
     assert(dut.peek("io_out") == 1)
     dut.finish()
 
-    val unexpected = os.list(targetDir)
+    val unexpected = os
+      .list(targetDir)
       .filter(os.isFile)
-      .filterNot( f => allowedExts.contains(f.last.split('.').last))
-      .filterNot( _.last == "Foo")
+      .filterNot(f => allowedExts.contains(f.last.split('.').last))
+      .filterNot(_.last == "Foo")
       // JNI library copies
       .filterNot(_.last.startsWith("TesterSharedLib"))
     assert(unexpected.isEmpty, s"${sim.name} generated unexpected file(s):\n" + unexpected.mkString("\n"))
   }
 
-  it should "not print anything to stdout under normal conditions" taggedAs(tag) in {
+  it should "not print anything to stdout under normal conditions" taggedAs (tag) in {
     val (_, out) = CaptureStdout {
       val dut = load(standardCircuit)
       dut.poke("io_in", 1)
@@ -151,17 +153,17 @@ abstract class BasicCompliance(sim: Simulator, tag: Tag = DefaultTag, skipSimRef
   }
 
   val ZeroBitCircuit =
-  """circuit ZeroBitCircuit :
-    |  module ZeroBitCircuit :
-    |    input clock : Clock
-    |    input reset : UInt<1>
-    |    output io : { flip in : UInt<0>, out : SInt<0>}
-    |
-    |    io.out is invalid
-    |    io.out <= SInt<0>(0)
-    |""".stripMargin
+    """circuit ZeroBitCircuit :
+      |  module ZeroBitCircuit :
+      |    input clock : Clock
+      |    input reset : UInt<1>
+      |    output io : { flip in : UInt<0>, out : SInt<0>}
+      |
+      |    io.out is invalid
+      |    io.out <= SInt<0>(0)
+      |""".stripMargin
 
-  it should "support modules with 0-bit integer I/Os" taggedAs(tag) in {
+  it should "support modules with 0-bit integer I/Os" taggedAs (tag) in {
     // some simulators would fail to compile modules with 0-bit I/Os
     val dut = load(ZeroBitCircuit)
     dut.finish()

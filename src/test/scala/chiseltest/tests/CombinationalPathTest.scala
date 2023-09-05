@@ -9,7 +9,7 @@ import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class CombinationalPathTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "Testers2"
+  behavior.of("Testers2")
 
   it should "detect combinationally-dependent operations when a poke is active" in {
     assertThrows[ThreadOrderDependentException] {
@@ -17,10 +17,10 @@ class CombinationalPathTest extends AnyFlatSpec with ChiselScalatestTester {
         fork {
           c.in.poke(true.B)
           c.clock.step(2)
-        } .fork {
+        }.fork {
           c.clock.step(1)
           c.out.expect(true.B)
-        } .join()
+        }.join()
       }
     }
   }
@@ -39,10 +39,10 @@ class CombinationalPathTest extends AnyFlatSpec with ChiselScalatestTester {
         fork {
           c.io.in.poke(true.B)
           c.clock.step(2)
-        } .fork {
+        }.fork {
           c.clock.step(1)
           c.io.out.expect(true.B)
-        } .join()
+        }.join()
       }
     }
   }
@@ -60,10 +60,10 @@ class CombinationalPathTest extends AnyFlatSpec with ChiselScalatestTester {
         fork {
           c.io.in1.poke(true.B)
           c.clock.step(2)
-        } .fork {
+        }.fork {
           c.clock.step(1)
           c.io.out.expect(true.B)
-        } .join()
+        }.join()
       }
     }
   }

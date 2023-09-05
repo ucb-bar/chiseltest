@@ -10,14 +10,14 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
-  behavior of "Testers2"
+  behavior.of("Testers2")
 
   it should "locate source lines" in {
     intercept[exceptions.TestFailedException] {
       test(new StaticModule(42.U)) { c =>
         c.out.expect(0.U)
       }
-    }.failedCodeFileNameAndLineNumberString.get should equal ("FaultLocatorTest.scala:18")
+    }.failedCodeFileNameAndLineNumberString.get should equal("FaultLocatorTest.scala:18")
   }
 
   it should "locate source lines across threads" in {
@@ -29,7 +29,7 @@ class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Match
         }.join()
       }
     }
-    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*26.*\)""")
+    (exc.getMessage should include).regex("""\(lines in FaultLocatorTest\.scala:[^\)]*26.*\)""")
   }
 
   it should "locate source lines in libraries" in {
@@ -39,13 +39,13 @@ class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Match
         c.out.setSinkClock(c.clock)
 
         c.in.valid.poke(true.B)
-        c.in.bits.poke(false.B)  // Have this be a data failure only
+        c.in.bits.poke(false.B) // Have this be a data failure only
         c.out.expectDequeueNow(true.B)
       }
     }
     // Only check the filename to avoid this being too brittle as implementation changes
-    exc.failedCodeFileNameAndLineNumberString.get should startWith ("DecoupledDriver.scala:")
-    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*43.*\)""")
+    exc.failedCodeFileNameAndLineNumberString.get should startWith("DecoupledDriver.scala:")
+    (exc.getMessage should include).regex("""\(lines in FaultLocatorTest\.scala:[^\)]*43.*\)""")
   }
 
   it should "locate source lines, even in a different thread" in {
@@ -55,13 +55,13 @@ class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Match
         c.out.setSinkClock(c.clock)
 
         c.in.valid.poke(true.B)
-        c.in.bits.poke(false.B)  // Have this be a data failure only
+        c.in.bits.poke(false.B) // Have this be a data failure only
         fork {
           c.out.expectDequeueNow(true.B)
-        } .join()
+        }.join()
       }
     }
-    exc.failedCodeFileNameAndLineNumberString.get should startWith ("DecoupledDriver.scala:")
-    exc.getMessage should include regex ("""\(lines in FaultLocatorTest\.scala:[^\)]*60.*\)""")
+    exc.failedCodeFileNameAndLineNumberString.get should startWith("DecoupledDriver.scala:")
+    (exc.getMessage should include).regex("""\(lines in FaultLocatorTest\.scala:[^\)]*60.*\)""")
   }
 }

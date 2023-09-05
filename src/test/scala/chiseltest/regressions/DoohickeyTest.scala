@@ -40,7 +40,6 @@ class DualPortNewDataRAM(Width: Int, addressBits: Int)
   addResource("/DualPortNewDataRAM.v")
 }
 
-
 class DoohickeyBundle() extends Bundle {
   val readAddress = Input(Vec(1, UInt(4.W)))
   val readEnable = Input(Vec(1, Bool()))
@@ -80,7 +79,7 @@ class Doohickey() extends Module {
 }
 
 class VerilatorBackendRegression extends AnyFlatSpec with ChiselScalatestTester with Matchers {
-  behavior of "Verilator Backend Regression"
+  behavior.of("Verilator Backend Regression")
   val annos = Seq(
     VerilatorBackendAnnotation,
     WriteVcdAnnotation

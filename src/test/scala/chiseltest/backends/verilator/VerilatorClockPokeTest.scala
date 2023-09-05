@@ -10,7 +10,7 @@ import treadle2.executable.ClockInfo
 import treadle2.{ClockInfoAnnotation, WriteVcdAnnotation}
 
 class VerilatorClockPokeTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "Testers2 with a clock input"
+  behavior.of("Testers2 with a clock input")
 
   it should "clock-as-bool-verilator-clock-poke" taggedAs RequiresVerilator ignore { // TODO: re-add multi clock support
     test(new Module {

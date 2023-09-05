@@ -132,7 +132,7 @@ class ChronometrySpec extends AnyFreeSpec with Matchers with LazyLogging {
         f"rate = $eps%10.5f KHz utc = ${utc.currentTime}"
     )
 
-    //TODO: Figure out a way to do this that doesn't break CI
+    // TODO: Figure out a way to do this that doesn't break CI
     // eps should be > 1000.0  // clock should be fairly lean, i.e. be at least a mega-hz
   }
 
@@ -172,7 +172,7 @@ class ChronometrySpec extends AnyFreeSpec with Matchers with LazyLogging {
         f"rate = $eps%10.5f KHz utc = ${utc.currentTime}"
     )
 
-    //TODO: Figure out a way to do this that doesn't break CI
+    // TODO: Figure out a way to do this that doesn't break CI
     // eps should be > 1000.0  // clock should be fairly lean, i.e. be at least a mega-hz
   }
 

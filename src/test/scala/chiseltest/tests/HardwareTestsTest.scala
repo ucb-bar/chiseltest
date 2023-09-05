@@ -7,16 +7,15 @@ import chiseltest._
 import chisel3.testers.BasicTester
 import chiseltest.simulator.{DefaultTag, RequiresVerilator, SimulatorAnnotation}
 
-/** Tests our support for "hardware" or synthesizable testers of which there are
-  * many in the Chisel code base. They all inherit from [[chisel3.testers.BasicTester]],
-  * however, any module that signals success with a `chisel3.stop` could be
-  * use as a hardware tester.
- */
+/** Tests our support for "hardware" or synthesizable testers of which there are many in the Chisel code base. They all
+  * inherit from [[chisel3.testers.BasicTester]], however, any module that signals success with a `chisel3.stop` could
+  * be use as a hardware tester.
+  */
 class HardwareTestsTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of s"HardwareTester with $name"
+  behavior.of(s"HardwareTester with $name")
 
   protected def DefaultBackend: SimulatorAnnotation = TreadleBackendAnnotation
-  protected def Tag: org.scalatest.Tag = DefaultTag
+  protected def Tag:            org.scalatest.Tag = DefaultTag
   private def DefaultAnnos = Seq(DefaultBackend)
   private def name = DefaultBackend.getSimulator.name
 
@@ -70,80 +69,94 @@ class HardwareTestsTest extends AnyFlatSpec with ChiselScalatestTester {
     test(new FinishTester).withAnnotations(DefaultAnnos).runUntilStop()
   }
 
-  behavior of s"HardwareTester.runUntilStop() w/ $name using the StopFailTimeoutDut dut"
+  behavior.of(s"HardwareTester.runUntilStop() w/ $name using the StopFailTimeoutDut dut")
 
   it should "pass a test when stop() is called before timeout or assert" taggedAs Tag in {
-    test(new StopFailTimeoutDut(stopAtCount = 3, failAtCount = 10)).withAnnotations(DefaultAnnos)
+    test(new StopFailTimeoutDut(stopAtCount = 3, failAtCount = 10))
+      .withAnnotations(DefaultAnnos)
       .runUntilStop(timeout = 100)
   }
 
   it should "throw TimeoutException when dut times out before stop or assert thrown" taggedAs Tag in {
     intercept[TimeoutException] {
-      test(new StopFailTimeoutDut(stopAtCount = 30, failAtCount = 400)).withAnnotations(DefaultAnnos)
+      test(new StopFailTimeoutDut(stopAtCount = 30, failAtCount = 400))
+        .withAnnotations(DefaultAnnos)
         .runUntilStop(timeout = 15)
     }
   }
 
   it should "throw ChiselAssertionError when assert thrown before timeout or stop" taggedAs Tag in {
     intercept[ChiselAssertionError] {
-      test(new StopFailTimeoutDut(stopAtCount = 300, failAtCount = 250)).withAnnotations(DefaultAnnos)
+      test(new StopFailTimeoutDut(stopAtCount = 300, failAtCount = 250))
+        .withAnnotations(DefaultAnnos)
         .runUntilStop(timeout = 450)
     }
   }
 
   it should " stop takes precedence when stop and timeout occur at same cycle" taggedAs Tag in {
     intercept[TimeoutException] {
-      test(new StopFailTimeoutDut(stopAtCount = 300, failAtCount = 550)).withAnnotations(DefaultAnnos)
+      test(new StopFailTimeoutDut(stopAtCount = 300, failAtCount = 550))
+        .withAnnotations(DefaultAnnos)
         .runUntilStop(timeout = 299)
     }
 
-    test(new StopFailTimeoutDut(stopAtCount = 300, failAtCount = 550)).withAnnotations(DefaultAnnos)
+    test(new StopFailTimeoutDut(stopAtCount = 300, failAtCount = 550))
+      .withAnnotations(DefaultAnnos)
       .runUntilStop(timeout = 300)
   }
 
   it should " assertion takes precedence when fail and timeout occur at same cycle" taggedAs Tag in {
     intercept[ChiselAssertionError] {
-      test(new StopFailTimeoutDut(stopAtCount = 300, failAtCount = 55)).withAnnotations(DefaultAnnos)
+      test(new StopFailTimeoutDut(stopAtCount = 300, failAtCount = 55))
+        .withAnnotations(DefaultAnnos)
         .runUntilStop(timeout = 55)
     }
 
     val t = intercept[TimeoutException] {
-      test(new StopFailTimeoutDut(stopAtCount = 300, failAtCount = 55)).withAnnotations(DefaultAnnos)
+      test(new StopFailTimeoutDut(stopAtCount = 300, failAtCount = 55))
+        .withAnnotations(DefaultAnnos)
         .runUntilStop(timeout = 54)
     }
   }
 
   it should "have ChiselAssertionError takes precedence when fail and stop occur at same cycle" taggedAs Tag in {
     intercept[ChiselAssertionError] {
-      test(new StopFailTimeoutDut(stopAtCount = 77, failAtCount = 77)).withAnnotations(DefaultAnnos)
+      test(new StopFailTimeoutDut(stopAtCount = 77, failAtCount = 77))
+        .withAnnotations(DefaultAnnos)
         .runUntilStop(timeout = 299)
     }
 
-    test(new StopFailTimeoutDut(stopAtCount = 77, failAtCount = 78)).withAnnotations(DefaultAnnos)
+    test(new StopFailTimeoutDut(stopAtCount = 77, failAtCount = 78))
+      .withAnnotations(DefaultAnnos)
       .runUntilStop(timeout = 300)
 
     intercept[ChiselAssertionError] {
-      test(new StopFailTimeoutDut(stopAtCount = 78, failAtCount = 77)).withAnnotations(DefaultAnnos)
+      test(new StopFailTimeoutDut(stopAtCount = 78, failAtCount = 77))
+        .withAnnotations(DefaultAnnos)
         .runUntilStop(timeout = 300)
     }
   }
 
   it should "have ChiselAssertionError takes precedence when timeout, fail, and stop occur at same cycle" taggedAs Tag in {
     intercept[ChiselAssertionError] {
-      test(new StopFailTimeoutDut(stopAtCount = 77, failAtCount = 77)).withAnnotations(DefaultAnnos)
+      test(new StopFailTimeoutDut(stopAtCount = 77, failAtCount = 77))
+        .withAnnotations(DefaultAnnos)
         .runUntilStop(timeout = 77)
     }
 
-    test(new StopFailTimeoutDut(stopAtCount = 76, failAtCount = 77)).withAnnotations(DefaultAnnos)
+    test(new StopFailTimeoutDut(stopAtCount = 76, failAtCount = 77))
+      .withAnnotations(DefaultAnnos)
       .runUntilStop(timeout = 77)
 
     intercept[ChiselAssertionError] {
-      test(new StopFailTimeoutDut(stopAtCount = 77, failAtCount = 76)).withAnnotations(DefaultAnnos)
+      test(new StopFailTimeoutDut(stopAtCount = 77, failAtCount = 76))
+        .withAnnotations(DefaultAnnos)
         .runUntilStop(timeout = 77)
     }
 
     intercept[TimeoutException] {
-      test(new StopFailTimeoutDut(stopAtCount = 77, failAtCount = 77)).withAnnotations(DefaultAnnos)
+      test(new StopFailTimeoutDut(stopAtCount = 77, failAtCount = 77))
+        .withAnnotations(DefaultAnnos)
         .runUntilStop(timeout = 76)
     }
   }
@@ -199,8 +212,8 @@ class StopFailTimeoutDut(stopAtCount: Int = 0, failAtCount: Int = 0) extends Bas
 
 }
 
-/** Extend BasicTester with a simple circuit and finish method.
-  * from chisel3 tests: src/test/scala/chiselTests/TesterDriverSpec.scala
+/** Extend BasicTester with a simple circuit and finish method. from chisel3 tests:
+  * src/test/scala/chiselTests/TesterDriverSpec.scala
   */
 class FinishTester extends BasicTester {
   val test_wire_width = 2
@@ -217,8 +230,7 @@ class FinishTester extends BasicTester {
   // the finish will change its value
   assert(test_wire === test_wire_override_value.asUInt)
 
-  /** In finish we use last connect semantics to alter the test_wire in the circuit
-    * with a new value
+  /** In finish we use last connect semantics to alter the test_wire in the circuit with a new value
     */
   override def finish(): Unit = {
     test_wire := test_wire_override_value.asUInt

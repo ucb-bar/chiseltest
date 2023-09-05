@@ -8,7 +8,7 @@ import org.scalatest.exceptions
 import org.scalatest.flatspec.AnyFlatSpec
 
 class NoThreadingTests extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "NoThreadingAnnotation"
+  behavior.of("NoThreadingAnnotation")
 
   val annos = Seq(NoThreadingAnnotation)
 
@@ -41,13 +41,17 @@ class NoThreadingTests extends AnyFlatSpec with ChiselScalatestTester {
     val typ = new CustomBundle("foo" -> UInt(32.W), "bar" -> UInt(32.W))
     assertThrows[exceptions.TestFailedException] {
       test(new PassthroughModule(typ)).withAnnotations(annos) { c =>
-        c.in.pokePartial(typ.Lit(
-          _.elements("foo") -> 4.U
-        ))
-        c.out.expect(typ.Lit(
-          _.elements("foo") -> 4.U,
-          _.elements("bar") -> 5.U
-        ))
+        c.in.pokePartial(
+          typ.Lit(
+            _.elements("foo") -> 4.U
+          )
+        )
+        c.out.expect(
+          typ.Lit(
+            _.elements("foo") -> 4.U,
+            _.elements("bar") -> 5.U
+          )
+        )
       }
     }
   }
@@ -56,13 +60,17 @@ class NoThreadingTests extends AnyFlatSpec with ChiselScalatestTester {
     val typ = new CustomBundle("foo" -> UInt(32.W), "bar" -> UInt(32.W))
     assertThrows[exceptions.TestFailedException] {
       test(new PassthroughModule(typ)).withAnnotations(annos) { c =>
-        c.in.poke(typ.Lit(
-          _.elements("foo") -> 4.U,
-          _.elements("bar") -> 5.U
-        ))
-        c.out.expectPartial(typ.Lit(
-          _.elements("foo") -> 5.U
-        ))
+        c.in.poke(
+          typ.Lit(
+            _.elements("foo") -> 4.U,
+            _.elements("bar") -> 5.U
+          )
+        )
+        c.out.expectPartial(
+          typ.Lit(
+            _.elements("foo") -> 5.U
+          )
+        )
       }
     }
   }
@@ -114,7 +122,6 @@ class NoThreadingTests extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
-
   it should "have a configurable timeout" in {
     test(new StaticModule(0.U)).withAnnotations(annos) { c =>
       c.clock.setTimeout(4)
@@ -153,7 +160,7 @@ class NoThreadingTests extends AnyFlatSpec with ChiselScalatestTester {
         c.clock.step(3)
         c.in.poke(2.U)
         c.clock.step(4)
-        c.clock.step(1)  // don't let the timescope expire
+        c.clock.step(1) // don't let the timescope expire
       }
     }
   }
@@ -167,7 +174,7 @@ class NoThreadingTests extends AnyFlatSpec with ChiselScalatestTester {
         c.clock.step(3)
         c.in.poke(0.U)
         c.clock.step(1)
-        c.clock.step(1)  // don't let the timescope expire
+        c.clock.step(1) // don't let the timescope expire
       }
     }
   }

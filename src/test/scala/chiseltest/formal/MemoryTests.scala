@@ -6,8 +6,8 @@ import chisel3.SyncReadMem.ReadUnderWrite
 import org.scalatest.flatspec.AnyFlatSpec
 import chiseltest._
 import chisel3._
-import chisel3.experimental.{ChiselAnnotation, annotate}
-import chiseltest.simulator.{Firrtl2AnnotationWrapper, convertTargetToFirrtl2}
+import chisel3.experimental.{annotate, ChiselAnnotation}
+import chiseltest.simulator.{convertTargetToFirrtl2, Firrtl2AnnotationWrapper}
 import firrtl2.annotations.{Annotation, MemoryArrayInitAnnotation, MemoryScalarInitAnnotation, ReferenceTarget}
 import firrtl2.ir.ReadUnderWrite
 
@@ -211,7 +211,7 @@ class OutOfBoundsValueIs(value: Int) extends Module {
   when(readAddr === 1.U) { assert(out === 0.U) }
   when(readAddr === 2.U) { assert(out === 0.U) }
   // out of bounds read should never be equal to the constant value
-  if(value >= 0) {
+  if (value >= 0) {
     when(readAddr === 3.U) { assert(out === value.U, "%d =/= %d", out, value.U) }
   }
 }

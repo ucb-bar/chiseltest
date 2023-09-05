@@ -36,7 +36,7 @@ class SignedAdderTester(c: SignedAdder) extends PeekPokeTester(c) {
     poke(c.io.in0, i)
     poke(c.io.in1, j)
     step(1)
-    println(s"signed adder $i + $j got ${peek(c.io.out)} should be ${i+j}")
+    println(s"signed adder $i + $j got ${peek(c.io.out)} should be ${i + j}")
     expect(c.io.out, i + j)
     step(1)
   }
@@ -51,4 +51,3 @@ class SignedAdderSpec extends AnyFreeSpec with ChiselScalatestTester {
     test(new SignedAdder(16)).withAnnotations(Seq(VerilatorBackendAnnotation)).runPeekPoke(new SignedAdderTester(_))
   }
 }
-

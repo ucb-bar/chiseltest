@@ -19,7 +19,7 @@ private class TestModule extends Module {
 }
 
 class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with Matchers {
-  behavior of "Testers2"
+  behavior.of("Testers2")
 
   it should "allow specifying Verilog toggle coverage for Verilator" taggedAs RequiresVerilator in {
     clean()
@@ -77,7 +77,7 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
   private def testDir: os.Path = os.pwd / "test_run_dir" / sanitizeFileName(scalaTestContext.value.get.name)
 
   private def clean(): Unit = {
-    if(os.exists(testDir)) { os.remove.all(testDir) }
+    if (os.exists(testDir)) { os.remove.all(testDir) }
   }
 
   private def loadCoverage(): Seq[Map[String, String]] = {
@@ -85,11 +85,14 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
     val coverageFile = testDir / "coverage.dat"
     assert(os.exists(coverageFile))
     val lines = os.read.lines(coverageFile).drop(1)
-    lines.map(_.split('\'').toList).map {
+    lines
+      .map(_.split('\'').toList)
+      .map {
         case List(_, dict, countStr) =>
           dict.drop(1).split('\u0001').map(_.split('\u0002').toList).collect { case Seq(k, v) => k -> v }.toMap
         case _ => Map[String, String]()
-    }.toSeq
+      }
+      .toSeq
   }
 
   private case class Counts(user: Int, toggle: Int, line: Int)
@@ -98,7 +101,7 @@ class VerilatorCoverageTests extends AnyFlatSpec with ChiselScalatestTester with
     Counts(
       user = cov.count(_("page").startsWith("v_user")),
       toggle = cov.count(_("page").startsWith("v_toggle")),
-      line = cov.count(_("page").startsWith("v_line")),
+      line = cov.count(_("page").startsWith("v_line"))
     )
   }
 }

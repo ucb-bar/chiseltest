@@ -82,7 +82,7 @@ class VecLiteralsSpec extends AnyFreeSpec with ChiselScalatestTester with Matche
     "it should round-trip Vec literals" in {
       val vecOfVec = Vec(2, Vec(2, UInt(8.W)))
       val vecOfVecLit = vecOfVec.Lit(
-        0 -> vecOfVec(0).Lit(0 -> 0xab.U, 1 -> 0xC.U),
+        0 -> vecOfVec(0).Lit(0 -> 0xab.U, 1 -> 0xc.U),
         1 -> vecOfVec(1).Lit(0 -> 0xde.U, 1 -> 0xf.U)
       )
       test(new PassthroughModule(vecOfVec)) { c =>

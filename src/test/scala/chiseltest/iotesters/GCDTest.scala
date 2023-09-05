@@ -1,4 +1,3 @@
-
 package chiseltest.iotesters
 
 import treadle2.chronometry.Timer
@@ -21,7 +20,6 @@ class IoTestersGcd(gcd: DecoupledGcd, testValues: Seq[(Int, Int, Int)]) extends 
   }
 }
 
-
 object GcdRegression {
   def main(args: Array[String]): Unit = {
     val t = new Timer
@@ -33,8 +31,7 @@ object GcdRegression {
       while (y > 0) {
         if (x > y) {
           x -= y
-        }
-        else {
+        } else {
           y -= x
         }
         depth += 1
@@ -42,13 +39,16 @@ object GcdRegression {
       x
     }
 
-    val testValues = (for {x <- 2 to 100; y <- 2 to 100} yield (x, y, computeGcd(x, y)))
+    val testValues = (for {
+      x <- 2 to 100
+      y <- 2 to 100
+    } yield (x, y, computeGcd(x, y)))
 
     val backendName = "verilator" // if (args.nonEmpty) { "verilator" } else { "treadle" }
     val options = backendName match {
       case "verilator" => Seq(VerilatorBackendAnnotation)
-      case "treadle2" => Seq(TreadleBackendAnnotation)
-      case other => throw new RuntimeException(s"Unknown backend: $other")
+      case "treadle2"  => Seq(TreadleBackendAnnotation)
+      case other       => throw new RuntimeException(s"Unknown backend: $other")
     }
 
     // TODO
@@ -80,7 +80,7 @@ object GcdRegression {
         new IoTestersGcd(dut, testValues)
       }
     }
-   */
+     */
 
     println(t.report())
   }

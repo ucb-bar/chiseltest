@@ -25,7 +25,7 @@ class PlusArgReaderTreadleImpl extends ScalaBlackBoxFactory with ScalaBlackBox {
   def createInstance(instanceName: String, blackBoxName: String): Option[ScalaBlackBox] =
     if (blackBoxName == name) Some(this) else None
 
-  private val argName: String = "ARGUMENT"
+  private val argName:  String = "ARGUMENT"
   private var argument: BigInt = 0xdeadbeefL
 
   def getOutput(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
@@ -50,7 +50,7 @@ class PlusArgReaderWrapper(expected: Int) extends Module {
 }
 
 class TreadleBlackBoxTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "Treadle Backend"
+  behavior.of("Treadle Backend")
 
   it should "support reading Verilog-style plusargs" in {
     for (plusarg <- List(0, 123, 456)) {

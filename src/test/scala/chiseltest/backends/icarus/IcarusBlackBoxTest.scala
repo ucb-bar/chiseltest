@@ -18,13 +18,15 @@ class BlackBoxAdderIO extends Bundle {
 
 class BlackBoxAdder extends BlackBox with HasBlackBoxInline {
   val io = IO(new BlackBoxAdderIO).suggestName("io")
-  setInline("BlackBoxAdder.v",
-  """module BlackBoxAdder(a, b, q);
-    |input [7:0] a, b;
-    |output [7:0] q;
-    |assign q = a + b;
-    |endmodule
-    |""".stripMargin)
+  setInline(
+    "BlackBoxAdder.v",
+    """module BlackBoxAdder(a, b, q);
+      |input [7:0] a, b;
+      |output [7:0] q;
+      |assign q = a + b;
+      |endmodule
+      |""".stripMargin
+  )
 }
 
 class BlackBoxAdderWrapper extends Module {
@@ -38,19 +40,21 @@ class PlusArgReader extends BlackBox with HasBlackBoxInline {
   val io = IO(new Bundle {
     val out = Output(UInt(32.W))
   })
-  setInline("PlusArgReader.v",
-  """module PlusArgReader(
-    |  output [31:0] out
-    |);
-    |  reg [32:0] argument;
-    |  assign out = argument;
-    |  initial begin
-    |    if (!$value$plusargs("ARGUMENT=%d", argument)) begin
-    |      argument = 32'hdeadbeef;
-    |    end
-    |  end
-    |endmodule
-    |""".stripMargin)
+  setInline(
+    "PlusArgReader.v",
+    """module PlusArgReader(
+      |  output [31:0] out
+      |);
+      |  reg [32:0] argument;
+      |  assign out = argument;
+      |  initial begin
+      |    if (!$value$plusargs("ARGUMENT=%d", argument)) begin
+      |      argument = 32'hdeadbeef;
+      |    end
+      |  end
+      |endmodule
+      |""".stripMargin
+  )
 }
 
 class PlusArgReaderWrapper(expected: Int) extends Module {
@@ -60,7 +64,7 @@ class PlusArgReaderWrapper(expected: Int) extends Module {
 }
 
 class IcarusBlackBoxTests extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "Icarus Backend"
+  behavior.of("Icarus Backend")
 
   val annos = Seq(IcarusBackendAnnotation)
 

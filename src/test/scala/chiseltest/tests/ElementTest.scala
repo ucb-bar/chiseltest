@@ -8,7 +8,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class ElementTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
-  behavior of "Testers2 with Element types"
+  behavior.of("Testers2 with Element types")
 
   // TODO: automatically detect overflow conditions and error out
 
@@ -32,8 +32,8 @@ class ElementTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
       c.io.expect(0.U, 1.U, 1.U)
       c.io.expect(1.U, 1.U, 2.U)
       c.io.expect(254.U, 1.U, 255.U)
-      c.io.expect(255.U, 1.U, 0.U)  // overflow behavior
-      c.io.expect(255.U, 255.U, 254.U)  // overflow behavior
+      c.io.expect(255.U, 1.U, 0.U) // overflow behavior
+      c.io.expect(255.U, 255.U, 254.U) // overflow behavior
     }
   }
 

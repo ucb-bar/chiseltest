@@ -20,15 +20,14 @@ class WidthInferenceUIntInBundleModule extends Module {
   io.b := io.a +& 1.U
 }
 
-
 class VerilatorUnspecifiedWidthIOTests extends AnyFreeSpec with ChiselScalatestTester {
-  "Verilator should support modules that have I/Os that rely on width inference"  taggedAs RequiresVerilator in {
+  "Verilator should support modules that have I/Os that rely on width inference" taggedAs RequiresVerilator in {
     test(new WidthInferenceUIntModule) { dut =>
       dut.out.expect(123)
     }
   }
 
-  "Verilator should support modules that have I/Os that rely on width inference in a bundle"  taggedAs RequiresVerilator in {
+  "Verilator should support modules that have I/Os that rely on width inference in a bundle" taggedAs RequiresVerilator in {
     test(new WidthInferenceUIntInBundleModule) { dut =>
       val max = (BigInt(1) << 32) - 1
       dut.io.a.poke(max)

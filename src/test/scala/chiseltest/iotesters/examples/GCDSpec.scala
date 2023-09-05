@@ -23,9 +23,9 @@ class RealGCD2Input extends Bundle {
 
 class RealGCD2 extends Module {
   private val theWidth = RealGCD2.num_width
-  val io  = IO(new Bundle {
+  val io = IO(new Bundle {
     // we use quirky names here to test fixed bug in verilator backend
-    val RealGCD2in  = Flipped(Decoupled(new RealGCD2Input()))
+    val RealGCD2in = Flipped(Decoupled(new RealGCD2Input()))
     val RealGCD2out = Valid(UInt(theWidth.W))
   })
 
@@ -38,26 +38,25 @@ class RealGCD2 extends Module {
 
   io.RealGCD2in.ready := !p
 
-  when (io.RealGCD2in.valid && !p) {
+  when(io.RealGCD2in.valid && !p) {
     x := io.RealGCD2in.bits.a
     y := io.RealGCD2in.bits.b
     p := true.B
   }
 
-  when (p) {
-    when (x > y)  { x := y; y := x }
-      .otherwise    { y := y - x }
+  when(p) {
+    when(x > y) { x := y; y := x }.otherwise { y := y - x }
   }
 
-  io.RealGCD2out.bits  := x
+  io.RealGCD2out.bits := x
   io.RealGCD2out.valid := y === 0.U && p
-  when (io.RealGCD2out.valid) {
+  when(io.RealGCD2out.valid) {
     p := false.B
   }
 }
 
 class GCDPeekPokeTester(c: RealGCD2, maxX: Int = 10, maxY: Int = 10, showTiming: Boolean = false)
-  extends PeekPokeTester(c)  {
+    extends PeekPokeTester(c) {
   val timer = new Timer
 
   timer("overall") {
@@ -86,13 +85,13 @@ class GCDPeekPokeTester(c: RealGCD2, maxX: Int = 10, maxY: Int = 10, showTiming:
       }
     }
   }
-  if(showTiming) {
+  if (showTiming) {
     println(s"\n${timer.report()}")
   }
 }
 
 class GCDSpec extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "GCDSpec"
+  behavior.of("GCDSpec")
 
   it should "compute gcd excellently" in {
     test(new RealGCD2).runPeekPoke(new GCDPeekPokeTester(_))
@@ -105,7 +104,8 @@ class GCDSpec extends AnyFlatSpec with ChiselScalatestTester {
   // this is a change from the old iotesters behavior which would always create a VCD when using Verilator
   it should "require an explicit annotation to create a vcd" taggedAs RequiresVerilator in {
     val target = TargetDirAnnotation("test_run_dir/gcd_make_vcd")
-    test(new RealGCD2).withAnnotations(Seq(target, VerilatorBackendAnnotation, WriteVcdAnnotation))
+    test(new RealGCD2)
+      .withAnnotations(Seq(target, VerilatorBackendAnnotation, WriteVcdAnnotation))
       .runPeekPoke(new GCDPeekPokeTester(_))
 
     val vcd = os.pwd / os.RelPath(target.directory) / "RealGCD2.vcd"
@@ -113,10 +113,9 @@ class GCDSpec extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "run verilator with larger input vector to run regressions" taggedAs RequiresVerilator in {
-    test(new RealGCD2).withAnnotations(Seq(VerilatorBackendAnnotation))
+    test(new RealGCD2)
+      .withAnnotations(Seq(VerilatorBackendAnnotation))
       .runPeekPoke(new GCDPeekPokeTester(_, 100, 1000, showTiming = true))
   }
 
-
 }
-

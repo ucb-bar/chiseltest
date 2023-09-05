@@ -27,7 +27,7 @@ class ZeroWidthIOTester(c: MyZeroWidthDut) extends PeekPokeTester(c) {
 }
 
 class ZeroWidthIOSpec extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "Zero Width IOs"
+  behavior.of("Zero Width IOs")
 
   it should "work with firrtl backend" in {
     test(new MyZeroWidthDut).withAnnotations(Seq(TreadleBackendAnnotation)).runPeekPoke(new ZeroWidthIOTester(_))

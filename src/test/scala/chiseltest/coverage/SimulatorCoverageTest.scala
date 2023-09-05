@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-
 package chiseltest.coverage
 
 import chiseltest._
@@ -10,11 +9,13 @@ import chisel3._
 import chiseltest.simulator.{DefaultTag, SimulatorAnnotation}
 import org.scalatest.Tag
 
-/** Ensure that all simulators give the same coverage feedback when run with the same tests.
-  * To implement this for a particular simulator, just override the `backend` annotation.
-  * */
-abstract class SimulatorCoverageTest(name: String, backend: SimulatorAnnotation, tag: Tag = DefaultTag) extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of s"$name Coverage Collection"
+/** Ensure that all simulators give the same coverage feedback when run with the same tests. To implement this for a
+  * particular simulator, just override the `backend` annotation.
+  */
+abstract class SimulatorCoverageTest(name: String, backend: SimulatorAnnotation, tag: Tag = DefaultTag)
+    extends AnyFlatSpec
+    with ChiselScalatestTester {
+  behavior.of(s"$name Coverage Collection")
   private def noAutoCov: AnnotationSeq = Seq(backend)
 
   it should "report count for all user cover points (no submodules)" taggedAs tag in {

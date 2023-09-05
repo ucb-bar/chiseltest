@@ -10,7 +10,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class VerilatorBasicTests extends AnyFlatSpec with ChiselScalatestTester with Matchers {
-  behavior of "Testers2 with Verilator"
+  behavior.of("Testers2 with Verilator")
 
   val annos = Seq(VerilatorBackendAnnotation)
 
@@ -41,7 +41,7 @@ class VerilatorBasicTests extends AnyFlatSpec with ChiselScalatestTester with Ma
       test(new StaticModule(42.U)).withAnnotations(annos) { c =>
         c.out.expect(0.U, "user-defined failure message =(")
       }
-    }.getMessage should include ("user-defined failure message =(")
+    }.getMessage should include("user-defined failure message =(")
   }
 
   it should "test inputless sequential circuits" taggedAs RequiresVerilator in {
@@ -104,7 +104,7 @@ class VerilatorBasicTests extends AnyFlatSpec with ChiselScalatestTester with Ma
       c.io.out.expect(42.U)
 
       c.reset.poke(true.B)
-      c.io.out.expect(42.U)  // sync reset not effective until next clk
+      c.io.out.expect(42.U) // sync reset not effective until next clk
       c.clock.step()
       c.io.out.expect(0.U)
 

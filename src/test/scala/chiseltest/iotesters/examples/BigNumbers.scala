@@ -16,18 +16,18 @@ class PassOn extends Module {
 }
 
 class BigNumbersTester(c: PassOn) extends PeekPokeTester(c) {
-  poke (c.io.in, 0x0000000070000000L)
+  poke(c.io.in, 0x0000000070000000L)
   expect(c.io.out, 0x0000000070000000L)
 
   // Test 2:(Test Fails)
-  poke (c.io.in, 0x0000000770000000L)
-  expect (c.io.out, 0x0000000770000000L)
+  poke(c.io.in, 0x0000000770000000L)
+  expect(c.io.out, 0x0000000770000000L)
 
   // Output only takes value of last 32 bits (70000000) and test fails.
 
   // Test 3:(FIRRTL generates an error)
-  poke (c.io.in, 0x0000000080000000L)
-  expect (c.io.out, 0x0000000080000000L)
+  poke(c.io.in, 0x0000000080000000L)
+  expect(c.io.out, 0x0000000080000000L)
 }
 
 class BigNumbersSpec extends AnyFreeSpec with ChiselScalatestTester {

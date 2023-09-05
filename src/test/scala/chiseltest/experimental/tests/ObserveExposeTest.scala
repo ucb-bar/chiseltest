@@ -2,7 +2,7 @@
 
 package chiseltest.experimental.tests
 
-import chiseltest.experimental.{expose}
+import chiseltest.experimental.expose
 
 import chisel3._
 import chiseltest._
@@ -12,15 +12,15 @@ import flatspec._
 import matchers.should._
 
 class ObserveExposeTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
-  behavior of "Expose"
+  behavior.of("Expose")
 
   class SubModule extends Module {
-    val reg  = Reg(UInt(6.W))
+    val reg = Reg(UInt(6.W))
     val wire = Wire(UInt(6.W))
-    val vec  = RegInit(VecInit(Seq.fill(32)(0.S(32.W))))
-    reg     := 42.U
-    wire    := reg
-    vec(0)  := 1.S
+    val vec = RegInit(VecInit(Seq.fill(32)(0.S(32.W))))
+    reg := 42.U
+    wire := reg
+    vec(0) := 1.S
     vec(10) := 10.S
     vec(20) := -25.S
     vec(31) := 150.S
@@ -31,9 +31,9 @@ class ObserveExposeTest extends AnyFlatSpec with ChiselScalatestTester with Matc
   }
 
   class TopWrapper extends Top {
-    val exposed_reg  = expose(submodule.reg)
+    val exposed_reg = expose(submodule.reg)
     val exposed_wire = expose(submodule.wire)
-    val exposed_vec  = expose(submodule.vec)
+    val exposed_vec = expose(submodule.vec)
   }
 
   it should "expose a submodule Reg by using BoringUtils" in {

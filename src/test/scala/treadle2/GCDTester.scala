@@ -95,8 +95,8 @@ class GCDTester extends AnyFlatSpec with Matchers with LazyLogging {
     }
   }
 
-  //scalastyle:off
-  def manyValuesTest(width: Int): Unit ={
+  // scalastyle:off
+  def manyValuesTest(width: Int): Unit = {
     val gcdFirrtl: String =
       s"""
          |circuit GCD :
