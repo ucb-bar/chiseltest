@@ -22,16 +22,14 @@ object ConvertCirctSequenceIntrinsics extends Transform {
   private val HasBeenReset = "circt_has_been_reset"
   private val LtlDisable = "circt_ltl_disable"
   private val LtlClock = "circt_ltl_clock"
+  // Assume, Assert, Cover
+  private val VerifOps = Set("circt_verif_assert", "circt_verif_assume", "circt_verif_cover")
 
   private val Intrinsics = Set(
     HasBeenReset,
     LtlDisable,
-    LtlClock,
-    // Assume, Assert, Cover
-    "circt_verif_assert",
-    "circt_verif_assume",
-    "circt_verif_cover"
-  )
+    LtlClock
+  ) | VerifOps
 
   private def findIntrinsicMapping(circuit: ir.Circuit): Map[String, String] =
     circuit.modules.collect { case e: ir.ExtModule if Intrinsics.contains(e.defname) => e.name -> e.defname }.toMap
@@ -88,6 +86,8 @@ object ConvertCirctSequenceIntrinsics extends Transform {
     inputs: mutable.HashMap[String, List[(String, ir.Expression)]] = mutable.HashMap(),
     /** Keeps track of any intrinsic outputs that we have generated. Currently only used for `HasBeenReset` */
     outputs: mutable.HashMap[(String, String), ir.Expression] = mutable.HashMap(),
+    /** Maps intrinsic instance name to IR Node */
+    nodes: mutable.HashMap[String, Node] = mutable.HashMap(),
     /** Keeps track of registers that need to be preset annotated (to implement HasBeenReset) */
     presetRegs: mutable.ListBuffer[String] = mutable.ListBuffer(),
     /** Avoids duplicate has_been_reset trackers. */
@@ -104,9 +104,13 @@ object ConvertCirctSequenceIntrinsics extends Transform {
         case ir.SubField(ir.Reference(instOut, _, _, _), portOut, _, _) if ctx.isIntrinsicInst(instOut) =>
           connectIntrinsics(ctx, instIn, portIn, instOut, portOut)
         case other =>
+          // remember all inputs
           val old = ctx.inputs.getOrElse(instIn, List())
-          ctx.inputs(instIn) = (portIn, expr) +: old
-          if (ctx.instToIntrinsic(instIn).intrinsic == HasBeenReset) {
+          ctx.inputs(instIn) = (portIn, other) +: old
+
+          // for some intrinsics, connecting inputs triggers an action
+          val intrinsicName = ctx.instToIntrinsic(instIn).intrinsic
+          if (intrinsicName == HasBeenReset) {
             onHasBeenResetInput(ctx, instIn)
           } else {
             ir.EmptyStmt
@@ -125,7 +129,21 @@ object ConvertCirctSequenceIntrinsics extends Transform {
 
   private def connectIntrinsics(ctx: Ctx, instIn: String, portIn: String, instOut: String, portOut: String)
     : ir.Statement = {
-    println(s"TODO: ${instIn}.$portIn <= ${instOut}.$portOut")
+    val intrinsicName = ctx.instToIntrinsic(instIn).intrinsic
+    // take action according to the intrinsic
+    if (VerifOps.contains(intrinsicName)) {
+      onVerificationOp(ctx, instIn)
+    } else {
+      println(s"TODO: ${instIn}.$portIn <= ${instOut}.$portOut")
+      ir.EmptyStmt
+    }
+  }
+
+  private def onVerificationOp(ctx: Ctx, inst: String): ir.Statement = {
+    // there should be exactly one input
+    val (inputName, input) = ctx.inputs(inst).head
+    assert(inputName == "property")
+
     ir.EmptyStmt
   }
 

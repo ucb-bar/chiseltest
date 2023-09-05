@@ -4,7 +4,9 @@
 
 package chiseltest.sequences
 
-sealed trait BooleanExpr {}
+sealed trait Node {}
+
+sealed trait BooleanExpr extends Node {}
 case class SymbolExpr(name: String) extends BooleanExpr
 case class NotExpr(e: BooleanExpr) extends BooleanExpr
 case class AndExpr(a: BooleanExpr, b: BooleanExpr) extends BooleanExpr
@@ -12,7 +14,7 @@ case class OrExpr(a: BooleanExpr, b: BooleanExpr) extends BooleanExpr
 case object FalseExpr extends BooleanExpr
 case object TrueExpr extends BooleanExpr
 
-sealed trait Sequence {}
+sealed trait Sequence extends Node {}
 
 case class SeqPred(predicate: BooleanExpr) extends Sequence
 case class SeqOr(s1: Sequence, s2: Sequence) extends Sequence
@@ -23,7 +25,7 @@ case class SeqImplies(s1: Sequence, p1: Property) extends Sequence
 case class SeqImpliesNext(s1: Sequence, p1: Property) extends Sequence
 case class SeqFuse(s1: Sequence, s2: Sequence) extends Sequence
 
-sealed trait Property {}
+sealed trait Property extends Node {}
 
 case class PropSeq(s: Sequence) extends Property
 
@@ -32,4 +34,4 @@ case class PropertyTop(
   predicates: Seq[String], // boolean inputs
   disableIff: BooleanExpr = FalseExpr
   // TODO
-)
+) extends Node
