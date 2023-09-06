@@ -6,17 +6,29 @@ import chisel3._
 import chisel3.ltl._
 import chisel3.ltl.Sequence._
 
-class SimpleAssertionModule extends Module {
+class UnarySequenceModule(impl: Bool => Unit) extends Module {
   val a = IO(Input(Bool()))
-  AssertProperty(a)
-  AssumeProperty(a)
-  CoverProperty(a)
+  impl(a)
 }
 
 /** Make sure that chiselest works with Chisel sequence assertions. */
 class SequencesTests extends AnyFreeSpec with ChiselScalatestTester {
-  "simple assert / assume / cover properties should work" in {
-    test(new SimpleAssertionModule) { dut =>
+  "simple assert properties should work" in {
+    test(new UnarySequenceModule(a => AssertProperty(a))) { dut =>
+      dut.a.poke(true)
+      dut.clock.step()
+    }
+  }
+
+  "simple assume properties should work" in {
+    test(new UnarySequenceModule(a => AssertProperty(a))) { dut =>
+      dut.a.poke(true)
+      dut.clock.step()
+    }
+  }
+
+  "simple cover properties should work" in {
+    test(new UnarySequenceModule(a => CoverProperty(a))) { dut =>
       dut.a.poke(true)
       dut.clock.step()
     }

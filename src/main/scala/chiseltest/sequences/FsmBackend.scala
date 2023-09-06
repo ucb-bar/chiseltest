@@ -22,7 +22,8 @@ object FsmBackend extends Backend {
       Seq()
     )
     // add a unique prefix to all modules and make sure that they are type checked before returning them
-    val prefix = genUniquePrefix(moduleNames, prop.name) + "_"
+    val prefixSeed = if (prop.name.isEmpty) "P" else prop.name // ensure that prefix seed is non-empty
+    val prefix = genUniquePrefix(moduleNames, prefixSeed) + "_"
     val annos = GlobalPrefixAnnotation(prefix) +: state.annotations
     compiler.transform(state.copy(annotations = annos))
   }
@@ -93,7 +94,7 @@ class PropertyFsmAutomaton(preds: Seq[String], op: VerificationOp, compile: Map[
   val clock = IO(Input(Clock()))
 
   // all reset values are taken on at the start of simulation
-  val reset = Wire(AsyncReset())
+  val reset = WireInit(0.B.asAsyncReset)
   annotateAsPreset(reset.toTarget)
 
   val predicates = preds.map { name =>

@@ -72,15 +72,11 @@ object ConvertCirctSequenceIntrinsics extends Transform {
     }
 
     val circuit = state.circuit.copy(modules = modules)
-
-    // TODO
-    println(circuit.serialize)
     state.copy(circuit = circuit, annotations = newAnnos.toSeq ++: state.annotations)
   }
 
   private def onModule(c: CircuitTarget, m: ir.Module, intrinsics: Map[String, String], moduleNames: Seq[String])
     : (ir.Module, Seq[ir.DefModule], AnnotationSeq) = {
-    println(m.serialize)
     val ctx = Ctx(moduleNames, c.module(m.name), intrinsics, Namespace(m))
     val body = onStmt(ctx)(m.body)
     val finalModule = m.copy(body = body)
@@ -206,10 +202,10 @@ object ConvertCirctSequenceIntrinsics extends Transform {
     val instanceName = ctx.namespace.newName(prop.name + "_" + opToString(op))
     val main = state.circuit.modules.find(_.name == state.circuit.main).get
     val instance = ir.DefInstance(info, instanceName, state.circuit.main, Utils.module_type(main))
-    val instanceRef = ir.Reference(instance)
+    val instanceRef = ir.Reference(instance).copy(flow = SourceFlow)
     val connects = main.ports.map { case ir.Port(_, name, direction, tpe) =>
       assert(direction == ir.Input)
-      ir.Connect(info, ir.SubField(instanceRef, name, tpe = tpe), propEnv.preds(name))
+      ir.Connect(info, ir.SubField(instanceRef, name, tpe = tpe, flow = SinkFlow), propEnv.preds(name))
     }
 
     ir.Block(instance +: connects)
