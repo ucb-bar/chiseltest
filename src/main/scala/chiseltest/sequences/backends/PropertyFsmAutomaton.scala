@@ -39,6 +39,9 @@ object SeqRes extends ChiselEnum {
 
 class SequenceIO extends Bundle {
 
+  /** disable checking and reset within one cycle */
+  val disable = Input(Bool())
+
   /** is the FSM active this cycle? */
   val advance = Input(Bool())
 
@@ -54,6 +57,9 @@ object PropRes extends ChiselEnum {
 }
 
 class PropertyFsmIO extends Bundle {
+
+  /** disable checking and reset within one cycle */
+  val disable = Input(Bool())
 
   /** is the FSM active this cycle? */
   val advance = Input(Bool())
@@ -119,6 +125,14 @@ class SeqConcatModule extends Module {
   }.otherwise {
     io.status := DontCare
   }
+
+  when(io.disable) { // reset registers on disable
+    run1 := false.B
+    run2 := false.B
+  }
+  // propagate disable to sub-sequences
+  seq1.disable := io.disable
+  seq2.disable := io.disable
 }
 
 object SeqConcatModule {
@@ -140,6 +154,8 @@ class PropSeqModule extends Module {
   val io = IO(new PropertyFsmIO)
   // advance is just connected
   seq.advance := io.advance
+  // propagate disable
+  seq.disable := io.disable
 
   when(seq.status.isOneOf(SeqRes.SeqHold, SeqRes.SeqHoldStrong)) {
     io.status := PropRes.PropTrue
@@ -161,34 +177,6 @@ object PropSeqModule {
   }
 }
 
-/** assert a property from the start of reset
-  * @note:
-  *   this is not an always assert, it will only check the property once!
-  */
-class AssertPropModule(desc: String) extends Module {
-  val propertyIO = IO(Flipped(new PropertyFsmIO))
-
-  // the assertion is active starting at reset
-  val going = RegInit(true.B)
-  propertyIO.advance := false.B
-
-  // only advance when reset is false and we are still going
-  when(going && !reset.asBool) {
-    propertyIO.advance := true.B
-    // continue advancing the property while the result is still undetermined
-    going := propertyIO.status === PropRes.PropUndetermined
-    // if the property returns false, this assertion fails
-    assert(propertyIO.status =/= PropRes.PropFalse, desc)
-  }
-}
-
-object AssertPropModule {
-  def apply(p: PropertyFsmIO, desc: String): Unit = {
-    val mod = Module(new AssertPropModule(desc)).suggestName("assert_prop")
-    mod.propertyIO <> p
-  }
-}
-
 object findFirstInactive {
 
   /** return one-hot encoded list with the index of the first active reg turned on */
@@ -202,11 +190,22 @@ object findFirstInactive {
   }
 }
 
+class AssertAlwaysIO extends Bundle {
+
+  /** disable checking and reset within one cycle */
+  val disable = Input(Bool())
+
+  /** indicates that the assertion failed */
+  val fail = Output(Bool())
+}
+
 class AssertAlwaysModule(n: Int) extends Module {
   import PropRes._
 
+  val io = IO(new AssertAlwaysIO)
   val props = IO(Vec(n, Flipped(new PropertyFsmIO)))
-  val fail = IO(Output(Bool()))
+  // propagate disable
+  props.foreach(p => p.disable := io.disable)
 
   val active = RegInit(0.U(n.W))
 
@@ -227,13 +226,20 @@ class AssertAlwaysModule(n: Int) extends Module {
 
   // none of the properties that we advance should be false
   val propFailed = Cat(props.map(p => p.status === PropFalse)) // TODO: reverse?
-  fail := (propFailed & nowActive) =/= 0.U
+  val fail = (propFailed & nowActive) =/= 0.U
+  io.fail := fail && !io.disable
+
+  // reset registers on disable
+  when(io.disable) {
+    active := 0.U
+  }
 }
 
 object AssertAlwaysModule {
-  def apply(props: Seq[PropertyFsmIO]): Bool = {
+  def apply(props: Seq[PropertyFsmIO], disable: Bool): Bool = {
     val mod = Module(new AssertAlwaysModule(props.length))
     mod.props.zip(props).foreach { case (a, b) => a <> b }
-    mod.fail
+    mod.io.disable := disable
+    mod.io.fail
   }
 }

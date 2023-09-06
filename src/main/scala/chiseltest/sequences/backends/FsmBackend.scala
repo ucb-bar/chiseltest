@@ -17,7 +17,8 @@ object FsmBackend extends Backend {
 
   override def generate(skeleton: ir.Module, moduleNames: Seq[String], prop: PropertyTop): CircuitState = {
     val (state, _) = Compiler.elaborate(
-      () => new PropertyFsmAutomaton(prop.predicates, prop.op, { pred => compileAlways(pred, prop.prop) }),
+      () =>
+        new PropertyFsmAutomaton(prop.predicates, prop.op, { pred => compileAlways(pred, prop.prop, prop.disableIff) }),
       Seq(),
       Seq()
     )
@@ -42,10 +43,10 @@ object FsmBackend extends Backend {
     res
   }
 
-  private def compileAlways(pred: Map[String, Bool], p: Property): Bool = {
+  private def compileAlways(pred: Map[String, Bool], p: Property, disableIff: BooleanExpr): Bool = {
     val n = runtime(p)
     val props = Seq.fill(n)(comp(pred, p))
-    AssertAlwaysModule(props)
+    AssertAlwaysModule(props, comp(pred, disableIff))
   }
 
   private def comp(pred: Map[String, Bool], p: Property): PropertyFsmIO = {
