@@ -1,3 +1,7 @@
+// Copyright 2022-2023 The Regents of the University of California
+// released under BSD 3-Clause License
+// author: Kevin Laeufer <laeufer@cs.berkeley.edu>
+
 package chiseltest.sequences
 
 import firrtl2._
@@ -18,6 +22,8 @@ object ConvertCirctSequenceIntrinsics extends Transform {
     Dependency[ExpandWhensAndCheck],
     Dependency[DedupModules]
   )
+
+  private val CurrentBackend: Backend = FsmBackend
 
   private val HasBeenReset = "circt_has_been_reset"
   private val LtlDisable = "circt_ltl_disable"
@@ -82,12 +88,12 @@ object ConvertCirctSequenceIntrinsics extends Transform {
     namespace: Namespace,
     /** maps the name of an instance to the intrinsic that its module represents */
     instToIntrinsic: mutable.HashMap[String, IntrinsicInstance] = mutable.HashMap(),
-    /** keeps track of all inputs to a intrinsic instance */
-    inputs: mutable.HashMap[String, List[(String, ir.Expression)]] = mutable.HashMap(),
+    /** keeps track of all inputs to intrinsic instances that are regular firrtl expressions */
+    exprInputs: mutable.HashMap[(String, String), ir.Expression] = mutable.HashMap(),
+    /** keeps track of all inputs to intrinsic instances that are sequence IR Nodes */
+    nodeInputs: mutable.HashMap[(String, String), (Node, PropertyEnv)] = mutable.HashMap(),
     /** Keeps track of any intrinsic outputs that we have generated. Currently only used for `HasBeenReset` */
     outputs: mutable.HashMap[(String, String), ir.Expression] = mutable.HashMap(),
-    /** Maps intrinsic instance name to IR Node */
-    nodes: mutable.HashMap[String, Node] = mutable.HashMap(),
     /** Keeps track of registers that need to be preset annotated (to implement HasBeenReset) */
     presetRegs: mutable.ListBuffer[String] = mutable.ListBuffer(),
     /** Avoids duplicate has_been_reset trackers. */
@@ -95,6 +101,17 @@ object ConvertCirctSequenceIntrinsics extends Transform {
     def isIntrinsicMod(module: String): Boolean = moduleToIntrinsic.contains(module)
 
     def isIntrinsicInst(module: String): Boolean = instToIntrinsic.contains(module)
+
+    private def getNode(inst: String, port: String): (Node, PropertyEnv) =
+      nodeInputs.getOrElse((inst, port), NodeUtils.asBooleanExpr(exprInputs((inst, port))))
+    def getBoolean(inst: String, port: String): (BooleanExpr, PropertyEnv) = {
+      val (node, env) = getNode(inst, port)
+      (NodeUtils.asBooleanExpr(node).get, env)
+    }
+    def getPropertyTop(inst: String, port: String): (PropertyTop, PropertyEnv) = {
+      val (node, env) = getNode(inst, port)
+      (NodeUtils.asPropertyTop(node, env), env)
+    }
   }
 
   private def onStmt(ctx: Ctx)(s: ir.Statement): ir.Statement = s.mapExpr(onExpr(ctx)) match {
@@ -105,8 +122,7 @@ object ConvertCirctSequenceIntrinsics extends Transform {
           connectIntrinsics(ctx, instIn, portIn, instOut, portOut)
         case other =>
           // remember all inputs
-          val old = ctx.inputs.getOrElse(instIn, List())
-          ctx.inputs(instIn) = (portIn, other) +: old
+          ctx.exprInputs((instIn, portIn)) = other
 
           // for some intrinsics, connecting inputs triggers an action
           val intrinsicName = ctx.instToIntrinsic(instIn).intrinsic
@@ -129,27 +145,45 @@ object ConvertCirctSequenceIntrinsics extends Transform {
 
   private def connectIntrinsics(ctx: Ctx, instIn: String, portIn: String, instOut: String, portOut: String)
     : ir.Statement = {
-    val intrinsicName = ctx.instToIntrinsic(instIn).intrinsic
+    // convert output intrinsic
+    val (outNode, outEnv) = intrinsicToNode(ctx, instOut, portOut)
+    ctx.nodeInputs((instIn, portIn)) = (outNode, outEnv)
+
     // take action according to the intrinsic
+    val intrinsicName = ctx.instToIntrinsic(instIn).intrinsic
     if (VerifOps.contains(intrinsicName)) {
       onVerificationOp(ctx, instIn)
     } else {
-      println(s"TODO: ${instIn}.$portIn <= ${instOut}.$portOut")
       ir.EmptyStmt
     }
   }
 
+  private def intrinsicToNode(ctx: Ctx, inst: String, outPort: String): (Node, PropertyEnv) = {
+    val intrinsicName = ctx.instToIntrinsic(inst).intrinsic
+    intrinsicName match {
+      case LtlDisable =>
+        val (in, inEnv) = ctx.getPropertyTop(inst, "in")
+        val (condition, condEnv) = ctx.getBoolean(inst, "condition")
+        val combinedEnv = inEnv.union(condEnv)
+        (in.copy(predicates = combinedEnv.getPredicateInputs, disableIff = condition), combinedEnv)
+      case LtlClock =>
+        val (in, inEnv) = ctx.getPropertyTop(inst, "in")
+        val clock = ctx.exprInputs((inst, "clock"))
+        (in, inEnv.copy(preds = inEnv.preds ++ Map("clock" -> clock)))
+      case other => throw new NotImplementedError(s"TODO: convert $other intrinsic!")
+    }
+  }
+
   private def onVerificationOp(ctx: Ctx, inst: String): ir.Statement = {
-    // there should be exactly one input
-    val (inputName, input) = ctx.inputs(inst).head
-    assert(inputName == "property")
+    val (prop, propEnv) = ctx.getPropertyTop(inst, "property")
+    val modules = Backend.generate(CurrentBackend, prop)
+    throw new NotImplementedError("TODO: verification op")
 
     ir.EmptyStmt
   }
 
   private def onHasBeenResetInput(ctx: Ctx, inst: String): ir.Statement = {
-    val inputs = ctx.inputs(inst)
-    val (clock, reset) = (inputs.find(_._1 == "clock").map(_._2), inputs.find(_._1 == "reset").map(_._2))
+    val (clock, reset) = (ctx.exprInputs.get((inst, "clock")), ctx.exprInputs.get((inst, "reset")))
     (clock, reset) match {
       case (Some(clockExpr), Some(resetExpr)) =>
         val key = (clockExpr.serialize, resetExpr.serialize)
@@ -192,4 +226,44 @@ object ConvertCirctSequenceIntrinsics extends Transform {
     case other => other.mapExpr(onExpr(ctx))
 
   }
+}
+
+case class PropertyEnv(preds: Map[String, ir.Expression]) {
+  def getPredicateInputs: Seq[String] = preds.keys.toSeq.sorted
+  def union(other: PropertyEnv): PropertyEnv = PropertyEnv(preds ++ other.preds)
+}
+
+private object NodeUtils {
+  private def sanitizeRefName(name: String): String =
+    name.replace('.', '_').replace('[', '_').replace(']', '_')
+
+  def asBooleanExpr(expr: ir.Expression): (BooleanExpr, PropertyEnv) = expr match {
+    case ref: ir.RefLikeExpression =>
+      val name = sanitizeRefName(ref.serialize) // TODO: ensure name is unique!
+      (SymbolExpr(name), PropertyEnv(Map(name -> ref)))
+    case other => {
+      other
+      ???
+    }
+  }
+  def asBooleanExpr(node: Node): Option[BooleanExpr] = node match {
+    case expr: BooleanExpr => Some(expr)
+    case _ => None
+  }
+  def asSequence(node: Node): Option[Sequence] = node match {
+    case expr:     BooleanExpr => Some(SeqPred(expr))
+    case sequence: Sequence    => Some(sequence)
+    case _ => None
+  }
+  def asProperty(node: Node): Option[Property] = node match {
+    case expr:     BooleanExpr => Some(PropSeq(SeqPred(expr)))
+    case sequence: Sequence    => Some(PropSeq(sequence))
+    case property: Property    => Some(property)
+    case _ => None
+  }
+  def asPropertyTop(node: Node, env: PropertyEnv): PropertyTop = node match {
+    case top: PropertyTop => top
+    case other => PropertyTop(asProperty(other).get, predicates = env.getPredicateInputs)
+  }
+
 }

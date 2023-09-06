@@ -29,9 +29,16 @@ sealed trait Property extends Node {}
 
 case class PropSeq(s: Sequence) extends Property
 
+sealed trait VerificationOp
+case object AssertOp extends VerificationOp
+case object AssumeOp extends VerificationOp
+case object CoverOp extends VerificationOp
+case object NoOp extends VerificationOp
+
 case class PropertyTop(
-  name:       String,
-  predicates: Seq[String], // boolean inputs
-  disableIff: BooleanExpr = FalseExpr
-  // TODO
-) extends Node
+  prop:       Property,
+  name:       String = "",
+  predicates: Seq[String] = Seq(), // boolean inputs
+  disableIff: BooleanExpr = FalseExpr,
+  op:         VerificationOp = NoOp)
+    extends Node
