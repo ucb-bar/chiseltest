@@ -4,6 +4,7 @@
 
 package chiseltest.sequences
 
+import chiseltest.sequences.backends.FsmBackend
 import firrtl2._
 import firrtl2.annotations.{Annotation, CircuitTarget, ModuleTarget, PresetRegAnnotation}
 import firrtl2.options.Dependency

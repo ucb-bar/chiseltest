@@ -14,7 +14,8 @@ class UnarySequenceModule(impl: Bool => Unit) extends Module {
 /** Make sure that chiselest works with Chisel sequence assertions. */
 class SequencesTests extends AnyFreeSpec with ChiselScalatestTester {
   "simple assert properties should work" in {
-    test(new UnarySequenceModule(a => AssertProperty(a))) { dut =>
+    val annos = Seq(VerilatorBackendAnnotation, WriteVcdAnnotation)
+    test(new UnarySequenceModule(a => AssertProperty(a, label = Some("assert_a")))).withAnnotations(annos) { dut =>
       dut.a.poke(true)
       dut.clock.step()
     }
