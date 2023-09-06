@@ -21,10 +21,10 @@ class TimeoutException(message: String)
 class TemporalParadox(message: String) extends Exception(message)
 
 /** Indicates that a Chisel `stop()` statement was triggered. */
-class StopException(message: String) extends Exception(message)
+class StopException(message: String, val cycles: Long) extends Exception(message)
 
 /** Indicates that a Chisel `assert(...)` or `assume(...)` statement has failed. */
-class ChiselAssertionError(message: String) extends Exception(message)
+class ChiselAssertionError(message: String, val cycles: Long) extends Exception(message)
 
 /** Indicates that a value used in a poke/expect is not a literal. It could be hardware or a DontCare which is only
   * allowed when using pokePartial/expectPartial.

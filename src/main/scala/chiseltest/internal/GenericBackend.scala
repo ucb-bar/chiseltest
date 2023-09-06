@@ -146,13 +146,13 @@ class GenericBackend[T <: Module](
     tester.step() match {
       case StepOk => // all right
         stepCount += 1
-      case StepInterrupted(_, true, _) =>
+      case StepInterrupted(after, true, _) =>
         val msg = s"An assertion in ${dut.name} failed.\n" +
           "Please consult the standard output for more details."
-        throw new ChiselAssertionError(msg)
-      case StepInterrupted(_, false, _) =>
+        throw new ChiselAssertionError(msg, stepCount + after)
+      case StepInterrupted(after, false, _) =>
         val msg = s"A stop() statement was triggered in ${dut.name}."
-        throw new StopException(msg)
+        throw new StopException(msg, stepCount + after)
     }
   }
 
@@ -226,7 +226,8 @@ class GenericBackend[T <: Module](
       } catch {
         case e: TestApplicationException =>
           throw new ChiselAssertionError(
-            s"Simulator exited sooner than expected. See logs for more information about what is assumed to be a Chisel Assertion which failed."
+            s"Simulator exited sooner than expected. See logs for more information about what is assumed to be a Chisel Assertion which failed.",
+            stepCount
           )
       }
     }

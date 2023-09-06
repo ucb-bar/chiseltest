@@ -90,13 +90,13 @@ class SingleThreadBackend[T <: Module](
         if (timeout > 0 && idleCycles == timeout) {
           throw new TimeoutException(s"timeout on $signal at $timeout idle cycles")
         }
-      case StepInterrupted(_, true, _) =>
+      case StepInterrupted(after, true, _) =>
         val msg = s"An assertion in ${dut.name} failed.\n" +
           "Please consult the standard output for more details."
-        throw new ChiselAssertionError(msg)
-      case StepInterrupted(_, false, _) =>
+        throw new ChiselAssertionError(msg, cycles + after)
+      case StepInterrupted(after, false, _) =>
         val msg = s"A stop() statement was triggered in ${dut.name}."
-        throw new StopException(msg)
+        throw new StopException(msg, cycles + after)
     }
   }
 
