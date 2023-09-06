@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         scala: [2.13.10]
-        jvm: [8, 11, 21]
+        jvm: [8, 11, 20]
     steps:
       - name: Checkout
         uses: actions/checkout@v3

@@ -89,4 +89,4 @@ libraryDependencies ++= Seq(
   }
 }
 
-javacOptions ++= Seq("-source", "21", "-target", "21")
+javacOptions ++= Seq("--source", "20", "--target", "20", "--enable-preview")
