@@ -486,7 +486,7 @@ trait ThreadedBackend[T <: Module] extends BackendInterface {
 
     // noinspection ConvertExpressionToSAM
     // TODO: code analysis suggests "Convert expression to Single Abstract Method", will that work?
-    val thread = new Thread(new Runnable {
+    val thread = Thread.ofVirtual().unstarted(new Runnable {
       def run(): Unit = {
         try {
           waiting.acquire()
