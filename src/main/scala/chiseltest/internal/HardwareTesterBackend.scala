@@ -74,10 +74,11 @@ object HardwareTesterBackend {
       if (expectFail) {
         throw new StopException(
           "Expected an assertion failure, but encountered a stop instead " +
-            s"after ${i.after} cycles."
+            s"after ${i.after} cycles.",
+          i.after
         )
       } else {
-        throw new ChiselAssertionError(s"Unexpected assertion failure after ${i.after} cycles.")
+        throw new ChiselAssertionError(s"Unexpected assertion failure after ${i.after} cycles.", i.after)
       }
     }
   }
