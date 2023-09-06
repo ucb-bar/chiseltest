@@ -271,10 +271,7 @@ private object NodeUtils {
     case ref: ir.RefLikeExpression =>
       val name = sanitizeRefName(ref.serialize) // TODO: ensure name is unique!
       (SymbolExpr(name), PropertyEnv(Map(name -> ref)))
-    case other => {
-      other
-      ???
-    }
+    case other => throw new NotImplementedError(s"TODO: implement conversion for: $other")
   }
   def asBooleanExpr(node: Node): Option[BooleanExpr] = node match {
     case expr: BooleanExpr => Some(expr)
