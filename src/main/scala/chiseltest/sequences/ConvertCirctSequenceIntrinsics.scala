@@ -5,12 +5,13 @@
 package chiseltest.sequences
 
 import firrtl2._
-import firrtl2.annotations.{Annotation, CircuitTarget, PresetRegAnnotation}
+import firrtl2.annotations.{Annotation, CircuitTarget, ModuleTarget, PresetRegAnnotation}
 import firrtl2.options.Dependency
 import firrtl2.passes.ExpandWhensAndCheck
 import firrtl2.stage.Forms
 import firrtl2.transforms.DedupModules
 
+import javax.management.RuntimeErrorException
 import scala.collection.mutable
 
 /** Replaces circt sequence intrinsics with a synthesizable version. */
@@ -29,7 +30,10 @@ object ConvertCirctSequenceIntrinsics extends Transform {
   private val LtlDisable = "circt_ltl_disable"
   private val LtlClock = "circt_ltl_clock"
   // Assume, Assert, Cover
-  private val VerifOps = Set("circt_verif_assert", "circt_verif_assume", "circt_verif_cover")
+  private val VerifAssert = "circt_verif_assert"
+  private val VerifAssume = "circt_verif_assume"
+  private val VerifCover = "circt_verif_cover"
+  private val VerifOps = Set(VerifAssert, VerifAssume, VerifCover)
 
   private val Intrinsics = Set(
     HasBeenReset,
@@ -56,12 +60,15 @@ object ConvertCirctSequenceIntrinsics extends Transform {
     // replace intrinsics in modules
     val c = CircuitTarget(state.circuit.main)
     val newAnnos = mutable.ListBuffer[Annotation]()
-    val modules = withoutIntrinsicsModules.map {
+    var moduleNames = state.circuit.modules.map(_.name)
+    val modules = withoutIntrinsicsModules.flatMap {
       case m: ir.Module =>
-        val (mod, annos) = onModule(c, m, intrinsics)
+        val (mod, mods, annos) = onModule(c, m, intrinsics, moduleNames)
         newAnnos ++= annos
-        mod
-      case other => other
+        // update module names
+        moduleNames = moduleNames ++ mods.map(_.name)
+        mod +: mods
+      case other => Seq(other)
     }
 
     val circuit = state.circuit.copy(modules = modules)
@@ -71,21 +78,28 @@ object ConvertCirctSequenceIntrinsics extends Transform {
     state.copy(circuit = circuit, annotations = newAnnos.toSeq ++: state.annotations)
   }
 
-  private def onModule(c: CircuitTarget, m: ir.Module, intrinsics: Map[String, String]): (ir.Module, AnnotationSeq) = {
+  private def onModule(c: CircuitTarget, m: ir.Module, intrinsics: Map[String, String], moduleNames: Seq[String])
+    : (ir.Module, Seq[ir.DefModule], AnnotationSeq) = {
     println(m.serialize)
-    val ctx = Ctx(intrinsics, Namespace(m))
+    val ctx = Ctx(moduleNames, c.module(m.name), intrinsics, Namespace(m))
     val body = onStmt(ctx)(m.body)
-    val newAnnos = ctx.presetRegs.toSeq.map(name => PresetRegAnnotation(c.module(m.name).ref(name)))
     val finalModule = m.copy(body = body)
-    (finalModule, newAnnos)
+    (finalModule, ctx.newModules.toSeq, ctx.newAnnos.toSeq)
   }
 
   private case class IntrinsicInstance(name: String, intrinsic: String, info: ir.Info)
   private case class Ctx(
+    /** allows us to generate new modules that do not have name conflicts */
+    moduleNames: Seq[String],
+    module:      ModuleTarget,
     /** maps the name of a module to the intrinsic it represents */
     moduleToIntrinsic: Map[String, String],
     /** namespace of the current module */
     namespace: Namespace,
+    /** collect modules that implement sequences */
+    newModules: mutable.ListBuffer[ir.DefModule] = mutable.ListBuffer(),
+    /** collect annotations used to implement sequences */
+    newAnnos: mutable.ListBuffer[Annotation] = mutable.ListBuffer(),
     /** maps the name of an instance to the intrinsic that its module represents */
     instToIntrinsic: mutable.HashMap[String, IntrinsicInstance] = mutable.HashMap(),
     /** keeps track of all inputs to intrinsic instances that are regular firrtl expressions */
@@ -94,8 +108,6 @@ object ConvertCirctSequenceIntrinsics extends Transform {
     nodeInputs: mutable.HashMap[(String, String), (Node, PropertyEnv)] = mutable.HashMap(),
     /** Keeps track of any intrinsic outputs that we have generated. Currently only used for `HasBeenReset` */
     outputs: mutable.HashMap[(String, String), ir.Expression] = mutable.HashMap(),
-    /** Keeps track of registers that need to be preset annotated (to implement HasBeenReset) */
-    presetRegs: mutable.ListBuffer[String] = mutable.ListBuffer(),
     /** Avoids duplicate has_been_reset trackers. */
     hasBeenResetCache: mutable.HashMap[(String, String), ir.Expression] = mutable.HashMap()) {
     def isIntrinsicMod(module: String): Boolean = moduleToIntrinsic.contains(module)
@@ -152,7 +164,7 @@ object ConvertCirctSequenceIntrinsics extends Transform {
     // take action according to the intrinsic
     val intrinsicName = ctx.instToIntrinsic(instIn).intrinsic
     if (VerifOps.contains(intrinsicName)) {
-      onVerificationOp(ctx, instIn)
+      onVerificationOp(ctx, instIn, intrinsicName)
     } else {
       ir.EmptyStmt
     }
@@ -174,12 +186,33 @@ object ConvertCirctSequenceIntrinsics extends Transform {
     }
   }
 
-  private def onVerificationOp(ctx: Ctx, inst: String): ir.Statement = {
+  private def onVerificationOp(ctx: Ctx, inst: String, intrinsicName: String): ir.Statement = {
+    val info = ctx.instToIntrinsic(inst).info
     val (prop, propEnv) = ctx.getPropertyTop(inst, "property")
-    val modules = Backend.generate(CurrentBackend, prop)
-    throw new NotImplementedError("TODO: verification op")
+    val op = intrinsicName match {
+      case VerifAssert => AssertOp
+      case VerifAssume => AssumeOp
+      case VerifCover  => CoverOp
+      case _           => throw new RuntimeException(s"Unexpected intrinsic: $intrinsicName")
+    }
 
-    ir.EmptyStmt
+    // generate implementation and add to context
+    val moduleNames = ctx.moduleNames ++ ctx.newModules.map(_.name)
+    val state = Backend.generate(CurrentBackend, ctx.module.circuit, moduleNames, prop.copy(op = op))
+    ctx.newModules.addAll(state.circuit.modules)
+    ctx.newAnnos.addAll(state.annotations)
+
+    // instantiate the main verification module
+    val instanceName = ctx.namespace.newName(prop.name + "_" + opToString(op))
+    val main = state.circuit.modules.find(_.name == state.circuit.main).get
+    val instance = ir.DefInstance(info, instanceName, state.circuit.main, Utils.module_type(main))
+    val instanceRef = ir.Reference(instance)
+    val connects = main.ports.map { case ir.Port(_, name, direction, tpe) =>
+      assert(direction == ir.Input)
+      ir.Connect(info, ir.SubField(instanceRef, name, tpe = tpe), propEnv.preds(name))
+    }
+
+    ir.Block(instance +: connects)
   }
 
   private def onHasBeenResetInput(ctx: Ctx, inst: String): ir.Statement = {
@@ -211,7 +244,7 @@ object ConvertCirctSequenceIntrinsics extends Transform {
     // register starts out as false
     val reg = ir.DefRegister(info, regName, Utils.BoolType, clock, Utils.False(), Utils.False())
     val regRef = ir.Reference(reg).copy(flow = SinkFlow)
-    ctx.presetRegs.addOne(regName)
+    ctx.newAnnos.addOne(PresetRegAnnotation(ctx.module.ref(regName)))
     // when reset becomes true, we set out register to 1
     val update = ir.Conditionally(info, reset, ir.Connect(info, regRef, Utils.True()), ir.EmptyStmt)
     // the output indicates whether the circuits _has been reset_ **and** that reset is not currently active

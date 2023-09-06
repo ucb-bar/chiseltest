@@ -3,20 +3,42 @@
 // author: Kevin Laeufer <laeufer@cs.berkeley.edu>
 
 package chiseltest.sequences
-import firrtl2.ir
+import firrtl2.{ir, CircuitState}
 import chisel3._
 import chisel3.util._
+import chiseltest.formal.annotateAsPreset
 import chiseltest.simulator.Compiler
+import firrtl2.options.Dependency
+import firrtl2.stage.Forms
 
 /** Uses Chisel to generate FSMs that implement the Sequence Property */
 object FsmBackend extends Backend {
-  override def generate(skeleton: ir.Module, prop: PropertyTop): Seq[ir.DefModule] = {
+  private val compiler = new firrtl2.stage.transforms.Compiler(Dependency(PrefixModules) +: Forms.Resolved)
+
+  override def generate(skeleton: ir.Module, moduleNames: Seq[String], prop: PropertyTop): CircuitState = {
     val (state, _) = Compiler.elaborate(
-      () => new PropertyFsmAutomaton(prop.predicates, { pred => compileAlways(pred, prop.prop) }),
+      () => new PropertyFsmAutomaton(prop.predicates, prop.op, { pred => compileAlways(pred, prop.prop) }),
       Seq(),
       Seq()
     )
-    state.circuit.modules
+    // add a unique prefix to all modules and make sure that they are type checked before returning them
+    val prefix = genUniquePrefix(moduleNames, prop.name) + "_"
+    val annos = GlobalPrefixAnnotation(prefix) +: state.annotations
+    compiler.transform(state.copy(annotations = annos))
+  }
+
+  private def genUniquePrefix(names: Seq[String], prefix: String): String = {
+    var res = prefix
+    val filteredNames = names.distinct.filter(_.startsWith(prefix))
+    var collisions = filteredNames
+    var count = 0
+    while (collisions.nonEmpty) {
+      res = if (prefix.nonEmpty) { s"${prefix}_$count" }
+      else { count.toString }
+      count += 1
+      collisions = filteredNames.filter(_.startsWith(res))
+    }
+    res
   }
 
   private def compileAlways(pred: Map[String, Bool], p: Property): Bool = {
@@ -65,13 +87,29 @@ object FsmBackend extends Backend {
   }
 }
 
-class PropertyFsmAutomaton(preds: Seq[String], compile: Map[String, Bool] => Bool)
-    extends Module
-    with RequireAsyncReset {
+class PropertyFsmAutomaton(preds: Seq[String], op: VerificationOp, compile: Map[String, Bool] => Bool)
+    extends RawModule {
+  // the clock is provided by the outside
+  val clock = IO(Input(Clock()))
+
+  // all reset values are taken on at the start of simulation
+  val reset = Wire(AsyncReset())
+  annotateAsPreset(reset.toTarget)
+
   val predicates = preds.map { name =>
     name -> IO(Input(Bool())).suggestName(name)
   }
-  val fail = compile(predicates.toMap)
+  val fail = withClockAndReset(clock, reset) { compile(predicates.toMap) }
+
+  val noReset = false.B.asAsyncReset
+  withClockAndReset(clock, noReset) {
+    op match {
+      case AssertOp => assert(!fail)
+      case AssumeOp => assume(!fail)
+      case CoverOp  => cover(fail)
+      case NoOp => throw new RuntimeException("Verification op should have been set by the code invoking the backend!")
+    }
+  }
 }
 
 object SeqRes extends ChiselEnum {

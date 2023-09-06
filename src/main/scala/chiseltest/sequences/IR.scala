@@ -35,6 +35,15 @@ case object AssumeOp extends VerificationOp
 case object CoverOp extends VerificationOp
 case object NoOp extends VerificationOp
 
+object opToString {
+  def apply(op: VerificationOp): String = op match {
+    case AssertOp => "assert"
+    case AssumeOp => "assume"
+    case CoverOp  => "cover"
+    case NoOp     => "no"
+  }
+}
+
 case class PropertyTop(
   prop:       Property,
   name:       String = "",
