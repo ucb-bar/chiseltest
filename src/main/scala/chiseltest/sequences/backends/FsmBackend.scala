@@ -52,6 +52,7 @@ object FsmBackend extends Backend {
   private def comp(pred: Map[String, Bool], p: Property): PropertyFsmIO = {
     p match {
       case PropSeq(s) => PropSeqModule(comp(pred, s))
+      case other      => throw new NotImplementedError(s"TODO: compile $other")
     }
   }
 
@@ -60,6 +61,7 @@ object FsmBackend extends Backend {
       case SeqPred(predicate)     => SeqExprModule(comp(pred, predicate))
       case SeqConcat(s1, s2)      => SeqConcatModule(comp(pred, s1), comp(pred, s2))
       case SeqImpliesNext(s1, p1) => SeqImpliesNextModule(comp(pred, s1), comp(pred, p1))
+      case other                  => throw new NotImplementedError(s"TODO: compile $other")
     }
   }
 
@@ -68,12 +70,15 @@ object FsmBackend extends Backend {
     case NotExpr(e)       => !comp(pred, e)
     case AndExpr(a, b)    => comp(pred, a) && comp(pred, b)
     case OrExpr(a, b)     => comp(pred, a) || comp(pred, b)
+    case FalseExpr        => false.B
+    case TrueExpr         => false.B
   }
 
   /** calculates an upper bound for the property runtime in cycles */
   private def runtime(p: Property): Int = {
     p match {
       case PropSeq(s) => runtime(s)
+      case other      => throw new NotImplementedError(s"TODO: calculate the runtime of $other")
     }
   }
 
@@ -85,6 +90,7 @@ object FsmBackend extends Backend {
       case SeqFuse(s1, s2)        => runtime(s1) + runtime(s2) - 1
       case SeqConcat(s1, s2)      => runtime(s1) + runtime(s2)
       case SeqImpliesNext(s1, p1) => runtime(s1) + runtime(p1) // TODO: is this correct?
+      case other                  => throw new NotImplementedError(s"TODO: calculate the runtime of $other")
     }
   }
 }
