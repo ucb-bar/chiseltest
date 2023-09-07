@@ -27,6 +27,25 @@ jobs:
       - name: Test
         run: sbt ++${{ matrix.scala }} "testOnly chiseltest.** -- -l RequiresVcs -l RequiresVerilator -l Formal -l RequiresIcarus"
 
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        scala: [ 2.13.10 ]
+        jvm: [ 8, 11, 20 ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Scala
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt'
+          java-version: ${{ matrix.jvm }}
+      - name: Test
+        run: sbt ++${{ matrix.scala }} "testOnly integration.**"
+
+
   test-mac:
     name: sbt test on mac
     runs-on: macos-latest
@@ -183,7 +202,7 @@ jobs:
   # When adding new jobs, please add them to `needs` below
   all_tests_passed:
     name: "all tests passed"
-    needs: [test, doc, verilator, formal, formal-mac, icarus, test-mac, no-warn]
+    needs: [test, doc, verilator, formal, formal-mac, icarus, test-mac, no-warn, integration-test]
     runs-on: ubuntu-latest
     steps:
       - run: echo Success!
@@ -192,7 +211,7 @@ jobs:
   # separate from a Scala versions build matrix to avoid duplicate publishing
   publish:
     # note: we do not require a warning check for publishing!
-    needs: [test, doc, verilator, formal, formal-mac, icarus, test-mac, test-treadle]
+    needs: [test, doc, verilator, formal, formal-mac, icarus, test-mac, test-treadle, integration-test]
     runs-on: ubuntu-20.04
     if: github.event_name == 'push'
 
