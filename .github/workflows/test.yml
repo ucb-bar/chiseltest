@@ -16,6 +16,9 @@ jobs:
       matrix:
         scala: [2.13.10]
         jvm: [20]
+
+    env:
+      JAVA_OPTS: "--enable-preview"
     steps:
       - name: Checkout
         uses: actions/checkout@v3
