@@ -8,7 +8,7 @@ import org.scalatest.freespec.AnyFreeSpec
 class UartPassThrough extends Module {
   val rx = IO(Input(UInt(1.W)))
   val tx = IO(Output(UInt(1.W)))
-  val Depth = 50
+  val Depth = 1
   val AllOnes = (BigInt(1) << Depth) - 1
   tx := ShiftRegister(rx, Depth, AllOnes.U, true.B)
 }
@@ -80,7 +80,7 @@ class UartSendAndReceiveTest extends AnyFreeSpec with ChiselScalatestTester {
   }
 
   "run 100 uart transactions in software" in {
-    test(new UartPassThrough)(runTimedTest(_, 100, bitDelay = 50))
+    test(new UartPassThrough)(runTimedTest(_, 10000, bitDelay = 1))
   }
 
 }
