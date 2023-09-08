@@ -2,7 +2,6 @@ package chiseltest.internal
 
 import chisel3._
 import chisel3.reflect.DataMirror
-import chiseltest.defaults
 import chiseltest.iotesters.PeekPokeTester
 import chiseltest.simulator.SimulatorContext
 import firrtl2.AnnotationSeq
@@ -27,7 +26,7 @@ object PeekPokeTesterBackend {
     annos:       AnnotationSeq,
     chiselAnnos: firrtl.AnnotationSeq
   ): AnnotationSeq = {
-    val (sim, covAnnos, dut) = createTester(dutGen, defaults.addDefaultSimulator(annos), chiselAnnos)
+    val (sim, covAnnos, dut, _) = createTester(dutGen, addDefaultSimulator(annos), chiselAnnos)
     // extract port names
     val portNames = DataMirror.fullModulePorts(dut).map(_.swap).toMap
     val localCtx = IOTestersContext(sim, portNames)

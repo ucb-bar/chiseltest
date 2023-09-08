@@ -5,7 +5,7 @@ package chiseltest.coverage
 import chisel3.Module
 import chisel3.stage.ChiselGeneratorAnnotation
 import chiseltest.ChiselScalatestTester
-import chiseltest.internal.sanitizeFileName
+import chiseltest.internal.TesterUtils.sanitizeFileName
 import firrtl2.{
   AnnotationSeq,
   EmittedFirrtlCircuitAnnotation,

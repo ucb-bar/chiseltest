@@ -2,9 +2,18 @@ package chiseltest.internal
 
 import chisel3.Module
 import chisel3.testers.BasicTester
-import chiseltest.{defaults, ChiselAssertionError, StopException, TimeoutException}
+import chiseltest.{ChiselAssertionError, StopException, TimeoutException}
 import chiseltest.coverage.{Coverage, TestCoverage}
-import chiseltest.simulator.{Compiler, DebugPrintWrapper, Simulator, SimulatorContext, StepInterrupted, StepOk}
+import chiseltest.simulator.{
+  Compiler,
+  DebugPrintWrapper,
+  Simulator,
+  SimulatorAnnotation,
+  SimulatorContext,
+  StepInterrupted,
+  StepOk,
+  TreadleBackendAnnotation
+}
 import firrtl2.AnnotationSeq
 
 /** Backend that allows us to run hardware testers in the style of `chisel3.testers.BasicTester` efficiently.
@@ -23,8 +32,8 @@ object HardwareTesterBackend {
     chiselAnnos: firrtl.AnnotationSeq = Seq()
   ): AnnotationSeq = {
     require(timeout >= 0, s"Negative timeout $timeout is not supported! Use 0 to disable the timeout.")
-    val (tester, covAnnos, _) =
-      createTester(addFinishToBasicTester(dutGen), defaults.addDefaultSimulator(annos), chiselAnnos)
+    val (tester, covAnnos, _, _) =
+      createTester(addFinishToBasicTester(dutGen), addDefaultSimulator(annos), chiselAnnos)
 
     // we always perform a reset
     tester.poke("reset", 1)
@@ -93,42 +102,5 @@ object HardwareTesterBackend {
       case _ =>
     }
     tester
-  }
-}
-
-/** Contains helper functions shared by [[HardwareTesterBackend]] and [[PeekPokeTesterBackend]] */
-private object TesterUtils {
-  def finish(tester: SimulatorContext, covAnnos: AnnotationSeq): AnnotationSeq = {
-    // dump VCD and/or coverage files
-    tester.finish()
-
-    // if the simulator supports it, we return coverage numbers
-    if (tester.sim.supportsCoverage) {
-      TestCoverage(tester.getCoverage()) +: covAnnos
-    } else { Seq() }
-  }
-
-  def createTester[T <: Module](
-    dutGen:      () => T,
-    annos:       AnnotationSeq,
-    chiselAnnos: firrtl.AnnotationSeq
-  ): (SimulatorContext, AnnotationSeq, T) = {
-    // elaborate the design and compile to low firrtl
-    val (highFirrtl, dut) = Compiler.elaborate(dutGen, annos, chiselAnnos)
-    val lowFirrtl = Compiler.toLowFirrtl(highFirrtl)
-
-    // extract coverage information
-    val coverageAnnotations = Coverage.collectCoverageAnnotations(lowFirrtl.annotations)
-
-    // create the simulation backend
-    val sim = Simulator.getSimulator(annos)
-    val tester = sim.createContext(lowFirrtl)
-
-    // wrap the simulation in case we want to debug simulator interactions
-    val t = if (annos.contains(PrintPeekPoke)) {
-      new DebugPrintWrapper(tester)
-    } else { tester }
-
-    (t, coverageAnnotations, dut)
   }
 }

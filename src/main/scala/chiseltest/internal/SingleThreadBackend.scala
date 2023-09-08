@@ -11,38 +11,14 @@ import scala.collection.mutable
   * any Java threads.
   */
 class SingleThreadBackend[T <: Module](
-  val dut:                T,
-  val dataNames:          Map[Data, String],
-  val combinationalPaths: Map[Data, Set[Data]],
-  tester:                 SimulatorContext,
-  coverageAnnotations:    AnnotationSeq)
-    extends BackendInstance[T] {
-
-  override def resolveName(signal: Data): String = {
-    dataNames.getOrElse(signal, signal.toString)
-  }
-
-  // Circuit introspection functionality
-  override def getSourceClocks(signal: Data): Set[Clock] = {
-    throw new ClockResolutionException("ICR not available on chisel-testers2 / firrtl master")
-  }
-
-  override def getSinkClocks(signal: Data): Set[Clock] = {
-    throw new ClockResolutionException("ICR not available on chisel-testers2 / firrtl master")
-  }
-
-  override def pokeClock(signal: Clock, value: Boolean): Unit = {
-    throw new NotImplementedError("Poking clocks is currently no supported!")
-  }
-
-  override def peekClock(signal: Clock): Boolean = {
-    val a = tester.peek(dataNames(signal))
-    a > 0
-  }
+  design:              DesignInfo,
+  tester:              SimulatorContext,
+  coverageAnnotations: AnnotationSeq)
+    extends BackendInterface[T] {
 
   private val previousPokes = mutable.HashMap[String, BigInt]()
   override def pokeBits(signal: Data, value: BigInt): Unit = {
-    val name = dataNames(signal)
+    val name = design.resolveName(signal)
     previousPokes.get(name) match {
       case Some(oldValue) if oldValue == value => // ignore
       case _ =>
@@ -53,12 +29,13 @@ class SingleThreadBackend[T <: Module](
   }
 
   override def peekBits(signal: Data): BigInt = {
-    val name = dataNames.getOrElse(
-      signal,
-      throw new UnpeekableException(
-        s"Signal $signal not found. Perhaps you're peeking a non-IO signal.\n  If so, consider using the chiseltest.experimental.expose API."
+    val name = design
+      .getName(signal)
+      .getOrElse(
+        throw new UnpeekableException(
+          s"Signal $signal not found. Perhaps you're peeking a non-IO signal.\n  If so, consider using the chiseltest.experimental.expose API."
+        )
       )
-    )
     tester.peek(name)
   }
 
@@ -78,7 +55,7 @@ class SingleThreadBackend[T <: Module](
   private var idleCycles = 0
 
   override def step(signal: Clock, cycles: Int): Unit = {
-    require(signal == dut.clock)
+    require(signal == design.clock)
     // throw any available exceptions before stepping
     Context().env.checkpoint()
     val delta = if (timeout == 0) cycles else Seq(cycles, timeout - idleCycles).min
@@ -91,11 +68,11 @@ class SingleThreadBackend[T <: Module](
           throw new TimeoutException(s"timeout on $signal at $timeout idle cycles")
         }
       case StepInterrupted(after, true, _) =>
-        val msg = s"An assertion in ${dut.name} failed.\n" +
+        val msg = s"An assertion in ${design.name} failed.\n" +
           "Please consult the standard output for more details."
         throw new ChiselAssertionError(msg, cycles + after)
       case StepInterrupted(after, false, _) =>
-        val msg = s"A stop() statement was triggered in ${dut.name}."
+        val msg = s"A stop() statement was triggered in ${design.name}."
         throw new StopException(msg, cycles + after)
     }
   }
@@ -103,18 +80,18 @@ class SingleThreadBackend[T <: Module](
   private var stepCount: Long = 0
 
   override def getStepCount(signal: Clock): Long = {
-    require(signal == dut.clock)
+    require(signal == design.clock)
     stepCount
   }
 
   override def setTimeout(signal: Clock, cycles: Int): Unit = {
-    require(signal == dut.clock, "timeout currently only supports master clock")
+    require(signal == design.clock, "timeout currently only supports master clock")
     require(cycles >= 0, s"Negative timeout $cycles is not supported! Use 0 to disable the timeout.")
     timeout = cycles
     idleCycles = 0
   }
 
-  override def run(testFn: T => Unit): AnnotationSeq = {
+  override def run(dut: T, testFn: T => Unit): AnnotationSeq = {
     try {
       // default reset
       tester.poke("reset", 1)

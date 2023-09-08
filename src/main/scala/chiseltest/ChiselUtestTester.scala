@@ -6,7 +6,7 @@ import chiseltest.internal._
 import utest.TestSuite
 import chisel3.Module
 import chiseltest.internal.TestEnvInterface.addDefaultTargetDir
-import firrtl2.AnnotationSeq
+import firrtl2.{annoSeqToSeq, AnnotationSeq}
 import utest.framework.Formatter
 
 /** Using utest as test framework
@@ -79,9 +79,8 @@ trait ChiselUtestTester extends TestSuite with TestEnvInterface {
     implicit testPath: utest.framework.TestPath
   ): TestResult = {
     def testName = s"${testPath.value.reduce(_ + _)}"
-
-    val newAnnos = addDefaultTargetDir(sanitizeFileName(testName), annotationSeq)
+    val newAnnos = addDefaultTargetDir(TesterUtils.sanitizeFileName(testName), annotationSeq)
     batchedFailures.clear()
-    Context.run(defaults.createDefaultTester(() => dutGen, newAnnos, Seq()), this, testFn)
+    Context.runTest(this, () => dutGen, newAnnos, Seq(), testFn)
   }
 }
