@@ -7,10 +7,7 @@ import chiseltest.simulator.{SimulatorContext, StepInterrupted, StepOk}
 import firrtl2.AnnotationSeq
 import scala.collection.mutable
 
-/** Chiseltest backend that does not support fork or timescope but is generally faster since it does not need to launch
-  * any Java threads.
-  */
-class SingleThreadBackend[T <: Module](
+class SimController[T <: Module](
   design:              DesignInfo,
   tester:              SimulatorContext,
   coverageAnnotations: AnnotationSeq)
@@ -39,16 +36,14 @@ class SingleThreadBackend[T <: Module](
     tester.peek(name)
   }
 
-  override def doTimescope(contents: () => Unit): Unit = {
-    throw new NotImplementedError("This backend does not support timescopes!")
+  override def doTimescope(contents: () => Unit): Unit = {}
+
+  override def doFork(runnable: () => Unit, name: Option[String], region: Option[Region]): SimThreadId = {
+    new SimThreadId(0)
   }
 
-  override def doFork(runnable: () => Unit, name: Option[String], region: Option[Region]): Nothing = {
-    throw new NotImplementedError("This backend does not support threads!")
-  }
-
-  override def doJoin(threads: Seq[AbstractTesterThread], stepAfter: Option[Clock]): Unit = {
-    throw new NotImplementedError("This backend does not support threads!")
+  override def doJoin(threads: Seq[SimThreadId], stepAfter: Option[Clock]): Unit = {
+    val ids = threads.map(_.id)
   }
 
   private var timeout = 1000

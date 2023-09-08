@@ -46,9 +46,9 @@ trait BackendInterface[T <: Module] {
     */
   def getStepCount(signal: Clock): Long
 
-  def doFork(runnable: () => Unit, name: Option[String], region: Option[Region]): AbstractTesterThread
+  def doFork(runnable: () => Unit, name: Option[String], region: Option[Region]): SimThreadId
 
-  def doJoin(threads: Seq[AbstractTesterThread], stepAfter: Option[Clock]): Unit
+  def doJoin(threads: Seq[SimThreadId], stepAfter: Option[Clock]): Unit
 
   def doTimescope(contents: () => Unit): Unit
 

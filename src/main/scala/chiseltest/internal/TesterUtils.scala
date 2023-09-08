@@ -86,13 +86,8 @@ private[chiseltest] object TesterUtils {
     val design =
       new DesignInfo(clock = dut.clock, name = dut.name, dataNames = portNames, combinationalPaths = pathsAsData)
 
-    // start backend correct backend
-    val noThreading = testersAnnotationSeq.contains(NoThreadingAnnotation)
-    if (noThreading) {
-      (new SingleThreadBackend(design, finalTester, coverageAnnotations), design, dut)
-    } else {
-      (new GenericBackend(design, finalTester, coverageAnnotations), design, dut)
-    }
+    // start backend
+    (new SimController(design, finalTester, coverageAnnotations), design, dut)
   }
 
   private def componentToName(component: ReferenceTarget): String = component.name
