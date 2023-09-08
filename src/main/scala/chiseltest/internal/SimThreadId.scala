@@ -3,7 +3,7 @@ package chiseltest.internal
 import chisel3.Clock
 import chiseltest.Region
 
-class SimThreadId(private[chiseltest] val id: Int)
+class SimThreadId private[chiseltest] (private[chiseltest] val id: Int)
 
 class TesterThreadList(private[chiseltest] val threads: Seq[SimThreadId]) {
   def join(): Unit = Context().backend.doJoin(threads, None)
