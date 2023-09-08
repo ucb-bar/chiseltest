@@ -14,12 +14,10 @@ import scala.collection.mutable
 
 /** Chiseltest threaded backend using the generic SimulatorContext abstraction from [[chiseltest.simulator]] */
 class GenericBackend[T <: Module](
-  val dut:                T,
-  val dataNames:          Map[Data, String],
-  val combinationalPaths: Map[Data, Set[Data]],
-  tester:                 SimulatorContext,
-  coverageAnnotations:    AnnotationSeq)
-    extends BackendInstance[T]
+  val design:          DesignInfo,
+  tester:              SimulatorContext,
+  coverageAnnotations: AnnotationSeq)
+    extends BackendInterface[T]
     with ThreadedBackend[T] {
 
   //
@@ -30,58 +28,24 @@ class GenericBackend[T <: Module](
     if (verbose) println(str)
   }
 
-  override def resolveName(signal: Data): String = {
-    dataNames.getOrElse(signal, signal.toString)
-  }
-
-  //
-  // Circuit introspection functionality
-  //
-  override def getSourceClocks(signal: Data): Set[Clock] = {
-    throw new ClockResolutionException("ICR not available on chisel-testers2 / firrtl master")
-  }
-
-  override def getSinkClocks(signal: Data): Set[Clock] = {
-    throw new ClockResolutionException("ICR not available on chisel-testers2 / firrtl master")
-  }
-
-  //
-  // Everything else
-  //
-
-  def getModule: T = dut
-
-  override def pokeClock(signal: Clock, value: Boolean): Unit = {
-    // TODO: check thread ordering
-    val intValue = if (value) 1 else 0
-    tester.poke(dataNames(signal), intValue)
-    debugLog(s"${resolveName(signal)} <- $intValue")
-  }
-
-  override def peekClock(signal: Clock): Boolean = {
-    doPeek(signal, new Throwable)
-    val a = tester.peek(dataNames(signal))
-    debugLog(s"${resolveName(signal)} -> $a")
-    a > 0
-  }
-
   override def pokeBits(signal: Data, value: BigInt): Unit = {
     doPoke(signal, value, new Throwable)
-    if (tester.peek(dataNames(signal)) != value) {
+    if (tester.peek(design.resolveName(signal)) != value) {
       idleCycles.clear()
     }
-    tester.poke(dataNames(signal), value)
-    debugLog(s"${resolveName(signal)} <- $value")
+    tester.poke(design.resolveName(signal), value)
+    debugLog(s"${design.resolveName(signal)} <- $value")
   }
 
   override def peekBits(signal: Data): BigInt = {
     doPeek(signal, new Throwable)
-    val name = dataNames.getOrElse(
-      signal,
-      throw new UnpeekableException(
-        s"Signal $signal not found. Perhaps you're peeking a non-IO signal.\n  If so, consider using the chiseltest.experimental.expose API."
+    val name = design
+      .getName(signal)
+      .getOrElse(
+        throw new UnpeekableException(
+          s"Signal $signal not found. Perhaps you're peeking a non-IO signal.\n  If so, consider using the chiseltest.experimental.expose API."
+        )
       )
-    )
     val a = tester.peek(name)
     debugLog(s"$name -> $a")
     a
@@ -91,7 +55,7 @@ class GenericBackend[T <: Module](
   protected def getClockCycle(clk: Clock): Int = {
     clockCounter.getOrElse(clk, 0)
   }
-  protected def getClock(clk: Clock): Boolean = tester.peek(dataNames(clk)).toInt match {
+  protected def getClock(clk: Clock): Boolean = tester.peek(design.resolveName(clk)).toInt match {
     case 0 => false
     case 1 => true
   }
@@ -104,17 +68,18 @@ class GenericBackend[T <: Module](
     contents()
 
     closeTimescope(createdTimescope).foreach { case (data, valueOption) =>
+      val signalName = design.resolveName(data)
       valueOption match {
         case Some(value) =>
-          if (tester.peek(dataNames(data)) != value) {
+          if (tester.peek(signalName) != value) {
             idleCycles.clear()
           }
-          tester.poke(dataNames(data), value)
-          debugLog(s"${resolveName(data)} <- (revert) $value")
+          tester.poke(signalName, value)
+          debugLog(s"${design.resolveName(data)} <- (revert) $value")
         case None =>
           idleCycles.clear()
-          tester.poke(dataNames(data), 0) // TODO: randomize or 4-state sim
-          debugLog(s"${resolveName(data)} <- (revert) DC")
+          tester.poke(signalName, 0) // TODO: randomize or 4-state sim
+          debugLog(s"${design.resolveName(data)} <- (revert) DC")
       }
     }
   }
@@ -123,7 +88,7 @@ class GenericBackend[T <: Module](
     // TODO: maybe a fast condition for when threading is not in use?
     for (_ <- 0 until cycles) {
       // If a new clock, record the current value so change detection is instantaneous
-      if (signal != dut.clock && !lastClockValue.contains(signal)) {
+      if (signal != design.clock && !lastClockValue.contains(signal)) {
         lastClockValue.put(signal, getClock(signal))
       }
 
@@ -136,7 +101,7 @@ class GenericBackend[T <: Module](
   }
 
   override def getStepCount(signal: Clock): Long = {
-    require(signal == dut.clock, "step count is only implemented for a single clock right now")
+    require(signal == design.clock, "step count is only implemented for a single clock right now")
     stepCount
   }
 
@@ -147,16 +112,16 @@ class GenericBackend[T <: Module](
       case StepOk => // all right
         stepCount += 1
       case StepInterrupted(after, true, _) =>
-        val msg = s"An assertion in ${dut.name} failed.\n" +
+        val msg = s"An assertion in ${design.name} failed.\n" +
           "Please consult the standard output for more details."
         throw new ChiselAssertionError(msg, stepCount + after)
       case StepInterrupted(after, false, _) =>
-        val msg = s"A stop() statement was triggered in ${dut.name}."
+        val msg = s"A stop() statement was triggered in ${design.name}."
         throw new StopException(msg, stepCount + after)
     }
   }
 
-  override def run(testFn: T => Unit): AnnotationSeq = {
+  override def run(dut: T, testFn: T => Unit): AnnotationSeq = {
     rootTimescope = Some(new RootTimescope)
     val mainThread = new TesterThread(
       () => {
@@ -181,14 +146,14 @@ class GenericBackend[T <: Module](
 
     try {
       while (!mainThread.done) { // iterate timesteps
-        clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
+        clockCounter.put(design.clock, getClockCycle(design.clock) + 1)
 
         debugLog(s"clock step")
 
         // TODO: allow dependent clocks to step based on test stimulus generator
         // TODO: remove multiple invocations of getClock
         // Unblock threads waiting on dependent clock
-        val steppedClocks = Seq(dut.clock) ++ lastClockValue.collect {
+        val steppedClocks = Seq(design.clock) ++ lastClockValue.collect {
           case (clock, lastValue) if getClock(clock) != lastValue && getClock(clock) => clock
         }
         steppedClocks.foreach { clock =>

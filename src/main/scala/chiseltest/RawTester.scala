@@ -6,6 +6,7 @@ import chiseltest.internal._
 import chisel3.Module
 import chiseltest.formal.Formal
 import chiseltest.internal.TestEnvInterface.addDefaultTargetDir
+import chiseltest.internal.TesterUtils.sanitizeFileName
 import firrtl2.AnnotationSeq
 
 /** Used to run simple tests that do not require a scalatest environment in order to run
@@ -16,20 +17,15 @@ private class RawTester(testName: String) extends TestEnvInterface with HasTestN
   // Provide test fixture data as part of 'global' context during test runs
   val topFileName = Some(testName)
 
-  private def runTest[T <: Module](tester: BackendInstance[T])(testFn: T => Unit): TestResult = {
-    batchedFailures.clear()
-
-    Context.run(tester, this, testFn)
-  }
-
   def test[T <: Module](
     dutGen:        => T,
     annotationSeq: AnnotationSeq,
     chiselAnnos:   firrtl.AnnotationSeq = Seq()
   )(testFn:        T => Unit
   ): TestResult = {
+    batchedFailures.clear()
     val newAnnos = addDefaultTargetDir(sanitizeFileName(testName), annotationSeq)
-    runTest(defaults.createDefaultTester(() => dutGen, newAnnos, chiselAnnos))(testFn)
+    Context.runTest(this, () => dutGen, newAnnos, chiselAnnos, testFn)
   }
 
   override def getTestName = testName

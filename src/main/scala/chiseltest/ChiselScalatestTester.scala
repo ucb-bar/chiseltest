@@ -17,31 +17,27 @@ trait HasTestName { def getTestName: String }
 trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvInterface with HasTestName {
   this: TestSuite =>
 
-  override def getTestName: String = sanitizeFileName(scalaTestContext.value.get.name)
+  override def getTestName: String = TesterUtils.sanitizeFileName(scalaTestContext.value.get.name)
 
   class TestBuilder[T <: Module](
     val dutGen:              () => T,
     val annotationSeq:       AnnotationSeq,
     val chiselAnnotationSeq: firrtl.AnnotationSeq) {
     def getTestName: String = {
-      sanitizeFileName(scalaTestContext.value.get.name)
+      TesterUtils.sanitizeFileName(scalaTestContext.value.get.name)
     }
 
     def apply(testFn: T => Unit): TestResult = {
-      runTest(defaults.createDefaultTester(dutGen, finalAnnos, chiselAnnotationSeq))(testFn)
+      runTest(dutGen, finalAnnos(annotationSeq), chiselAnnotationSeq, testFn)
     }
 
-    private def finalAnnos: AnnotationSeq = {
-      addDefaultTargetDir(getTestName, annotationSeq) ++
+    private def finalAnnos(annos: AnnotationSeq): AnnotationSeq = {
+      addDefaultTargetDir(getTestName, annos) ++
         (if (scalaTestContext.value.get.configMap.contains("writeVcd")) {
            Seq(WriteVcdAnnotation)
          } else {
            Seq.empty
          })
-    }
-
-    def run(testFn: T => Unit, annotations: AnnotationSeq): TestResult = {
-      runTest(defaults.createDefaultTester(dutGen, annotations, chiselAnnotationSeq))(testFn)
     }
 
     // TODO: in the future, allow reset and re-use of a compiled design to avoid recompilation cost per test
@@ -61,7 +57,9 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
       *   number of cycles after which to timeout; set to 0 for no timeout
       */
     def runUntilStop(timeout: Int = 1000): TestResult = {
-      new TestResult(HardwareTesterBackend.run(dutGen, finalAnnos, timeout = timeout, expectFail = false))
+      new TestResult(
+        HardwareTesterBackend.run(dutGen, finalAnnos(annotationSeq), timeout = timeout, expectFail = false)
+      )
     }
 
     /** Resets and then executes the circuit until a timeout or a stop or assertion failure. Throws an exception if the
@@ -70,12 +68,12 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
       *   number of cycles after which to timeout; set to 0 for no timeout
       */
     def runUntilAssertFail(timeout: Int = 1000): TestResult = {
-      new TestResult(HardwareTesterBackend.run(dutGen, finalAnnos, timeout = timeout, expectFail = true))
+      new TestResult(HardwareTesterBackend.run(dutGen, finalAnnos(annotationSeq), timeout = timeout, expectFail = true))
     }
 
     /** Executes a tester extending [[chiseltest.iotesters.PeekPokeTester]]. */
     def runPeekPoke(tester: T => PeekPokeTester[T]): Unit = {
-      new TestResult(PeekPokeTesterBackend.run(dutGen, tester, finalAnnos, chiselAnnotationSeq))
+      new TestResult(PeekPokeTesterBackend.run(dutGen, tester, finalAnnos(annotationSeq), chiselAnnotationSeq))
     }
   }
 
@@ -92,7 +90,12 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
   // Stack trace data to help generate more informative (and localizable) failure messages
   var topFileName: Option[String] = None // best guess at the testdriver top filename
 
-  private def runTest[T <: Module](tester: BackendInstance[T])(testFn: T => Unit): TestResult = {
+  private def runTest[T <: Module](
+    dutGen:        () => T,
+    annotationSeq: AnnotationSeq,
+    chiselAnnos:   firrtl.AnnotationSeq,
+    testFn:        T => Unit
+  ): TestResult = {
     // Try and get the user's top-level test filename
     val internalFiles = Set("ChiselScalatestTester.scala", "BackendInterface.scala", "TestEnvInterface.scala")
     val topFileNameGuess = (new Throwable).getStackTrace.apply(2).getFileName
@@ -106,7 +109,7 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     batchedFailures.clear()
 
     try {
-      Context.run(tester, this, testFn)
+      Context.runTest(this, dutGen, annotationSeq, chiselAnnos, testFn)
     } catch {
       // Translate testers2's FailedExpectException into ScalaTest TestFailedException that is more readable
       case exc: FailedExpectException =>

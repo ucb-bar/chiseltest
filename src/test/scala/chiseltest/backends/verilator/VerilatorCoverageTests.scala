@@ -4,7 +4,7 @@ package chiseltest.backends.verilator
 
 import chisel3._
 import chiseltest._
-import chiseltest.internal.sanitizeFileName
+import chiseltest.internal.TesterUtils.sanitizeFileName
 import chiseltest.simulator.{RequiresVerilator, VerilatorFlags}
 import firrtl2.AnnotationSeq
 import org.scalatest.flatspec.AnyFlatSpec

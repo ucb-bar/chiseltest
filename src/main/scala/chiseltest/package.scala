@@ -275,14 +275,14 @@ package object chiseltest {
       *   if sinks of this signal have an associated clock
       */
     def getSourceClock(): Clock = {
-      Context().backend.getSourceClocks(x).toList match {
+      Context().design.getSourceClocks(x).toList match {
         case clock :: Nil => clock
         case clocks       => throw new ClockResolutionException(s"number of source clocks for $x is not one: $clocks")
       }
     }
 
     def getSinkClock(): Clock = {
-      Context().backend.getSinkClocks(x).toList match {
+      Context().design.getSinkClocks(x).toList match {
         case clock :: Nil => clock
         case clocks       => throw new ClockResolutionException(s"number of sink clocks for $x is not one: $clocks")
       }
@@ -367,7 +367,7 @@ package object chiseltest {
     ): Unit = {
       val ok = (actual - expected).abs < epsilon
       if (!ok) {
-        val signalName = Context().backend.resolveName(signal)
+        val signalName = Context().design.resolveName(signal)
         val msg = s"$signalName: ($actual - $expected).abs = ${(actual - expected).abs} >= eps=$epsilon"
         Utils.expectFailed(msg, userMsg)
       }
@@ -382,7 +382,7 @@ package object chiseltest {
     ): Unit = {
       val ok = (actual - expected).abs < epsilon
       if (!ok) {
-        val signalName = Context().backend.resolveName(signal)
+        val signalName = Context().design.resolveName(signal)
         val msg = s"$signalName: ($actual - $expected).abs = ${(actual - expected).abs} >= eps=$epsilon"
         Utils.expectFailed(msg, userMsg)
       }
@@ -406,7 +406,7 @@ package object chiseltest {
           case None =>
             (s"$actual (${bigIntToHex(actual)})", s"$expected (${bigIntToHex(expected)})")
         }
-        val signalName = Context().backend.resolveName(signal)
+        val signalName = Context().design.resolveName(signal)
         val message = s"$signalName=$actualStr did not equal expected=$expectedStr"
         expectFailed(message, msg)
       }
@@ -451,11 +451,11 @@ package object chiseltest {
 
   object TestInstance {
     def setVar(key: Any, value: Any): Unit = {
-      Context().backend.setVar(key, value)
+      Context().setVar(key, value)
     }
 
     def getVar(key: Any): Option[Any] = {
-      Context().backend.getVar(key)
+      Context().getVar(key)
     }
   }
 

@@ -18,13 +18,7 @@ trait TestEnvInterface {
 
   def topFileName: Option[String]
 
-  /** Logs a tester failure at this point. Failures queued until the next checkpoint.
-    */
-  def testerFail(msg: String): Unit = {
-    batchedFailures += new FailedExpectException(msg, 4)
-  }
-
-  protected def getExpectDetailedTrace(trace: Seq[StackTraceElement], inFile: String): String = {
+  private def getExpectDetailedTrace(trace: Seq[StackTraceElement], inFile: String): String = {
     val fullTrace = Context().backend.getParentTraceElements ++ trace
 
     // In the threading case, this needs to be overridden to trace through parent threads

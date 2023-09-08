@@ -6,7 +6,7 @@ import java.io.{ByteArrayOutputStream, File, PrintStream}
 
 import chisel3._
 import chiseltest._
-import chiseltest.internal.sanitizeFileName
+import chiseltest.internal.TesterUtils.sanitizeFileName
 import treadle2.{VerboseAnnotation, WriteVcdAnnotation}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers

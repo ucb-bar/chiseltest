@@ -9,6 +9,26 @@ import chisel3._
 
 import scala.collection.mutable
 
+trait AbstractTesterThread
+
+class TesterThreadList(protected val elts: Seq[AbstractTesterThread]) {
+  def toSeq: Seq[AbstractTesterThread] = elts
+
+  def join(): Unit = {
+    Context().backend.doJoin(elts, None)
+  }
+
+  def joinAndStep(clock: Clock): Unit = {
+    Context().backend.doJoin(elts, Some(clock))
+  }
+
+  def ++(others: TesterThreadList): TesterThreadList = {
+    new TesterThreadList(elts ++ others.elts)
+  }
+
+  val fork: ForkBuilder = ForkBuilder(None, None, elts)
+}
+
 case class ForkBuilder(name: Option[String], region: Option[Region], threads: Seq[AbstractTesterThread]) {
   def apply(runnable: => Unit): TesterThreadList = {
     new TesterThreadList(threads ++ Seq(Context().backend.doFork(() => runnable, name, region)))
@@ -36,15 +56,15 @@ case class ForkBuilder(name: Option[String], region: Option[Region], threads: Se
   *   - runThreads: runs all threads waiting on a set of clocks
   *   - scheduler: called from within a test thread, suspends the current thread and runs the next one
   */
-trait ThreadedBackend[T <: Module] extends BackendInterface {
-  def dut: T
+trait ThreadedBackend[T <: Module] extends BackendInterface[T] {
+  def design: DesignInfo
 
   // State for deadlock detection timeout
   val idleCycles = mutable.Map[Clock, Int]()
-  val idleLimits = mutable.Map[Clock, Int](dut.clock -> 1000)
+  val idleLimits = mutable.Map[Clock, Int](design.clock -> 1000)
 
   override def setTimeout(signal: Clock, cycles: Int): Unit = {
-    require(signal == dut.clock, "timeout currently only supports master clock")
+    require(signal == design.clock, "timeout currently only supports master clock")
     if (cycles == 0) {
       idleLimits.remove(signal)
     } else {
@@ -52,11 +72,6 @@ trait ThreadedBackend[T <: Module] extends BackendInterface {
     }
     idleCycles.remove(signal)
   }
-
-  //
-  // Variable references
-  //
-  val combinationalPaths: Map[Data, Set[Data]] // set of combinational Data inputs for each output
 
   //
   // Common variables
@@ -264,7 +279,7 @@ trait ThreadedBackend[T <: Module] extends BackendInterface {
     */
   def doPeek(signal: Data, trace: Throwable): Unit = {
     val timescope = currentThread.get.getTimescope
-    val deps = combinationalPaths
+    val deps = design.combinationalPaths
       .getOrElse(signal, Set(signal))
       .map { signal =>
         (signal, pokes.get(signal))
@@ -332,7 +347,7 @@ trait ThreadedBackend[T <: Module] extends BackendInterface {
     // Conflicting pokes will be detected by poke checking.
     signalPeeks.toSeq.foreach { case (peekSignal, peeks) =>
       // Check both the signal and combinational sources
-      val upstreamSignals = combinationalPaths.getOrElse(peekSignal, Set()) + peekSignal
+      val upstreamSignals = design.combinationalPaths.getOrElse(peekSignal, Set()) + peekSignal
       // TODO: optimization of peeks within a thread
       peeks.foreach { peekRecord =>
         upstreamSignals.foreach { upstreamSignal =>
