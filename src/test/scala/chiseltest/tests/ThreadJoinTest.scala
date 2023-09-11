@@ -61,11 +61,14 @@ class ThreadJoinTest extends AnyFlatSpec with ChiselScalatestTester {
     // TODO: use thread ordering constraints and combinational PassthroughModule
     // instead of fakin' it w/ Scala-land variables
     test(new StaticModule(0.U)) { c =>
+      // Thread 0
       var flag: Int = 0
       fork {
+        // Thread 1 (@0)
         c.clock.step(1)
         flag += 1
         fork {
+          // Thread 3 (@1)
           c.clock.step(1)
         }.join() // with a naive join implementation, this thread gets pushed to the back of the list
         while (true) {
@@ -74,12 +77,14 @@ class ThreadJoinTest extends AnyFlatSpec with ChiselScalatestTester {
         }
       }
       fork {
-        assert(flag == 0)
+        // Thread 2 (@0)
+        assert(flag == 0, "thread 2 should be created before thread 1 steps")
         c.clock.step(1)
-        assert(flag == 1)
+        assert(flag == 1, "thread 2 should see the update from thread 1 after the first step")
         c.clock.step(1)
 
-        assert(flag == 2) // this is where it should break
+        // this is where it should break
+        assert(flag == 2, "thread 2 should see the update from thread 1 even though it forked off thread 3")
         c.clock.step(1)
         assert(flag == 3)
       }.join()
