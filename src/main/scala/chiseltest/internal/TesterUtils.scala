@@ -68,11 +68,11 @@ private[chiseltest] object TesterUtils {
     }
   }
 
-  def start[T <: Module](
+  def startController[T <: Module](
     dutGen:               () => T,
     testersAnnotationSeq: AnnotationSeq,
     chiselAnnos:          firrtl.AnnotationSeq
-  ): (BackendInterface[T], DesignInfo, T) = {
+  ): (SimController[T], DesignInfo, T) = {
 
     val (finalTester, coverageAnnotations, dut, lowFirrtl) = createTester(dutGen, testersAnnotationSeq, chiselAnnos)
 

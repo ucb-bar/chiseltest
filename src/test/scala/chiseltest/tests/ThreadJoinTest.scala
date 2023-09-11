@@ -87,4 +87,17 @@ class ThreadJoinTest extends AnyFlatSpec with ChiselScalatestTester {
       }.join()
     }
   }
+
+  it should "join all threads at the end of simulation" in {
+    var childThreadDone = false
+    test(new StaticModule(0.U)) { c =>
+      fork { // child thread takes 1 cycle
+        c.clock.step()
+        childThreadDone = true
+      }
+      // parent ("main") thread takes 0 cycles
+      assert(!childThreadDone)
+    }
+    assert(childThreadDone, "test was finished *before* all sub-threads finished!")
+  }
 }

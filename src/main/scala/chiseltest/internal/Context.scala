@@ -13,7 +13,7 @@ import scala.util.DynamicVariable
 /** Global context object used to access the currently running test from the methods defined in the chiseltest package.
   */
 object Context {
-  class Instance(val backend: BackendInterface[_], val env: TestEnvInterface, val design: DesignInfo) {
+  class Instance(val backend: SimController[_], val env: TestEnvInterface, val design: DesignInfo) {
     private val testMap = mutable.HashMap[Any, Any]()
 
     /** Sets the value associated with a key in a per-test map. */
@@ -32,7 +32,7 @@ object Context {
     chiselAnnos:   firrtl.AnnotationSeq,
     testFn:        T => Unit
   ): TestResult = {
-    val (backend, design, dut) = TesterUtils.start(dutGen, addDefaultSimulator(annotationSeq), chiselAnnos)
+    val (backend, design, dut) = TesterUtils.startController(dutGen, addDefaultSimulator(annotationSeq), chiselAnnos)
 
     require(context.value.isEmpty)
     val annotations = context.withValue(Some(new Instance(backend, env, design))) {
