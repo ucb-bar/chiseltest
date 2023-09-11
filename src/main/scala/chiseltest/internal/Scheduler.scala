@@ -8,12 +8,14 @@ import java.util.concurrent.Semaphore
 import scala.collection.mutable
 
 private class ThreadInfo(
+  /** Unique thread id. */
   val id: Int,
   /** Human readable name of the thread */
   val name: String,
   /** Java thread. */
   var underlying: Option[Thread],
-  var status:     ThreadStatus,
+  /** Status of the thread. */
+  var status: ThreadStatus,
   /** Semaphore that pauses thread. */
   val semaphore: Semaphore) {}
 
@@ -21,9 +23,11 @@ private sealed trait ThreadStatus {}
 private case object ThreadActive extends ThreadStatus
 private case class ThreadWaitingForJoin(otherThread: Int) extends ThreadStatus
 private case class ThreadWaitingUntil(step: Int) extends ThreadStatus
-
 private case object ThreadFinished extends ThreadStatus
 
+/** Manages multiple Java threads that all interact with the same simulation and step synchronously. Currently only
+  * supports a single global clock that all threads are synchronized to.
+  */
 private class Scheduler(simulationStep: Int => Int) {
   private val EnableDebug: Boolean = false
   private def debug(msg: => String): Unit = if (EnableDebug) println(s"$activeThreadId: $msg")
@@ -40,9 +44,9 @@ private class Scheduler(simulationStep: Int => Int) {
   /** Keep track of global simulation time. */
   private var currentStep: Int = 0
 
-  def getStepCount: Long = currentStep.toLong
+  @inline def getStepCount: Long = currentStep.toLong
 
-  private def createThread(name: String, id: Int, runnable: () => Unit): (Thread, Semaphore) = {
+  @inline private def createThread(name: String, id: Int, runnable: () => Unit): (Thread, Semaphore) = {
     val semaphore = new Semaphore(0)
     val thread = new Thread(
       null,
@@ -61,14 +65,25 @@ private class Scheduler(simulationStep: Int => Int) {
   private def finishThread(id: Int): Unit = {
     val info = threads(id)
     assert(info.status == ThreadActive)
+    debug(s"finishThread(id=$id (${info.name}))")
     info.status = ThreadFinished
     // remove pointer to underlying thread so that it can be garbage collected
     info.underlying = None
+    // display thread status for debugging
+    dbgThreadList()
     // now that we are done, we need to schedule a new thread, if there are any unfinished threads left
     if (!allThreadsAreFinished) {
-      stepSimulationToNearestWait()
-      val nextThread = findNextThread()
-      resumeThread(nextThread)
+      val freeAfterJoin = threadsWithUnblockedJoin
+      freeAfterJoin.headOption match {
+        case Some(unblockedThread) =>
+          // if there is a thread that just got unblocked by us finishing, we want to switch to that
+          resumeThread(unblockedThread)
+        case None =>
+          // otherwise we make sure a thread waiting on a step will be available and then execute that
+          stepSimulationToNearestWait()
+          val nextThread = findNextThread()
+          resumeThread(nextThread)
+      }
     }
   }
 
@@ -76,6 +91,7 @@ private class Scheduler(simulationStep: Int => Int) {
     // generate an ID, name and data structure for the new thread
     val id = threads.length
     val fullName = name.getOrElse(s"chiseltest_thread_$id")
+    debug(s"forkThread($fullName ($id)) from ${activeThreadId}")
     // the new thread starts as paused
     val (newJavaThread, newSemaphore) = createThread(fullName, id, runnable)
     threads.addOne(new ThreadInfo(id, fullName, Some(newJavaThread), ThreadWaitingUntil(currentStep), newSemaphore))
@@ -99,17 +115,9 @@ private class Scheduler(simulationStep: Int => Int) {
     debug("  --> " + msg)
   }
 
-  private def canBeScheduled(status: ThreadStatus): Boolean = status match {
-    case ThreadWaitingUntil(step)          => step == currentStep
-    case ThreadWaitingForJoin(otherThread) =>
-      // check if other thread is finished
-      threads(otherThread).status == ThreadFinished
-    case _ => false
-  }
-
   /** Suspends the active thread for `cycles` steps and schedules a new one to run. */
-  private def yieldForStep(cycles: Int): Unit = {
-    debug(s"suspendActiveThread(cycles = $cycles)"); dbgThreadList()
+  @inline private def yieldForStep(cycles: Int): Unit = {
+    debug(s"yieldForStep(cycles = $cycles)"); dbgThreadList()
     // find a thread that is ready to run
     val nextThread = findNextThread()
     // set active thread status to paused
@@ -142,10 +150,18 @@ private class Scheduler(simulationStep: Int => Int) {
     }
   }
 
-  private def allThreadsAreFinished: Boolean = threads.forall(_.status == ThreadFinished)
+  @inline private def allThreadsAreFinished: Boolean = threads.forall(_.status == ThreadFinished)
+
+  @inline private def canBeScheduled(status: ThreadStatus): Boolean = status match {
+    case ThreadWaitingUntil(step)          => step == currentStep
+    case ThreadWaitingForJoin(otherThread) =>
+      // check if other thread is finished
+      threads(otherThread).status == ThreadFinished
+    case _ => false
+  }
 
   /** Determines which thread needs to run next. */
-  private def findNextThread(): ThreadInfo = {
+  @inline private def findNextThread(): ThreadInfo = {
     val nextThreadOption = threads.find(t => canBeScheduled(t.status))
     val nextThread = nextThreadOption.getOrElse {
       debug("Deadlock condition: could not find any thread that can be executed.")
@@ -154,19 +170,23 @@ private class Scheduler(simulationStep: Int => Int) {
     }
     // print debug info and check invariants
     debug(s"  --> nextThreadId = ${nextThread.id}")
-    // make sure that the thread we picked is actually alive
-    nextThread.underlying match {
-      case Some(value) => debug(s"  --> nextThread: isAlive=${value.isAlive}, ${value.getState.name()}")
-      case None        =>
-    }
     nextThread
+  }
+
+  @inline private def threadsWaitingUntil: Iterable[Int] =
+    threads.map(_.status).collect { case ThreadWaitingUntil(step) => step }
+  @inline private def threadsWithUnblockedJoin: Iterable[ThreadInfo] = threads.flatMap { t =>
+    t.status match {
+      case ThreadWaitingForJoin(otherThread) if threads(otherThread).status == ThreadFinished => Some(t)
+      case _                                                                                  => None
+    }
   }
 
   /** Steps the currently active thread. Needs to be called in the context of the active thread! */
   def stepThread(cycles: Int): Unit = {
     require(cycles > 0)
     // find all wait cycles
-    val waitForSteps = threads.map(_.status).collect { case ThreadWaitingUntil(step) => step }
+    val waitForSteps = threadsWaitingUntil
     if (waitForSteps.isEmpty) { // all other threads are either finished, or waiting for a join
       doStep(cycles)
     } else {
@@ -197,7 +217,6 @@ private class Scheduler(simulationStep: Int => Int) {
     *   size of the step taken
     */
   private def stepSimulationToNearestWait(): Int = {
-    dbgThreadList()
     // find all wait cycles
     val waitForSteps = threads.map(_.status).collect { case ThreadWaitingUntil(step) => step }
     // if no thread is waiting, then there is nothing to do
@@ -215,7 +234,7 @@ private class Scheduler(simulationStep: Int => Int) {
   }
 
   /** Performs the simulation step */
-  private def doStep(cycles: Int): Unit = {
+  @inline private def doStep(cycles: Int): Unit = {
     debug(s"doStep(cycles = $cycles)")
     val delta = simulationStep(cycles)
     currentStep += delta
@@ -231,9 +250,11 @@ private class Scheduler(simulationStep: Int => Int) {
     ids.map(threads(_)).foreach { other =>
       if (other.status != ThreadFinished) {
         // before we block on the join, we need to find another thread to start
+        // this might _not_ be the thread we will be joining with!
         stepSimulationToNearestWait()
         val nextThread = findNextThread()
-        threads(activeThreadId).status = ThreadWaitingForJoin(nextThread.id)
+        // we remember which thread we are blocking on
+        threads(activeThreadId).status = ThreadWaitingForJoin(other.id)
         resumeThread(nextThread)
         // now we can join without holding up progress
         other.underlying.get.join()
