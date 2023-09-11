@@ -54,8 +54,10 @@ private[chiseltest] object TesterUtils {
     val t = if (annos.contains(PrintPeekPoke)) {
       new DebugPrintWrapper(tester)
     } else { tester }
+    // add a cache to reduce calls to the simulator
+    val withCache = new SimInteractionCache(t)
 
-    (t, coverageAnnotations, dut, lowFirrtl)
+    (withCache, coverageAnnotations, dut, lowFirrtl)
   }
 
   def addDefaultSimulator(annotationSeq: AnnotationSeq): AnnotationSeq = {

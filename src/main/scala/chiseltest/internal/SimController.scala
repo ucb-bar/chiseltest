@@ -1,3 +1,7 @@
+// Copyright 2018-2023 The Regents of the University of California
+// released under BSD 3-Clause License
+// author: Kevin Laeufer <laeufer@cs.berkeley.edu>
+
 package chiseltest.internal
 
 import chisel3.{Clock, Data, Module}
@@ -19,16 +23,10 @@ class SimController[T <: Module](
   tester:              SimulatorContext,
   coverageAnnotations: AnnotationSeq) {
 
-  private val previousPokes = mutable.HashMap[String, BigInt]()
   def pokeBits(signal: Data, value: BigInt): Unit = {
     val name = design.resolveName(signal)
-    previousPokes.get(name) match {
-      case Some(oldValue) if oldValue == value => // ignore
-      case _ =>
-        tester.poke(name, value)
-        idleCycles = 0
-        previousPokes(name) = value
-    }
+    tester.poke(name, value)
+    idleCycles = 0
   }
 
   def peekBits(signal: Data): BigInt = {
