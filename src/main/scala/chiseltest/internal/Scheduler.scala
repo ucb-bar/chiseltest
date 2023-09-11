@@ -52,6 +52,7 @@ private class Scheduler(simulationStep: Int => Int) {
       s"@$currentStep: ${threads(from).serializeShort(currentStep, activeThreadId)} ->" +
         s" ${threads(to).serializeShort(currentStep, activeThreadId)} $reason"
     )
+    dbgThreadList(showAlways = true)
   }
 
   private val MainThreadId = 0
@@ -62,6 +63,10 @@ private class Scheduler(simulationStep: Int => Int) {
   /** all threads */
   private val threads = new mutable.ArrayBuffer[ThreadInfo]()
   threads.addOne(new ThreadInfo(MainThreadId, "main", None, ThreadActive, new Semaphore(0)))
+
+  /** order in which threads are scheduled */
+  private var threadOrder = Seq(MainThreadId)
+  private def threadsInSchedulerOrder = threadOrder.map(threads(_))
 
   /** Keep track of global simulation time. */
   private var currentStep: Int = 0
@@ -119,14 +124,30 @@ private class Scheduler(simulationStep: Int => Int) {
     // the new thread starts as paused
     val (newJavaThread, newSemaphore) = createThread(fullName, id, runnable)
     threads.addOne(new ThreadInfo(id, fullName, Some(newJavaThread), ThreadWaitingUntil(currentStep), newSemaphore))
+    // this thread needs to be scheduled right after the parent thread
+    threadOrder = insertAfter(threadOrder, activeThreadId, id)
     // yield to the new thread before returning
     yieldForStep(0, isFork = true)
     new SimThreadId(id)
   }
 
-  private def dbgThreadList(): Unit = if (EnableDebug) {
-    val msg = threads.map(_.serializeShort(currentStep, activeThreadId)).mkString(", ")
-    debug("  --> " + msg)
+  private def insertAfter(seq: Seq[Int], parent: Int, child: Int): Seq[Int] = {
+    val out = new Array[Int](seq.length + 1)
+    var offset = 0
+    seq.zipWithIndex.foreach { case (element, ii) =>
+      out(ii + offset) = element
+      if (element == parent) {
+        offset += 1
+        out(ii + offset) = child
+      }
+    }
+    assert(offset == 1, "failed to find parent!")
+    out.toSeq
+  }
+
+  private def dbgThreadList(showAlways: Boolean = false): Unit = if (EnableDebug || showAlways) {
+    val msg = threadsInSchedulerOrder.map(_.serializeShort(currentStep, activeThreadId)).mkString(", ")
+    println("  --> " + msg)
   }
 
   /** Suspends the active thread for `cycles` steps and schedules a new one to run. */
@@ -177,7 +198,7 @@ private class Scheduler(simulationStep: Int => Int) {
 
   /** Determines which thread needs to run next. */
   @inline private def findNextThread(): ThreadInfo = {
-    val nextThreadOption = threads.find(t => canBeScheduled(t.status))
+    val nextThreadOption = threadsInSchedulerOrder.find(t => canBeScheduled(t.status))
     val nextThread = nextThreadOption.getOrElse {
       debug("Deadlock condition: could not find any thread that can be executed.")
       dbgThreadList()
@@ -190,7 +211,7 @@ private class Scheduler(simulationStep: Int => Int) {
 
   @inline private def threadsWaitingUntil: Iterable[Int] =
     threads.map(_.status).collect { case ThreadWaitingUntil(step) => step }
-  @inline private def threadsWithUnblockedJoin: Iterable[ThreadInfo] = threads.flatMap { t =>
+  @inline private def threadsWithUnblockedJoin: Iterable[ThreadInfo] = threadsInSchedulerOrder.flatMap { t =>
     t.status match {
       case ThreadWaitingForJoin(otherThread) if threads(otherThread).status == ThreadFinished => Some(t)
       case _                                                                                  => None
