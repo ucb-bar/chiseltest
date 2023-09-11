@@ -292,23 +292,30 @@ private class Scheduler(simulationStep: Int => Int) {
   /** Steps the currently active thread. Needs to be called in the context of the active thread! */
   def stepThread(cycles: Int): Unit = {
     require(cycles > 0)
-    val targetStep = currentStep + cycles
-    // what is the furthest point in the future that we can step all paused threads?
-    val nextWake = threads.map(_.status).collect { case ThreadWaitingUntil(step) => step }.min
-    debug(s"stepThread(cycles = $cycles): minPause = ${nextWake - currentStep}"); dbgThreadList()
-    // if all threads are paused for more than we want to step, we do not need to context switch
-    if (nextWake > targetStep) {
+    // find all wait cycles
+    val waitForSteps = threads.map(_.status).collect { case ThreadWaitingUntil(step) => step }
+    if (waitForSteps.isEmpty) { // all other threads are either finished, or waiting for a join
       doStep(cycles)
-    }
-    // otherwise we need to potentially first step some other threads
-    else {
-      // pretend that we are suspended
-      val activeThread = threads(activeThreadId)
-      activeThread.status = ThreadWaitingUntil(targetStep)
-      // perform the biggest step we can
-      val stepSize = stepSimulationToNearestWait()
-      // yield to the scheduler
-      yieldForStep(cycles - stepSize)
+    } else {
+      val targetStep = currentStep + cycles
+      // what is the furthest point in the future that we can step all paused threads?
+      val nextWake = waitForSteps.min
+      debug(s"stepThread(cycles = $cycles): minPause = ${nextWake - currentStep}");
+      dbgThreadList()
+      // if all threads are paused for more than we want to step, we do not need to context switch
+      if (nextWake > targetStep) {
+        doStep(cycles)
+      }
+      // otherwise we need to potentially first step some other threads
+      else {
+        // pretend that we are suspended
+        val activeThread = threads(activeThreadId)
+        activeThread.status = ThreadWaitingUntil(targetStep)
+        // perform the biggest step we can
+        val stepSize = stepSimulationToNearestWait()
+        // yield to the scheduler
+        yieldForStep(cycles - stepSize)
+      }
     }
   }
 
