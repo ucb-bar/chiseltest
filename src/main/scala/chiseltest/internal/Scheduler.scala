@@ -266,7 +266,7 @@ private class Scheduler(simulationStep: Int => Int) {
 
   /** Shuts down the main thread by waiting for all other threads to finish, */
   def finishMainThread(): Unit = {
-    assert(activeThreadId == MainThreadId)
+    assert(activeThreadId == MainThreadId, "TODO: deal with exceptions inside of threads correctly!")
     joinThreadsImpl(threads.drop(1).toSeq.map(_.id))
     finishThread(MainThreadId)
   }
