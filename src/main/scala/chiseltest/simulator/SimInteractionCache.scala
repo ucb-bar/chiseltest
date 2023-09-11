@@ -7,17 +7,23 @@ import scala.collection.mutable
 
 /** Backend independent cache. Prevents unnecessary read/write calls to the simulator. */
 class SimInteractionCache(inner: SimulatorContext) extends SimulatorContext {
+  private val CachePeeks = false
   @inline override def sim = inner.sim
   @inline override def step(n: Int) = {
-    // a clock step can change the output
-    // peekCache.clear()
+    if (CachePeeks) {
+      // a clock step can change the output
+      peekCache.clear()
+    }
     // perform step
     inner.step(n)
   }
 
-  // private val peekCache = mutable.HashMap[String, BigInt]()
-  @inline override def peek(signal: String): BigInt =
-    inner.peek(signal) // peekCache.getOrElseUpdate(signal, inner.peek(signal))
+  private val peekCache = mutable.HashMap[String, BigInt]()
+  @inline override def peek(signal: String): BigInt = if (CachePeeks) {
+    peekCache.getOrElseUpdate(signal, inner.peek(signal))
+  } else {
+    inner.peek(signal)
+  }
 
   private val pokeCache = mutable.HashMap[String, BigInt]()
   @inline override def poke(signal: String, value: BigInt): Unit = {
@@ -28,12 +34,14 @@ class SimInteractionCache(inner: SimulatorContext) extends SimulatorContext {
         pokeCache(signal) = value
         inner.poke(signal, value)
     }
-    // invalidate peek cache (TODO: use combinatorial path information!)
-    // peekCache.clear()
+    if (CachePeeks) {
+      // invalidate peek cache (TODO: use combinatorial path information!)
+      peekCache.clear()
+    }
   }
   @inline override def finish(): Unit = {
     // release memory, just in case
-    // peekCache.clear()
+    peekCache.clear()
     pokeCache.clear()
     inner.finish()
   }
