@@ -4,21 +4,70 @@
 
 package chiseltest.internal
 
+import chisel3.experimental.Direction
+import chisel3.reflect.DataMirror
 import chisel3.{Clock, Data}
-import chiseltest.{ChiselAssertionError, StopException, TimeoutException, UnpeekableException}
+import chiseltest.{
+  ChiselAssertionError,
+  StopException,
+  ThreadOrderDependentException,
+  TimeoutException,
+  UnpeekableException
+}
 import chiseltest.simulator.{SimulatorContext, StepInterrupted, StepOk}
+
+import scala.collection.mutable
+
+/** Meta data about a signal that can be peeked or poked. */
+private class SignalInfo(
+  /** Name used by the simulator. */
+  val name: String,
+  /** Indicates that the signal cannot be poked. */
+  val readOnly: Boolean,
+  /** Value of the last poke. */
+  var lastPokeValue: BigInt,
+  /** Time of the last poke. */
+  var lastPokeAt: Int = -1,
+  /** Id of the thread that performed the last poke. */
+  var lastPokeFrom: Int = -1) {}
 
 /** Regulates I/O access from different threads. Keeps track of timeout. */
 private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
   private var timeout:    Int = SimController.DefaultTimeout
   private var idleCycles: Int = 0
-  def pokeBits(signal: Data, value: BigInt): Unit = {
-    val name = design.resolveName(signal)
-    tester.poke(name, value)
-    idleCycles = 0
+  private val signals = new mutable.HashMap[Data, SignalInfo]()
+  private def lookupSignal(signal: Data): SignalInfo = signals.getOrElseUpdate(
+    signal, {
+      val readOnly = DataMirror.directionOf(signal) != Direction.Input
+      val name = design.resolveName(signal)
+      val value = tester.peek(name)
+      new SignalInfo(name, readOnly, value)
+    }
+  )
+
+  def pokeBits(threadInfo: ThreadInfoProvider, signal: Data, value: BigInt): Unit = {
+    val activeThreadId = threadInfo.getActiveThreadId
+    val stepCount = threadInfo.getStepCount.toInt
+    val info = lookupSignal(signal)
+    assert(!info.readOnly, "can only poke input! This should have been detected earlier.")
+    // check to see if the same value is already applied
+    if (info.lastPokeValue == value) {
+      // nothing to do!
+    } else {
+      if (info.lastPokeAt == stepCount && info.lastPokeFrom != activeThreadId) { // there has been a conflicting poke from another thread
+        throw new ThreadOrderDependentException("Conflicting pokes!") // TODO: better message
+      }
+      tester.poke(info.name, value)
+      info.lastPokeValue = value
+      // only reset timeout if the poke has an effect
+      idleCycles = 0
+    }
+    // record poke
+    info.lastPokeFrom = activeThreadId
+    info.lastPokeAt = stepCount
   }
 
-  def peekBits(signal: Data): BigInt = {
+  def peekBits(info: ThreadInfoProvider, signal: Data): BigInt = {
     val name = design
       .getName(signal)
       .getOrElse(

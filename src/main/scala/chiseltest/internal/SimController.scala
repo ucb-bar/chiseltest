@@ -20,8 +20,8 @@ class SimController[T <: Module](
   coverageAnnotations: AnnotationSeq) {
 
   private val ioAccess = new AccessCheck(design, tester)
-  def pokeBits(signal: Data, value: BigInt): Unit = ioAccess.pokeBits(signal, value)
-  def peekBits(signal: Data): BigInt = ioAccess.peekBits(signal)
+  def pokeBits(signal: Data, value: BigInt): Unit = ioAccess.pokeBits(scheduler, signal, value)
+  def peekBits(signal: Data): BigInt = ioAccess.peekBits(scheduler, signal)
 
   private val scheduler = new Scheduler(ioAccess.simulationStep)
 

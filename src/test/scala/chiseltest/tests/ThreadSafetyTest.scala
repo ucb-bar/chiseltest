@@ -18,7 +18,7 @@ class ThreadSafetyTest extends AnyFlatSpec with ChiselScalatestTester {
           c.in.poke(true.B)
           c.clock.step(1)
         }.fork {
-          c.in.poke(true.B)
+          c.in.poke(false.B)
           c.clock.step(1)
         }.join()
       }
