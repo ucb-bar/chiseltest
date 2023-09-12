@@ -22,6 +22,8 @@ import scala.collection.mutable
 private class SignalInfo(
   /** Name used by the simulator. */
   val name: String,
+  /** Unique ID. */
+  val id: Int,
   /** Indicates that the signal cannot be poked. */
   val readOnly: Boolean,
   /** Value of the last poke. */
@@ -41,7 +43,8 @@ private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
       val readOnly = DataMirror.directionOf(signal) != Direction.Input
       val name = design.resolveName(signal)
       val value = tester.peek(name)
-      new SignalInfo(name, readOnly, value)
+      val id = signals.size
+      new SignalInfo(name, id, readOnly, value)
     }
   )
 
