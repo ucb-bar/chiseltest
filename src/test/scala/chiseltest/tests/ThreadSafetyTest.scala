@@ -91,8 +91,8 @@ class ThreadSafetyTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "count signal overriding by thread spawn location" in {
     test(new InputOnlyModule(Bool())) { c =>
       c.in.poke(false.B)
-      fork {
-        fork {
+      fork { // thread 1
+        fork { // thread 2
           // Note: if we only step 1, the poke would run before the parent thread exits and break
           // So this relies on edge case behavior and isn't very useful, but it's still a test
           c.clock.step(2)

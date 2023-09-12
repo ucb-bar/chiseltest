@@ -38,7 +38,9 @@ class SimController[T <: Module](
 
   private val scheduler = new Scheduler(simulationStep)
 
-  def doTimescope(contents: () => Unit): Unit = {}
+  def doTimescope(contents: () => Unit): Unit = {
+    contents()
+  }
 
   def doFork(runnable: () => Unit, name: Option[String], region: Option[Region]): SimThreadId = {
     assert(region.isEmpty, s"TODO: add support for regions: ${region.get}")

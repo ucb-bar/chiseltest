@@ -119,6 +119,10 @@ private class Scheduler(simulationStep: Int => Int) {
 
   /** Called by every thread right before it is done. */
   private def finishThread(id: Int): Unit = {
+    // if we aren't the main thread, we need to first wait for all child threads to terminate (only the main thread kills)
+    if (id != MainThreadId) {
+      joinThreadsImpl(threadOrder.getChildren(id))
+    }
     val info = threads(id)
     assert(info.status == ThreadActive || info.status == ThreadTerminating)
     debug(s"finishThread(id=$id (${info.name}))")
@@ -291,6 +295,7 @@ private class Scheduler(simulationStep: Int => Int) {
   def joinThreads(ids: Seq[SimThreadId]): Unit = joinThreadsImpl(ids.map(_.id))
 
   private def joinThreadsImpl(ids: Seq[Int]): Unit = {
+    if (ids.isEmpty) { return }
     debug(s"joinThreads(ids = $ids)")
     // cache ID
     val joiningThreadId = activeThreadId
@@ -345,16 +350,37 @@ private class Scheduler(simulationStep: Int => Int) {
 
 /** Maintains a tree of threads and uses it in order to derive in which order threads need to run. */
 private class ThreadOrder {
-  private class Node(var thread: Int, var children: Seq[Node] = null)
+  private class Node(var thread: Int, var children: Seq[Node] = null) {
+    def isAlive: Boolean = thread > -1
+  }
   private val root = new Node(0)
   private val idToNode = mutable.ArrayBuffer[Node](root)
-  private var threadOrder: Iterable[Int] = Seq()
+  private var threadOrder: Seq[Int] = Seq()
 
   /** Returns non-finished threads in the order in which they should be scheduled */
-  def getOrder: Iterable[Int] = {
+  def getOrder: Seq[Int] = {
     // if the root thread is still alive, but no threads are in the current order
     if (threadOrder.isEmpty && root.thread == 0) { threadOrder = calculateOrder() }
     threadOrder
+  }
+
+  /** Returns ids of all (transitive) child threads */
+  def getChildren(thread: Int): Seq[Int] = {
+    val todo = mutable.Stack[Node]()
+    val result = mutable.ArrayBuffer[Int]()
+    todo.push(idToNode(thread))
+    while (todo.nonEmpty) {
+      val node = todo.pop()
+      if (node.children != null) {
+        node.children.foreach { child =>
+          if (child.isAlive) {
+            result.addOne(child.thread)
+            todo.push(child)
+          }
+        }
+      }
+    }
+    result.toSeq
   }
 
   /** Add a new thread. */
@@ -392,7 +418,7 @@ private class ThreadOrder {
     node.thread = -1
   }
 
-  private def calculateOrder(): Iterable[Int] = {
+  private def calculateOrder(): Seq[Int] = {
     assert(root.thread == 0, "We lost the main thread!")
     val order = mutable.ArrayBuffer[Int]()
     val todo = mutable.Stack[Node]()
