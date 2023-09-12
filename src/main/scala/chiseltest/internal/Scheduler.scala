@@ -107,6 +107,8 @@ private class Scheduler(simulationStep: Int => Int) extends ThreadInfoProvider {
         } catch {
           case _: TerminateSimThreadException => // everything OK, we are just being terminated
           case e @ (_: Exception | _: Error) =>
+            // an exception means that we will be terminating
+            threads(id).status = ThreadTerminating
             // add exception to parent thread
             val parentId = threadOrder.getParent(id).get
             val parent = threads(parentId)
@@ -149,7 +151,10 @@ private class Scheduler(simulationStep: Int => Int) extends ThreadInfoProvider {
   /** Called by every thread right before it is done. */
   private def finishThread(id: Int): Unit = {
     val info = threads(id)
-    assert(info.status == ThreadActive || info.status == ThreadTerminating)
+    assert(
+      info.status == ThreadActive || info.status == ThreadTerminating,
+      s"${info.serializeShort(currentStep, activeThreadId)}"
+    )
     debug(s"finishThread(id=$id (${info.name}))")
     threadOrder.finishThread(id)
     info.status = ThreadFinished
