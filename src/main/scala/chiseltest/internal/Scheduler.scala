@@ -32,21 +32,25 @@ private sealed trait ThreadStatus {}
 private case object ThreadActive extends ThreadStatus
 private case class ThreadWaitingForJoin(otherThread: Int) extends ThreadStatus
 private case class ThreadWaitingUntil(step: Int) extends ThreadStatus
+private case object ThreadTerminating extends ThreadStatus
 private case object ThreadFinished extends ThreadStatus
 private object ThreadStatus {
   @inline def serialize(status: ThreadStatus, currentStep: Int): String = status match {
     case ThreadActive                      => "R"
     case ThreadWaitingForJoin(otherThread) => s"J($otherThread)"
     case ThreadWaitingUntil(step)          => s"P(${step - currentStep})"
+    case ThreadTerminating                 => "T"
     case ThreadFinished                    => "F"
   }
 }
+
+private class TerminateSimThreadException extends Exception
 
 /** Manages multiple Java threads that all interact with the same simulation and step synchronously. Currently only
   * supports a single global clock that all threads are synchronized to.
   */
 private class Scheduler(simulationStep: Int => Int) {
-  private val EnableDebug:         Boolean = true
+  private val EnableDebug:         Boolean = false
   private val DebugThreadSwitches: Boolean = false
   private def debug(msg: => String): Unit = if (EnableDebug) println(s"$activeThreadId@$currentStep: $msg")
   private def debugSwitch(from: Int, to: Int, reason: => String): Unit = if (DebugThreadSwitches) {
@@ -83,7 +87,11 @@ private class Scheduler(simulationStep: Int => Int) {
         // BLOCK #1: after being started
         semaphore.acquire() // wait until it is our turn
         onResumeThread(id)
-        runnable() // execute user code
+        try {
+          runnable() // execute user code
+        } catch {
+          case _: TerminateSimThreadException => // everything OK, we are just being terminated
+        }
         finishThread(id) // finish thread execution
       },
       name
@@ -95,13 +103,18 @@ private class Scheduler(simulationStep: Int => Int) {
   /** Must be called by a thread right after it resumes execution. */
   @inline private def onResumeThread(id: Int): Unit = {
     activeThreadId = id
-    threads(id).status = ThreadActive
+    val threadInfo = threads(id)
+    // check if we are requested to terminate
+    if (threadInfo.status == ThreadTerminating) {
+      throw new TerminateSimThreadException
+    }
+    threadInfo.status = ThreadActive
   }
 
   /** Called by every thread right before it is done. */
   private def finishThread(id: Int): Unit = {
     val info = threads(id)
-    assert(info.status == ThreadActive)
+    assert(info.status == ThreadActive || info.status == ThreadTerminating)
     debug(s"finishThread(id=$id (${info.name}))")
     threadOrder.finishThread(id)
     info.status = ThreadFinished
@@ -174,6 +187,8 @@ private class Scheduler(simulationStep: Int => Int) {
       case ThreadFinished => throw new RuntimeException(s"Cannot resume finished thread! $nextThread")
       case ThreadWaitingUntil(target) =>
         assert(target == currentStep, s"Cannot resume thread! $nextThread")
+        true
+      case ThreadTerminating => // we can only terminate threads that were waiting for a semaphore
         true
     }
     // only threads that are blocked on a step (and not e.g. a join) need their semaphore to be release
@@ -298,10 +313,31 @@ private class Scheduler(simulationStep: Int => Int) {
     }
   }
 
+  /** Stops all threads besides the main thread from running. */
+  private def terminateAllSubThreads(): Unit = {
+    val terminatingThreadId = activeThreadId
+    val terminatingThread = threads(terminatingThreadId)
+    val activeThreads = threadsInSchedulerOrder.drop(1)
+    debug("terminating: " + activeThreads.mkString(", "))
+    // terminate threads in reverse scheduler order
+    while (threadsInSchedulerOrder.size > 1) {
+      // change thread status
+      val t = threadsInSchedulerOrder.last
+      assert(!t.status.isInstanceOf[ThreadWaitingForJoin], s"Cannot terminate thread waiting for join $t")
+      t.status = ThreadTerminating
+      // schedule thread and wait for control to return
+      terminatingThread.status = ThreadWaitingUntil(currentStep)
+      wakeUpThread(t)
+      // BLOCK #4: waiting to terminate threads
+      terminatingThread.semaphore.acquire()
+      onResumeThread(terminatingThreadId)
+    }
+  }
+
   /** Shuts down the main thread by waiting for all other threads to finish, */
   def finishMainThread(): Unit = {
     assert(activeThreadId == MainThreadId, "TODO: deal with exceptions inside of threads correctly!")
-    joinThreadsImpl(threads.drop(1).toSeq.map(_.id))
+    terminateAllSubThreads()
     finishThread(MainThreadId)
   }
 }
