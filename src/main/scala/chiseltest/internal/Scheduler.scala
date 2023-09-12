@@ -318,12 +318,12 @@ private class Scheduler(simulationStep: Int => Int) {
   private def terminateAllSubThreads(): Unit = {
     val terminatingThreadId = activeThreadId
     val terminatingThread = threads(terminatingThreadId)
-    val activeThreads = threadsInSchedulerOrder.drop(1)
+    val activeThreads = threadsInSchedulerOrder.filterNot(_.id == terminatingThreadId)
     debug("terminating: " + activeThreads.mkString(", "))
-    // terminate threads in reverse scheduler order
+    // terminate threads in scheduler order (bottom up)
     while (threadsInSchedulerOrder.size > 1) {
       // change thread status
-      val t = threadsInSchedulerOrder.last
+      val t = threadsInSchedulerOrder.head
       assert(!t.status.isInstanceOf[ThreadWaitingForJoin], s"Cannot terminate thread waiting for join $t")
       t.status = ThreadTerminating
       // schedule thread and wait for control to return
@@ -395,8 +395,8 @@ private class ThreadOrder {
   private def calculateOrder(): Iterable[Int] = {
     assert(root.thread == 0, "We lost the main thread!")
     val order = mutable.ArrayBuffer[Int]()
-    // threads need to be scheduled in depth first order
     val todo = mutable.Stack[Node]()
+    // we want to run threads from the bottom up (children first) and the older children before the younger children
     todo.push(root)
     while (todo.nonEmpty) {
       val node = todo.pop()
@@ -404,9 +404,9 @@ private class ThreadOrder {
       if (node.children != null) {
         val lifeChildren = node.children.filter(_.thread > -1)
         node.children = lifeChildren
-        todo.pushAll(lifeChildren.reverse)
+        todo.pushAll(lifeChildren)
       }
     }
-    order
+    order.toSeq.reverse
   }
 }
