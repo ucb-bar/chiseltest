@@ -24,6 +24,8 @@ private class ThreadInfo(
     val pausedStr = ThreadStatus.serialize(status, currentStep)
     idStr + ": " + pausedStr
   }
+
+  override def toString = s"$name ($id)"
 }
 
 private sealed trait ThreadStatus {}
@@ -44,7 +46,7 @@ private object ThreadStatus {
   * supports a single global clock that all threads are synchronized to.
   */
 private class Scheduler(simulationStep: Int => Int) {
-  private val EnableDebug:         Boolean = false
+  private val EnableDebug:         Boolean = true
   private val DebugThreadSwitches: Boolean = false
   private def debug(msg: => String): Unit = if (EnableDebug) println(s"$activeThreadId@$currentStep: $msg")
   private def debugSwitch(from: Int, to: Int, reason: => String): Unit = if (DebugThreadSwitches) {
@@ -78,7 +80,9 @@ private class Scheduler(simulationStep: Int => Int) {
     val thread = new Thread(
       null,
       () => {
+        // BLOCK #1: after being started
         semaphore.acquire() // wait until it is our turn
+        onResumeThread(id)
         runnable() // execute user code
         finishThread(id) // finish thread execution
       },
@@ -86,6 +90,12 @@ private class Scheduler(simulationStep: Int => Int) {
     )
     thread.start()
     (thread, semaphore)
+  }
+
+  /** Must be called by a thread right after it resumes execution. */
+  @inline private def onResumeThread(id: Int): Unit = {
+    activeThreadId = id
+    threads(id).status = ThreadActive
   }
 
   /** Called by every thread right before it is done. */
@@ -106,13 +116,13 @@ private class Scheduler(simulationStep: Int => Int) {
         case Some(unblockedThread) =>
           // if there is a thread that just got unblocked by us finishing, we want to switch to that
           debugSwitch(id, unblockedThread.id, "finish unblocks join")
-          resumeThread(unblockedThread)
+          wakeUpThread(unblockedThread)
         case None =>
           // otherwise we make sure a thread waiting on a step will be available and then execute that
           stepSimulationToNearestWait()
           val nextThread = findNextThread()
           debugSwitch(id, nextThread.id, "finish")
-          resumeThread(nextThread)
+          wakeUpThread(nextThread)
       }
     }
   }
@@ -142,15 +152,18 @@ private class Scheduler(simulationStep: Int => Int) {
     // find a thread that is ready to run
     val nextThread = findNextThread()
     // set active thread status to paused
-    val activeThread = threads(activeThreadId)
+    val originalActiveThreadId = activeThreadId
+    val activeThread = threads(originalActiveThreadId)
     activeThread.status = ThreadWaitingUntil(currentStep + cycles)
     // switch threads
     debugSwitch(activeThreadId, nextThread.id, if (isFork) s"fork" else s"yield for step ($cycles)")
-    resumeThread(nextThread)
+    wakeUpThread(nextThread)
+    // BLOCK #2: as part of a step or fork
     activeThread.semaphore.acquire()
+    onResumeThread(originalActiveThreadId)
   }
 
-  @inline private def resumeThread(nextThread: ThreadInfo): Unit = {
+  @inline private def wakeUpThread(nextThread: ThreadInfo): Unit = {
     // check thread (for debugging)
     val semaphoreNeedsToBeReleased = nextThread.status match {
       case ThreadActive => throw new RuntimeException(s"Cannot resume active thread! $nextThread")
@@ -163,9 +176,6 @@ private class Scheduler(simulationStep: Int => Int) {
         assert(target == currentStep, s"Cannot resume thread! $nextThread")
         true
     }
-    // perform the actual resumption
-    activeThreadId = nextThread.id
-    nextThread.status = ThreadActive
     // only threads that are blocked on a step (and not e.g. a join) need their semaphore to be release
     if (semaphoreNeedsToBeReleased) {
       nextThread.semaphore.release()
@@ -280,13 +290,12 @@ private class Scheduler(simulationStep: Int => Int) {
         // we remember which thread we are blocking on
         threads(joiningThreadId).status = ThreadWaitingForJoin(other.id)
         debugSwitch(joiningThreadId, nextThread.id, s"waiting for ${other.id}")
-        resumeThread(nextThread)
-        // now we can join without holding up progress
+        wakeUpThread(nextThread)
+        // BLOCK #3: waiting for other thread to finish
         other.underlying.get.join()
+        onResumeThread(joiningThreadId)
       }
     }
-    // now we are continuing to execute
-    threads(joiningThreadId).status = ThreadActive
   }
 
   /** Shuts down the main thread by waiting for all other threads to finish, */

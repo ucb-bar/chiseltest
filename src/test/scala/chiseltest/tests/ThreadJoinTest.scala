@@ -46,9 +46,9 @@ class ThreadJoinTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "join multiple threads of uneven length, order 2" in {
     test(new PassthroughModule(UInt(8.W))) { c =>
       c.io.in.poke(15.U)
-      fork { // do-nothing thread finishes first
+      fork { // do-nothing thread (1) finishes first
         c.clock.step(1)
-      }.fork {
+      }.fork { // thread 2
         c.clock.step(3)
         c.io.in.poke(16.U)
         c.clock.step(1) // value needs to latch
