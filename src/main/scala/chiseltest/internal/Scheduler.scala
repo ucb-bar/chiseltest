@@ -17,7 +17,9 @@ private class ThreadInfo(
   /** Status of the thread. */
   var status: ThreadStatus,
   /** Semaphore that pauses thread. */
-  val semaphore: Semaphore) {
+  val semaphore: Semaphore,
+  /** An exception from a child thread that needs to be propagated */
+  var pendingException: Option[Throwable] = None) {
   def serializeShort(currentStep: Int, activeThreadId: Int): String = {
     val isActive = id == activeThreadId
     val idStr = if (isActive) s"[${id}]" else id.toString
@@ -46,7 +48,8 @@ private object ThreadStatus {
 
 private class TerminateSimThreadException extends Exception
 
-trait ThreadInfoProvider {
+/** Information needed by the [[AccessCheck]] class. Should return quickly! */
+private trait ThreadInfoProvider {
   def getActiveThreadId: Int
   def getStepCount:      Long
 }
@@ -103,6 +106,17 @@ private class Scheduler(simulationStep: Int => Int) extends ThreadInfoProvider {
           runnable() // execute user code
         } catch {
           case _: TerminateSimThreadException => // everything OK, we are just being terminated
+          case e @ (_: Exception | _: Error) =>
+            // add exception to parent thread
+            val parentId = threadOrder.getParent(id).get
+            val parent = threads(parentId)
+            assert(
+              parent.pendingException.isEmpty,
+              s"Parent thread $parent already has an exception! Cannot add ${e.getMessage}"
+            )
+            parent.pendingException = Some(e)
+            // terminate all child threads
+            terminateAllChildThreads()
         }
         // we need to first wait for all child threads to terminate (only the main thread kills)
         joinThreadsImpl(threadOrder.getChildren(id))
@@ -121,6 +135,13 @@ private class Scheduler(simulationStep: Int => Int) extends ThreadInfoProvider {
     // check if we are requested to terminate
     if (threadInfo.status == ThreadTerminating) {
       throw new TerminateSimThreadException
+    }
+    // check to see if there is an exception we need to propagate from a child thread
+    threadInfo.pendingException match {
+      case Some(e) =>
+        threadInfo.pendingException = None
+        throw e
+      case None =>
     }
     threadInfo.status = ThreadActive
   }
@@ -323,41 +344,56 @@ private class Scheduler(simulationStep: Int => Int) extends ThreadInfoProvider {
     }
   }
 
-  /** Stops all threads besides the main thread from running. */
-  private def terminateAllSubThreads(): Unit = {
-    val terminatingThreadId = activeThreadId
-    val terminatingThread = threads(terminatingThreadId)
-    val activeThreads = threadsInSchedulerOrder.filterNot(_.id == terminatingThreadId)
-    debug("terminating: " + activeThreads.mkString(", "))
-    // terminate threads in scheduler order (bottom up)
-    while (threadsInSchedulerOrder.size > 1) {
+  /** Stops all threads bellow the current one from running. */
+  private def terminateAllChildThreads(): Unit = {
+    // remember the info and all initial child threads
+    val terminatingThread = threads(activeThreadId)
+    var childThreads = threadOrder.getChildren(terminatingThread.id).toSet
+
+    // check for an early exit
+    if (childThreads.isEmpty) {
+      return // no child threads ==> nothing to do here
+    }
+
+    // show what we are trying to terminate
+    debug("terminating: " + childThreads.map(threads(_)).mkString(", "))
+
+    // run until there are no more child threads
+    while (childThreads.nonEmpty) {
+      // find the first child thread in scheduler order because we want to terminate them bottom up
+      val t = threadsInSchedulerOrder.find(t => childThreads(t.id)).get
+
       // change thread status
-      val t = threadsInSchedulerOrder.head
       assert(!t.status.isInstanceOf[ThreadWaitingForJoin], s"Cannot terminate thread waiting for join $t")
       t.status = ThreadTerminating
+
       // schedule thread and wait for control to return
       terminatingThread.status = ThreadWaitingUntil(currentStep)
       wakeUpThread(t)
+
       // BLOCK #4: waiting to terminate threads
       terminatingThread.semaphore.acquire()
-      onResumeThread(terminatingThreadId)
+      onResumeThread(terminatingThread.id)
+
+      // update set of child threads
+      childThreads = threadOrder.getChildren(terminatingThread.id).toSet
     }
   }
 
   /** Shuts down the main thread by waiting for all other threads to finish, */
   def finishMainThread(): Unit = {
     assert(activeThreadId == MainThreadId, "TODO: deal with exceptions inside of threads correctly!")
-    terminateAllSubThreads()
+    terminateAllChildThreads()
     finishThread(MainThreadId)
   }
 }
 
 /** Maintains a tree of threads and uses it in order to derive in which order threads need to run. */
 private class ThreadOrder {
-  private class Node(var thread: Int, var children: Seq[Node] = null) {
+  private class Node(var thread: Int, val parent: Int, var children: Seq[Node] = null) {
     def isAlive: Boolean = thread > -1
   }
-  private val root = new Node(0)
+  private val root = new Node(0, parent = -1)
   private val idToNode = mutable.ArrayBuffer[Node](root)
   private var threadOrder: Seq[Int] = Seq()
 
@@ -366,6 +402,13 @@ private class ThreadOrder {
     // if the root thread is still alive, but no threads are in the current order
     if (threadOrder.isEmpty && root.thread == 0) { threadOrder = calculateOrder() }
     threadOrder
+  }
+
+  /** Returns the parent thread ID if there is a parent. */
+  def getParent(id: Int): Option[Int] = {
+    val node = idToNode(id)
+    if (node.parent > -1) { Some(node.parent) }
+    else { None }
   }
 
   /** Returns ids of all (transitive) child threads */
@@ -392,7 +435,7 @@ private class ThreadOrder {
     // invalidate order
     threadOrder = Seq()
     // create new child node
-    val childNode = new Node(id)
+    val childNode = new Node(id, parent)
     assert(idToNode.length == id, "Expected ids to always increase by one...")
     idToNode.addOne(childNode)
     // insert pointer into parent node

@@ -53,13 +53,15 @@ private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
     val stepCount = threadInfo.getStepCount.toInt
     val info = lookupSignal(signal)
     assert(!info.readOnly, "can only poke input! This should have been detected earlier.")
+    // check for conflicting pokes
+    if (info.lastPokeAt == stepCount && info.lastPokeFrom != activeThreadId) {
+      throw new ThreadOrderDependentException("Conflicting pokes!") // TODO: better message
+    }
+
     // check to see if the same value is already applied
     if (info.lastPokeValue == value) {
       // nothing to do!
     } else {
-      if (info.lastPokeAt == stepCount && info.lastPokeFrom != activeThreadId) { // there has been a conflicting poke from another thread
-        throw new ThreadOrderDependentException("Conflicting pokes!") // TODO: better message
-      }
       tester.poke(info.name, value)
       info.lastPokeValue = value
       // only reset timeout if the poke has an effect
