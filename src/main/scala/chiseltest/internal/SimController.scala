@@ -7,7 +7,7 @@ package chiseltest.internal
 import chisel3.{Clock, Data, Module}
 import chiseltest._
 import chiseltest.coverage.TestCoverage
-import chiseltest.simulator.{SimulatorContext, StepInterrupted, StepOk}
+import chiseltest.simulator.SimulatorContext
 import firrtl2.AnnotationSeq
 
 object SimController {
@@ -19,24 +19,11 @@ class SimController[T <: Module](
   tester:              SimulatorContext,
   coverageAnnotations: AnnotationSeq) {
 
-  def pokeBits(signal: Data, value: BigInt): Unit = {
-    val name = design.resolveName(signal)
-    tester.poke(name, value)
-    idleCycles = 0
-  }
+  private val ioAccess = new AccessCheck(design, tester)
+  def pokeBits(signal: Data, value: BigInt): Unit = ioAccess.pokeBits(signal, value)
+  def peekBits(signal: Data): BigInt = ioAccess.peekBits(signal)
 
-  def peekBits(signal: Data): BigInt = {
-    val name = design
-      .getName(signal)
-      .getOrElse(
-        throw new UnpeekableException(
-          s"Signal $signal not found. Perhaps you're peeking a non-IO signal.\n  If so, consider using the chiseltest.experimental.expose API."
-        )
-      )
-    tester.peek(name)
-  }
-
-  private val scheduler = new Scheduler(simulationStep)
+  private val scheduler = new Scheduler(ioAccess.simulationStep)
 
   def doTimescope(contents: () => Unit): Unit = {
     contents()
@@ -52,35 +39,9 @@ class SimController[T <: Module](
     scheduler.joinThreads(threads)
   }
 
-  private var timeout:    Int = SimController.DefaultTimeout
-  private var idleCycles: Int = 0
-
   def step(signal: Clock, cycles: Int): Unit = {
     require(signal == design.clock)
     scheduler.stepThread(cycles)
-  }
-
-  /** Performs a step on the actual simulation (as opposed to a "virtual" thread step) */
-  private def simulationStep(cycles: Int): Int = {
-    // throw any available exceptions before stepping
-    Context().env.checkpoint()
-    val delta = if (timeout == 0) cycles else Seq(cycles, timeout - idleCycles).min
-    tester.step(delta) match {
-      case StepOk =>
-        // update and check timeout
-        idleCycles += delta
-        if (timeout > 0 && idleCycles == timeout) {
-          throw new TimeoutException(s"timeout on ${design.clock} at $timeout idle cycles")
-        }
-        delta
-      case StepInterrupted(after, true, _) =>
-        val msg = s"An assertion in ${design.name} failed.\n" +
-          "Please consult the standard output for more details."
-        throw new ChiselAssertionError(msg, cycles + after)
-      case StepInterrupted(after, false, _) =>
-        val msg = s"A stop() statement was triggered in ${design.name}."
-        throw new StopException(msg, cycles + after)
-    }
   }
 
   def getStepCount(signal: Clock): Long = {
@@ -88,12 +49,7 @@ class SimController[T <: Module](
     scheduler.getStepCount
   }
 
-  def setTimeout(signal: Clock, cycles: Int): Unit = {
-    require(signal == design.clock, "timeout currently only supports master clock")
-    require(cycles >= 0, s"Negative timeout $cycles is not supported! Use 0 to disable the timeout.")
-    timeout = cycles
-    idleCycles = 0
-  }
+  def setTimeout(signal: Clock, cycles: Int): Unit = ioAccess.setTimeout(signal, cycles)
 
   def run(dut: T, testFn: T => Unit): AnnotationSeq = {
     try {
