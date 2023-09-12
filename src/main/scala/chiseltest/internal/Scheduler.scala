@@ -51,13 +51,13 @@ private class TerminateSimThreadException extends Exception
 /** Information needed by the [[AccessCheck]] class. Should return quickly! */
 private trait ThreadInfoProvider {
   def getActiveThreadId: Int
-  def getStepCount:      Long
+  def getStepCount:      Int
 }
 
 /** Manages multiple Java threads that all interact with the same simulation and step synchronously. Currently only
   * supports a single global clock that all threads are synchronized to.
   */
-private class Scheduler(simulationStep: Int => Int) extends ThreadInfoProvider {
+private class Scheduler(simulationStep: (Int, Int) => Int) extends ThreadInfoProvider {
   private val EnableDebug:         Boolean = false
   private val DebugThreadSwitches: Boolean = false
   private def debugPrefix = s"$activeThreadId@$currentStep: "
@@ -92,7 +92,7 @@ private class Scheduler(simulationStep: Int => Int) extends ThreadInfoProvider {
   /** Keep track of global simulation time. */
   private var currentStep: Int = 0
 
-  override def getStepCount: Long = currentStep.toLong
+  override def getStepCount: Int = currentStep
 
   @inline private def createThread(name: String, id: Int, runnable: () => Unit): (Thread, Semaphore) = {
     val semaphore = new Semaphore(0)
@@ -318,7 +318,7 @@ private class Scheduler(simulationStep: Int => Int) extends ThreadInfoProvider {
   /** Performs the simulation step */
   @inline private def doStep(cycles: Int): Unit = {
     debug(s"doStep(cycles = $cycles)")
-    val delta = simulationStep(cycles)
+    val delta = simulationStep(currentStep, cycles)
     currentStep += delta
   }
 

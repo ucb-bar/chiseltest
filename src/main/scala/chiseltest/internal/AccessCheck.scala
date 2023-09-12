@@ -91,7 +91,7 @@ private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
   }
 
   /** Performs a step on the actual simulation (as opposed to a "virtual" thread step) */
-  def simulationStep(cycles: Int): Int = {
+  def simulationStep(from: Int, cycles: Int): Int = {
     // throw any available exceptions before stepping
     Context().env.checkpoint()
     val delta = if (timeout == 0) cycles else Seq(cycles, timeout - idleCycles).min
@@ -106,10 +106,10 @@ private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
       case StepInterrupted(after, true, _) =>
         val msg = s"An assertion in ${design.name} failed.\n" +
           "Please consult the standard output for more details."
-        throw new ChiselAssertionError(msg, cycles + after)
+        throw new ChiselAssertionError(msg, from + after)
       case StepInterrupted(after, false, _) =>
         val msg = s"A stop() statement was triggered in ${design.name}."
-        throw new StopException(msg, cycles + after)
+        throw new StopException(msg, from + after)
     }
   }
 }
