@@ -52,13 +52,19 @@ private class TerminateSimThreadException extends Exception
 private class Scheduler(simulationStep: Int => Int) {
   private val EnableDebug:         Boolean = false
   private val DebugThreadSwitches: Boolean = false
-  private def debug(msg: => String): Unit = if (EnableDebug) println(s"$activeThreadId@$currentStep: $msg")
+  private def debugPrefix = s"$activeThreadId@$currentStep: "
+  private def debug(msg: => String): Unit = if (EnableDebug) println(debugPrefix + msg)
   private def debugSwitch(from: Int, to: Int, reason: => String): Unit = if (DebugThreadSwitches) {
     println(
       s"@$currentStep: ${threads(from).serializeShort(currentStep, activeThreadId)} ->" +
         s" ${threads(to).serializeShort(currentStep, activeThreadId)} $reason"
     )
     dbgThreadList(showAlways = true)
+  }
+
+  private def dbgThreadList(showAlways: Boolean = false): Unit = if (EnableDebug || showAlways) {
+    val msg = threadsInSchedulerOrder.map(_.serializeShort(currentStep, activeThreadId)).mkString(", ")
+    println(debugPrefix + "  --> " + msg)
   }
 
   private val MainThreadId = 0
@@ -154,14 +160,9 @@ private class Scheduler(simulationStep: Int => Int) {
     new SimThreadId(id)
   }
 
-  private def dbgThreadList(showAlways: Boolean = false): Unit = if (EnableDebug || showAlways) {
-    val msg = threadsInSchedulerOrder.map(_.serializeShort(currentStep, activeThreadId)).mkString(", ")
-    println("  --> " + msg)
-  }
-
   /** Suspends the active thread for `cycles` steps and schedules a new one to run. */
   @inline private def yieldForStep(cycles: Int, isFork: Boolean): Unit = {
-    debug(s"yieldForStep(cycles = $cycles)"); dbgThreadList()
+    debug(s"yieldFor${if (isFork) "Fork" else "Step"}(cycles = $cycles)"); dbgThreadList()
     // find a thread that is ready to run
     val nextThread = findNextThread()
     // set active thread status to paused
