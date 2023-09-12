@@ -98,6 +98,8 @@ private class Scheduler(simulationStep: Int => Int) {
         } catch {
           case _: TerminateSimThreadException => // everything OK, we are just being terminated
         }
+        // we need to first wait for all child threads to terminate (only the main thread kills)
+        joinThreadsImpl(threadOrder.getChildren(id))
         finishThread(id) // finish thread execution
       },
       name
@@ -119,10 +121,6 @@ private class Scheduler(simulationStep: Int => Int) {
 
   /** Called by every thread right before it is done. */
   private def finishThread(id: Int): Unit = {
-    // if we aren't the main thread, we need to first wait for all child threads to terminate (only the main thread kills)
-    if (id != MainThreadId) {
-      joinThreadsImpl(threadOrder.getChildren(id))
-    }
     val info = threads(id)
     assert(info.status == ThreadActive || info.status == ThreadTerminating)
     debug(s"finishThread(id=$id (${info.name}))")
