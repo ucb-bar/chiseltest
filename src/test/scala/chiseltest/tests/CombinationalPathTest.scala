@@ -24,6 +24,21 @@ class CombinationalPathTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
+  it should "detect r/w conflicts on the same signal" in {
+    assertThrows[ThreadOrderDependentException] {
+      test(new PassthroughModule(Bool())) { c =>
+        fork {
+          c.clock.step(1)
+          c.in.poke(true.B)
+          c.clock.step(2)
+        }.fork {
+          c.clock.step(1)
+          c.in.expect(true.B)
+        }.join()
+      }
+    }
+  }
+
   it should "allow combinationally-dependent operations if they are synchronized by a clock step" in {
     test(new PassthroughModule(Bool())) { c =>
       fork {
