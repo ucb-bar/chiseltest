@@ -91,10 +91,10 @@ private[chiseltest] object TesterUtils {
     if (ref.circuit != ref.module) { None }
     else { Some(ref.ref) }
   }
-  private def extractPathsFromAnnos(pathAnnotations: AnnotationSeq): Map[String, Set[String]] = {
+  private def extractPathsFromAnnos(pathAnnotations: AnnotationSeq): Map[String, Seq[String]] = {
     val paths = pathAnnotations.collect { case c: CombinationalPath => c }.flatMap { c =>
       extractTopName(c.sink).map { sink =>
-        sink -> c.sources.flatMap(extractTopName).toSet
+        sink -> c.sources.flatMap(extractTopName)
       }
     }
     paths.toMap

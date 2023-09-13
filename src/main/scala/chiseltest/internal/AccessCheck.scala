@@ -7,6 +7,7 @@ package chiseltest.internal
 import chisel3.experimental.Direction
 import chisel3.reflect.DataMirror
 import chisel3.{Clock, Data}
+import chiseltest.internal.AccessCheck.populateSignals
 import chiseltest.{
   ChiselAssertionError,
   StopException,
@@ -17,8 +18,6 @@ import chiseltest.{
 }
 import chiseltest.simulator.{SimulatorContext, StepInterrupted, StepOk}
 
-import scala.collection.mutable
-
 /** Meta data about a signal that can be peeked or poked. */
 private class SignalInfo(
   /** Name used by the simulator. */
@@ -28,6 +27,7 @@ private class SignalInfo(
   /** Indicates that the signal cannot be poked. */
   val readOnly: Boolean,
   /** Lists any signals that this signal depends on. */
+  val dependsOn: Seq[Int],
   /** Value of the last poke. */
   var lastPokeValue: BigInt,
   /** Time of the last poke. */
@@ -39,33 +39,29 @@ private class SignalInfo(
 private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
   private var timeout:    Int = SimController.DefaultTimeout
   private var idleCycles: Int = 0
-  private val signals = new mutable.HashMap[Data, SignalInfo]()
-  private def lookupSignal(signal: Data, isPeekNotPoke: Boolean): SignalInfo = signals.getOrElseUpdate(
+  private val signals = populateSignals(design, tester).toMap
+  private val idToSignal = {
+    val sorted = signals.values.toSeq.sortBy(_.id)
+    assert(sorted.zipWithIndex.forall(t => t._1.id == t._2))
+    sorted.toIndexedSeq
+  }
+  private def lookupSignal(signal: Data, isPeekNotPoke: Boolean): SignalInfo = signals.getOrElse(
     signal, {
-      val readOnly = DataMirror.directionOf(signal) != Direction.Input
-      val name = design.getName(signal).getOrElse {
-        val msg = s"Signal $signal not found. Perhaps you're peeking a non-IO signal.\n " +
-          s"If so, consider using the chiseltest.experimental.expose API."
-        if (isPeekNotPoke) { throw new UnpeekableException(msg) }
-        else { throw new UnpokeableException(msg) }
+      val msg = s"Signal $signal not found. Perhaps you're peeking a non-IO signal.\n " +
+        s"If so, consider using the chiseltest.experimental.expose API."
+      if (isPeekNotPoke) {
+        throw new UnpeekableException(msg)
+      } else {
+        throw new UnpokeableException(msg)
       }
-      val value = tester.peek(name)
-      val id = signals.size
-      new SignalInfo(name, id, readOnly, value)
     }
   )
 
   def pokeBits(threadInfo: ThreadInfoProvider, signal: Data, value: BigInt): Unit = {
-    val activeThreadId = threadInfo.getActiveThreadId
-    val stepCount = threadInfo.getStepCount
     val info = lookupSignal(signal, isPeekNotPoke = false)
     assert(!info.readOnly, "can only poke input! This should have been detected earlier.")
     // check for conflicting pokes
-    if (
-      info.lastPokeAt == stepCount &&
-      info.lastPokeFrom != activeThreadId &&
-      !threadInfo.isParentOf(info.lastPokeFrom, activeThreadId)
-    ) {
+    if (hasConflictingPoke(info, threadInfo)) {
       throw new ThreadOrderDependentException("Conflicting pokes!") // TODO: better message
     }
 
@@ -79,12 +75,32 @@ private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
       idleCycles = 0
     }
     // record poke
-    info.lastPokeFrom = activeThreadId
-    info.lastPokeAt = stepCount
+    info.lastPokeFrom = threadInfo.getActiveThreadId
+    info.lastPokeAt = threadInfo.getStepCount
   }
+
+  private def hasConflictingPoke(info: SignalInfo, threadInfo: ThreadInfoProvider): Boolean =
+    info.lastPokeAt == threadInfo.getStepCount &&
+      info.lastPokeFrom != threadInfo.getActiveThreadId &&
+      !threadInfo.isParentOf(info.lastPokeFrom, threadInfo.getActiveThreadId)
 
   def peekBits(threadInfo: ThreadInfoProvider, signal: Data): BigInt = {
     val info = lookupSignal(signal, isPeekNotPoke = true)
+    // has this signal been poked?
+    if (hasConflictingPoke(info, threadInfo)) {
+      throw new ThreadOrderDependentException(
+        "Conflicting poke on signal that is being peeked!"
+      ) // TODO: better message
+    }
+
+    // check to see if there have been any dependent pokes from another thread
+    info.dependsOn.foreach { id =>
+      val info = idToSignal(id)
+      if (hasConflictingPoke(info, threadInfo)) {
+        throw new ThreadOrderDependentException("Conflicting poke that influences peek!") // TODO: better message
+      }
+    }
+
     tester.peek(info.name)
   }
 
@@ -115,6 +131,37 @@ private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
       case StepInterrupted(after, false, _) =>
         val msg = s"A stop() statement was triggered in ${design.name}."
         throw new StopException(msg, from + after)
+    }
+  }
+}
+
+private object AccessCheck {
+  private def populateSignals(design: DesignInfo, tester: SimulatorContext): Seq[(Data, SignalInfo)] = {
+    val sorted = design.dataNames.toSeq.sortBy(_._2)
+    // we only care about leaf Signals
+    val onlyIO = sorted.filter { case (signal, _) =>
+      val direction = DataMirror.directionOf(signal)
+      direction == Direction.Output || direction == Direction.Input
+    }
+    var count: Int = 0
+    val nameToId = onlyIO
+      .map(_._2)
+      .map { name =>
+        val id = count; count += 1; name -> id
+      }
+      .toMap
+    onlyIO.map { case (signal, name) =>
+      val id = nameToId(name)
+      // check direction
+      val direction = DataMirror.directionOf(signal)
+      val isOutput = direction == Direction.Output
+      val isInput = direction == Direction.Input
+      assert(isOutput || isInput, f"$direction")
+      // find dependencies
+      val dependsOn = design.combinationalPaths.getOrElse(name, Seq()).map(nameToId).sorted
+      val value = tester.peek(name)
+      val info = new SignalInfo(name, id, readOnly = isOutput, dependsOn = dependsOn, lastPokeValue = value)
+      signal -> info
     }
   }
 }
