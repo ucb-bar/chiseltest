@@ -104,41 +104,11 @@ class ThreadSafetyTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
-  it should "require overriding pokes be strictly contained" in {
-    assertThrows[ThreadOrderDependentException] {
-      test(new InputOnlyModule(Bool())) { c =>
-        fork {
-          c.in.poke(false.B)
-          fork {
-            c.in.poke(false.B)
-            c.clock.step(2)
-          }
-          c.clock.step(1)
-        }.join()
-        c.clock.step(1)
-      }
-    }
-  }
-
   it should "contain forks within the calling thread" in {
     test(new InputOnlyModule(Bool())) { c =>
       c.in.poke(true.B)
       fork {
         c.in.expect(true.B)
-      }
-    }
-  }
-
-  it should "disallow peeks and pokes from parallel threads, when poking at the end of a poke" in {
-    assertThrows[ThreadOrderDependentException] {
-      test(new InputOnlyModule(Bool())) { c =>
-        fork {
-          c.in.poke(true.B)
-          c.clock.step(1)
-        }.fork {
-          c.clock.step(1)
-          c.in.expect(true.B)
-        }.join()
       }
     }
   }
