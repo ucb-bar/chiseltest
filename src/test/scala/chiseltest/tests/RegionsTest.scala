@@ -44,16 +44,15 @@ class RegionsTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
-  it should "not allow joining from a later region" in {
-    assertThrows[TemporalParadox] {
-      test(new PassthroughModule(UInt(8.W))) { c =>
-        fork
-          .withRegion(Monitor) {
-            c.clock.step()
-          }
-          .join()
-      }
+  it should "allow joining from a later region (why not?)" in {
+    test(new PassthroughModule(UInt(8.W))) { c =>
+      fork
+        .withRegion(Monitor) {
+          c.clock.step()
+        }
+        .join()
     }
+
   }
 
   it should "allow joining from an earlier region" in {

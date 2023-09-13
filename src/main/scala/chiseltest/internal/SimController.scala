@@ -35,8 +35,10 @@ class SimController[T <: Module](
   }
 
   def doJoin(threads: Seq[SimThreadId], stepAfter: Option[Clock]): Unit = {
-    assert(stepAfter.isEmpty, s"TODO: add support for stepAfter ${stepAfter.get}")
     scheduler.joinThreads(threads)
+    stepAfter.foreach { clock =>
+      step(clock, 1)
+    }
   }
 
   def step(signal: Clock, cycles: Int): Unit = {

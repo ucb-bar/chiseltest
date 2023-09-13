@@ -2,11 +2,9 @@
 
 package chiseltest
 
-class NotLiteralException(message: String) extends Exception(message)
 class LiteralTypeException(message: String) extends Exception(message)
 class UnpokeableException(message: String) extends Exception(message)
 class UnpeekableException(message: String) extends Exception(message)
-class UnsupportedOperationException(message: String) extends Exception(message)
 
 class ClockResolutionException(message: String) extends Exception(message)
 
@@ -18,8 +16,6 @@ class TimeoutException(message: String)
     )
 
 // when interfacing with the testdriver before stepping the clock after moving to an earlier region
-class TemporalParadox(message: String) extends Exception(message)
-
 /** Indicates that a Chisel `stop()` statement was triggered. */
 class StopException(message: String, val cycles: Long) extends Exception(message)
 
