@@ -144,23 +144,26 @@ private object AccessCheck {
       direction == Direction.Output || direction == Direction.Input
     }
     var count: Int = 0
-    val nameToId = onlyIO
-      .map(_._2)
-      .map { name =>
-        val id = count; count += 1; name -> id
-      }
-      .toMap
+    // precompute mapping
+    val nameToIds: Map[String, Seq[Int]] =
+      onlyIO
+        .map(_._2)
+        .map { name =>
+          val id = count; count += 1; name -> id
+        }
+        .groupBy(_._1)
+        .map { case (key, values) => key -> values.map(_._2) }
+    count = 0
     onlyIO.map { case (signal, name) =>
-      val id = nameToId(name)
+      val id = count; count += 1
       // check direction
       val direction = DataMirror.directionOf(signal)
       val isOutput = direction == Direction.Output
       val isInput = direction == Direction.Input
       assert(isOutput || isInput, f"$direction")
       // find dependencies
-      val dependsOn = design.combinationalPaths.getOrElse(name, Seq()).map(nameToId).sorted
-      val value = tester.peek(name)
-      val info = new SignalInfo(name, id, readOnly = isOutput, dependsOn = dependsOn, lastPokeValue = value)
+      val dependsOn = design.combinationalPaths.getOrElse(name, Seq()).flatMap(nameToIds).sorted
+      val info = new SignalInfo(name, id, readOnly = isOutput, dependsOn = dependsOn, lastPokeValue = 0)
       signal -> info
     }
   }
