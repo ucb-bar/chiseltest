@@ -5,6 +5,7 @@
 package chiseltest.internal
 
 import java.util.concurrent.Semaphore
+import scala.annotation.tailrec
 import scala.collection.mutable
 
 private class ThreadInfo(
@@ -54,6 +55,7 @@ private class TerminateSimThreadException extends Exception
 private trait ThreadInfoProvider {
   def getActiveThreadId: Int
   def getStepCount:      Int
+  def isParentOf(id: Int, childId: Int): Boolean
 }
 
 /** Manages multiple Java threads that all interact with the same simulation and step synchronously. Currently only
@@ -90,6 +92,7 @@ private class Scheduler(simulationStep: (Int, Int) => Int) extends ThreadInfoPro
   /** order in which threads are scheduled */
   private val threadOrder = new ThreadOrder
   private def threadsInSchedulerOrder = threadOrder.getOrder.map(threads(_))
+  override def isParentOf(id: Int, childId: Int) = threadOrder.isParentOf(id, childId)
 
   /** Keep track of global simulation time. */
   private var currentStep: Int = 0
@@ -418,6 +421,15 @@ private class ThreadOrder {
     val node = idToNode(id)
     if (node.parent > -1) { Some(node.parent) }
     else { None }
+  }
+
+  /** Returns true iff `id` is a parent of `childId` */
+  @tailrec
+  final def isParentOf(id: Int, childId: Int): Boolean = {
+    val childNode = idToNode(childId)
+    if (childNode.parent == -1) { false }
+    else if (childNode.parent == id) { true }
+    else { isParentOf(id, childNode.parent) }
   }
 
   /** Returns ids of all (transitive) child threads */

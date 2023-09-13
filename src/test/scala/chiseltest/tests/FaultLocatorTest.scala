@@ -29,7 +29,7 @@ class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Match
         }.join()
       }
     }
-    (exc.getMessage should include).regex("""\(lines in FaultLocatorTest\.scala:[^\)]*26.*\)""")
+    (exc.getMessage should include).regex("""\(lines in FaultLocatorTest\.scala:[^\)]*28.*\)""")
   }
 
   it should "locate source lines in libraries" in {

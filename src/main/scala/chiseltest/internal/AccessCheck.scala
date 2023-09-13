@@ -54,7 +54,11 @@ private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
     val info = lookupSignal(signal)
     assert(!info.readOnly, "can only poke input! This should have been detected earlier.")
     // check for conflicting pokes
-    if (info.lastPokeAt == stepCount && info.lastPokeFrom != activeThreadId) {
+    if (
+      info.lastPokeAt == stepCount &&
+      info.lastPokeFrom != activeThreadId &&
+      !threadInfo.isParentOf(info.lastPokeFrom, activeThreadId)
+    ) {
       throw new ThreadOrderDependentException("Conflicting pokes!") // TODO: better message
     }
 
