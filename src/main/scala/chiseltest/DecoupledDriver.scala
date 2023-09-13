@@ -44,7 +44,7 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
     x.valid.poke(true.B)
     fork
       .withRegion(Monitor) {
-        while (x.ready.peek().litToBoolean == false) {
+        while (!x.ready.peekBoolean()) {
           getSourceClock.step(1)
         }
       }
@@ -79,7 +79,7 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
 
   // NOTE: this doesn't happen in the Monitor phase, unlike public functions
   def waitForValid(): Unit = {
-    while (!x.valid.peek().litToBoolean) {
+    while (!x.valid.peekBoolean()) {
       getSinkClock.step(1)
     }
   }

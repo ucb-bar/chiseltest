@@ -30,8 +30,8 @@ class SimController[T <: Module](
   }
 
   def doFork(runnable: () => Unit, name: Option[String], region: Option[Region]): SimThreadId = {
-    assert(region.isEmpty, s"TODO: add support for regions: ${region.get}")
-    scheduler.forkThread(runnable, name)
+    val priority = region.map(_.getPos()).getOrElse(0)
+    scheduler.forkThread(runnable, name, priority)
   }
 
   def doJoin(threads: Seq[SimThreadId], stepAfter: Option[Clock]): Unit = {

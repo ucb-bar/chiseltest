@@ -7,7 +7,7 @@ package chiseltest
   * extensible ordering than ints.
   */
 sealed class Region {
-  protected def getPos(): Int = {
+  private[chiseltest] def getPos(): Int = {
     val pos = Region.allRegions.indexOf(this)
     require(pos >= 0)
     pos

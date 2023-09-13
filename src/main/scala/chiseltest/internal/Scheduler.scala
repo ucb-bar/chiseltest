@@ -12,6 +12,8 @@ private class ThreadInfo(
   val id: Int,
   /** Human readable name of the thread */
   val name: String,
+  /** Priority derived from the thread [[chiseltest.Region]]. Lower numbers mean higher priority. */
+  val priority: Int,
   /** Java thread. */
   var underlying: Option[Thread],
   /** Status of the thread. */
@@ -83,7 +85,7 @@ private class Scheduler(simulationStep: (Int, Int) => Int) extends ThreadInfoPro
 
   /** all threads */
   private val threads = new mutable.ArrayBuffer[ThreadInfo]()
-  threads.addOne(new ThreadInfo(MainThreadId, "main", None, ThreadActive, new Semaphore(0)))
+  threads.addOne(new ThreadInfo(MainThreadId, "main", 0, None, ThreadActive, new Semaphore(0)))
 
   /** order in which threads are scheduled */
   private val threadOrder = new ThreadOrder
@@ -180,14 +182,16 @@ private class Scheduler(simulationStep: (Int, Int) => Int) extends ThreadInfoPro
     }
   }
 
-  def forkThread(runnable: () => Unit, name: Option[String]): SimThreadId = {
+  def forkThread(runnable: () => Unit, name: Option[String], priority: Int): SimThreadId = {
     // generate an ID, name and data structure for the new thread
     val id = threads.length
     val fullName = name.getOrElse(s"chiseltest_thread_$id")
     debug(s"forkThread($fullName ($id)) from ${activeThreadId}")
     // the new thread starts as paused
     val (newJavaThread, newSemaphore) = createThread(fullName, id, runnable)
-    threads.addOne(new ThreadInfo(id, fullName, Some(newJavaThread), ThreadWaitingUntil(currentStep), newSemaphore))
+    threads.addOne(
+      new ThreadInfo(id, fullName, priority, Some(newJavaThread), ThreadWaitingUntil(currentStep), newSemaphore)
+    )
     threadOrder.addThread(parent = activeThreadId, id = id)
     // yield to the new thread before returning
     yieldForStep(0, isFork = true)
