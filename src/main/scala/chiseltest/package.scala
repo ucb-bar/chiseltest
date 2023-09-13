@@ -358,36 +358,6 @@ package object chiseltest {
       }
     }
 
-    def expectEpsilon(
-      signal:   Data,
-      actual:   Double,
-      expected: Double,
-      epsilon:  Double,
-      userMsg:  Option[() => String]
-    ): Unit = {
-      val ok = (actual - expected).abs < epsilon
-      if (!ok) {
-        val signalName = Context().design.resolveName(signal)
-        val msg = s"$signalName: ($actual - $expected).abs = ${(actual - expected).abs} >= eps=$epsilon"
-        Utils.expectFailed(msg, userMsg)
-      }
-    }
-
-    def expectEpsilon(
-      signal:   Data,
-      actual:   BigDecimal,
-      expected: BigDecimal,
-      epsilon:  BigDecimal,
-      userMsg:  Option[() => String]
-    ): Unit = {
-      val ok = (actual - expected).abs < epsilon
-      if (!ok) {
-        val signalName = Context().design.resolveName(signal)
-        val msg = s"$signalName: ($actual - $expected).abs = ${(actual - expected).abs} >= eps=$epsilon"
-        Utils.expectFailed(msg, userMsg)
-      }
-    }
-
     def expectBits(
       signal:   Data,
       expected: BigInt,
@@ -406,7 +376,7 @@ package object chiseltest {
           case None =>
             (s"$actual (${bigIntToHex(actual)})", s"$expected (${bigIntToHex(expected)})")
         }
-        val signalName = Context().design.resolveName(signal)
+        val signalName = Context().design.getName(signal).getOrElse(signal.toString)
         val message = s"$signalName=$actualStr did not equal expected=$expectedStr"
         expectFailed(message, msg)
       }

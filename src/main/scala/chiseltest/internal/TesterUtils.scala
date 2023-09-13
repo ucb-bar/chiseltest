@@ -80,17 +80,25 @@ private[chiseltest] object TesterUtils {
     val portNames = DataMirror.fullModulePorts(dut).map(_.swap).toMap
 
     // extract combinatorial loops from the LoFirrtl circuit
-    val pathAnnotations = (new CheckCombLoops).execute(lowFirrtl).annotations
-    val paths = pathAnnotations.collect { case c: CombinationalPath => c }
-    val pathsAsData = combinationalPathsToData(dut, paths, portNames, componentToName)
-    val design =
-      new DesignInfo(clock = dut.clock, name = dut.name, dataNames = portNames, combinationalPaths = pathsAsData)
+    val paths = extractPathsFromAnnos(lowFirrtl.annotations)
+    val design = new DesignInfo(clock = dut.clock, name = dut.name, dataNames = portNames, combinationalPaths = paths)
 
     // start backend
     (new SimController(design, finalTester, coverageAnnotations), design, dut)
   }
 
-  private def componentToName(component: ReferenceTarget): String = component.name
+  private def extractTopName(ref: ReferenceTarget): Option[String] = {
+    if (ref.circuit != ref.module) { None }
+    else { Some(ref.ref) }
+  }
+  private def extractPathsFromAnnos(pathAnnotations: AnnotationSeq): Map[String, Set[String]] = {
+    val paths = pathAnnotations.collect { case c: CombinationalPath => c }.flatMap { c =>
+      extractTopName(c.sink).map { sink =>
+        sink -> c.sources.flatMap(extractTopName).toSet
+      }
+    }
+    paths.toMap
+  }
 
   /** This creates some kind of map of combinational paths between inputs and outputs.
     *

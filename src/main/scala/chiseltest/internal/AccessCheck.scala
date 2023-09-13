@@ -12,7 +12,8 @@ import chiseltest.{
   StopException,
   ThreadOrderDependentException,
   TimeoutException,
-  UnpeekableException
+  UnpeekableException,
+  UnpokeableException
 }
 import chiseltest.simulator.{SimulatorContext, StepInterrupted, StepOk}
 
@@ -26,6 +27,7 @@ private class SignalInfo(
   val id: Int,
   /** Indicates that the signal cannot be poked. */
   val readOnly: Boolean,
+  /** Lists any signals that this signal depends on. */
   /** Value of the last poke. */
   var lastPokeValue: BigInt,
   /** Time of the last poke. */
@@ -38,10 +40,15 @@ private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
   private var timeout:    Int = SimController.DefaultTimeout
   private var idleCycles: Int = 0
   private val signals = new mutable.HashMap[Data, SignalInfo]()
-  private def lookupSignal(signal: Data): SignalInfo = signals.getOrElseUpdate(
+  private def lookupSignal(signal: Data, isPeekNotPoke: Boolean): SignalInfo = signals.getOrElseUpdate(
     signal, {
       val readOnly = DataMirror.directionOf(signal) != Direction.Input
-      val name = design.resolveName(signal)
+      val name = design.getName(signal).getOrElse {
+        val msg = s"Signal $signal not found. Perhaps you're peeking a non-IO signal.\n " +
+          s"If so, consider using the chiseltest.experimental.expose API."
+        if (isPeekNotPoke) { throw new UnpeekableException(msg) }
+        else { throw new UnpokeableException(msg) }
+      }
       val value = tester.peek(name)
       val id = signals.size
       new SignalInfo(name, id, readOnly, value)
@@ -50,8 +57,8 @@ private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
 
   def pokeBits(threadInfo: ThreadInfoProvider, signal: Data, value: BigInt): Unit = {
     val activeThreadId = threadInfo.getActiveThreadId
-    val stepCount = threadInfo.getStepCount.toInt
-    val info = lookupSignal(signal)
+    val stepCount = threadInfo.getStepCount
+    val info = lookupSignal(signal, isPeekNotPoke = false)
     assert(!info.readOnly, "can only poke input! This should have been detected earlier.")
     // check for conflicting pokes
     if (
@@ -76,15 +83,9 @@ private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
     info.lastPokeAt = stepCount
   }
 
-  def peekBits(info: ThreadInfoProvider, signal: Data): BigInt = {
-    val name = design
-      .getName(signal)
-      .getOrElse(
-        throw new UnpeekableException(
-          s"Signal $signal not found. Perhaps you're peeking a non-IO signal.\n  If so, consider using the chiseltest.experimental.expose API."
-        )
-      )
-    tester.peek(name)
+  def peekBits(threadInfo: ThreadInfoProvider, signal: Data): BigInt = {
+    val info = lookupSignal(signal, isPeekNotPoke = true)
+    tester.peek(info.name)
   }
 
   def setTimeout(signal: Clock, cycles: Int): Unit = {
