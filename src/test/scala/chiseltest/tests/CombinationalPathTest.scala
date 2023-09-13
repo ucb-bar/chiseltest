@@ -24,6 +24,45 @@ class CombinationalPathTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
+  it should "detect r/w conflicts even if threads run in opposite order" in {
+    assertThrows[ThreadOrderDependentException] {
+      test(new PassthroughModule(Bool())) { c =>
+        fork {
+          c.clock.step(1)
+          c.out.expect(true.B)
+        }.fork {
+          c.clock.step(1)
+          c.in.poke(true.B)
+          c.clock.step(2)
+        }.join()
+      }
+    }
+  }
+
+  "unordered reads on dependent signals" should "be fine" in {
+    test(new PassthroughModule(Bool())) { c =>
+      fork {
+        c.clock.step(1)
+        c.in.peekInt()
+      }.fork {
+        c.clock.step(1)
+        c.out.peekInt()
+      }.join()
+    }
+  }
+
+  "unordered reads on the same signal" should "be fine" in {
+    test(new PassthroughModule(Bool())) { c =>
+      fork {
+        c.clock.step(1)
+        c.out.peekInt()
+      }.fork {
+        c.clock.step(1)
+        c.out.peekInt()
+      }.join()
+    }
+  }
+
   it should "detect r/w conflicts on the same signal" in {
     assertThrows[ThreadOrderDependentException] {
       test(new PassthroughModule(Bool())) { c =>
@@ -34,6 +73,21 @@ class CombinationalPathTest extends AnyFlatSpec with ChiselScalatestTester {
         }.fork {
           c.clock.step(1)
           c.in.expect(true.B)
+        }.join()
+      }
+    }
+  }
+
+  it should "detect r/w conflicts on the same signal even if threads run in opposite order" in {
+    assertThrows[ThreadOrderDependentException] {
+      test(new PassthroughModule(Bool())) { c =>
+        fork {
+          c.clock.step(1)
+          c.in.expect(true.B)
+        }.fork {
+          c.clock.step(1)
+          c.in.poke(true.B)
+          c.clock.step(2)
         }.join()
       }
     }

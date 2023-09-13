@@ -28,12 +28,16 @@ private class SignalInfo(
   val readOnly: Boolean,
   /** Lists any signals that this signal depends on. */
   val dependsOn: Seq[Int],
-  /** Value of the last poke. */
+  /** Lists any signals that are depended on by this signal. */
+  val dependedOnBy: Seq[Int],
+  /** Value of the last poke. Used in order to avoid unnecessary calls to the simulator. */
   var lastPokeValue: BigInt,
-  /** Time of the last poke. */
-  var lastPokeAt: Int = -1,
-  /** Id of the thread that performed the last poke. */
-  var lastPokeFrom: Int = -1) {}
+  /** Time of the last peek or poke. */
+  var lastAccessAt: Int = -1,
+  /** Id of the thread that performed the last peek or poke. */
+  var lastAccessFrom: Int = -1,
+  /** Type of the last access */
+  var lastAccessWasPoke: Boolean = false) {}
 
 /** Regulates I/O access from different threads. Keeps track of timeout. */
 private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
@@ -61,8 +65,21 @@ private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
     val info = lookupSignal(signal, isPeekNotPoke = false)
     assert(!info.readOnly, "can only poke input! This should have been detected earlier.")
     // check for conflicting pokes
-    if (hasConflictingPoke(info, threadInfo)) {
-      throw new ThreadOrderDependentException("Conflicting pokes!") // TODO: better message
+    if (hasConflictingAccess(info, threadInfo)) {
+      if (info.lastAccessWasPoke) {
+        throw new ThreadOrderDependentException("Conflicting pokes!") // TODO: better message
+      } else {
+        throw new ThreadOrderDependentException("Conflicting peek!") // TODO: better message
+      }
+    }
+    // have any of the signals that are influences by this input been peeked?
+    info.dependedOnBy.foreach { id =>
+      val info = idToSignal(id)
+      if (hasConflictingAccess(info, threadInfo) && !info.lastAccessWasPoke) {
+        throw new ThreadOrderDependentException(
+          "Conflicting peek of a signal that may change with this poke!"
+        ) // TODO: better message
+      }
     }
 
     // check to see if the same value is already applied
@@ -75,19 +92,21 @@ private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
       idleCycles = 0
     }
     // record poke
-    info.lastPokeFrom = threadInfo.getActiveThreadId
-    info.lastPokeAt = threadInfo.getStepCount
+    info.lastAccessFrom = threadInfo.getActiveThreadId
+    info.lastAccessAt = threadInfo.getStepCount
+    info.lastAccessWasPoke = true
   }
 
-  private def hasConflictingPoke(info: SignalInfo, threadInfo: ThreadInfoProvider): Boolean =
-    info.lastPokeAt == threadInfo.getStepCount &&
-      info.lastPokeFrom != threadInfo.getActiveThreadId &&
-      !threadInfo.isParentOf(info.lastPokeFrom, threadInfo.getActiveThreadId)
+  /** Was there an access that crosses thread boundaries in this current time step. */
+  private def hasConflictingAccess(info: SignalInfo, threadInfo: ThreadInfoProvider): Boolean =
+    info.lastAccessAt == threadInfo.getStepCount &&
+      info.lastAccessFrom != threadInfo.getActiveThreadId &&
+      !threadInfo.isParentOf(info.lastAccessFrom, threadInfo.getActiveThreadId)
 
   def peekBits(threadInfo: ThreadInfoProvider, signal: Data): BigInt = {
     val info = lookupSignal(signal, isPeekNotPoke = true)
     // has this signal been poked?
-    if (hasConflictingPoke(info, threadInfo)) {
+    if (hasConflictingAccess(info, threadInfo) && info.lastAccessWasPoke) {
       throw new ThreadOrderDependentException(
         "Conflicting poke on signal that is being peeked!"
       ) // TODO: better message
@@ -96,10 +115,15 @@ private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
     // check to see if there have been any dependent pokes from another thread
     info.dependsOn.foreach { id =>
       val info = idToSignal(id)
-      if (hasConflictingPoke(info, threadInfo)) {
+      if (hasConflictingAccess(info, threadInfo) && info.lastAccessWasPoke) {
         throw new ThreadOrderDependentException("Conflicting poke that influences peek!") // TODO: better message
       }
     }
+
+    // record peek
+    info.lastAccessFrom = threadInfo.getActiveThreadId
+    info.lastAccessAt = threadInfo.getStepCount
+    info.lastAccessWasPoke = false
 
     tester.peek(info.name)
   }
@@ -153,6 +177,9 @@ private object AccessCheck {
         }
         .groupBy(_._1)
         .map { case (key, values) => key -> values.map(_._2) }
+    val reverseDependencies = design.combinationalPaths.toSeq.flatMap { case (sink, sources) =>
+      sources.map(src => src -> sink)
+    }.groupBy(_._1).map { case (key, values) => key -> values.map(_._2) }
     count = 0
     onlyIO.map { case (signal, name) =>
       val id = count; count += 1
@@ -163,7 +190,15 @@ private object AccessCheck {
       assert(isOutput || isInput, f"$direction")
       // find dependencies
       val dependsOn = design.combinationalPaths.getOrElse(name, Seq()).flatMap(nameToIds).sorted
-      val info = new SignalInfo(name, id, readOnly = isOutput, dependsOn = dependsOn, lastPokeValue = 0)
+      val dependedOn = reverseDependencies.getOrElse(name, Seq()).flatMap(nameToIds).sorted
+      val info = new SignalInfo(
+        name,
+        id,
+        readOnly = isOutput,
+        dependsOn = dependsOn,
+        dependedOnBy = dependedOn,
+        lastPokeValue = 0
+      )
       signal -> info
     }
   }
