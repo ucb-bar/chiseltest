@@ -42,7 +42,7 @@ class BasicTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
     val e = intercept[UnpeekableException] {
       test(new Module {
         val hidden = Reg(Bool())
-      }).withAnnotations(Seq(chiseltest.internal.NoThreadingAnnotation)) { c =>
+      }) { c =>
         c.hidden.peek()
       }
     }
