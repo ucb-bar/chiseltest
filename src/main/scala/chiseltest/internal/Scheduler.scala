@@ -111,9 +111,12 @@ private class Scheduler(simulationStep: (Int, Int) => Int) extends ThreadInfoPro
         try {
           onResumeThread(id) // we might already be asked to terminate when resuming, so run this in the try block
           runnable() // execute user code
+          // we need to first wait for all child threads to terminate (only the main thread kills)
+          joinThreadsImpl(threadOrder.getChildren(id))
         } catch {
           case _: TerminateSimThreadException => // everything OK, we are just being terminated
           case e @ (_: Exception | _: Error) =>
+            debug("Caught exception. Shutting down and propagating exception to parent.")
             // an exception means that we will be terminating
             threads(id).status = ThreadTerminating
             // add exception to parent thread
@@ -126,10 +129,9 @@ private class Scheduler(simulationStep: (Int, Int) => Int) extends ThreadInfoPro
             parent.pendingException = Some(e)
             // terminate all child threads
             terminateAllChildThreads()
+        } finally {
+          finishThread(id) // finish thread execution
         }
-        // we need to first wait for all child threads to terminate (only the main thread kills)
-        joinThreadsImpl(threadOrder.getChildren(id))
-        finishThread(id) // finish thread execution
       },
       name
     )

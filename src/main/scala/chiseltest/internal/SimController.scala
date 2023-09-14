@@ -61,11 +61,13 @@ class SimController[T <: Module](
       tester.step(1)
       tester.poke("reset", 0)
 
-      // execute use code
-      testFn(dut)
-
-      // wait for any child threads
-      scheduler.finishMainThread()
+      try {
+        // execute use code
+        testFn(dut)
+      } finally {
+        // kill any child threads
+        scheduler.finishMainThread()
+      }
 
       // throw any exceptions that might be left over
       Context().env.checkpoint()

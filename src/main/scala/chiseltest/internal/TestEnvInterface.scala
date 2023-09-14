@@ -11,8 +11,7 @@ import scala.collection.mutable
 
 class FailedExpectException(val message: String, val failedCodeStackDepth: Int) extends Exception(message)
 
-/** Interface into the testing environment, like ScalaTest
-  */
+/** Interface into the testing environment, like ScalaTest */
 trait TestEnvInterface {
   protected val batchedFailures: mutable.ArrayBuffer[Exception] = new mutable.ArrayBuffer
 
@@ -53,11 +52,11 @@ trait TestEnvInterface {
     batchedFailures += new FailedExpectException(message + failureLocation, stackIndex)
   }
 
-  /** If there are any failures, reports them and end the test now.
-    */
+  /** If there are any failures, reports them and end the test now. */
   def checkpoint(): Unit = {
-    // TODO: report multiple exceptions simultaneously
-    for (failure <- batchedFailures) {
+    val failures = batchedFailures
+    batchedFailures.clear()
+    for (failure <- failures) {
       throw failure
     }
   }
