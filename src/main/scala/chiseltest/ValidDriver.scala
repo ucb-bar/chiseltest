@@ -15,7 +15,6 @@ class ValidDriver[T <: Data](x: ValidIO[T]) {
   }
 
   def enqueueNow(data: T): Unit = {
-    // TODO: check for init
     x.bits.poke(data)
     x.valid.poke(true.B)
   }
@@ -40,7 +39,6 @@ class ValidDriver[T <: Data](x: ValidIO[T]) {
   }
 
   def expectDequeue(data: T): Unit = {
-    // TODO: check for init
     fork
       .withRegion(Monitor) {
         waitForValid()
@@ -51,7 +49,6 @@ class ValidDriver[T <: Data](x: ValidIO[T]) {
   }
 
   def expectDequeueNow(data: T): Unit = {
-    // TODO: check for init
     fork
       .withRegion(Monitor) {
         x.valid.expect(true.B)
