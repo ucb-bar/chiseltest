@@ -54,7 +54,8 @@ trait TestEnvInterface {
 
   /** If there are any failures, reports them and end the test now. */
   def checkpoint(): Unit = {
-    val failures = batchedFailures
+    val failures = batchedFailures.toSeq
+    // clear failures which is important in case this method will be called again
     batchedFailures.clear()
     for (failure <- failures) {
       throw failure
