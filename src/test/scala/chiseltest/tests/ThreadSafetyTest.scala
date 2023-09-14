@@ -27,7 +27,7 @@ class ThreadSafetyTest extends AnyFlatSpec with ChiselScalatestTester {
     assertThrows[ThreadOrderDependentException] {
       test(new InputOnlyModule(Bool())) { c =>
         fork {
-          c.in.expect(true.B)
+          c.in.expect(false.B)
           c.clock.step(1)
         }.fork {
           c.in.poke(true.B)

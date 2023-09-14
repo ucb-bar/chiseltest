@@ -116,7 +116,7 @@ private class Scheduler(simulationStep: (Int, Int) => Int) extends ThreadInfoPro
         } catch {
           case _: TerminateSimThreadException => // everything OK, we are just being terminated
           case e @ (_: Exception | _: Error) =>
-            debug("Caught exception. Shutting down and propagating exception to parent.")
+            debug(s"Caught exception (${e.getClass.getName}). Shutting down and propagating exception to parent.")
             // an exception means that we will be terminating
             threads(id).status = ThreadTerminating
             // add exception to parent thread
@@ -147,6 +147,7 @@ private class Scheduler(simulationStep: (Int, Int) => Int) extends ThreadInfoPro
     if (threadInfo.status == ThreadTerminating) {
       throw new TerminateSimThreadException
     }
+    threadInfo.status = ThreadActive
     // check to see if there is an exception we need to propagate from a child thread
     threadInfo.pendingException match {
       case Some(e) =>
@@ -154,7 +155,6 @@ private class Scheduler(simulationStep: (Int, Int) => Int) extends ThreadInfoPro
         throw e
       case None =>
     }
-    threadInfo.status = ThreadActive
   }
 
   /** Called by every thread right before it is done. */
