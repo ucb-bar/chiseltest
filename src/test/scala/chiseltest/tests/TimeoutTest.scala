@@ -89,9 +89,7 @@ class TimeoutTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
     assertThrows[TimeoutException] {
       test(new QueueModule(UInt(8.W), 2)) { c =>
         c.in.initSource()
-        c.in.setSourceClock(c.clock)
         c.out.initSink()
-        c.out.setSinkClock(c.clock)
 
         c.clock.setTimeout(2)
 

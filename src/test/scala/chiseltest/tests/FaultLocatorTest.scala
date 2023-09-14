@@ -36,7 +36,6 @@ class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Match
     val exc = intercept[exceptions.TestFailedException] {
       test(new PassthroughQueue(Bool())) { c =>
         c.out.initSink()
-        c.out.setSinkClock(c.clock)
 
         c.in.valid.poke(true.B)
         c.in.bits.poke(false.B) // Have this be a data failure only
@@ -52,7 +51,6 @@ class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Match
     val exc = intercept[exceptions.TestFailedException] {
       test(new PassthroughQueue(Bool())) { c =>
         c.out.initSink()
-        c.out.setSinkClock(c.clock)
 
         c.in.valid.poke(true.B)
         c.in.bits.poke(false.B) // Have this be a data failure only

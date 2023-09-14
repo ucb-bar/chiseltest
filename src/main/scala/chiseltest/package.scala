@@ -393,19 +393,24 @@ package object chiseltest {
 
   implicit class testableClock(x: Clock) {
     def setTimeout(cycles: Int): Unit = {
-      Context().backend.setTimeout(x, cycles)
+      Context().backend.setTimeout(cycles, Some(x))
     }
 
     def step(cycles: Int = 1): Unit = {
-      Context().backend.step(x, cycles)
+      Context().backend.step(cycles, Some(x))
     }
 
     /** Returns the current step, i.e., the number of clock cycles performed by the test so far, excluding any initial
       * reset cycles performed by the chiseltest library at the start of the test.
       */
     def getStepCount: Long = {
-      Context().backend.getStepCount(x)
+      Context().backend.getStepCount(Some(x))
     }
+  }
+
+  /** Advances the default clock of the current step by cycles. */
+  def step(cycles: Int = 1): Unit = {
+    Context().backend.step(cycles, None)
   }
 
   object fork extends ForkBuilder(None, None, Seq())
@@ -415,39 +420,8 @@ package object chiseltest {
     fork { run1 }.fork { run2 }.join()
   }
 
-  object TestInstance {
-    def setVar(key: Any, value: Any): Unit = {
-      Context().setVar(key, value)
-    }
-
-    def getVar(key: Any): Option[Any] = {
-      Context().getVar(key)
-    }
-  }
-
-  /** Provides clock-resolution-specific abstractions on top of getVar/setVar. For library builders, not top-level test
-    * writers.
-    */
-  object ClockResolutionUtils {
-    def setClock(driverKey: Any, wire: Data, clock: Clock): Unit = {
-      TestInstance.setVar((driverKey, wire), clock)
-    }
-
-    def getClock(driverKey: Any, wire: Data, defaultClock: => Clock): Clock = {
-      TestInstance.getVar((driverKey, wire)) match {
-        case None =>
-          val clock: Clock = defaultClock
-          setClock(driverKey, wire, clock)
-          clock
-        case Some(clock: Clock) => clock
-        case Some(other)        => throw new ClockResolutionException(s"$other is not a clock")
-      }
-    }
-  }
-
   implicit def decoupledToDriver[T <: Data](x: ReadyValidIO[T]): DecoupledDriver[T] = new DecoupledDriver(x)
-
-  implicit def validToDriver[T <: Data](x: ValidIO[T]): ValidDriver[T] = new ValidDriver(x)
+  implicit def validToDriver[T <: Data](x:     ValidIO[T]):      ValidDriver[T] = new ValidDriver(x)
 
   // expose public flags
   val VerilatorBackendAnnotation = simulator.VerilatorBackendAnnotation

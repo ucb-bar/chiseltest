@@ -33,21 +33,26 @@ class SimController[T <: Module](
   def doJoin(threads: Seq[SimThreadId], stepAfter: Option[Clock]): Unit = {
     scheduler.joinThreads(threads)
     stepAfter.foreach { clock =>
-      step(clock, 1)
+      step(1, Some(clock))
     }
   }
 
-  def step(signal: Clock, cycles: Int): Unit = {
-    require(signal == design.clock, s"$signal is not the main clock of the design.")
+  def step(cycles: Int, clock: Option[Clock]): Unit = {
+    clock.foreach { signal =>
+      require(signal == design.clock, s"$signal is not the main clock of the design.")
+    }
+    require(cycles > 0, "Only positive numbers of cycles are allowed!")
     scheduler.stepThread(cycles)
   }
 
-  def getStepCount(signal: Clock): Long = {
-    require(signal == design.clock, s"$signal is not the main clock of the design.")
+  def getStepCount(clock: Option[Clock]): Long = {
+    clock.foreach { signal =>
+      require(signal == design.clock, s"$signal is not the main clock of the design.")
+    }
     scheduler.getStepCount
   }
 
-  def setTimeout(signal: Clock, cycles: Int): Unit = ioAccess.setTimeout(signal, cycles)
+  def setTimeout(cycles: Int, clock: Option[Clock]): Unit = ioAccess.setTimeout(cycles, clock)
 
   def run(dut: T, testFn: T => Unit): AnnotationSeq = {
     try {

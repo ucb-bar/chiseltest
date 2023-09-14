@@ -13,15 +13,7 @@ import scala.util.DynamicVariable
 /** Global context object used to access the currently running test from the methods defined in the chiseltest package.
   */
 object Context {
-  class Instance(val backend: SimController[_], val env: TestEnvInterface, val design: DesignInfo) {
-    private val testMap = mutable.HashMap[Any, Any]()
-
-    /** Sets the value associated with a key in a per-test map. */
-    def setVar(key: Any, value: Any): Unit = testMap.put(key, value)
-
-    /** Returns the value associated with the key in a per-test map. */
-    def getVar(key: Any): Option[Any] = testMap.get(key)
-  }
+  class Instance(val backend: SimController[_], val env: TestEnvInterface, val design: DesignInfo) {}
 
   private val context = new DynamicVariable[Option[Instance]](None)
 

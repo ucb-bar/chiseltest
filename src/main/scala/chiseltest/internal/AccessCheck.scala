@@ -133,8 +133,10 @@ private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
     tester.peek(info.name)
   }
 
-  def setTimeout(signal: Clock, cycles: Int): Unit = {
-    require(signal == design.clock, "timeout currently only supports master clock")
+  def setTimeout(cycles: Int, clock: Option[Clock]): Unit = {
+    clock.foreach { signal =>
+      require(signal == design.clock, s"$signal is not the main clock of the design.")
+    }
     require(cycles >= 0, s"Negative timeout $cycles is not supported! Use 0 to disable the timeout.")
     timeout = cycles
     idleCycles = 0

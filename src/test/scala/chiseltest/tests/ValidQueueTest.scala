@@ -22,8 +22,8 @@ class ValidQueueTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "pass through elements, using enqueueNow" in {
     test(new ValidQueueModule(UInt(8.W), delay = 3)) { c =>
-      c.in.initSource().setSourceClock(c.clock)
-      c.out.initSink().setSinkClock(c.clock)
+      c.in.initSource()
+      c.out.initSink()
 
       c.out.expectInvalid()
       c.in.enqueueNow(42.U)
@@ -37,8 +37,8 @@ class ValidQueueTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "pass through elements, using enqueueSeq" in {
     test(new ValidQueueModule(UInt(8.W), delay = 3)).withAnnotations(Seq()) { c =>
-      c.in.initSource().setSourceClock(c.clock)
-      c.out.initSink().setSinkClock(c.clock)
+      c.in.initSource()
+      c.out.initSink()
 
       c.out.expectInvalid()
 
@@ -53,8 +53,8 @@ class ValidQueueTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "work with a combinational queue" in {
     test(new ValidQueueModule(UInt(8.W), delay = 3)) { c =>
-      c.in.initSource().setSourceClock(c.clock)
-      c.out.initSink().setSinkClock(c.clock)
+      c.in.initSource()
+      c.out.initSink()
 
       fork {
         c.in.enqueueSeq(Seq(42.U, 43.U, 44.U))
@@ -66,8 +66,8 @@ class ValidQueueTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "work with a zero-width data queue" in {
     test(new ValidQueueModule(UInt(0.W), delay = 3)) { c =>
-      c.in.initSource().setSourceClock(c.clock)
-      c.out.initSink().setSinkClock(c.clock)
+      c.in.initSource()
+      c.out.initSink()
 
       fork {
         c.in.enqueueSeq(Seq(0.U, 0.U, 0.U))
@@ -97,12 +97,12 @@ class ValidQueueTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "Work with Bundles" in {
     test(new TriQueueModule(new TriBundle, 1)).withAnnotations(Seq(VerboseAnnotation)) { c =>
-      c.in0.initSource().setSourceClock(c.clock)
-      c.out0.initSink().setSinkClock(c.clock)
-      c.in1.initSource().setSourceClock(c.clock)
-      c.out1.initSink().setSinkClock(c.clock)
-      c.in2.initSource().setSourceClock(c.clock)
-      c.out2.initSink().setSinkClock(c.clock)
+      c.in0.initSource()
+      c.out0.initSink()
+      c.in1.initSource()
+      c.out1.initSink()
+      c.in2.initSource()
+      c.out2.initSink()
 
       val testBundle0 = (new TriBundle).Lit(_.a -> 1.U, _.b -> 7.U, _.c -> true.B)
       val testBundle1 = (new TriBundle).Lit(_.a -> 2.U, _.b -> 7.U, _.c -> true.B)
