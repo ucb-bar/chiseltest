@@ -415,10 +415,6 @@ package object chiseltest {
     fork { run1 }.fork { run2 }.join()
   }
 
-  def timescope(contents: => Unit): Unit = {
-    Context().backend.doTimescope(() => contents)
-  }
-
   object TestInstance {
     def setVar(key: Any, value: Any): Unit = {
       Context().setVar(key, value)

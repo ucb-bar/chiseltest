@@ -41,7 +41,7 @@ class TimeoutTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
     }
   }
 
-  it should "reset the timeout counter on a poke and timescope revert" in {
+  it should "reset the timeout counter on a poke" in {
     test(new PassthroughModule(UInt(8.W))) { c =>
       c.clock.setTimeout(4)
 
@@ -51,10 +51,9 @@ class TimeoutTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
       c.clock.step(3)
       c.in.poke(2.U)
       c.clock.step(3)
-      timescope {
-        c.in.poke(3.U)
-        c.clock.step(3)
-      }
+      c.in.poke(3.U)
+      c.clock.step(3)
+      c.in.poke(2.U)
       c.clock.step(3)
     }
     assertThrows[TimeoutException] {

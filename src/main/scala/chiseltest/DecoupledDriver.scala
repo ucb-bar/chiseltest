@@ -27,7 +27,7 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
     ) // TODO: validate against bits/valid sink clocks
   }
 
-  def enqueueNow(data: T): Unit = timescope {
+  def enqueueNow(data: T): Unit = {
     // TODO: check for init
     x.bits.poke(data)
     x.valid.poke(true.B)
@@ -38,7 +38,7 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
       .joinAndStep(getSourceClock)
   }
 
-  def enqueue(data: T): Unit = timescope {
+  def enqueue(data: T): Unit = {
     // TODO: check for init
     x.bits.poke(data)
     x.valid.poke(true.B)
@@ -51,7 +51,7 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
       .joinAndStep(getSourceClock)
   }
 
-  def enqueueSeq(data: Seq[T]): Unit = timescope {
+  def enqueueSeq(data: Seq[T]): Unit = {
     for (elt <- data) {
       enqueue(elt)
     }
@@ -84,7 +84,7 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
     }
   }
 
-  def expectDequeue(data: T): Unit = timescope {
+  def expectDequeue(data: T): Unit = {
     // TODO: check for init
     x.ready.poke(true.B)
     fork
@@ -96,7 +96,7 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
       .joinAndStep(getSinkClock)
   }
 
-  def expectDequeueNow(data: T): Unit = timescope {
+  def expectDequeueNow(data: T): Unit = {
     // TODO: check for init
     x.ready.poke(true.B)
     fork
@@ -107,7 +107,7 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
       .joinAndStep(getSinkClock)
   }
 
-  def expectDequeueSeq(data: Seq[T]): Unit = timescope {
+  def expectDequeueSeq(data: Seq[T]): Unit = {
     for (elt <- data) {
       expectDequeue(elt)
     }

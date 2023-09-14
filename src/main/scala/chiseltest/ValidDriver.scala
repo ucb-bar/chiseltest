@@ -27,14 +27,14 @@ class ValidDriver[T <: Data](x: ValidIO[T]) {
     ) // TODO: validate against bits/valid sink clocks
   }
 
-  def enqueueNow(data: T): Unit = timescope {
+  def enqueueNow(data: T): Unit = {
     // TODO: check for init
     x.bits.poke(data)
     x.valid.poke(true.B)
     getSourceClock.step(1)
   }
 
-  def enqueueSeq(data: Seq[T]): Unit = timescope {
+  def enqueueSeq(data: Seq[T]): Unit = {
     for (elt <- data) {
       enqueueNow(elt)
     }
@@ -66,7 +66,7 @@ class ValidDriver[T <: Data](x: ValidIO[T]) {
     }
   }
 
-  def expectDequeue(data: T): Unit = timescope {
+  def expectDequeue(data: T): Unit = {
     // TODO: check for init
     fork
       .withRegion(Monitor) {
@@ -77,7 +77,7 @@ class ValidDriver[T <: Data](x: ValidIO[T]) {
       .joinAndStep(getSinkClock)
   }
 
-  def expectDequeueNow(data: T): Unit = timescope {
+  def expectDequeueNow(data: T): Unit = {
     // TODO: check for init
     fork
       .withRegion(Monitor) {
@@ -87,7 +87,7 @@ class ValidDriver[T <: Data](x: ValidIO[T]) {
       .joinAndStep(getSinkClock)
   }
 
-  def expectDequeueSeq(data: Seq[T]): Unit = timescope {
+  def expectDequeueSeq(data: Seq[T]): Unit = {
     for (elt <- data) {
       expectDequeue(elt)
     }

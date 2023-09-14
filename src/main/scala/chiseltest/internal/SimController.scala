@@ -25,11 +25,6 @@ class SimController[T <: Module](
 
   private val scheduler = new Scheduler(ioAccess.simulationStep)
 
-  def doTimescope(contents: () => Unit): Unit = {
-    println("WARN: timescopes aren't actually supported")
-    contents()
-  }
-
   def doFork(runnable: () => Unit, name: Option[String], region: Option[Region]): SimThreadId = {
     val priority = region.map(_.getPos()).getOrElse(0)
     scheduler.forkThread(runnable, name, priority)
