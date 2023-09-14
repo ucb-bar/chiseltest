@@ -119,16 +119,16 @@ private[chiseltest] object TesterUtils {
     paths.toMap
   }
 
-  private val InternalFiles = Set("ChiselScalatestTester.scala", "BackendInterface.scala", "TestEnvInterface.scala")
+  private val InternalFiles = Set(
+    "ChiselScalatestTester.scala",
+    "Context.scala",
+    "SimController.scala",
+    "TesterUtils.scala"
+  )
 
   private def guessTopFileName(): Option[String] = {
-    // Try and get the user's top-level test filename
-    val topFileNameGuess = (new Throwable).getStackTrace.apply(2).getFileName
-    if (InternalFiles.contains(topFileNameGuess)) {
-      println("Unable to guess top-level testdriver filename from stack trace")
-      None
-    } else {
-      Some(topFileNameGuess)
-    }
+    val stackTrace = (new Throwable).getStackTrace
+    // pick first filename that is not internal
+    stackTrace.find(e => !InternalFiles.contains(e.getFileName)).map(_.getFileName)
   }
 }

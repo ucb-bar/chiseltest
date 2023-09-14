@@ -22,6 +22,8 @@ import chiseltest.simulator.{SimulatorContext, StepInterrupted, StepOk}
 private class SignalInfo(
   /** Name used by the simulator. */
   val name: String,
+  /** Name that matches the Chisel Scala code more closely. Used in exceptions to identify the signal. */
+  val chiselName: String,
   /** Unique ID. */
   val id: Int,
   /** Indicates that the signal cannot be poked. */
@@ -42,7 +44,7 @@ private class SignalInfo(
   var lastAccessWasPoke: Boolean = false) {}
 
 /** Regulates I/O access from different threads. Keeps track of timeout. */
-private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
+private class AccessCheck(design: DesignInfo, topFileName: Option[String], tester: SimulatorContext) {
   private var timeout:    Int = SimController.DefaultTimeout
   private var idleCycles: Int = 0
   private val signals = populateSignals(design, tester).toMap
@@ -63,22 +65,26 @@ private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
     }
   )
 
+  private def orderError(message: String): Nothing = {
+    throw ExceptionUtils.createThreadOrderDependentException(topFileName, message)
+  }
+
   def pokeBits(threadInfo: ThreadInfoProvider, signal: Data, value: BigInt): Unit = {
     val info = lookupSignal(signal, isPeekNotPoke = false)
     assert(!info.readOnly, "can only poke input! This should have been detected earlier.")
     // check for conflicting pokes
     if (hasConflictingAccess(info, threadInfo)) {
       if (info.lastAccessWasPoke) {
-        throw new ThreadOrderDependentException("Conflicting pokes!") // TODO: better message
+        orderError("Conflicting pokes!") // TODO: better message
       } else {
-        throw new ThreadOrderDependentException("Conflicting peek!") // TODO: better message
+        orderError("Conflicting peek!") // TODO: better message
       }
     }
     // have any of the signals that are influences by this input been peeked?
     info.dependedOnBy.foreach { id =>
       val info = idToSignal(id)
       if (hasConflictingAccess(info, threadInfo) && !info.lastAccessWasPoke) {
-        throw new ThreadOrderDependentException(
+        orderError(
           "Conflicting peek of a signal that may change with this poke!"
         ) // TODO: better message
       }
@@ -111,8 +117,8 @@ private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
     val info = lookupSignal(signal, isPeekNotPoke = true)
     // has this signal been poked?
     if (hasConflictingAccess(info, threadInfo) && info.lastAccessWasPoke) {
-      throw new ThreadOrderDependentException(
-        "Conflicting poke on signal that is being peeked!"
+      orderError(
+        s"Conflicting poke on signal `${info.chiselName}` that is being peeked!"
       ) // TODO: better message
     }
 
@@ -120,7 +126,7 @@ private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
     info.dependsOn.foreach { id =>
       val info = idToSignal(id)
       if (hasConflictingAccess(info, threadInfo) && info.lastAccessWasPoke) {
-        throw new ThreadOrderDependentException("Conflicting poke that influences peek!") // TODO: better message
+        orderError("Conflicting poke that influences peek!") // TODO: better message
       }
     }
 
@@ -197,8 +203,10 @@ private object AccessCheck {
       // find dependencies
       val dependsOn = design.combinationalPaths.getOrElse(name, Seq()).flatMap(nameToIds).sorted
       val dependedOn = reverseDependencies.getOrElse(name, Seq()).flatMap(nameToIds).sorted
+      val chiselName = signal.toString
       val info = new SignalInfo(
         name,
+        chiselName,
         id,
         readOnly = isOutput,
         dependsOn = dependsOn,

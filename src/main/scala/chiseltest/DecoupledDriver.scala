@@ -15,24 +15,19 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
   }
 
   def enqueueNow(data: T): Unit = {
-    val oldData = x.bits.peek()
-    val oldValid = x.valid.peek()
     x.bits.poke(data)
-    x.valid.poke(true.B)
+    x.valid.poke(true)
     fork
       .withRegion(Monitor) {
         x.ready.expect(true.B)
       }
       .joinAndStep()
-    x.bits.poke(oldData)
-    x.valid.poke(oldValid)
+    x.valid.poke(false)
   }
 
   def enqueue(data: T): Unit = {
-    val oldData = x.bits.peek()
-    val oldValid = x.valid.peek()
     x.bits.poke(data)
-    x.valid.poke(true.B)
+    x.valid.poke(true)
     fork
       .withRegion(Monitor) {
         while (!x.ready.peekBoolean()) {
@@ -40,8 +35,7 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
         }
       }
       .joinAndStep()
-    x.bits.poke(oldData)
-    x.valid.poke(oldValid)
+    x.valid.poke(false)
   }
 
   def enqueueSeq(data: Seq[T]): Unit = {
@@ -65,8 +59,7 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
   }
 
   def expectDequeue(data: T): Unit = {
-    val oldReady = x.ready.peek()
-    x.ready.poke(true.B)
+    x.ready.poke(true)
     fork
       .withRegion(Monitor) {
         waitForValid()
@@ -74,19 +67,18 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
         x.bits.expect(data)
       }
       .joinAndStep()
-    x.ready.poke(oldReady)
+    x.ready.poke(false)
   }
 
   def expectDequeueNow(data: T): Unit = {
-    val oldReady = x.ready.peek()
-    x.ready.poke(true.B)
+    x.ready.poke(true)
     fork
       .withRegion(Monitor) {
         x.valid.expect(true.B)
         x.bits.expect(data)
       }
       .joinAndStep()
-    x.ready.poke(oldReady)
+    x.ready.poke(false)
   }
 
   def expectDequeueSeq(data: Seq[T]): Unit = {

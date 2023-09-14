@@ -10,7 +10,7 @@ class ClockResolutionException(message: String) extends Exception(message)
 
 class FailedExpectException(val message: String, val failedCodeStackDepth: Int) extends Exception(message)
 
-class ThreadOrderDependentException(message: String) extends Exception(message)
+class ThreadOrderDependentException(val message: String, val failedCodeStackDepth: Int) extends Exception(message)
 class TimeoutException(message: String)
     extends Exception(
       message + " You can extend the timeout by calling .setTimeout(<n>) on your clock " +

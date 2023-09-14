@@ -20,7 +20,7 @@ private[chiseltest] class SimController[T <: Module](
   tester:              SimulatorContext,
   coverageAnnotations: AnnotationSeq) {
 
-  private val ioAccess = new AccessCheck(design, tester)
+  private val ioAccess = new AccessCheck(design, topFileName, tester)
   def pokeBits(signal: Data, value: BigInt): Unit = ioAccess.pokeBits(scheduler, signal, value)
   def peekBits(signal: Data): BigInt = ioAccess.peekBits(scheduler, signal)
 
@@ -84,19 +84,11 @@ private[chiseltest] class SimController[T <: Module](
   private def generateTestCoverageAnnotation(): TestCoverage = {
     TestCoverage(tester.getCoverage())
   }
-
-  /** Returns the stack trace elements of parent threads. If currently in the root thread, returns empty. TODO: refactor
-    * this, figure out how to do this in a structurally cleaner way
-    */
-  def getParentTraceElements: Seq[StackTraceElement] = Seq()
 }
 
 private object ExceptionUtils {
   private def getExpectDetailedTrace(trace: Seq[StackTraceElement], inFile: String): String = {
-    val fullTrace = Context().backend.getParentTraceElements ++ trace
-
-    // In the threading case, this needs to be overridden to trace through parent threads
-    val lineNumbers = fullTrace.collect {
+    val lineNumbers = trace.collect {
       case ste if ste.getFileName == inFile => ste.getLineNumber
     }.mkString(", ")
     if (lineNumbers.isEmpty) {
@@ -106,22 +98,32 @@ private object ExceptionUtils {
     }
   }
 
-  /** Creates a FailedExpectException with correct stack trace to the failure. */
-  def createExpectFailureException(topFileName: Option[String], message: String): FailedExpectException = {
-    val trace = new Throwable
-    val expectStackDepth = trace.getStackTrace.indexWhere(ste =>
-      ste.getClassName.startsWith(
-        "chiseltest.package$"
-      ) && (ste.getMethodName == "expect" || ste.getMethodName == "expectPartial")
-    )
+  private def findFailureLocationAndStackIndex(topFileName: Option[String], entryPoints: Set[String]): (String, Int) = {
+    val trace = (new Throwable).getStackTrace
+    val entryStackDepth = trace
+      .indexWhere(ste => ste.getClassName.startsWith("chiseltest.package$") && entryPoints.contains(ste.getMethodName))
     require(
-      expectStackDepth != -1,
-      s"Failed to find expect in stack trace:\r\n${trace.getStackTrace.mkString("\r\n")}"
+      entryStackDepth != -1,
+      s"Failed to find $entryPoints in stack trace:\r\n${trace.mkString("\r\n")}"
     )
 
-    val trimmedTrace = trace.getStackTrace.drop(expectStackDepth)
+    val trimmedTrace = trace.drop(entryStackDepth)
     val failureLocation: String = topFileName.map(getExpectDetailedTrace(trimmedTrace.toSeq, _)).getOrElse("")
-    val stackIndex = expectStackDepth + 1
+    val stackIndex = entryStackDepth + 1
+    (failureLocation, stackIndex)
+  }
+
+  /** Creates a FailedExpectException with correct stack trace to the failure. */
+  def createExpectFailureException(topFileName: Option[String], message: String): FailedExpectException = {
+    val (failureLocation, stackIndex) = findFailureLocationAndStackIndex(topFileName, ExpectEntryPoint)
     new FailedExpectException(message + failureLocation, stackIndex)
   }
+  private val ExpectEntryPoint = Set("expect", "expectPartial")
+
+  def createThreadOrderDependentException(topFileName: Option[String], message: String)
+    : ThreadOrderDependentException = {
+    val (failureLocation, stackIndex) = findFailureLocationAndStackIndex(topFileName, ExpectPeekPokeEntryPoint)
+    new ThreadOrderDependentException(message + failureLocation, stackIndex)
+  }
+  private val ExpectPeekPokeEntryPoint = Set("expect", "expectPartial", "peek", "peekInt", "peekBoolean", "poke")
 }
