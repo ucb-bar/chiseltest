@@ -7,17 +7,17 @@ import org.scalatest._
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
-class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
+class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior.of("Testers2")
 
   it should "locate source lines" in {
-    intercept[exceptions.TestFailedException] {
+    val nameAndLine = intercept[exceptions.TestFailedException] {
       test(new StaticModule(42.U)) { c =>
         c.out.expect(0.U)
       }
-    }.failedCodeFileNameAndLineNumberString.get should equal("FaultLocatorTest.scala:18")
+    }.failedCodeFileNameAndLineNumberString.get
+    assert(nameAndLine == "FaultLocatorTest.scala:17")
   }
 
   it should "locate source lines across threads" in {
@@ -29,7 +29,7 @@ class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Match
         }.join()
       }
     }
-    (exc.getMessage should include).regex("""\(lines in FaultLocatorTest\.scala:[^\)]*28.*\)""")
+    assert(exc.getMessage().endsWith("at (FaultLocatorTest.scala:28)"))
   }
 
   it should "locate source lines in libraries" in {
@@ -43,8 +43,8 @@ class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Match
       }
     }
     // Only check the filename to avoid this being too brittle as implementation changes
-    exc.failedCodeFileNameAndLineNumberString.get should startWith("DecoupledDriver.scala:")
-    (exc.getMessage should include).regex("""\(lines in FaultLocatorTest\.scala:[^\)]*43.*\)""")
+    assert(exc.failedCodeFileNameAndLineNumberString.get.startsWith("DecoupledDriver.scala:"))
+    assert(exc.getMessage().endsWith("at (FaultLocatorTest.scala:42)"))
   }
 
   it should "locate source lines, even in a different thread" in {
@@ -59,7 +59,7 @@ class FaultLocatorTest extends AnyFlatSpec with ChiselScalatestTester with Match
         }.join()
       }
     }
-    exc.failedCodeFileNameAndLineNumberString.get should startWith("DecoupledDriver.scala:")
-    (exc.getMessage should include).regex("""\(lines in FaultLocatorTest\.scala:[^\)]*60.*\)""")
+    assert(exc.failedCodeFileNameAndLineNumberString.get.startsWith("DecoupledDriver.scala:"))
+    assert(exc.getMessage().endsWith("at (FaultLocatorTest.scala:58)"))
   }
 }

@@ -96,7 +96,7 @@ class ValidQueueTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "Work with Bundles" in {
-    test(new TriQueueModule(new TriBundle, 1)).withAnnotations(Seq(VerboseAnnotation)) { c =>
+    test(new TriQueueModule(new TriBundle, 1)) { c =>
       c.in0.initSource()
       c.out0.initSink()
       c.in1.initSource()
