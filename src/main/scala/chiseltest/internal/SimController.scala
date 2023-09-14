@@ -43,12 +43,12 @@ class SimController[T <: Module](
   }
 
   def step(signal: Clock, cycles: Int): Unit = {
-    require(signal == design.clock)
+    require(signal == design.clock, s"$signal is not the main clock of the design.")
     scheduler.stepThread(cycles)
   }
 
   def getStepCount(signal: Clock): Long = {
-    require(signal == design.clock)
+    require(signal == design.clock, s"$signal is not the main clock of the design.")
     scheduler.getStepCount
   }
 
