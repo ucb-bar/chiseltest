@@ -17,6 +17,8 @@ class ValidDriver[T <: Data](x: ValidIO[T]) {
   def enqueueNow(data: T): Unit = {
     x.bits.poke(data)
     x.valid.poke(true.B)
+    step(1)
+    x.valid.poke(false.B)
   }
 
   def enqueueSeq(data: Seq[T]): Unit = {

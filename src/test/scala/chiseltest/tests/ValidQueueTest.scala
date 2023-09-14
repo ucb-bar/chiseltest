@@ -21,7 +21,7 @@ class ValidQueueTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior.of("Testers2 with ValidQueue")
 
   it should "pass through elements, using enqueueNow" in {
-    test(new ValidQueueModule(UInt(8.W), delay = 3)) { c =>
+    test(new ValidQueueModule(UInt(8.W), delay = 3)).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
       c.in.initSource()
       c.out.initSink()
 

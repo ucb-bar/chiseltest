@@ -132,7 +132,7 @@ private object ExceptionUtils {
   def createExpectFailureException(threadInfo: ThreadInfoProvider, topFileName: Option[String], message: String)
     : FailedExpectException = {
     val (failureLocation, stackIndex) = findFailureLocationAndStackIndex(threadInfo, topFileName, ExpectEntryPoint)
-    new FailedExpectException(message + failureLocation, stackIndex)
+    new FailedExpectException(s"In step ${threadInfo.getStepCount}: " + message + failureLocation, stackIndex)
   }
   private val ExpectEntryPoint = Set("expect", "expectPartial")
 
@@ -140,7 +140,7 @@ private object ExceptionUtils {
     : ThreadOrderDependentException = {
     val (failureLocation, stackIndex) =
       findFailureLocationAndStackIndex(threadInfo, topFileName, ExpectPeekPokeEntryPoint)
-    new ThreadOrderDependentException(message + failureLocation, stackIndex)
+    new ThreadOrderDependentException(s"In step ${threadInfo.getStepCount}: " + message + failureLocation, stackIndex)
   }
   private val ExpectPeekPokeEntryPoint = Set("expect", "expectPartial", "peek", "peekInt", "peekBoolean", "poke")
 }
