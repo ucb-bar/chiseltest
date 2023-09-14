@@ -36,11 +36,8 @@ private[chiseltest] class SimController[T <: Module](
     scheduler.forkThread(runnable, name, priority)
   }
 
-  def doJoin(threads: Seq[SimThreadId], stepAfter: Option[Clock]): Unit = {
+  def doJoin(threads: Seq[SimThreadId]): Unit = {
     scheduler.joinThreads(threads)
-    stepAfter.foreach { clock =>
-      step(1, Some(clock))
-    }
   }
 
   def step(cycles: Int, clock: Option[Clock]): Unit = {
