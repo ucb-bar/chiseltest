@@ -14,14 +14,20 @@ object SimController {
   val DefaultTimeout: Int = 1000
 }
 
-class SimController[T <: Module](
+private[chiseltest] class SimController[T <: Module](
   design:              DesignInfo,
+  topFileName:         Option[String],
   tester:              SimulatorContext,
   coverageAnnotations: AnnotationSeq) {
 
   private val ioAccess = new AccessCheck(design, tester)
   def pokeBits(signal: Data, value: BigInt): Unit = ioAccess.pokeBits(scheduler, signal, value)
   def peekBits(signal: Data): BigInt = ioAccess.peekBits(scheduler, signal)
+
+  /** Used by package.scala to communicate a failed `expect` */
+  def failedExpect(message: String): Unit = {
+    throw ExceptionUtils.createExpectFailureException(topFileName, message)
+  }
 
   private val scheduler = new Scheduler(ioAccess.simulationStep)
 
@@ -68,9 +74,6 @@ class SimController[T <: Module](
         // kill any child threads
         scheduler.finishMainThread()
       }
-
-      // throw any exceptions that might be left over
-      Context().env.checkpoint()
     } finally {
       tester.finish() // needed to dump VCDs + terminate any external process
     }
@@ -89,4 +92,39 @@ class SimController[T <: Module](
     * this, figure out how to do this in a structurally cleaner way
     */
   def getParentTraceElements: Seq[StackTraceElement] = Seq()
+}
+
+private object ExceptionUtils {
+  private def getExpectDetailedTrace(trace: Seq[StackTraceElement], inFile: String): String = {
+    val fullTrace = Context().backend.getParentTraceElements ++ trace
+
+    // In the threading case, this needs to be overridden to trace through parent threads
+    val lineNumbers = fullTrace.collect {
+      case ste if ste.getFileName == inFile => ste.getLineNumber
+    }.mkString(", ")
+    if (lineNumbers.isEmpty) {
+      s" (no lines in $inFile)"
+    } else {
+      s" (lines in $inFile: $lineNumbers)"
+    }
+  }
+
+  /** Creates a FailedExpectException with correct stack trace to the failure. */
+  def createExpectFailureException(topFileName: Option[String], message: String): FailedExpectException = {
+    val trace = new Throwable
+    val expectStackDepth = trace.getStackTrace.indexWhere(ste =>
+      ste.getClassName.startsWith(
+        "chiseltest.package$"
+      ) && (ste.getMethodName == "expect" || ste.getMethodName == "expectPartial")
+    )
+    require(
+      expectStackDepth != -1,
+      s"Failed to find expect in stack trace:\r\n${trace.getStackTrace.mkString("\r\n")}"
+    )
+
+    val trimmedTrace = trace.getStackTrace.drop(expectStackDepth)
+    val failureLocation: String = topFileName.map(getExpectDetailedTrace(trimmedTrace.toSeq, _)).getOrElse("")
+    val stackIndex = expectStackDepth + 1
+    new FailedExpectException(message + failureLocation, stackIndex)
+  }
 }

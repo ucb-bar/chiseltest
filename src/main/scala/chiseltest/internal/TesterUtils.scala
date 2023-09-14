@@ -1,13 +1,13 @@
 package chiseltest.internal
 
-import chisel3.{Data, Module}
-import chisel3.experimental.BaseModule
+import chisel3.Module
 import chisel3.reflect.DataMirror
 import chiseltest.coverage.{Coverage, TestCoverage}
 import chiseltest.simulator._
 import firrtl2.{AnnotationSeq, CircuitState}
 import firrtl2.annotations.ReferenceTarget
-import firrtl2.transforms.{CheckCombLoops, CombinationalPath}
+import firrtl2.transforms.CombinationalPath
+import firrtl2.options.TargetDirAnnotation
 
 /** Contains helper functions shared by [[HardwareTesterBackend]] and [[PeekPokeTesterBackend]] */
 private[chiseltest] object TesterUtils {
@@ -68,6 +68,24 @@ private[chiseltest] object TesterUtils {
     }
   }
 
+  /** Will add a TargetDirAnnotation with defaultDir with "test_run_dir" path prefix to the annotations if there is not
+    * a TargetDirAnnotation already present
+    *
+    * @param defaultDir
+    *   a default directory
+    * @param annotationSeq
+    *   annotations to add it to, unless one is already there
+    * @return
+    */
+  def addDefaultTargetDir(defaultDir: String, annotationSeq: AnnotationSeq): AnnotationSeq = {
+    if (annotationSeq.exists { x => x.isInstanceOf[TargetDirAnnotation] }) {
+      annotationSeq
+    } else {
+      val target = TargetDirAnnotation("test_run_dir" + java.io.File.separator + defaultDir)
+      AnnotationSeq(annotationSeq ++ Seq(target))
+    }
+  }
+
   def startController[T <: Module](
     dutGen:               () => T,
     testersAnnotationSeq: AnnotationSeq,
@@ -84,7 +102,8 @@ private[chiseltest] object TesterUtils {
     val design = new DesignInfo(clock = dut.clock, name = dut.name, dataNames = portNames, combinationalPaths = paths)
 
     // start backend
-    (new SimController(design, finalTester, coverageAnnotations), design, dut)
+    val topFileName = guessTopFileName()
+    (new SimController(design, topFileName, finalTester, coverageAnnotations), design, dut)
   }
 
   private def extractTopName(ref: ReferenceTarget): Option[String] = {
@@ -100,44 +119,16 @@ private[chiseltest] object TesterUtils {
     paths.toMap
   }
 
-  /** This creates some kind of map of combinational paths between inputs and outputs.
-    *
-    * @param dut
-    *   use this to figure out which paths involve top level iO
-    * @param paths
-    *   combinational paths found by firrtl pass CheckCombLoops
-    * @param dataNames
-    *   a map between a port's Data and it's string name
-    * @param componentToName
-    *   used to map [[ReferenceTarget]]s found in paths into correct local string form
-    * @return
-    */
-  // TODO: better name
-  // TODO: check for aliasing in here
-  // TODO graceful error message if there is an unexpected combinational path element?
-  private def combinationalPathsToData(
-    dut:             BaseModule,
-    paths:           Seq[CombinationalPath],
-    dataNames:       Map[Data, String],
-    componentToName: ReferenceTarget => String
-  ): Map[Data, Set[Data]] = {
+  private val InternalFiles = Set("ChiselScalatestTester.scala", "BackendInterface.scala", "TestEnvInterface.scala")
 
-    val nameToData = dataNames.map(_.swap)
-    val filteredPaths = paths.filter { p => // only keep paths involving top-level IOs
-      p.sink.module == dut.name && p.sources.exists(_.module == dut.name)
+  private def guessTopFileName(): Option[String] = {
+    // Try and get the user's top-level test filename
+    val topFileNameGuess = (new Throwable).getStackTrace.apply(2).getFileName
+    if (InternalFiles.contains(topFileNameGuess)) {
+      println("Unable to guess top-level testdriver filename from stack trace")
+      None
+    } else {
+      Some(topFileNameGuess)
     }
-    val filterPathsByName = filteredPaths.map { p => // map ComponentNames in paths into string forms
-      val mappedSources = p.sources.filter(_.module == dut.name).map { component =>
-        componentToName(component)
-      }
-      componentToName(p.sink) -> mappedSources
-    }
-    val mapPairs = filterPathsByName.map { case (sink, sources) => // convert to Data
-      nameToData(sink) -> sources.map { source =>
-        nameToData(source)
-      }.toSet
-    }
-    mapPairs.toMap
   }
-
 }

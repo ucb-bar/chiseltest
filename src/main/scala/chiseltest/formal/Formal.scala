@@ -5,7 +5,7 @@ package chiseltest.formal
 import chisel3.Module
 import chiseltest.HasTestName
 import chiseltest.formal.backends.FormalEngineAnnotation
-import chiseltest.internal.TestEnvInterface
+import chiseltest.internal.TesterUtils
 import chiseltest.simulator.{Compiler, WriteVcdAnnotation}
 import firrtl2.{AnnotationSeq, CircuitState}
 import firrtl2.annotations.NoTargetAnnotation
@@ -30,7 +30,7 @@ private[chiseltest] object FailedBoundedCheckException {
 /** Adds the `verify` command for formal checks to a ChiselScalatestTester */
 trait Formal { this: HasTestName =>
   def verify[T <: Module](dutGen: => T, annos: AnnotationSeq, chiselAnnos: firrtl.AnnotationSeq = Seq()): Unit = {
-    val withTargetDir = TestEnvInterface.addDefaultTargetDir(getTestName, annos)
+    val withTargetDir = TesterUtils.addDefaultTargetDir(getTestName, annos)
     Formal.verify(dutGen, withTargetDir, chiselAnnos)
   }
 }

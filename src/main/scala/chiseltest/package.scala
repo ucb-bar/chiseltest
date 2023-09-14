@@ -387,7 +387,7 @@ package object chiseltest {
         case Some(m) => s": ${m()}"
         case _       => ""
       }
-      Context().env.signalExpectFailure(message + appendMsg)
+      Context().backend.failedExpect(message + appendMsg)
     }
   }
 

@@ -15,7 +15,8 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
   }
 
   def enqueueNow(data: T): Unit = {
-    // TODO: check for init
+    val oldData = x.bits.peek()
+    val oldValid = x.valid.peek()
     x.bits.poke(data)
     x.valid.poke(true.B)
     fork
@@ -23,10 +24,13 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
         x.ready.expect(true.B)
       }
       .joinAndStep()
+    x.bits.poke(oldData)
+    x.valid.poke(oldValid)
   }
 
   def enqueue(data: T): Unit = {
-    // TODO: check for init
+    val oldData = x.bits.peek()
+    val oldValid = x.valid.peek()
     x.bits.poke(data)
     x.valid.poke(true.B)
     fork
@@ -36,6 +40,8 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
         }
       }
       .joinAndStep()
+    x.bits.poke(oldData)
+    x.valid.poke(oldValid)
   }
 
   def enqueueSeq(data: Seq[T]): Unit = {
@@ -59,7 +65,7 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
   }
 
   def expectDequeue(data: T): Unit = {
-    // TODO: check for init
+    val oldReady = x.ready.peek()
     x.ready.poke(true.B)
     fork
       .withRegion(Monitor) {
@@ -68,17 +74,21 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
         x.bits.expect(data)
       }
       .joinAndStep()
+    x.ready.poke(oldReady)
   }
 
   def expectDequeueNow(data: T): Unit = {
-    // TODO: check for init
+    val oldReady = x.ready.peek()
     x.ready.poke(true.B)
     fork
       .withRegion(Monitor) {
+        println("CHECK!")
         x.valid.expect(true.B)
         x.bits.expect(data)
+        println("OK")
       }
       .joinAndStep()
+    x.ready.poke(oldReady)
   }
 
   def expectDequeueSeq(data: Seq[T]): Unit = {

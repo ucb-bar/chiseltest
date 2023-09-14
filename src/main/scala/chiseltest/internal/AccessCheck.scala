@@ -146,8 +146,6 @@ private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
   def simulationStep(from: Int, cycles: Int): Int = {
     val delta = if (timeout == 0) cycles else Seq(cycles, timeout - idleCycles).min
     if (delta == 0) { return 0 }
-    // throw any available exceptions before stepping
-    Context().env.checkpoint()
     tester.step(delta) match {
       case StepOk =>
         // update and check timeout
