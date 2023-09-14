@@ -56,7 +56,9 @@ private trait ThreadInfoProvider {
   def getActiveThreadId:       Int
   def getActiveThreadPriority: Int
   def getStepCount:            Int
-  def isParentOf(id: Int, childId: Int): Boolean
+  def isParentOf(id:          Int, childId: Int): Boolean
+  def getParent(id:           Int): Option[Int]
+  def getThreadStackTrace(id: Int): Seq[StackTraceElement]
 }
 
 /** Manages multiple Java threads that all interact with the same simulation and step synchronously. Currently only
@@ -89,12 +91,14 @@ private class Scheduler(simulationStep: (Int, Int) => Int) extends ThreadInfoPro
 
   /** all threads */
   private val threads = new mutable.ArrayBuffer[ThreadInfo]()
-  threads.addOne(new ThreadInfo(MainThreadId, "main", 0, None, ThreadActive, new Semaphore(0)))
+  threads.addOne(new ThreadInfo(MainThreadId, "main", 0, Some(Thread.currentThread()), ThreadActive, new Semaphore(0)))
 
   /** order in which threads are scheduled */
   private val threadOrder = new ThreadOrder
   private def threadsInSchedulerOrder = threadOrder.getOrder.map(threads(_))
-  override def isParentOf(id: Int, childId: Int) = threadOrder.isParentOf(id, childId)
+  override def isParentOf(id:          Int, childId: Int) = threadOrder.isParentOf(id, childId)
+  override def getParent(id:           Int): Option[Int] = threadOrder.getParent(id)
+  override def getThreadStackTrace(id: Int): Seq[StackTraceElement] = threads(id).underlying.get.getStackTrace.toSeq
 
   /** Keep track of global simulation time. */
   private var currentStep: Int = 0

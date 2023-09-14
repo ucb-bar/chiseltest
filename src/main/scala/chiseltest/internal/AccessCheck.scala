@@ -65,8 +65,8 @@ private class AccessCheck(design: DesignInfo, topFileName: Option[String], teste
     }
   )
 
-  private def orderError(message: String): Nothing = {
-    throw ExceptionUtils.createThreadOrderDependentException(topFileName, message)
+  private def orderError(threadInfo: ThreadInfoProvider, message: String): Nothing = {
+    throw ExceptionUtils.createThreadOrderDependentException(threadInfo, topFileName, message)
   }
 
   def pokeBits(threadInfo: ThreadInfoProvider, signal: Data, value: BigInt): Unit = {
@@ -75,18 +75,16 @@ private class AccessCheck(design: DesignInfo, topFileName: Option[String], teste
     // check for conflicting pokes
     if (hasConflictingAccess(info, threadInfo)) {
       if (info.lastAccessWasPoke) {
-        orderError("Conflicting pokes!") // TODO: better message
+        orderError(threadInfo, "Conflicting pokes!") // TODO: better message
       } else {
-        orderError("Conflicting peek!") // TODO: better message
+        orderError(threadInfo, "Conflicting peek!") // TODO: better message
       }
     }
     // have any of the signals that are influences by this input been peeked?
     info.dependedOnBy.foreach { id =>
       val info = idToSignal(id)
       if (hasConflictingAccess(info, threadInfo) && !info.lastAccessWasPoke) {
-        orderError(
-          "Conflicting peek of a signal that may change with this poke!"
-        ) // TODO: better message
+        orderError(threadInfo, "Conflicting peek of a signal that may change with this poke!") // TODO: better message
       }
     }
 
@@ -118,6 +116,7 @@ private class AccessCheck(design: DesignInfo, topFileName: Option[String], teste
     // has this signal been poked?
     if (hasConflictingAccess(info, threadInfo) && info.lastAccessWasPoke) {
       orderError(
+        threadInfo,
         s"Conflicting poke on signal `${info.chiselName}` that is being peeked!"
       ) // TODO: better message
     }
@@ -126,7 +125,7 @@ private class AccessCheck(design: DesignInfo, topFileName: Option[String], teste
     info.dependsOn.foreach { id =>
       val info = idToSignal(id)
       if (hasConflictingAccess(info, threadInfo) && info.lastAccessWasPoke) {
-        orderError("Conflicting poke that influences peek!") // TODO: better message
+        orderError(threadInfo, "Conflicting poke that influences peek!") // TODO: better message
       }
     }
 

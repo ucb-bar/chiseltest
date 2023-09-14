@@ -5,7 +5,7 @@
 package chiseltest.internal
 
 import chisel3.{Clock, Data, Module}
-import chiseltest._
+import chiseltest.{FailedExpectException, _}
 import chiseltest.coverage.TestCoverage
 import chiseltest.simulator.SimulatorContext
 import firrtl2.AnnotationSeq
@@ -26,7 +26,7 @@ private[chiseltest] class SimController[T <: Module](
 
   /** Used by package.scala to communicate a failed `expect` */
   def failedExpect(message: String): Unit = {
-    throw ExceptionUtils.createExpectFailureException(topFileName, message)
+    throw ExceptionUtils.createExpectFailureException(scheduler, topFileName, message)
   }
 
   private val scheduler = new Scheduler(ioAccess.simulationStep)
@@ -87,19 +87,34 @@ private[chiseltest] class SimController[T <: Module](
 }
 
 private object ExceptionUtils {
-  private def getExpectDetailedTrace(trace: Seq[StackTraceElement], inFile: String): String = {
-    val lineNumbers = trace.collect {
-      case ste if ste.getFileName == inFile => ste.getLineNumber
-    }.mkString(", ")
-    if (lineNumbers.isEmpty) {
-      s" (no lines in $inFile)"
-    } else {
-      s" (lines in $inFile: $lineNumbers)"
+  private def getFaultLocation(topFileName: Option[String], trace: Seq[StackTraceElement]): Option[String] =
+    topFileName.flatMap { inFile =>
+      trace.collectFirst {
+        case ste if ste.getFileName == inFile =>
+          s" at ($inFile:${ste.getLineNumber})"
+      }
     }
+
+  /** Searches through all parent threads to find a fault location. Returns the first one from the bottom. */
+  private def getParentFaultLocation(threadInfo: ThreadInfoProvider, topFileName: Option[String], id: Int)
+    : Option[String] = {
+    threadInfo.getParent(id) match {
+      case Some(parentId) =>
+        val trace = threadInfo.getThreadStackTrace(parentId)
+        getFaultLocation(topFileName, trace)
+          .map(Some(_))
+          .getOrElse(getParentFaultLocation(threadInfo, topFileName, parentId))
+      case None => None
+    }
+
   }
 
-  private def findFailureLocationAndStackIndex(topFileName: Option[String], entryPoints: Set[String]): (String, Int) = {
-    val trace = (new Throwable).getStackTrace
+  private def findFailureLocationAndStackIndex(
+    threadInfo:  ThreadInfoProvider,
+    topFileName: Option[String],
+    entryPoints: Set[String]
+  ): (String, Int) = {
+    val trace = Thread.currentThread().getStackTrace.toSeq
     val entryStackDepth = trace
       .indexWhere(ste => ste.getClassName.startsWith("chiseltest.package$") && entryPoints.contains(ste.getMethodName))
     require(
@@ -107,22 +122,24 @@ private object ExceptionUtils {
       s"Failed to find $entryPoints in stack trace:\r\n${trace.mkString("\r\n")}"
     )
 
-    val trimmedTrace = trace.drop(entryStackDepth)
-    val failureLocation: String = topFileName.map(getExpectDetailedTrace(trimmedTrace.toSeq, _)).getOrElse("")
-    val stackIndex = entryStackDepth + 1
+    val failureLocation: String = getFaultLocation(topFileName, trace)
+      .getOrElse(getParentFaultLocation(threadInfo, topFileName, threadInfo.getActiveThreadId).getOrElse(""))
+    val stackIndex = entryStackDepth - 1
     (failureLocation, stackIndex)
   }
 
   /** Creates a FailedExpectException with correct stack trace to the failure. */
-  def createExpectFailureException(topFileName: Option[String], message: String): FailedExpectException = {
-    val (failureLocation, stackIndex) = findFailureLocationAndStackIndex(topFileName, ExpectEntryPoint)
+  def createExpectFailureException(threadInfo: ThreadInfoProvider, topFileName: Option[String], message: String)
+    : FailedExpectException = {
+    val (failureLocation, stackIndex) = findFailureLocationAndStackIndex(threadInfo, topFileName, ExpectEntryPoint)
     new FailedExpectException(message + failureLocation, stackIndex)
   }
   private val ExpectEntryPoint = Set("expect", "expectPartial")
 
-  def createThreadOrderDependentException(topFileName: Option[String], message: String)
+  def createThreadOrderDependentException(threadInfo: ThreadInfoProvider, topFileName: Option[String], message: String)
     : ThreadOrderDependentException = {
-    val (failureLocation, stackIndex) = findFailureLocationAndStackIndex(topFileName, ExpectPeekPokeEntryPoint)
+    val (failureLocation, stackIndex) =
+      findFailureLocationAndStackIndex(threadInfo, topFileName, ExpectPeekPokeEntryPoint)
     new ThreadOrderDependentException(message + failureLocation, stackIndex)
   }
   private val ExpectPeekPokeEntryPoint = Set("expect", "expectPartial", "peek", "peekInt", "peekBoolean", "poke")
