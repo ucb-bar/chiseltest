@@ -82,10 +82,8 @@ class DecoupledDriver[T <: Data](x: ReadyValidIO[T]) {
     x.ready.poke(true.B)
     fork
       .withRegion(Monitor) {
-        println("CHECK!")
         x.valid.expect(true.B)
         x.bits.expect(data)
-        println("OK")
       }
       .joinAndStep()
     x.ready.poke(oldReady)

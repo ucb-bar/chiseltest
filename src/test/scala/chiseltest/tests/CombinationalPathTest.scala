@@ -29,7 +29,7 @@ class CombinationalPathTest extends AnyFlatSpec with ChiselScalatestTester {
       test(new PassthroughModule(Bool())) { c =>
         fork {
           c.clock.step(1)
-          c.out.expect(true.B)
+          c.out.expect(false.B)
         }.fork {
           c.clock.step(1)
           c.in.poke(true.B)
@@ -83,7 +83,7 @@ class CombinationalPathTest extends AnyFlatSpec with ChiselScalatestTester {
       test(new PassthroughModule(Bool())) { c =>
         fork {
           c.clock.step(1)
-          c.in.expect(true.B)
+          c.in.expect(false.B)
         }.fork {
           c.clock.step(1)
           c.in.poke(true.B)
