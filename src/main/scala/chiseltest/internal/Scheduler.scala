@@ -108,8 +108,8 @@ private class Scheduler(simulationStep: (Int, Int) => Int) extends ThreadInfoPro
       () => {
         // BLOCK #1: after being started
         semaphore.acquire() // wait until it is our turn
-        onResumeThread(id)
         try {
+          onResumeThread(id) // we might already be asked to terminate when resuming, so run this in the try block
           runnable() // execute user code
         } catch {
           case _: TerminateSimThreadException => // everything OK, we are just being terminated
