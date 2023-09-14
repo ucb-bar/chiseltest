@@ -11,18 +11,28 @@ class RegionsTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "resolve read-after-write dependencies" in {
     test(new PassthroughModule(UInt(8.W))) { c =>
-      fork {
+      fork { // thread 1 (priority = 0)
         c.in.poke(42.U)
         c.clock.step()
         c.in.poke(70.U)
         c.clock.step()
       }.fork
-        .withRegion(Monitor) {
+        .withRegion(Monitor) { // thread 2 (priority = 1)
           c.in.expect(42.U)
           c.clock.step()
           c.in.expect(70.U)
         }
         .joinAndStep(c.clock)
+    }
+  }
+
+  it should "schedule a forked thread of lower priority only after resuming the parent" in {
+    test(new PassthroughModule(UInt(8.W))) { c =>
+      var flag: Int = 0
+      fork.withRegion(Monitor) { flag = 1 }
+      assert(flag == 0)
+      c.clock.step()
+      assert(flag == 1)
     }
   }
 

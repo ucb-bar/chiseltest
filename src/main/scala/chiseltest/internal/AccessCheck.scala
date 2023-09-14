@@ -36,6 +36,8 @@ private class SignalInfo(
   var lastAccessAt: Int = -1,
   /** Id of the thread that performed the last peek or poke. */
   var lastAccessFrom: Int = -1,
+  /** Priority of th thread that performed the last peek or poke. */
+  var lastAccessPriority: Int = -1,
   /** Type of the last access */
   var lastAccessWasPoke: Boolean = false) {}
 
@@ -93,6 +95,7 @@ private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
     }
     // record poke
     info.lastAccessFrom = threadInfo.getActiveThreadId
+    info.lastAccessPriority = threadInfo.getActiveThreadPriority
     info.lastAccessAt = threadInfo.getStepCount
     info.lastAccessWasPoke = true
   }
@@ -101,6 +104,7 @@ private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
   private def hasConflictingAccess(info: SignalInfo, threadInfo: ThreadInfoProvider): Boolean =
     info.lastAccessAt == threadInfo.getStepCount &&
       info.lastAccessFrom != threadInfo.getActiveThreadId &&
+      info.lastAccessPriority >= threadInfo.getActiveThreadPriority &&
       !threadInfo.isParentOf(info.lastAccessFrom, threadInfo.getActiveThreadId)
 
   def peekBits(threadInfo: ThreadInfoProvider, signal: Data): BigInt = {
@@ -122,6 +126,7 @@ private class AccessCheck(design: DesignInfo, tester: SimulatorContext) {
 
     // record peek
     info.lastAccessFrom = threadInfo.getActiveThreadId
+    info.lastAccessPriority = threadInfo.getActiveThreadPriority
     info.lastAccessAt = threadInfo.getStepCount
     info.lastAccessWasPoke = false
 

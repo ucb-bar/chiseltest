@@ -53,8 +53,9 @@ private class TerminateSimThreadException extends Exception
 
 /** Information needed by the [[AccessCheck]] class. Should return quickly! */
 private trait ThreadInfoProvider {
-  def getActiveThreadId: Int
-  def getStepCount:      Int
+  def getActiveThreadId:       Int
+  def getActiveThreadPriority: Int
+  def getStepCount:            Int
   def isParentOf(id: Int, childId: Int): Boolean
 }
 
@@ -83,7 +84,8 @@ private class Scheduler(simulationStep: (Int, Int) => Int) extends ThreadInfoPro
 
   /** current active thread */
   private var activeThreadId = MainThreadId
-  override def getActiveThreadId: Int = activeThreadId
+  override def getActiveThreadId:       Int = activeThreadId
+  override def getActiveThreadPriority: Int = threads(activeThreadId).priority
 
   /** all threads */
   private val threads = new mutable.ArrayBuffer[ThreadInfo]()
@@ -189,21 +191,43 @@ private class Scheduler(simulationStep: (Int, Int) => Int) extends ThreadInfoPro
     // generate an ID, name and data structure for the new thread
     val id = threads.length
     val fullName = name.getOrElse(s"chiseltest_thread_$id")
-    debug(s"forkThread($fullName ($id)) from ${activeThreadId}")
+    debug(s"forkThread($fullName ($id) P$priority) from ${activeThreadId}")
     // the new thread starts as paused
     val (newJavaThread, newSemaphore) = createThread(fullName, id, runnable)
     threads.addOne(
       new ThreadInfo(id, fullName, priority, Some(newJavaThread), ThreadWaitingUntil(currentStep), newSemaphore)
     )
-    threadOrder.addThread(parent = activeThreadId, id = id)
-    // yield to the new thread before returning
-    yieldForStep(0, isFork = true)
+    threadOrder.addThread(parent = activeThreadId, id = id, priority = priority)
+    // potentially yield to the new thread before returning
+    yieldForFork()
     new SimThreadId(id)
   }
 
+  @inline private def yieldForFork(): Unit = {
+    debug(s"yieldForFork()");
+    dbgThreadList()
+    // set active thread to paused (we might actually need to resume it since a newly forked thread might have lower priority)
+    val originalActiveThreadId = activeThreadId
+    val activeThread = threads(originalActiveThreadId)
+    activeThread.status = ThreadWaitingUntil(currentStep)
+    // find a thread that is ready to run
+    val nextThread = findNextThread()
+    // if that thread is different from our current thread, perform a switch
+    if (nextThread.id != originalActiveThreadId) {
+      debugSwitch(activeThreadId, nextThread.id, "fork")
+      wakeUpThread(nextThread)
+      // BLOCK #5: as part of a fork
+      activeThread.semaphore.acquire()
+      onResumeThread(originalActiveThreadId)
+    } else {
+      // we are running again
+      activeThread.status = ThreadActive
+    }
+  }
+
   /** Suspends the active thread for `cycles` steps and schedules a new one to run. */
-  @inline private def yieldForStep(cycles: Int, isFork: Boolean): Unit = {
-    debug(s"yieldFor${if (isFork) "Fork" else "Step"}(cycles = $cycles)"); dbgThreadList()
+  @inline private def yieldForStep(cycles: Int): Unit = {
+    debug(s"yieldForStep(cycles = $cycles)"); dbgThreadList()
     // find a thread that is ready to run
     val nextThread = findNextThread()
     // set active thread status to paused
@@ -211,9 +235,9 @@ private class Scheduler(simulationStep: (Int, Int) => Int) extends ThreadInfoPro
     val activeThread = threads(originalActiveThreadId)
     activeThread.status = ThreadWaitingUntil(currentStep + cycles)
     // switch threads
-    debugSwitch(activeThreadId, nextThread.id, if (isFork) s"fork" else s"yield for step ($cycles)")
+    debugSwitch(activeThreadId, nextThread.id, s"yield for step ($cycles)")
     wakeUpThread(nextThread)
-    // BLOCK #2: as part of a step or fork
+    // BLOCK #2: as part of a step
     activeThread.semaphore.acquire()
     onResumeThread(originalActiveThreadId)
   }
@@ -296,7 +320,7 @@ private class Scheduler(simulationStep: (Int, Int) => Int) extends ThreadInfoPro
         // perform the biggest step we can
         val stepSize = stepSimulationToNearestWait()
         // yield to the scheduler
-        yieldForStep(cycles - stepSize, isFork = false)
+        yieldForStep(cycles - stepSize)
       }
     }
   }
@@ -349,8 +373,8 @@ private class Scheduler(simulationStep: (Int, Int) => Int) extends ThreadInfoPro
         threads(joiningThreadId).status = ThreadWaitingForJoin(other.id)
         debugSwitch(joiningThreadId, nextThread.id, s"waiting for ${other.id}")
         wakeUpThread(nextThread)
-        // BLOCK #3: waiting for other thread to finish
-        other.underlying.get.join()
+        // BLOCK #3: waiting for other thread to finish if is still alive!
+        other.underlying.foreach(t => t.join())
         onResumeThread(joiningThreadId)
       }
     }
@@ -402,12 +426,15 @@ private class Scheduler(simulationStep: (Int, Int) => Int) extends ThreadInfoPro
 
 /** Maintains a tree of threads and uses it in order to derive in which order threads need to run. */
 private class ThreadOrder {
-  private class Node(var thread: Int, val parent: Int, var children: Seq[Node] = null) {
+  private class Node(var thread: Int, val parent: Int, val priority: Int, var children: Seq[Node] = null) {
     def isAlive: Boolean = thread > -1
   }
-  private val root = new Node(0, parent = -1)
+  private val root = new Node(0, parent = -1, priority = 0)
   private val idToNode = mutable.ArrayBuffer[Node](root)
   private var threadOrder: Seq[Int] = Seq()
+
+  /** Maintains a sorted list of all priorities. */
+  private var priorities: Seq[Int] = Seq(0)
 
   /** Returns non-finished threads in the order in which they should be scheduled */
   def getOrder: Seq[Int] = {
@@ -452,11 +479,15 @@ private class ThreadOrder {
   }
 
   /** Add a new thread. */
-  def addThread(parent: Int, id: Int): Unit = {
+  def addThread(parent: Int, id: Int, priority: Int): Unit = {
     // invalidate order
     threadOrder = Seq()
+    // update priorities
+    if (!priorities.contains(priority)) {
+      priorities = (priorities :+ priority).sorted
+    }
     // create new child node
-    val childNode = new Node(id, parent)
+    val childNode = new Node(id, parent, priority)
     assert(idToNode.length == id, "Expected ids to always increase by one...")
     idToNode.addOne(childNode)
     // insert pointer into parent node
@@ -488,19 +519,29 @@ private class ThreadOrder {
 
   private def calculateOrder(): Seq[Int] = {
     assert(root.thread == 0, "We lost the main thread!")
-    val order = mutable.ArrayBuffer[Int]()
+    val order = mutable.ArrayBuffer[(Int, Int)]()
     val todo = mutable.Stack[Node]()
     // we want to run threads from the bottom up (children first) and the older children before the younger children
     todo.push(root)
     while (todo.nonEmpty) {
       val node = todo.pop()
-      order.addOne(node.thread)
+      order.addOne((node.thread, node.priority))
       if (node.children != null) {
         val lifeChildren = node.children.filter(_.thread > -1)
         node.children = lifeChildren
         todo.pushAll(lifeChildren)
       }
     }
-    order.toSeq.reverse
+    // reverse order
+    val reversed = order.toSeq.reverse
+
+    // sort by priority if there is more than one
+    if (priorities.length > 1) {
+      val sortedByPriority = priorities.flatMap(p => reversed.filter(_._2 == p)).map(_._1)
+      sortedByPriority
+    } else {
+      // strip priority
+      reversed.map(_._1)
+    }
   }
 }

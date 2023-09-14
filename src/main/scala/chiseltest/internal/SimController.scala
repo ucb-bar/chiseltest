@@ -26,6 +26,7 @@ class SimController[T <: Module](
   private val scheduler = new Scheduler(ioAccess.simulationStep)
 
   def doTimescope(contents: () => Unit): Unit = {
+    println("WARN: timescopes aren't actually supported")
     contents()
   }
 
