@@ -77,9 +77,9 @@ private class AccessCheck(design: DesignInfo, topFileName: Option[String], teste
     firstThread:          Int,
     transitiveSignalName: Option[String]
   ): Nothing = {
-    val kind = "Unordered " + first.name + " after " + second.name
+    val kind = "Unordered " + second.name + " after " + first.name
     val depend = transitiveSignalName.map(name => s"which depends combinatorially on $name ").getOrElse("")
-    val spawnLocation = ExceptionUtils.getForkLocation(threadInfo, firstThread)
+    val spawnLocation = threadInfo.getForkLocation(firstThread)
     val explanation =
       s"Trying to ${second.name} $signalName ${depend}which was ${first.name}ed by an unordered thread" +
         s" spawned at: $spawnLocation."
@@ -140,7 +140,7 @@ private class AccessCheck(design: DesignInfo, topFileName: Option[String], teste
     info.dependsOn.foreach { id =>
       val dependInfo = idToSignal(id)
       if (hasConflictingAccess(dependInfo, threadInfo) && dependInfo.lastAccessWasPoke) {
-        orderError(threadInfo, info.chiselName, Write, Read, info.lastAccessFrom, Some(dependInfo.chiselName))
+        orderError(threadInfo, info.chiselName, Write, Read, dependInfo.lastAccessFrom, Some(dependInfo.chiselName))
       }
     }
 

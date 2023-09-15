@@ -29,11 +29,13 @@ private[chiseltest] class SimController[T <: Module](
     throw ExceptionUtils.createExpectFailureException(scheduler, topFileName, message)
   }
 
-  private val scheduler = new Scheduler(ioAccess.simulationStep)
+  private def getCurrentUserLoc: String =
+    ExceptionUtils.getLocationInUserCode(topFileName, Thread.currentThread().getStackTrace.toSeq).getOrElse("")
+  private val scheduler = new Scheduler(ioAccess.simulationStep, getCurrentUserLoc)
 
   def doFork(runnable: () => Unit, name: Option[String], region: Option[Region]): SimThreadId = {
     val priority = region.map(_.getPos()).getOrElse(0)
-    scheduler.forkThread(runnable, name, priority)
+    scheduler.forkThread(runnable, name, priority, getCurrentUserLoc)
   }
 
   def doJoin(threads: Seq[SimThreadId]): Unit = {
@@ -87,23 +89,13 @@ private[chiseltest] class SimController[T <: Module](
 }
 
 private object ExceptionUtils {
-  private def getFaultLocation(topFileName: Option[String], trace: Seq[StackTraceElement]): Option[String] =
+  def getLocationInUserCode(topFileName: Option[String], trace: Seq[StackTraceElement]): Option[String] =
     topFileName.flatMap { inFile =>
       trace.collectFirst {
         case ste if ste.getFileName == inFile =>
-          s" at ($inFile:${ste.getLineNumber})"
+          s"$inFile:${ste.getLineNumber}"
       }
     }
-
-  /** Takes in the current stack trace if a thread and extracts the location where it was forked. */
-  def getForkLocation(threadInfo: ThreadInfoProvider, threadId: Int): String = {
-    val trace = threadInfo.getThreadStackTrace(threadId)
-    // TODO: we probably need to look at the parent thread stack trace to find our fork location (but what about the main thread?)
-
-    val info = trace.map(ste => ste.getClassName -> ste.getMethodName)
-
-    ""
-  }
 
   /** Searches through all parent threads to find a fault location. Returns the first one from the bottom. */
   private def getParentFaultLocation(threadInfo: ThreadInfoProvider, topFileName: Option[String], id: Int)
@@ -111,7 +103,7 @@ private object ExceptionUtils {
     threadInfo.getParent(id) match {
       case Some(parentId) =>
         val trace = threadInfo.getThreadStackTrace(parentId)
-        getFaultLocation(topFileName, trace)
+        getLocationInUserCode(topFileName, trace)
           .map(Some(_))
           .getOrElse(getParentFaultLocation(threadInfo, topFileName, parentId))
       case None => None
@@ -132,10 +124,10 @@ private object ExceptionUtils {
       s"Failed to find $entryPoints in stack trace:\r\n${trace.mkString("\r\n")}"
     )
 
-    val failureLocation: String = getFaultLocation(topFileName, trace)
+    val failureLocation: String = getLocationInUserCode(topFileName, trace)
       .getOrElse(getParentFaultLocation(threadInfo, topFileName, threadInfo.getActiveThreadId).getOrElse(""))
     val stackIndex = entryStackDepth - 1
-    (failureLocation, stackIndex)
+    (s" at ($failureLocation)", stackIndex)
   }
 
   /** Creates a FailedExpectException with correct stack trace to the failure. */

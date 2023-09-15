@@ -13,6 +13,8 @@ private class ThreadInfo(
   val id: Int,
   /** Human readable name of the thread */
   val name: String,
+  /** Human readable location of where the thread was forked from (in user code) */
+  val forkLocation: String,
   /** Priority derived from the thread [[chiseltest.Region]]. Lower numbers mean higher priority. */
   val priority: Int,
   /** Java thread. */
@@ -60,6 +62,7 @@ private trait ThreadInfoProvider {
   def getStepCount:            Int
   def isParentOf(id:          Int, childId: Int): Boolean
   def getParent(id:           Int): Option[Int]
+  def getForkLocation(id:     Int): String
   def getThreadStackTrace(id: Int): Seq[StackTraceElement]
   def hasJoined(from:         Int, to:      Int): Boolean
 }
@@ -67,7 +70,7 @@ private trait ThreadInfoProvider {
 /** Manages multiple Java threads that all interact with the same simulation and step synchronously. Currently only
   * supports a single global clock that all threads are synchronized to.
   */
-private class Scheduler(simulationStep: (Int, Int) => Int) extends ThreadInfoProvider {
+private class Scheduler(simulationStep: (Int, Int) => Int, startLocation: String) extends ThreadInfoProvider {
   private val EnableDebug:         Boolean = false
   private val DebugThreadSwitches: Boolean = false
   private def debugPrefix = s"$activeThreadId@$currentStep: "
@@ -94,13 +97,16 @@ private class Scheduler(simulationStep: (Int, Int) => Int) extends ThreadInfoPro
 
   /** all threads */
   private val threads = new mutable.ArrayBuffer[ThreadInfo]()
-  threads.addOne(new ThreadInfo(MainThreadId, "main", 0, Some(Thread.currentThread()), ThreadActive, new Semaphore(0)))
+  threads.addOne(
+    new ThreadInfo(MainThreadId, "main", startLocation, 0, Some(Thread.currentThread()), ThreadActive, new Semaphore(0))
+  )
 
   /** order in which threads are scheduled */
   private val threadOrder = new ThreadOrder
   private def threadsInSchedulerOrder = threadOrder.getOrder.map(threads(_))
   override def isParentOf(id:          Int, childId: Int) = threadOrder.isParentOf(id, childId)
   override def getParent(id:           Int): Option[Int] = threadOrder.getParent(id)
+  override def getForkLocation(id:     Int): String = threads(id).forkLocation
   override def getThreadStackTrace(id: Int): Seq[StackTraceElement] = threads(id).underlying.get.getStackTrace.toSeq
   override def hasJoined(from:         Int, to: Int): Boolean = threads(to).joined.contains(from)
 
@@ -197,7 +203,7 @@ private class Scheduler(simulationStep: (Int, Int) => Int) extends ThreadInfoPro
     }
   }
 
-  def forkThread(runnable: () => Unit, name: Option[String], priority: Int): SimThreadId = {
+  def forkThread(runnable: () => Unit, name: Option[String], priority: Int, location: String): SimThreadId = {
     // generate an ID, name and data structure for the new thread
     val id = threads.length
     val fullName = name.getOrElse(s"chiseltest_thread_$id")
@@ -205,7 +211,15 @@ private class Scheduler(simulationStep: (Int, Int) => Int) extends ThreadInfoPro
     // the new thread starts as paused
     val (newJavaThread, newSemaphore) = createThread(fullName, id, runnable)
     threads.addOne(
-      new ThreadInfo(id, fullName, priority, Some(newJavaThread), ThreadWaitingUntil(currentStep), newSemaphore)
+      new ThreadInfo(
+        id,
+        fullName,
+        location,
+        priority,
+        Some(newJavaThread),
+        ThreadWaitingUntil(currentStep),
+        newSemaphore
+      )
     )
     threadOrder.addThread(parent = activeThreadId, id = id, priority = priority)
     // potentially yield to the new thread before returning
