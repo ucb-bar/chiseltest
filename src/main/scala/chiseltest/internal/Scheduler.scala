@@ -21,6 +21,8 @@ private class ThreadInfo(
   var status: ThreadStatus,
   /** Semaphore that pauses thread. */
   val semaphore: Semaphore,
+  /** All threads that have been (transitively) joined with this thread. */
+  var joined: Set[Int] = Set(),
   /** An exception from a child thread that needs to be propagated */
   var pendingException: Option[Throwable] = None) {
   def serializeShort(currentStep: Int, activeThreadId: Int): String = {
@@ -59,6 +61,7 @@ private trait ThreadInfoProvider {
   def isParentOf(id:          Int, childId: Int): Boolean
   def getParent(id:           Int): Option[Int]
   def getThreadStackTrace(id: Int): Seq[StackTraceElement]
+  def hasJoined(from:         Int, to:      Int): Boolean
 }
 
 /** Manages multiple Java threads that all interact with the same simulation and step synchronously. Currently only
@@ -99,6 +102,7 @@ private class Scheduler(simulationStep: (Int, Int) => Int) extends ThreadInfoPro
   override def isParentOf(id:          Int, childId: Int) = threadOrder.isParentOf(id, childId)
   override def getParent(id:           Int): Option[Int] = threadOrder.getParent(id)
   override def getThreadStackTrace(id: Int): Seq[StackTraceElement] = threads(id).underlying.get.getStackTrace.toSeq
+  override def hasJoined(from:         Int, to: Int): Boolean = threads(to).joined.contains(from)
 
   /** Keep track of global simulation time. */
   private var currentStep: Int = 0
@@ -383,6 +387,7 @@ private class Scheduler(simulationStep: (Int, Int) => Int) extends ThreadInfoPro
         other.underlying.foreach(t => t.join())
         onResumeThread(joiningThreadId)
       }
+      threads(joiningThreadId).joined = threads(joiningThreadId).joined | Set(other.id) | other.joined
     }
   }
 

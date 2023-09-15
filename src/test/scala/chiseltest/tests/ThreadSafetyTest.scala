@@ -112,4 +112,69 @@ class ThreadSafetyTest extends AnyFlatSpec with ChiselScalatestTester {
       }
     }
   }
+
+  it should "detect and disallow unordered poked" in {
+    assertThrows[ThreadOrderDependentException] {
+      test(new InputOnlyModule(Bool())) { c =>
+        val t1 = fork {
+          c.in.poke(true.B)
+        }
+        fork {
+          c.in.poke(false.B)
+          t1.join()
+        }
+      }
+    }
+  }
+
+  it should "allow pokes that are ordered by a join" in {
+    test(new InputOnlyModule(Bool())) { c =>
+      val t1 = fork {
+        c.in.poke(true.B)
+      }
+      fork {
+        t1.join() // since we join before the poke, there is an order
+        c.in.poke(false.B)
+      }
+    }
+  }
+
+  it should "allow pokes that are ordered by two joins" in {
+    test(new InputOnlyModule(Bool())) { c =>
+      val t1 = fork {
+        c.in.poke(true.B)
+      }
+      val t2 = fork {
+        t1.join()
+      }
+      fork {
+        t2.join() // since we join before the poke, there is an order: t3 <- t2 <- t1
+        c.in.poke(false.B)
+      }
+    }
+  }
+
+  it should "allow peek/poke that are ordered by a join" in {
+    test(new InputOnlyModule(Bool())) { c =>
+      val t1 = fork {
+        c.in.peek()
+      }
+      fork {
+        t1.join() // since we join before the poke, there is an order
+        c.in.poke(true.B)
+      }
+    }
+  }
+
+  it should "allow poke/peek that are ordered by a join" in {
+    test(new InputOnlyModule(Bool())) { c =>
+      val t1 = fork {
+        c.in.poke(true.B)
+      }
+      fork {
+        t1.join() // since we join before the poke, there is an order
+        c.in.peek()
+      }
+    }
+  }
 }

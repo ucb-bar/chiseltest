@@ -109,6 +109,7 @@ private class AccessCheck(design: DesignInfo, topFileName: Option[String], teste
     info.lastAccessAt == threadInfo.getStepCount &&
       info.lastAccessFrom != threadInfo.getActiveThreadId &&
       info.lastAccessPriority >= threadInfo.getActiveThreadPriority &&
+      !threadInfo.hasJoined(info.lastAccessFrom, threadInfo.getActiveThreadId) &&
       !threadInfo.isParentOf(info.lastAccessFrom, threadInfo.getActiveThreadId)
 
   def peekBits(threadInfo: ThreadInfoProvider, signal: Data): BigInt = {
