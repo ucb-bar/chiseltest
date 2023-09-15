@@ -95,6 +95,16 @@ private object ExceptionUtils {
       }
     }
 
+  /** Takes in the current stack trace if a thread and extracts the location where it was forked. */
+  def getForkLocation(threadInfo: ThreadInfoProvider, threadId: Int): String = {
+    val trace = threadInfo.getThreadStackTrace(threadId)
+    // TODO: we probably need to look at the parent thread stack trace to find our fork location (but what about the main thread?)
+
+    val info = trace.map(ste => ste.getClassName -> ste.getMethodName)
+
+    ""
+  }
+
   /** Searches through all parent threads to find a fault location. Returns the first one from the bottom. */
   private def getParentFaultLocation(threadInfo: ThreadInfoProvider, topFileName: Option[String], id: Int)
     : Option[String] = {

@@ -65,8 +65,25 @@ private class AccessCheck(design: DesignInfo, topFileName: Option[String], teste
     }
   )
 
-  private def orderError(threadInfo: ThreadInfoProvider, message: String): Nothing = {
-    throw ExceptionUtils.createThreadOrderDependentException(threadInfo, topFileName, message)
+  private sealed trait Op { def name: String }
+  private case object Read extends Op { override val name: String = "peek" }
+  private case object Write extends Op { override val name: String = "poke" }
+
+  private def orderError(
+    threadInfo:           ThreadInfoProvider,
+    signalName:           String,
+    first:                Op,
+    second:               Op,
+    firstThread:          Int,
+    transitiveSignalName: Option[String]
+  ): Nothing = {
+    val kind = "Unordered " + first.name + " after " + second.name
+    val depend = transitiveSignalName.map(name => s"which depends combinatorially on $name ").getOrElse("")
+    val spawnLocation = ExceptionUtils.getForkLocation(threadInfo, firstThread)
+    val explanation =
+      s"Trying to ${second.name} $signalName ${depend}which was ${first.name}ed by an unordered thread" +
+        s" spawned at: $spawnLocation."
+    throw ExceptionUtils.createThreadOrderDependentException(threadInfo, topFileName, s"$kind: $explanation")
   }
 
   def pokeBits(threadInfo: ThreadInfoProvider, signal: Data, value: BigInt): Unit = {
@@ -75,16 +92,16 @@ private class AccessCheck(design: DesignInfo, topFileName: Option[String], teste
     // check for conflicting pokes
     if (hasConflictingAccess(info, threadInfo)) {
       if (info.lastAccessWasPoke) {
-        orderError(threadInfo, "Conflicting pokes!") // TODO: better message
+        orderError(threadInfo, info.chiselName, Write, Write, info.lastAccessFrom, None)
       } else {
-        orderError(threadInfo, "Conflicting peek!") // TODO: better message
+        orderError(threadInfo, info.chiselName, Read, Write, info.lastAccessFrom, None)
       }
     }
     // have any of the signals that are influences by this input been peeked?
     info.dependedOnBy.foreach { id =>
-      val info = idToSignal(id)
-      if (hasConflictingAccess(info, threadInfo) && !info.lastAccessWasPoke) {
-        orderError(threadInfo, "Conflicting peek of a signal that may change with this poke!") // TODO: better message
+      val dependInfo = idToSignal(id)
+      if (hasConflictingAccess(dependInfo, threadInfo) && !dependInfo.lastAccessWasPoke) {
+        orderError(threadInfo, info.chiselName, Read, Write, dependInfo.lastAccessFrom, Some(dependInfo.chiselName))
       }
     }
 
@@ -116,17 +133,14 @@ private class AccessCheck(design: DesignInfo, topFileName: Option[String], teste
     val info = lookupSignal(signal, isPeekNotPoke = true)
     // has this signal been poked?
     if (hasConflictingAccess(info, threadInfo) && info.lastAccessWasPoke) {
-      orderError(
-        threadInfo,
-        s"Conflicting poke on signal `${info.chiselName}` that is being peeked!"
-      ) // TODO: better message
+      orderError(threadInfo, info.chiselName, Write, Read, info.lastAccessFrom, None)
     }
 
     // check to see if there have been any dependent pokes from another thread
     info.dependsOn.foreach { id =>
-      val info = idToSignal(id)
-      if (hasConflictingAccess(info, threadInfo) && info.lastAccessWasPoke) {
-        orderError(threadInfo, "Conflicting poke that influences peek!") // TODO: better message
+      val dependInfo = idToSignal(id)
+      if (hasConflictingAccess(dependInfo, threadInfo) && dependInfo.lastAccessWasPoke) {
+        orderError(threadInfo, info.chiselName, Write, Read, info.lastAccessFrom, Some(dependInfo.chiselName))
       }
     }
 
