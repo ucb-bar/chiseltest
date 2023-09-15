@@ -420,6 +420,13 @@ package object chiseltest {
     fork { run1 }.fork { run2 }.join()
   }
 
+  def timescope(contents: => Unit): Unit = {
+    throw new NotImplementedError(
+      "timescope(..) was removed in chiseltest 6. " +
+        "Please implement it manually or open an issue if you want to work on bringing it back."
+    )
+  }
+
   implicit def decoupledToDriver[T <: Data](x: ReadyValidIO[T]): DecoupledDriver[T] = new DecoupledDriver(x)
   implicit def validToDriver[T <: Data](x:     ValidIO[T]):      ValidDriver[T] = new ValidDriver(x)
 
