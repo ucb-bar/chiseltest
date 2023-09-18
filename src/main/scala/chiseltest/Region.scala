@@ -6,23 +6,24 @@ package chiseltest
   * is the order regions run in, with 0 being the default, and incrementing regions running later. TODO: have a more
   * extensible ordering than ints.
   */
-sealed class Region {
+sealed abstract class Region {
   private[chiseltest] def getPos(): Int = {
-    val pos = Region.allRegions.indexOf(this)
+    val pos = Region.AllRegions.indexOf(this)
     require(pos >= 0)
     pos
   }
-
-  def isBefore(other: Region): Boolean = this.getPos() < other.getPos()
-  def isAfter(other:  Region): Boolean = this.getPos() > other.getPos()
-  def isEqual(other:  Region): Boolean = this.getPos() == other.getPos()
+  private[chiseltest] def toName: String
 }
 
 object Region {
-  val default = TestdriverMain
-  val allRegions = Seq(default, Monitor)
+  private[chiseltest] val Main = TestdriverMain
+  private[chiseltest] val AllRegions = IndexedSeq(Main, Monitor)
 }
 
 // Testdriver starts in this. Not to be specified in user code
-object TestdriverMain extends Region
-object Monitor extends Region
+object TestdriverMain extends Region {
+  private[chiseltest] override def toName: String = "Main"
+}
+object Monitor extends Region {
+  private[chiseltest] override def toName: String = "Monitor"
+}

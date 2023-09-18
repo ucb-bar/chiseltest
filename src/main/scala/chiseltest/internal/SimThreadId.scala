@@ -6,13 +6,13 @@ import chiseltest.{step, testableClock, Region}
 class SimThreadId private[chiseltest] (private[chiseltest] val id: Int)
 
 class TesterThreadList(private[chiseltest] val threads: Seq[SimThreadId]) {
-  def join(): Unit = Context().backend.doJoin(threads)
+  def join(): Unit = Context().backend.doJoin(threads, excludeLowPriority = true)
   def joinAndStep(clock: Clock): Unit = {
-    Context().backend.doJoin(threads)
+    Context().backend.doJoin(threads, excludeLowPriority = false)
     clock.step()
   }
   def joinAndStep(): Unit = {
-    Context().backend.doJoin(threads)
+    Context().backend.doJoin(threads, excludeLowPriority = false)
     step()
   }
   val fork: ForkBuilder = new ForkBuilder(None, None, threads)

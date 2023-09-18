@@ -33,13 +33,41 @@ private[chiseltest] class SimController[T <: Module](
     ExceptionUtils.getLocationInUserCode(topFileName, Thread.currentThread().getStackTrace.toSeq).getOrElse("")
   private val scheduler = new Scheduler(ioAccess.simulationStep, getCurrentUserLoc)
 
+  private def getRegionName(region: Int): String = Region.AllRegions(region).toName
+
   def doFork(runnable: () => Unit, name: Option[String], region: Option[Region]): SimThreadId = {
     val priority = region.map(_.getPos()).getOrElse(0)
+    val currentPriority = scheduler.getActiveThreadPriority
+    if (currentPriority > priority) {
+      throw new TemporalParadox(
+        s"Cannot fork a new thread in the ${getRegionName(priority)} region as it would need to " +
+          s"run before the current thread which is part of the ${getRegionName(currentPriority)} region."
+      )
+    }
     scheduler.forkThread(runnable, name, priority, getCurrentUserLoc)
   }
 
-  def doJoin(threads: Seq[SimThreadId]): Unit = {
-    scheduler.joinThreads(threads)
+  def doJoin(threads: Seq[SimThreadId], excludeLowPriority: Boolean): Unit = {
+    val ids = threads.map(_.id)
+    if (excludeLowPriority) {
+      val currentPriority = scheduler.getActiveThreadPriority
+      // check to see if any of the threads we are requesting to join are of a lower-priority and thus can only
+      // be joined using the `joinAndStep` method
+      ids.foreach { other =>
+        val otherPriority = scheduler.getThreadPriority(other)
+        if (otherPriority > currentPriority) {
+          throw new TemporalParadox(
+            s"Cannot join the thread launched from ${scheduler.getForkLocation(other)} " +
+              s"since it runs in the ${getRegionName(otherPriority)} region which needs to run strictly after the " +
+              s"${getRegionName(currentPriority)} which the current thread is part of. Try using `joinAndStep` instead " +
+              s"of `step` to guarantee proper ordering."
+          )
+        }
+
+      }
+
+    }
+    scheduler.joinThreads(ids)
   }
 
   def step(cycles: Int, clock: Option[Clock]): Unit = {

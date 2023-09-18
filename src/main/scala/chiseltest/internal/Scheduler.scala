@@ -94,6 +94,7 @@ private class Scheduler(simulationStep: (Int, Int) => Int, startLocation: String
   private var activeThreadId = MainThreadId
   override def getActiveThreadId:       Int = activeThreadId
   override def getActiveThreadPriority: Int = threads(activeThreadId).priority
+  def getThreadPriority(threadId: Int): Int = threads(threadId).priority
 
   /** all threads */
   private val threads = new mutable.ArrayBuffer[ThreadInfo]()
@@ -126,7 +127,7 @@ private class Scheduler(simulationStep: (Int, Int) => Int, startLocation: String
           onResumeThread(id) // we might already be asked to terminate when resuming, so run this in the try block
           runnable() // execute user code
           // we need to first wait for all child threads to terminate (only the main thread kills)
-          joinThreadsImpl(threadOrder.getChildren(id))
+          joinThreads(threadOrder.getChildren(id))
         } catch {
           case _: TerminateSimThreadException => // everything OK, we are just being terminated
           case e @ (_: Exception | _: Error) =>
@@ -377,9 +378,7 @@ private class Scheduler(simulationStep: (Int, Int) => Int, startLocation: String
     currentStep += delta
   }
 
-  def joinThreads(ids: Seq[SimThreadId]): Unit = joinThreadsImpl(ids.map(_.id))
-
-  private def joinThreadsImpl(ids: Seq[Int]): Unit = {
+  def joinThreads(ids: Seq[Int]): Unit = {
     if (ids.isEmpty) { return }
     debug(s"joinThreads(ids = $ids)")
     // cache ID

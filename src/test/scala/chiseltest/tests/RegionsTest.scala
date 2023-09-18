@@ -54,15 +54,32 @@ class RegionsTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
-  it should "allow joining from a later region (why not?)" in {
-    test(new PassthroughModule(UInt(8.W))) { c =>
-      fork
-        .withRegion(Monitor) {
-          c.clock.step()
-        }
-        .join()
+  it should "disallow joining from a higher priority region" in {
+    assertThrows[TemporalParadox] {
+      test(new PassthroughModule(UInt(8.W))) { c =>
+        fork
+          .withRegion(Monitor) {
+            c.clock.step()
+          }
+          .join()
+      }
     }
+  }
 
+  it should "disallow launching a normal thread form a monitor thread" in {
+    assertThrows[TemporalParadox] {
+      test(new PassthroughModule(UInt(8.W))) { c =>
+        fork
+          .withRegion(Monitor) {
+            fork
+              .withRegion(TestdriverMain) { // <--- this is the problem
+                step()
+              }
+              .joinAndStep()
+          }
+          .joinAndStep()
+      }
+    }
   }
 
   it should "allow joining from an earlier region" in {
