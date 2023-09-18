@@ -358,36 +358,6 @@ package object chiseltest {
       }
     }
 
-    def expectEpsilon(
-      signal:   Data,
-      actual:   Double,
-      expected: Double,
-      epsilon:  Double,
-      userMsg:  Option[() => String]
-    ): Unit = {
-      val ok = (actual - expected).abs < epsilon
-      if (!ok) {
-        val signalName = Context().design.resolveName(signal)
-        val msg = s"$signalName: ($actual - $expected).abs = ${(actual - expected).abs} >= eps=$epsilon"
-        Utils.expectFailed(msg, userMsg)
-      }
-    }
-
-    def expectEpsilon(
-      signal:   Data,
-      actual:   BigDecimal,
-      expected: BigDecimal,
-      epsilon:  BigDecimal,
-      userMsg:  Option[() => String]
-    ): Unit = {
-      val ok = (actual - expected).abs < epsilon
-      if (!ok) {
-        val signalName = Context().design.resolveName(signal)
-        val msg = s"$signalName: ($actual - $expected).abs = ${(actual - expected).abs} >= eps=$epsilon"
-        Utils.expectFailed(msg, userMsg)
-      }
-    }
-
     def expectBits(
       signal:   Data,
       expected: BigInt,
@@ -406,7 +376,7 @@ package object chiseltest {
           case None =>
             (s"$actual (${bigIntToHex(actual)})", s"$expected (${bigIntToHex(expected)})")
         }
-        val signalName = Context().design.resolveName(signal)
+        val signalName = Context().design.getName(signal).getOrElse(signal.toString)
         val message = s"$signalName=$actualStr did not equal expected=$expectedStr"
         expectFailed(message, msg)
       }
@@ -417,25 +387,30 @@ package object chiseltest {
         case Some(m) => s": ${m()}"
         case _       => ""
       }
-      Context().env.signalExpectFailure(message + appendMsg)
+      Context().backend.failedExpect(message + appendMsg)
     }
   }
 
   implicit class testableClock(x: Clock) {
     def setTimeout(cycles: Int): Unit = {
-      Context().backend.setTimeout(x, cycles)
+      Context().backend.setTimeout(cycles, Some(x))
     }
 
     def step(cycles: Int = 1): Unit = {
-      Context().backend.step(x, cycles)
+      Context().backend.step(cycles, Some(x))
     }
 
     /** Returns the current step, i.e., the number of clock cycles performed by the test so far, excluding any initial
       * reset cycles performed by the chiseltest library at the start of the test.
       */
     def getStepCount: Long = {
-      Context().backend.getStepCount(x)
+      Context().backend.getStepCount(Some(x))
     }
+  }
+
+  /** Advances the default clock of the current step by cycles. */
+  def step(cycles: Int = 1): Unit = {
+    Context().backend.step(cycles, None)
   }
 
   object fork extends ForkBuilder(None, None, Seq())
@@ -446,42 +421,14 @@ package object chiseltest {
   }
 
   def timescope(contents: => Unit): Unit = {
-    Context().backend.doTimescope(() => contents)
-  }
-
-  object TestInstance {
-    def setVar(key: Any, value: Any): Unit = {
-      Context().setVar(key, value)
-    }
-
-    def getVar(key: Any): Option[Any] = {
-      Context().getVar(key)
-    }
-  }
-
-  /** Provides clock-resolution-specific abstractions on top of getVar/setVar. For library builders, not top-level test
-    * writers.
-    */
-  object ClockResolutionUtils {
-    def setClock(driverKey: Any, wire: Data, clock: Clock): Unit = {
-      TestInstance.setVar((driverKey, wire), clock)
-    }
-
-    def getClock(driverKey: Any, wire: Data, defaultClock: => Clock): Clock = {
-      TestInstance.getVar((driverKey, wire)) match {
-        case None =>
-          val clock: Clock = defaultClock
-          setClock(driverKey, wire, clock)
-          clock
-        case Some(clock: Clock) => clock
-        case Some(other)        => throw new ClockResolutionException(s"$other is not a clock")
-      }
-    }
+    throw new NotImplementedError(
+      "timescope(..) was removed in chiseltest 6. " +
+        "Please implement it manually or open an issue if you want to work on bringing it back."
+    )
   }
 
   implicit def decoupledToDriver[T <: Data](x: ReadyValidIO[T]): DecoupledDriver[T] = new DecoupledDriver(x)
-
-  implicit def validToDriver[T <: Data](x: ValidIO[T]): ValidDriver[T] = new ValidDriver(x)
+  implicit def validToDriver[T <: Data](x:     ValidIO[T]):      ValidDriver[T] = new ValidDriver(x)
 
   // expose public flags
   val VerilatorBackendAnnotation = simulator.VerilatorBackendAnnotation

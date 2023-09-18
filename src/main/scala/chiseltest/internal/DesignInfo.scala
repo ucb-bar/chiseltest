@@ -7,12 +7,9 @@ import chisel3.{Clock, Data}
 class DesignInfo(
   val clock:              Clock,
   val name:               String,
-  dataNames:              Map[Data, String],
-  val combinationalPaths: Map[Data, Set[Data]]) {
+  val dataNames:          Map[Data, String],
+  val combinationalPaths: Map[String, Seq[String]]) {
   def getSourceClocks(signal: Data): Set[Clock] = Set(clock)
   def getSinkClocks(signal:   Data): Set[Clock] = Set(clock)
-  def resolveName(signal: Data): String = {
-    dataNames.getOrElse(signal, signal.toString)
-  }
-  def getName(signal: Data): Option[String] = dataNames.get(signal)
+  def getName(signal:         Data): Option[String] = dataNames.get(signal)
 }

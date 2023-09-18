@@ -4,7 +4,6 @@ package chiseltest.tests
 
 import chisel3._
 import chiseltest._
-import chiseltest.internal.NoThreadingAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 
 class GetStepCountTest extends AnyFlatSpec with ChiselScalatestTester {
@@ -20,10 +19,6 @@ class GetStepCountTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "check steps in single clock" in {
     test(new StaticModule(0.U))(runTest)
-  }
-
-  it should "check steps in single clock with single threaded backend" in {
-    test(new StaticModule(0.U)).withAnnotations(Seq(NoThreadingAnnotation))(runTest)
   }
 
   private def randomClockStepper(rand: scala.util.Random, c: StaticModule[_], maxCycles: Int): Unit = {

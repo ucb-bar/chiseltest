@@ -2,8 +2,6 @@
 
 package chiseltest.tests
 
-import org.scalatest._
-
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -15,10 +13,8 @@ class ShiftRegisterTest extends AnyFlatSpec with ChiselScalatestTester {
     // TODO: this actually relies on total thread ordering
 
     def shiftTest(in: UInt, out: UInt, clk: Clock, value: UInt): Unit = {
-      timescope {
-        in.poke(value)
-        clk.step(1)
-      }
+      in.poke(value)
+      clk.step(1)
       clk.step(3)
       out.expect(value)
     }

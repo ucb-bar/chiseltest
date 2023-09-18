@@ -25,6 +25,7 @@ jobs:
           distribution: 'adopt'
           java-version: ${{ matrix.jvm }}
       - name: Test
+        timeout-minutes: 6
         run: sbt ++${{ matrix.scala }} "testOnly chiseltest.** -- -l RequiresVcs -l RequiresVerilator -l Formal -l RequiresIcarus"
 
   integration-test:
@@ -43,6 +44,7 @@ jobs:
           distribution: 'adopt'
           java-version: ${{ matrix.jvm }}
       - name: Test
+        timeout-minutes: 6
         run: sbt ++${{ matrix.scala }} "testOnly integration.**"
 
 
@@ -53,6 +55,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Test
+        timeout-minutes: 10
         run: sbt "testOnly chiseltest.** -- -l RequiresVcs -l RequiresVerilator -l Formal -l RequiresIcarus"
 
   icarus:
@@ -75,6 +78,7 @@ jobs:
           brew install icarus-verilog
           iverilog -v || true
       - name: Test
+        timeout-minutes: 6
         run: sbt ++${{ matrix.scala }} "testOnly chiseltest.** -- -n RequiresIcarus"
 
   verilator:

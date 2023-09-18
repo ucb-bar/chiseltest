@@ -4,7 +4,6 @@ package chiseltest
 
 import chiseltest.internal._
 import chisel3.Module
-import chiseltest.internal.TestEnvInterface.addDefaultTargetDir
 import chiseltest.iotesters.PeekPokeTester
 import firrtl2.AnnotationSeq
 import org.scalatest._
@@ -14,7 +13,7 @@ import scala.util.DynamicVariable
 
 trait HasTestName { def getTestName: String }
 
-trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvInterface with HasTestName {
+trait ChiselScalatestTester extends Assertions with TestSuiteMixin with HasTestName {
   this: TestSuite =>
 
   override def getTestName: String = TesterUtils.sanitizeFileName(scalaTestContext.value.get.name)
@@ -32,7 +31,7 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     }
 
     private def finalAnnos(annos: AnnotationSeq): AnnotationSeq = {
-      addDefaultTargetDir(getTestName, annos) ++
+      TesterUtils.addDefaultTargetDir(getTestName, annos) ++
         (if (scalaTestContext.value.get.configMap.contains("writeVcd")) {
            Seq(WriteVcdAnnotation)
          } else {
@@ -87,29 +86,14 @@ trait ChiselScalatestTester extends Assertions with TestSuiteMixin with TestEnvI
     }
   }
 
-  // Stack trace data to help generate more informative (and localizable) failure messages
-  var topFileName: Option[String] = None // best guess at the testdriver top filename
-
   private def runTest[T <: Module](
     dutGen:        () => T,
     annotationSeq: AnnotationSeq,
     chiselAnnos:   firrtl.AnnotationSeq,
     testFn:        T => Unit
   ): TestResult = {
-    // Try and get the user's top-level test filename
-    val internalFiles = Set("ChiselScalatestTester.scala", "BackendInterface.scala", "TestEnvInterface.scala")
-    val topFileNameGuess = (new Throwable).getStackTrace.apply(2).getFileName
-    if (internalFiles.contains(topFileNameGuess)) {
-      println("Unable to guess top-level testdriver filename from stack trace")
-      topFileName = None
-    } else {
-      topFileName = Some(topFileNameGuess)
-    }
-
-    batchedFailures.clear()
-
     try {
-      Context.runTest(this, dutGen, annotationSeq, chiselAnnos, testFn)
+      Context.runTest(dutGen, annotationSeq, chiselAnnos, testFn)
     } catch {
       // Translate testers2's FailedExpectException into ScalaTest TestFailedException that is more readable
       case exc: FailedExpectException =>

@@ -4,7 +4,6 @@ package chiseltest.benchmark
 
 import chiseltest._
 import chisel3._
-import chiseltest.internal.NoThreadingAnnotation
 import chiseltest.simulator.SimulatorAnnotation
 import chiseltest.simulator.benchmark.DecoupledGcd
 import firrtl2.options.TargetDirAnnotation
@@ -54,7 +53,7 @@ object ChiseltestBenchmark extends App {
   val simName = sim.getSimulator.name
 
   val targetDir = TargetDirAnnotation("test_run_dir/gcd_benchmark_chiseltest_and_" + simName)
-  val annos = Seq(targetDir, sim, NoThreadingAnnotation)
+  val annos = Seq(targetDir, sim)
 
   val repetitions = 6
   val numMax = 200

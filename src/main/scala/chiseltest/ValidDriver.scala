@@ -14,27 +14,14 @@ class ValidDriver[T <: Data](x: ValidIO[T]) {
     this
   }
 
-  def setSourceClock(clock: Clock): this.type = {
-    ClockResolutionUtils.setClock(ValidDriver.validSourceKey, x, clock)
-    this
-  }
-
-  protected def getSourceClock: Clock = {
-    ClockResolutionUtils.getClock(
-      ValidDriver.validSourceKey,
-      x,
-      x.valid.getSourceClock()
-    ) // TODO: validate against bits/valid sink clocks
-  }
-
-  def enqueueNow(data: T): Unit = timescope {
-    // TODO: check for init
+  def enqueueNow(data: T): Unit = {
     x.bits.poke(data)
     x.valid.poke(true.B)
-    getSourceClock.step(1)
+    step(1)
+    x.valid.poke(false.B)
   }
 
-  def enqueueSeq(data: Seq[T]): Unit = timescope {
+  def enqueueSeq(data: Seq[T]): Unit = {
     for (elt <- data) {
       enqueueNow(elt)
     }
@@ -46,48 +33,33 @@ class ValidDriver[T <: Data](x: ValidIO[T]) {
     this
   }
 
-  def setSinkClock(clock: Clock): this.type = {
-    ClockResolutionUtils.setClock(ValidDriver.validSinkKey, x, clock)
-    this
-  }
-
-  protected def getSinkClock: Clock = {
-    ClockResolutionUtils.getClock(
-      ValidDriver.validSinkKey,
-      x,
-      x.valid.getSourceClock()
-    ) // TODO: validate against bits/valid sink clocks
-  }
-
   // NOTE: this doesn't happen in the Monitor phase, unlike public functions
   def waitForValid(): Unit = {
     while (!x.valid.peek().litToBoolean) {
-      getSinkClock.step(1)
+      step(1)
     }
   }
 
-  def expectDequeue(data: T): Unit = timescope {
-    // TODO: check for init
+  def expectDequeue(data: T): Unit = {
     fork
       .withRegion(Monitor) {
         waitForValid()
         x.valid.expect(true.B)
         x.bits.expect(data)
       }
-      .joinAndStep(getSinkClock)
+      .joinAndStep()
   }
 
-  def expectDequeueNow(data: T): Unit = timescope {
-    // TODO: check for init
+  def expectDequeueNow(data: T): Unit = {
     fork
       .withRegion(Monitor) {
         x.valid.expect(true.B)
         x.bits.expect(data)
       }
-      .joinAndStep(getSinkClock)
+      .joinAndStep()
   }
 
-  def expectDequeueSeq(data: Seq[T]): Unit = timescope {
+  def expectDequeueSeq(data: Seq[T]): Unit = {
     for (elt <- data) {
       expectDequeue(elt)
     }
@@ -107,9 +79,10 @@ class ValidDriver[T <: Data](x: ValidIO[T]) {
       x.valid.expect(false.B)
     }
   }
-}
 
-object ValidDriver {
-  protected val validSourceKey = new Object()
-  protected val validSinkKey = new Object()
+  @deprecated("You no longer need to set the clock explicitly.", since = "6.0.x")
+  def setSourceClock(clock: Clock): this.type = this
+
+  @deprecated("You no longer need to set the clock explicitly.", since = "6.0.x")
+  def setSinkClock(clock: Clock): this.type = this
 }

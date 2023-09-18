@@ -3,17 +3,7 @@ package chiseltest.internal
 import chisel3.Module
 import chisel3.testers.BasicTester
 import chiseltest.{ChiselAssertionError, StopException, TimeoutException}
-import chiseltest.coverage.{Coverage, TestCoverage}
-import chiseltest.simulator.{
-  Compiler,
-  DebugPrintWrapper,
-  Simulator,
-  SimulatorAnnotation,
-  SimulatorContext,
-  StepInterrupted,
-  StepOk,
-  TreadleBackendAnnotation
-}
+import chiseltest.simulator.{SimulatorContext, StepInterrupted, StepOk}
 import firrtl2.AnnotationSeq
 
 /** Backend that allows us to run hardware testers in the style of `chisel3.testers.BasicTester` efficiently.

@@ -112,9 +112,6 @@ See the test cases for examples:
     In the future, we may provide checked mechanisms for communicating between test threads.
 - Regions can be associated with a thread, with `fork.withRegion(...)`, which act as a synchronization barrier within simulator time steps.
   This can be used to create monitors that run after other main testdriver threads have been run, and can read wires those threads have poked.
-- `timescope` allows pokes to be scoped - that is, pokes inside the timescope block "disappear" and the wire reverts to its previous value at the end of the block.
-  This fits well with the pattern of assigning a default pull-up/down to a wire, and temporarily overriding that value, for example a Decoupled `valid` signal defaulting low but driven high during an enqueue transaction.
-  See [TimescopeTest](src/test/scala/chiseltest/tests/TimescopeTest.scala) for examples.
 
 ## Simulator Backends
 
