@@ -7,7 +7,6 @@ package fsim
 /** Presents an interface to the outside world to interact with a simulation. */
 class Simulation(exec: Executable) {
   private val data = exec.data
-  private val instructions = exec.instructions
   private val symbols = exec.info.symbols
 
   def getSymbolId(name: String): Int = {
@@ -24,6 +23,12 @@ class Simulation(exec: Executable) {
     inputPoked = true
     data.longData(id) = value
   }
+  def peekBool(id: Int): Boolean = {
+    update()
+    data.boolData(id)
+  }
+
+  def step(): Unit = ???
 
   @inline private def update(): Unit = {
     if (inputPoked) {

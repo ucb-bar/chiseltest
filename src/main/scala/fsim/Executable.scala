@@ -15,12 +15,19 @@ private class Executable(
 
 }
 
+private sealed trait SymbolKind
+private case object IsInput extends SymbolKind
+private case object IsOutput extends SymbolKind
+private case object IsRegister extends SymbolKind
+private case object IsNode extends SymbolKind
+
 private sealed trait Symbol {
   def name:  String
   def index: Int
+  def kind:  SymbolKind
 }
-private case class IntSymbol(name: String, width: Int, index: Int) extends Symbol
-private case class ArraySymbol(name: String, width: Int, elements: Int, index: Int) extends Symbol
+private case class IntSymbol(name: String, kind: SymbolKind, width: Int, index: Int) extends Symbol
+private case class ArraySymbol(name: String, kind: SymbolKind, width: Int, elements: Int, index: Int) extends Symbol
 
 private case class ExecutableInfo(
   name:    String,
@@ -45,6 +52,11 @@ private object Mask {
     if (bits == 0) { 0 }
     else if (bits == 64) { -1 }
     else { (1L << bits) - 1 }
+  }
+  def bigMask(bits: Int): BigInt = {
+    require(bits >= 0)
+    if (bits == 0) { 0 }
+    else { (BigInt(1) << bits) - 1 }
   }
 }
 
@@ -88,6 +100,12 @@ private case class AddLong(a: LongExpr, b: LongExpr) extends LongExpr {
 private case class AddBig(a: BigExpr, b: BigExpr) extends BigExpr {
   override def eval(data: ExecutableData): BigInt = a.eval(data) + b.eval(data)
 }
+private case class SubLong(a: LongExpr, b: LongExpr) extends LongExpr {
+  override def eval(data: ExecutableData): Long = a.eval(data) - b.eval(data)
+}
+private case class SubBig(a: BigExpr, b: BigExpr) extends BigExpr {
+  override def eval(data: ExecutableData): BigInt = a.eval(data) - b.eval(data)
+}
 private case class BitsBoolFromLong(e: LongExpr, bit: Int) extends BoolExpr {
   override def eval(data: ExecutableData): Boolean = (e.eval(data) >> bit) == 1
 }
@@ -104,4 +122,28 @@ private case class BitsLongFromBig(e: BigExpr, mask: Long, shift: Int) extends L
 
 private case class BitsBig(e: BigExpr, mask: BigInt, shift: Int) extends BigExpr {
   override def eval(data: ExecutableData): BigInt = (e.eval(data) >> shift) & mask
+}
+private case class NotBool(e: BoolExpr) extends BoolExpr {
+  override def eval(data: ExecutableData): Boolean = !e.eval(data)
+}
+private case class NotLong(e: LongExpr, mask: Long) extends LongExpr {
+  override def eval(data: ExecutableData): Long = (~e.eval(data)) & mask
+}
+private case class NotBig(e: BigExpr, mask: BigInt) extends BigExpr {
+  override def eval(data: ExecutableData): BigInt = (~e.eval(data)) & mask
+}
+private case class GtUnsignedBool(a: BoolExpr, b: BoolExpr) extends BoolExpr {
+  override def eval(data: ExecutableData): Boolean = a.eval(data) && !b.eval(data)
+}
+private case class GtSignedBool(a: BoolExpr, b: BoolExpr) extends BoolExpr {
+  override def eval(data: ExecutableData): Boolean = !a.eval(data) && b.eval(data)
+}
+private case class GtLong(a: LongExpr, b: LongExpr) extends BoolExpr {
+  override def eval(data: ExecutableData): Boolean = a.eval(data) > b.eval(data)
+}
+private case class GtUnsigned64Long(a: LongExpr, b: LongExpr) extends BoolExpr {
+  override def eval(data: ExecutableData): Boolean = ???
+}
+private case class GtBig(a: BigExpr, b: BigExpr) extends BoolExpr {
+  override def eval(data: ExecutableData): Boolean = a.eval(data) > b.eval(data)
 }
