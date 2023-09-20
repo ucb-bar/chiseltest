@@ -28,6 +28,7 @@ private class Compiler private (circuit: ir.Circuit) {
 
   // temporary data
   private val registerClock = new mutable.HashMap[String, BoolExpr]()
+  private val loadsAndStores = new mutable.ArrayBuffer[IsLoadOrStore]()
 
   import Constructors._
 
@@ -41,6 +42,8 @@ private class Compiler private (circuit: ir.Circuit) {
     val info = ExecutableInfo(main.name, symbols.toMap)
     val data =
       new ExecutableData(boolData.toArray, longData.toArray, bigData.toArray, longArrays.toSeq, bigArrays.toSeq)
+    // now that we have created the actual final data store, we need to add correct pointers to all load/store ops
+    loadsAndStores.foreach(ls => ls.updateData(data))
     new Executable(info, data, instructions.toSeq)
   }
 
@@ -74,18 +77,18 @@ private class Compiler private (circuit: ir.Circuit) {
   private def onStmt(s: ir.Statement): Unit = s match {
     case ir.DefNode(_, name, value) =>
       val sym = makeIntSymbol(name, IsNode, value.tpe)
-      instructions.addOne(store(sym, onExpr(value)))
+      instructions.addOne(makeStore(sym, onExpr(value)))
     case ir.Block(stmts) => stmts.foreach(onStmt)
     case ir.Connect(_, loc, expr) =>
       val sym = symbols(loc.serialize).asInstanceOf[IntSymbol]
       val nextExpr = if (sym.kind == IsRegister) {
         val clockEnable = registerClock(sym.name)
         // TODO: make this more efficient
-        mux(clockEnable, onExpr(expr), load(sym), sym.width)
+        mux(clockEnable, onExpr(expr), makeLoad(sym), sym.width)
       } else {
         onExpr(expr)
       }
-      instructions.addOne(store(sym, nextExpr))
+      instructions.addOne(makeStore(sym, nextExpr))
     case ir.DefRegister(_, name, tpe, clock, reset, init) =>
       // remember clock expression
       registerClock(name) = onExpr(clock).asInstanceOf[BoolExpr]
@@ -103,13 +106,25 @@ private class Compiler private (circuit: ir.Circuit) {
       prim(op, args.map(a => (onExpr(a), a.tpe)), consts, toWidth(tpe))
     case r: ir.RefLikeExpression =>
       val name = r.serialize
-      load(symbols(name).asInstanceOf[IntSymbol])
+      makeLoad(symbols(name).asInstanceOf[IntSymbol])
     case ir.Mux(cond, tval, fval, tpe) =>
       assert(toWidth(tval.tpe) == toWidth(fval.tpe))
       mux(onExpr(cond).asInstanceOf[BoolExpr], onExpr(tval), onExpr(fval), toWidth(tpe))
     case ir.UIntLiteral(value, width) =>
       const(value, toWidth(width))
     case other => throw new NotImplementedError(s"TODO: deal with ${other.serialize} of type ${other.getClass.getName}")
+  }
+
+  private def makeLoad(sym: IntSymbol): IsExpr = {
+    val e = load(sym)
+    loadsAndStores.addOne(e.asInstanceOf[IsLoadOrStore])
+    e
+  }
+
+  private def makeStore(sym: IntSymbol, expr: IsExpr): Op = {
+    val op = store(sym, expr)
+    loadsAndStores.addOne(op.asInstanceOf[IsLoadOrStore])
+    op
   }
 
 }
