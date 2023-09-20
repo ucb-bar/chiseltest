@@ -66,6 +66,10 @@ jobs:
         run: sbt "project benchmark ; set ThisBuild / scalacOptions ++= Seq(\"-Xfatal-warnings\") ; compile"
       - name: Check Formatting
         run: sbt "project benchmark ; scalafmtCheckAll"
+      - name: Create JAR
+        run: sbt "project benchmark ; assembly"
+      - name: Run Benchmark
+        run: ./benchmark.py
 
 
   test-mac:
