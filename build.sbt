@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
-
 lazy val commonSettings = Seq(
   organization := "edu.berkeley.cs",
-  scalaVersion := "2.13.10",
-  crossScalaVersions := Seq("2.13.10"),
+  scalaVersion := "2.13.12",
+  crossScalaVersions := Seq("2.13.12")
 )
 
 val chiselVersion = "6.0.0-M3"
@@ -37,7 +36,7 @@ lazy val chiseltestSettings = Seq(
   ),
   resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
   resolvers ++= Resolver.sonatypeOssRepos("releases"),
-  testFrameworks += new TestFramework("utest.runner.Framework"),
+  testFrameworks += new TestFramework("utest.runner.Framework")
 )
 
 lazy val publishSettings = Seq(
@@ -78,7 +77,7 @@ lazy val publishSettings = Seq(
     } else {
       Some("releases".at(nexus + "service/local/staging/deploy/maven2"))
     }
-  },
+  }
 )
 
 lazy val chiseltest = (project in file("."))
