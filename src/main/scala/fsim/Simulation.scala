@@ -63,6 +63,7 @@ class Simulation(exec: Executable) {
     data.boolData(clockSym.index) = false
     stepCount += 1
   }
+  def getStepCount: Int = stepCount
 
   @inline private def updateComb(): Unit = {
     if (inputPoked) {

@@ -70,7 +70,7 @@ class GCDTester extends AnyFreeSpec {
     val endTime = System.nanoTime()
     val elapsedSeconds = (endTime - startTime).toDouble / 1000000000.0
     if (showTime) {
-      println(f"$elapsedSeconds%.6f seconds")
+      println(f"$elapsedSeconds%.6f seconds (${sim.getStepCount} cycles)")
     }
   }
 

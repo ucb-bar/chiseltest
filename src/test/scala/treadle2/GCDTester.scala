@@ -25,7 +25,7 @@ class GCDTester extends AnyFlatSpec with Matchers with LazyLogging {
 
   behavior.of("GCD")
 
-  def sizableTest(width: Int): Unit = {
+  def sizableTest(width: Int, from: Long, upTo: Long, showTime: Boolean): Unit = {
     val gcdFirrtl: String =
       s"""
          |circuit GCD :
@@ -58,9 +58,9 @@ class GCDTester extends AnyFlatSpec with Matchers with LazyLogging {
 
     val values =
       for {
-        x <- 10 to 100
-        y <- 10 to 100
-      } yield (x, y, computeGcd(x, y)._1)
+        x <- from to upTo
+        y <- from to upTo
+      } yield (x, y, BigInt(x).gcd(y).toLong)
 
     TreadleTestHarness(Seq(FirrtlSourceAnnotation(gcdFirrtl))) { tester =>
       val startTime = System.nanoTime()
@@ -86,12 +86,9 @@ class GCDTester extends AnyFlatSpec with Matchers with LazyLogging {
       }
       val endTime = System.nanoTime()
       val elapsedSeconds = (endTime - startTime).toDouble / 1000000000.0
-
-      val cycle = 11 // tester.engine.circuitState.stateCounter
-
-      logger.info(
-        f"processed $cycle cycles $elapsedSeconds%.6f seconds ${cycle.toDouble / (1000000.0 * elapsedSeconds)}%5.3f MHz"
-      )
+      if (showTime) {
+        println(f"$elapsedSeconds%.6f seconds")
+      }
     }
   }
 
@@ -158,23 +155,36 @@ class GCDTester extends AnyFlatSpec with Matchers with LazyLogging {
 
       val cycle = tester.cycleCount
 
-      logger.info(
-        f"processed $cycle cycles $elapsedSeconds%.6f seconds ${cycle.toDouble / (1000000.0 * elapsedSeconds)}%5.3f MHz"
-      )
+      println(f"$elapsedSeconds%.6f seconds")
     }
 
   }
 
+  private val FastConf = true // less benchmarking, more testing
+
   it should "run with InterpretedTester at Int size 16" in {
-    sizableTest(16)
+    sizableTest(16, from = 2, upTo = 100, showTime = false)
+    if (!FastConf) {
+      sizableTest(16, from = 2, upTo = 500, showTime = true)
+    }
   }
 
   it should "run with InterpretedTester at Int size 44" in {
-    sizableTest(44)
+    sizableTest(44, from = 2, upTo = 100, showTime = false)
+    if (!FastConf) {
+      sizableTest(44, from = 2, upTo = 500, showTime = true)
+    }
+  }
+
+  it should "run with InterpretedTester at size 64" in {
+    sizableTest(64, from = 2, upTo = 100, showTime = false)
+    if (!FastConf) {
+      sizableTest(64, from = 2, upTo = 500, showTime = true)
+    }
   }
 
   it should "run with InterpretedTester at size 68" in {
-    sizableTest(68)
+    sizableTest(68, from = 10, upTo = 100, showTime = false)
   }
 
   it should "run a lot of values" in {
