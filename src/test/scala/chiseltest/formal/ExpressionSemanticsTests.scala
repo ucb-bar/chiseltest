@@ -2,7 +2,7 @@ package chiseltest.formal
 
 import chiseltest._
 import chisel3._
-import chiseltest.internal.TestEnvInterface
+import chiseltest.internal.TesterUtils
 import firrtl2.AnnotationSeq
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -43,7 +43,7 @@ class DivisionAndRemainderCircuit() extends Module {
 
 class DivisionAndRemainderOracle(testName: String) {
   private val sim = {
-    val annos = TestEnvInterface.addDefaultTargetDir(testName, Seq())
+    val annos = TesterUtils.addDefaultTargetDir(testName, Seq())
     val (hi, _) = chiseltest.simulator.Compiler.elaborate(() => new DivisionAndRemainderCircuit, annos, Seq())
     val lo = chiseltest.simulator.Compiler.toLowFirrtl(hi, Seq(WriteVcdAnnotation))
     chiseltest.simulator.TreadleBackendAnnotation.getSimulator.createContext(lo)

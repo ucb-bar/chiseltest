@@ -3,7 +3,6 @@ package integration
 import chisel3._
 import chisel3.util.ShiftRegister
 import chiseltest._
-import chiseltest.internal.NoThreadingAnnotation
 import org.scalatest.freespec.AnyFreeSpec
 
 class UartPassThrough extends Module {
@@ -110,13 +109,11 @@ class UartSendAndReceiveTest extends AnyFreeSpec with ChiselScalatestTester {
   }
 
   "run 1000 uart transactions with bitDelay=1 in software with manual FSM" in {
-    test(new UartPassThrough)
-      .withAnnotations(Seq(NoThreadingAnnotation))(runTimedTest(_, 1000, bitDelay = 1, fsm = true))
+    test(new UartPassThrough)(runTimedTest(_, 1000, bitDelay = 1, fsm = true))
   }
 
   "run 100 uart transactions with bitDelay=50 in software with manual FSM" in {
-    test(new UartPassThrough)
-      .withAnnotations(Seq(NoThreadingAnnotation))(runTimedTest(_, 100, bitDelay = 50, fsm = true))
+    test(new UartPassThrough)(runTimedTest(_, 100, bitDelay = 50, fsm = true))
   }
 
 }

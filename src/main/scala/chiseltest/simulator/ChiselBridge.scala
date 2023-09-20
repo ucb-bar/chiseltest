@@ -90,7 +90,7 @@ private object ChiselBridge {
   private def annosToState(annos: AnnotationSeq): firrtl2.CircuitState = {
     val circuit = annos.collectFirst { case FirrtlCircuitAnnotation(c) => c }.get
     val filteredAnnos = annos.filterNot(isInternalAnno)
-    val firrtl2Annos = filteredAnnos.map(convert)
+    val firrtl2Annos = filteredAnnos.flatMap(convert)
     val firrtl2Circuit = convert(circuit)
     firrtl2.CircuitState(firrtl2Circuit, addPassesBasedOnAnnos(firrtl2Annos))
   }
@@ -117,34 +117,39 @@ private object ChiselBridge {
     case MemoryLoadFileType.Hex    => firrtl2.annotations.MemoryLoadFileType.Hex
     case MemoryLoadFileType.Binary => firrtl2.annotations.MemoryLoadFileType.Binary
   }
-  private def convert(anno: Annotation): firrtl2.annotations.Annotation = anno match {
+  private def convert(anno: Annotation): Option[firrtl2.annotations.Annotation] = anno match {
+    // ignore any Chisel options
+    case _: ChiselOption => None
     // our special annotation to allow the injection of "firrtl2" annotations
-    case Firrtl2AnnotationWrapper(anno) => anno
+    case Firrtl2AnnotationWrapper(anno) => Some(anno)
     // black box related annotations (from ExtModule)
     case firrtl.transforms.BlackBoxInlineAnno(target, name, text) =>
-      firrtl2.transforms.BlackBoxInlineAnno(convert(target), name, text)
+      Some(firrtl2.transforms.BlackBoxInlineAnno(convert(target), name, text))
     case firrtl.transforms.BlackBoxPathAnno(target, path) =>
-      firrtl2.transforms.BlackBoxPathAnno(convert(target), path)
+      Some(firrtl2.transforms.BlackBoxPathAnno(convert(target), path))
     case firrtl.transforms.BlackBoxTargetDirAnno(targetDir) =>
-      firrtl2.transforms.BlackBoxTargetDirAnno(targetDir)
+      Some(firrtl2.transforms.BlackBoxTargetDirAnno(targetDir))
     case firrtl.transforms.BlackBoxResourceFileNameAnno(resourceFileName) =>
-      firrtl2.transforms.BlackBoxResourceFileNameAnno(resourceFileName)
+      Some(firrtl2.transforms.BlackBoxResourceFileNameAnno(resourceFileName))
     // wiring annos (from Boring Utils)
-    case SourceAnnotation(target, pin) => firrtl2.passes.wiring.SourceAnnotation(convert(target), pin)
-    case SinkAnnotation(target, pin)   => firrtl2.passes.wiring.SinkAnnotation(convertNamed(target), pin)
+    case SourceAnnotation(target, pin) => Some(firrtl2.passes.wiring.SourceAnnotation(convert(target), pin))
+    case SinkAnnotation(target, pin)   => Some(firrtl2.passes.wiring.SinkAnnotation(convertNamed(target), pin))
     // Inline.scala
-    case InlineAnnotation(target)  => firrtl2.passes.InlineAnnotation(convertNamed(target))
-    case FlattenAnnotation(target) => firrtl2.transforms.FlattenAnnotation(convertNamed(target))
-    case NoDedupAnnotation(target) => firrtl2.transforms.NoDedupAnnotation(convert(target))
+    case InlineAnnotation(target)  => Some(firrtl2.passes.InlineAnnotation(convertNamed(target)))
+    case FlattenAnnotation(target) => Some(firrtl2.transforms.FlattenAnnotation(convertNamed(target)))
+    case NoDedupAnnotation(target) => Some(firrtl2.transforms.NoDedupAnnotation(convert(target)))
     // don't touch
-    case DontTouchAnnotation(target) => firrtl2.transforms.DontTouchAnnotation(convert(target))
+    case DontTouchAnnotation(target) => Some(firrtl2.transforms.DontTouchAnnotation(convert(target)))
     // memory annotations
     case MemoryFileInlineAnnotation(target, filename, hexOrBinary) =>
-      firrtl2.annotations.MemoryFileInlineAnnotation(convert(target), filename, convert(hexOrBinary))
+      Some(firrtl2.annotations.MemoryFileInlineAnnotation(convert(target), filename, convert(hexOrBinary)))
     // enum annotations
-    case a: EnumComponentAnnotation => UnsupportedAnnotation("EnumComponentAnnotation", a.toString)
-    case a: EnumDefAnnotation       => UnsupportedAnnotation("EnumDefAnnotation", a.toString)
-    case a: EnumVecAnnotation       => UnsupportedAnnotation("EnumVecAnnotation", a.toString)
+    case EnumComponentAnnotation(target, enumTypeName) =>
+      Some(firrtl2.annotations.EnumComponentAnnotation(convertNamed(target), enumTypeName))
+    case EnumDefAnnotation(typeName, definition) =>
+      Some(firrtl2.annotations.EnumDefAnnotation(typeName, definition))
+    case EnumVecAnnotation(target, typeName, fields) =>
+      Some(firrtl2.annotations.EnumVecAnnotation(convertNamed(target), typeName, fields))
     //
     case _ => throw new NotImplementedError(s"TODO: convert ${anno}")
   }

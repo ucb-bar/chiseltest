@@ -20,10 +20,10 @@ class ThreadOrderTest extends AnyFlatSpec with ChiselScalatestTester {
         }
       }
       // Fork runs immediately, increments then blocks
-      assert(flag == 1)
+      assert(flag == 1, "the forked thread should run first")
       c.clock.step(1)
       // Fork should run before this thread is scheduled
-      assert(flag == 2)
+      assert(flag == 2, "child threads should always be scheduled before the parent")
     }
   }
 }

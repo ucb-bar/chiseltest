@@ -1,13 +1,13 @@
 package chiseltest.internal
 
-import chisel3.{Data, Module}
-import chisel3.experimental.BaseModule
+import chisel3.Module
 import chisel3.reflect.DataMirror
 import chiseltest.coverage.{Coverage, TestCoverage}
 import chiseltest.simulator._
 import firrtl2.{AnnotationSeq, CircuitState}
 import firrtl2.annotations.ReferenceTarget
-import firrtl2.transforms.{CheckCombLoops, CombinationalPath}
+import firrtl2.transforms.CombinationalPath
+import firrtl2.options.TargetDirAnnotation
 
 /** Contains helper functions shared by [[HardwareTesterBackend]] and [[PeekPokeTesterBackend]] */
 private[chiseltest] object TesterUtils {
@@ -68,11 +68,29 @@ private[chiseltest] object TesterUtils {
     }
   }
 
-  def start[T <: Module](
+  /** Will add a TargetDirAnnotation with defaultDir with "test_run_dir" path prefix to the annotations if there is not
+    * a TargetDirAnnotation already present
+    *
+    * @param defaultDir
+    *   a default directory
+    * @param annotationSeq
+    *   annotations to add it to, unless one is already there
+    * @return
+    */
+  def addDefaultTargetDir(defaultDir: String, annotationSeq: AnnotationSeq): AnnotationSeq = {
+    if (annotationSeq.exists { x => x.isInstanceOf[TargetDirAnnotation] }) {
+      annotationSeq
+    } else {
+      val target = TargetDirAnnotation("test_run_dir" + java.io.File.separator + defaultDir)
+      AnnotationSeq(annotationSeq ++ Seq(target))
+    }
+  }
+
+  def startController[T <: Module](
     dutGen:               () => T,
     testersAnnotationSeq: AnnotationSeq,
     chiselAnnos:          firrtl.AnnotationSeq
-  ): (BackendInterface[T], DesignInfo, T) = {
+  ): (SimController[T], DesignInfo, T) = {
 
     val (finalTester, coverageAnnotations, dut, lowFirrtl) = createTester(dutGen, testersAnnotationSeq, chiselAnnos)
 
@@ -80,61 +98,37 @@ private[chiseltest] object TesterUtils {
     val portNames = DataMirror.fullModulePorts(dut).map(_.swap).toMap
 
     // extract combinatorial loops from the LoFirrtl circuit
-    val pathAnnotations = (new CheckCombLoops).execute(lowFirrtl).annotations
-    val paths = pathAnnotations.collect { case c: CombinationalPath => c }
-    val pathsAsData = combinationalPathsToData(dut, paths, portNames, componentToName)
-    val design =
-      new DesignInfo(clock = dut.clock, name = dut.name, dataNames = portNames, combinationalPaths = pathsAsData)
+    val paths = extractPathsFromAnnos(lowFirrtl.annotations)
+    val design = new DesignInfo(clock = dut.clock, name = dut.name, dataNames = portNames, combinationalPaths = paths)
 
-    // start backend correct backend
-    val noThreading = testersAnnotationSeq.contains(NoThreadingAnnotation)
-    if (noThreading) {
-      (new SingleThreadBackend(design, finalTester, coverageAnnotations), design, dut)
-    } else {
-      (new GenericBackend(design, finalTester, coverageAnnotations), design, dut)
-    }
+    // start backend
+    val topFileName = guessTopFileName()
+    (new SimController(design, topFileName, finalTester, coverageAnnotations), design, dut)
   }
 
-  private def componentToName(component: ReferenceTarget): String = component.name
-
-  /** This creates some kind of map of combinational paths between inputs and outputs.
-    *
-    * @param dut
-    *   use this to figure out which paths involve top level iO
-    * @param paths
-    *   combinational paths found by firrtl pass CheckCombLoops
-    * @param dataNames
-    *   a map between a port's Data and it's string name
-    * @param componentToName
-    *   used to map [[ReferenceTarget]]s found in paths into correct local string form
-    * @return
-    */
-  // TODO: better name
-  // TODO: check for aliasing in here
-  // TODO graceful error message if there is an unexpected combinational path element?
-  private def combinationalPathsToData(
-    dut:             BaseModule,
-    paths:           Seq[CombinationalPath],
-    dataNames:       Map[Data, String],
-    componentToName: ReferenceTarget => String
-  ): Map[Data, Set[Data]] = {
-
-    val nameToData = dataNames.map(_.swap)
-    val filteredPaths = paths.filter { p => // only keep paths involving top-level IOs
-      p.sink.module == dut.name && p.sources.exists(_.module == dut.name)
-    }
-    val filterPathsByName = filteredPaths.map { p => // map ComponentNames in paths into string forms
-      val mappedSources = p.sources.filter(_.module == dut.name).map { component =>
-        componentToName(component)
+  private def extractTopName(ref: ReferenceTarget): Option[String] = {
+    if (ref.circuit != ref.module) { None }
+    else { Some(ref.ref) }
+  }
+  private def extractPathsFromAnnos(pathAnnotations: AnnotationSeq): Map[String, Seq[String]] = {
+    val paths = pathAnnotations.collect { case c: CombinationalPath => c }.flatMap { c =>
+      extractTopName(c.sink).map { sink =>
+        sink -> c.sources.flatMap(extractTopName)
       }
-      componentToName(p.sink) -> mappedSources
     }
-    val mapPairs = filterPathsByName.map { case (sink, sources) => // convert to Data
-      nameToData(sink) -> sources.map { source =>
-        nameToData(source)
-      }.toSet
-    }
-    mapPairs.toMap
+    paths.toMap
   }
 
+  private val InternalFiles = Set(
+    "ChiselScalatestTester.scala",
+    "Context.scala",
+    "SimController.scala",
+    "TesterUtils.scala"
+  )
+
+  private def guessTopFileName(): Option[String] = {
+    val stackTrace = (new Throwable).getStackTrace
+    // pick first filename that is not internal
+    stackTrace.find(e => !InternalFiles.contains(e.getFileName)).map(_.getFileName)
+  }
 }

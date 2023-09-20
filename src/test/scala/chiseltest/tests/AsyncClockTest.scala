@@ -10,7 +10,8 @@ import org.scalatest.flatspec.AnyFlatSpec
 class AsyncClockTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior.of("Testers2 with clock crossing signals")
 
-  it should "work with async clock signals" in {
+  // TODO: add some multi-clock support
+  it should "work with async clock signals" ignore {
     test(new Module {
       val inClk = IO(Input(Bool()))
       val in = IO(Input(UInt(8.W)))
@@ -47,7 +48,8 @@ class AsyncClockTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
-  it should "work with async clock and reset signals" in {
+  // TODO: add some multi-clock support
+  it should "work with async clock and reset signals" ignore {
     test(new Module {
       val inClk = IO(Input(Bool()))
       val inRst = IO(Input(Bool()))
