@@ -81,7 +81,23 @@ lazy val publishSettings = Seq(
   },
 )
 
+lazy val simpleDirectoryLayout = Seq(
+  Compile / scalaSource := baseDirectory.value / "src",
+  Test / scalaSource := baseDirectory.value / "test",
+)
+
 lazy val chiseltest = (project in file("."))
   .settings(commonSettings)
   .settings(chiseltestSettings)
   .settings(publishSettings)
+
+lazy val benchmark = (project in file("benchmark"))
+  .dependsOn(chiseltest)
+  .settings(commonSettings)
+  .settings(simpleDirectoryLayout)
+  .settings(
+    name := "benchmark",
+    assembly / assemblyJarName := "benchmark.jar",
+    assembly / test := {},
+    assembly / assemblyOutputPath := file("./benchmark/benchmark.jar")
+  )
