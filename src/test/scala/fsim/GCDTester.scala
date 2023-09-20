@@ -68,6 +68,7 @@ class GCDTester extends AnyFreeSpec {
 
       assert(sim.peekLong(io_z) == z)
     }
+    sim.finish()
   }
 
   "run with Simulation at Int size 16" in {

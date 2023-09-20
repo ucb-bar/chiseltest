@@ -9,12 +9,14 @@ import firrtl2.stage.{FirrtlSourceAnnotation, Forms}
 import scopt.OptionParser
 import treadle2.TreadleTester
 
-case class Config(benches: Seq[String], sim: String, warmupRun: Boolean)
+case class Config(benches: Seq[String], sim: String, warmupRun: Int, repsRun: Int)
 
 class ArgumentParser extends OptionParser[Config]("synthesizer") {
   head("fsim benchmark", "0.1")
   opt[String]("bench").required().action((a, config) => config.copy(benches = config.benches :+ a))
   opt[String]("sim").action((a, config) => config.copy(sim = a))
+  opt[Int]("warmup").action((a, config) => config.copy(warmupRun = a))
+  opt[Int]("reps").action((a, config) => config.copy(repsRun = a))
 }
 
 case class Bench(
@@ -30,7 +32,7 @@ object Benchmark {
     Bench("gcd_64", _ => GCDBench.circuitSrc(64), GCDBench.fsimTest(_, 10, 500), GCDBench.treadleTest(_, 10, 500))
   )
 
-  private val DefaultConfig = Config(benches = Seq(), sim = "fsim", warmupRun = true)
+  private val DefaultConfig = Config(benches = Seq(), sim = "fsim", warmupRun = 1, repsRun = 1)
 
   def main(args: Array[String]): Unit = {
     val parser = new ArgumentParser()
@@ -87,30 +89,42 @@ object Benchmark {
     val compileStart = System.nanoTime()
     val sim = new Simulation(Compiler.run(FirrtlCompiler.toLow(src)))
     val compileEnd = System.nanoTime()
-    if (conf.warmupRun) {
+    for (_ <- 0 until conf.warmupRun) {
       bench.runTest(sim)
     }
-    val testStart = System.nanoTime()
-    bench.runTest(sim)
-    val testEnd = System.nanoTime()
-    val steps = sim.getStepCount
-    // TODO: shut down sim
-    Result(nsCompile = compileEnd - compileStart, nsRun = testEnd - testStart, steps = steps)
+    val runtimeAndSteps = (0 until conf.repsRun).map { _ =>
+      val startCycles = sim.getStepCount
+      val testStart = System.nanoTime()
+      bench.runTest(sim)
+      val testEnd = System.nanoTime()
+      val steps = sim.getStepCount - startCycles
+      (testEnd - testStart, steps)
+    }
+    sim.finish()
+    val nsRun = runtimeAndSteps.map(_._1).sum / runtimeAndSteps.length
+    val steps = runtimeAndSteps.head._2
+    Result(nsCompile = compileEnd - compileStart, nsRun = nsRun, steps = steps)
   }
 
   private def runTreadleBench(conf: Config, bench: Bench, src: String): Result = {
     val compileStart = System.nanoTime()
     val tester = TreadleTester(Seq(FirrtlSourceAnnotation(src)))
     val compileEnd = System.nanoTime()
-    if (conf.warmupRun) {
+    for (_ <- 0 until conf.warmupRun) {
       bench.runTreadleTest(tester)
     }
-    val testStart = System.nanoTime()
-    bench.runTreadleTest(tester)
-    val testEnd = System.nanoTime()
-    val steps = tester.cycleCount.toInt
+    val runtimeAndSteps = (0 until conf.repsRun).map { _ =>
+      val startCycles = tester.cycleCount.toInt
+      val testStart = System.nanoTime()
+      bench.runTreadleTest(tester)
+      val testEnd = System.nanoTime()
+      val steps = tester.cycleCount.toInt - startCycles
+      (testEnd - testStart, steps)
+    }
     tester.finish
-    Result(nsCompile = compileEnd - compileStart, nsRun = testEnd - testStart, steps = steps)
+    val nsRun = runtimeAndSteps.map(_._1).sum / runtimeAndSteps.length
+    val steps = runtimeAndSteps.head._2
+    Result(nsCompile = compileEnd - compileStart, nsRun = nsRun, steps = steps)
   }
 }
 

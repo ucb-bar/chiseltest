@@ -95,17 +95,21 @@ def convert_hprof_out(out: Path):
 
 def main():
     assert jar_file.exists(), f"{jar_file} not found. Did you run sbt assembly?"
-    java = try_to_find_java_8()
+
+    do_profile = True
+
+    java = try_to_find_java_8() if do_profile else "java"
     version = get_jvm_major_version(java)
     cmd = ["-cp", jar_file, main_class]
-    if version == 8:
-        cmd = [hprof] + cmd
-    else:
-        print(f"WARN: we currently only support profiling with JVM 8, but you are running {version}")
+    if do_profile:
+        if version == 8:
+            cmd = [hprof] + cmd
+        else:
+            print(f"WARN: we currently only support profiling with JVM 8, but you are running {version}")
 
     subprocess.run([java] + cmd + sys.argv[1:])
 
-    if version == 8:
+    if do_profile and version == 8:
         svg = convert_hprof_out(Path("out.hprof"))
         print(f"Wrote flame graph to {svg}")
 

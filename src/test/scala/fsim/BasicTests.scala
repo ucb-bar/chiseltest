@@ -20,6 +20,7 @@ class BasicTests extends AnyFreeSpec {
     sim.pokeLong(a, 200)
     sim.pokeLong(b, 200)
     assert(sim.peekLong(c) == 144, "overflow")
+    sim.finish()
   }
 
 }

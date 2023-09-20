@@ -85,4 +85,6 @@ class Simulation(exec: Executable) {
     println()
   }
 
+  def finish(): Unit = {}
+
 }
