@@ -5,7 +5,7 @@
 package fsim
 
 import firrtl2.options.Dependency
-import firrtl2.stage.Forms
+import firrtl2.stage.{FirrtlSourceAnnotation, Forms}
 import scopt.OptionParser
 import treadle2.TreadleTester
 
@@ -99,16 +99,16 @@ object Benchmark {
 
   private def runTreadleBench(conf: Config, bench: Bench, src: String): Result = {
     val compileStart = System.nanoTime()
-    val sim = new Simulation(Compiler.run(FirrtlCompiler.toLow(src)))
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(src)))
     val compileEnd = System.nanoTime()
     if (conf.warmupRun) {
-      bench.runTest(sim)
+      bench.runTreadleTest(tester)
     }
     val testStart = System.nanoTime()
-    bench.runTest(sim)
+    bench.runTreadleTest(tester)
     val testEnd = System.nanoTime()
-    val steps = sim.getStepCount
-    // TODO: shut down sim
+    val steps = tester.cycleCount.toInt
+    tester.finish
     Result(nsCompile = compileEnd - compileStart, nsRun = testEnd - testStart, steps = steps)
   }
 }

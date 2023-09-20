@@ -6,6 +6,9 @@ package fsim
 
 import org.scalatest.freespec.AnyFreeSpec
 
+/** Test correctness by executing a known-to-be-correct GCD circuit.
+  * For a benchmarking version, have a look at the `benchmark` project.
+  */
 class GCDTester extends AnyFreeSpec {
   def circuitSrc(width: Int): String =
     s"""
@@ -37,7 +40,7 @@ class GCDTester extends AnyFreeSpec {
        |    io_v <= T_21
     """.stripMargin
 
-  def sizableTest(width: Int, from: Long, upTo: Long, showTime: Boolean): Unit = {
+  def sizableTest(width: Int, from: Long, upTo: Long): Unit = {
     val values =
       for {
         x <- from to upTo
@@ -46,8 +49,6 @@ class GCDTester extends AnyFreeSpec {
     val sim = new Simulation(Compiler.run(FirrtlCompiler.toLow(circuitSrc(width))))
     val (io_a, io_b, io_e) = (sim.getSymbolId("io_a"), sim.getSymbolId("io_b"), sim.getSymbolId("io_e"))
     val (io_v, io_z) = (sim.getSymbolId("io_v"), sim.getSymbolId("io_z"))
-
-    val startTime = System.nanoTime()
 
     for ((x, y, z) <- values) {
       sim.step()
@@ -67,25 +68,17 @@ class GCDTester extends AnyFreeSpec {
 
       assert(sim.peekLong(io_z) == z)
     }
-    val endTime = System.nanoTime()
-    val elapsedSeconds = (endTime - startTime).toDouble / 1000000000.0
-    if (showTime) {
-      println(f"$elapsedSeconds%.6f seconds (${sim.getStepCount} cycles)")
-    }
   }
 
   "run with Simulation at Int size 16" in {
-    sizableTest(16, from = 2, upTo = 100, showTime = false)
-    sizableTest(16, from = 2, upTo = 500, showTime = true)
+    sizableTest(16, from = 2, upTo = 100)
   }
 
   "run with Simulation at Int size 44" in {
-    sizableTest(44, from = 2, upTo = 100, showTime = false)
-    sizableTest(44, from = 2, upTo = 500, showTime = true)
+    sizableTest(44, from = 2, upTo = 100)
   }
 
   "run with Simulation at size 64" in {
-    sizableTest(64, from = 2, upTo = 100, showTime = false)
-    sizableTest(64, from = 2, upTo = 500, showTime = true)
+    sizableTest(64, from = 2, upTo = 100)
   }
 }
