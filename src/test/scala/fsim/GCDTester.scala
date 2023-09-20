@@ -37,12 +37,12 @@ class GCDTester extends AnyFreeSpec {
        |    io_v <= T_21
     """.stripMargin
 
-  def sizableTest(width: Int): Unit = {
+  def sizableTest(width: Int, from: Long, upTo: Long, showTime: Boolean): Unit = {
     val values =
       for {
-        x <- 10 to 100
-        y <- 10 to 100
-      } yield (x, y, BigInt(x).gcd(y).toInt)
+        x <- from to upTo
+        y <- from to upTo
+      } yield (x, y, BigInt(x).gcd(y).toLong)
     val sim = new Simulation(Compiler.run(FirrtlCompiler.toLow(circuitSrc(width))))
     val (io_a, io_b, io_e) = (sim.getSymbolId("io_a"), sim.getSymbolId("io_b"), sim.getSymbolId("io_e"))
     val (io_v, io_z) = (sim.getSymbolId("io_v"), sim.getSymbolId("io_z"))
@@ -53,10 +53,10 @@ class GCDTester extends AnyFreeSpec {
       sim.step()
       sim.pokeLong(io_a, x)
       sim.pokeLong(io_b, y)
-      sim.pokeLong(io_e, 1)
+      sim.pokeBool(io_e, true)
       sim.step()
 
-      sim.pokeLong(io_e, 0)
+      sim.pokeBool(io_e, false)
       sim.step()
 
       var count = 0
@@ -69,18 +69,23 @@ class GCDTester extends AnyFreeSpec {
     }
     val endTime = System.nanoTime()
     val elapsedSeconds = (endTime - startTime).toDouble / 1000000000.0
-    println(f"$elapsedSeconds%.6f seconds")
+    if (showTime) {
+      println(f"$elapsedSeconds%.6f seconds")
+    }
   }
 
   "run with Simulation at Int size 16" in {
-    sizableTest(16)
+    sizableTest(16, from = 2, upTo = 100, showTime = false)
+    sizableTest(16, from = 2, upTo = 500, showTime = true)
   }
 
   "run with Simulation at Int size 44" in {
-    sizableTest(44)
+    sizableTest(44, from = 2, upTo = 100, showTime = false)
+    sizableTest(44, from = 2, upTo = 500, showTime = true)
   }
 
-  "run with Simulation at size 68" in {
-    sizableTest(68)
+  "run with Simulation at size 64" in {
+    sizableTest(64, from = 2, upTo = 100, showTime = false)
+    sizableTest(64, from = 2, upTo = 500, showTime = true)
   }
 }

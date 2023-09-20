@@ -22,12 +22,19 @@ private case object IsRegister extends SymbolKind
 private case object IsNode extends SymbolKind
 
 private sealed trait Symbol {
-  def name:  String
-  def index: Int
-  def kind:  SymbolKind
+  def name:   String
+  def index:  Int
+  def kind:   SymbolKind
+  def signed: Boolean
+  def width:  Int
+  def clock:  Boolean
 }
-private case class IntSymbol(name: String, kind: SymbolKind, width: Int, index: Int) extends Symbol
-private case class ArraySymbol(name: String, kind: SymbolKind, width: Int, elements: Int, index: Int) extends Symbol
+private case class IntSymbol(name: String, kind: SymbolKind, width: Int, index: Int, signed: Boolean, clock: Boolean)
+    extends Symbol
+private case class ArraySymbol(name: String, kind: SymbolKind, width: Int, elements: Int, index: Int, signed: Boolean)
+    extends Symbol {
+  override def clock = false
+}
 
 private case class ExecutableInfo(
   name:    String,
@@ -48,7 +55,7 @@ private object Mask {
   val Bool = 1
   val Long = (BigInt(1) << 64) - 1
   def longMask(bits: Int): Long = {
-    require(bits >= 0 && bits <= 64)
+    require(bits >= 0 && bits <= 64, s"bits=$bits")
     if (bits == 0) { 0 }
     else if (bits == 64) { -1 }
     else { (1L << bits) - 1 }
@@ -132,6 +139,33 @@ private case class NotLong(e: LongExpr, mask: Long) extends LongExpr {
 private case class NotBig(e: BigExpr, mask: BigInt) extends BigExpr {
   override def eval(data: ExecutableData): BigInt = (~e.eval(data)) & mask
 }
+private case class MuxBool(cond: BoolExpr, tru: BoolExpr, fals: BoolExpr) extends BoolExpr {
+  override def eval(data: ExecutableData): Boolean = if (cond.eval(data)) tru.eval(data) else fals.eval(data)
+}
+private case class MuxLong(cond: BoolExpr, tru: LongExpr, fals: LongExpr) extends LongExpr {
+  override def eval(data: ExecutableData): Long = if (cond.eval(data)) tru.eval(data) else fals.eval(data)
+}
+private case class MuxBig(cond: BoolExpr, tru: BigExpr, fals: BigExpr) extends BigExpr {
+  override def eval(data: ExecutableData): BigInt = if (cond.eval(data)) tru.eval(data) else fals.eval(data)
+}
+private case class ConstBool(value: Boolean) extends BoolExpr {
+  override def eval(data: ExecutableData): Boolean = value
+}
+private case class ConstLong(value: Long) extends LongExpr {
+  override def eval(data: ExecutableData): Long = value
+}
+private case class ConstBig(value: BigInt) extends BigExpr {
+  override def eval(data: ExecutableData): BigInt = value
+}
+private case class EqualBool(a: BoolExpr, b: BoolExpr) extends BoolExpr {
+  override def eval(data: ExecutableData): Boolean = a.eval(data) == b.eval(data)
+}
+private case class EqualLong(a: LongExpr, b: LongExpr) extends BoolExpr {
+  override def eval(data: ExecutableData): Boolean = a.eval(data) == b.eval(data)
+}
+private case class EqualBig(a: BigExpr, b: BigExpr) extends BoolExpr {
+  override def eval(data: ExecutableData): Boolean = a.eval(data) == b.eval(data)
+}
 private case class GtUnsignedBool(a: BoolExpr, b: BoolExpr) extends BoolExpr {
   override def eval(data: ExecutableData): Boolean = a.eval(data) && !b.eval(data)
 }
@@ -142,7 +176,17 @@ private case class GtLong(a: LongExpr, b: LongExpr) extends BoolExpr {
   override def eval(data: ExecutableData): Boolean = a.eval(data) > b.eval(data)
 }
 private case class GtUnsigned64Long(a: LongExpr, b: LongExpr) extends BoolExpr {
-  override def eval(data: ExecutableData): Boolean = ???
+  override def eval(data: ExecutableData): Boolean = {
+    val (aVal, bVal) = (a.eval(data), b.eval(data))
+    val (aMsbSet, bMsbSet) = (aVal < 0, bVal < 0)
+    (aMsbSet, bMsbSet) match {
+      case (false, false) => aVal > bVal
+      case (true, false)  => true
+      case (false, true)  => false
+      case (true, true)   => aVal > bVal // 1111 is -1 which is greater than e.g. 1110 which would be -2
+    }
+
+  }
 }
 private case class GtBig(a: BigExpr, b: BigExpr) extends BoolExpr {
   override def eval(data: ExecutableData): Boolean = a.eval(data) > b.eval(data)
