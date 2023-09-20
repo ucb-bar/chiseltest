@@ -70,7 +70,12 @@ jobs:
         run: sbt "project benchmark ; assembly"
       - name: Run Benchmark
         run: ./benchmark/benchmark.py
-
+      - name: Archive Flamegraph
+        uses: actions/upload-artifact@v3
+        if: matrix.jvm == 8
+        with:
+          name: flamegraph
+          path: out.svg
 
   test-mac:
     name: sbt test on mac
