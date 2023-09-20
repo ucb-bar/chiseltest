@@ -69,7 +69,7 @@ jobs:
       - name: Create JAR
         run: sbt "project benchmark ; assembly"
       - name: Run Benchmark
-        run: ./benchmark/benchmark.py
+        run: ./benchmark/benchmark.py --bench=gcd_64 --sim=fsim
       - name: Archive Flamegraph
         uses: actions/upload-artifact@v3
         if: matrix.jvm == 8

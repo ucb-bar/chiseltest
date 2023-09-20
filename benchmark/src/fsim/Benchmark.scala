@@ -13,7 +13,7 @@ case class Config(benches: Seq[String], sim: String, warmupRun: Boolean)
 
 class ArgumentParser extends OptionParser[Config]("synthesizer") {
   head("fsim benchmark", "0.1")
-  opt[String]("bench").action((a, config) => config.copy(benches = config.benches :+ a))
+  opt[String]("bench").required().action((a, config) => config.copy(benches = config.benches :+ a))
   opt[String]("sim").action((a, config) => config.copy(sim = a))
 }
 
@@ -30,7 +30,8 @@ object Benchmark {
     Bench("gcd_64", _ => GCDBench.circuitSrc(64), GCDBench.fsimTest(_, 10, 500), GCDBench.treadleTest(_, 10, 500))
   )
 
-  private val DefaultConfig = Config(benches = Seq("gcd_64"), sim = "fsim", warmupRun = true)
+  private val DefaultConfig = Config(benches = Seq(), sim = "fsim", warmupRun = true)
+
   def main(args: Array[String]): Unit = {
     val parser = new ArgumentParser()
     val conf = parser.parse(args, DefaultConfig).get
