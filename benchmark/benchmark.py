@@ -13,7 +13,7 @@ java_8_paths = [
 ]
 
 _script_dir = Path(__file__).parent.resolve()
-jar_file = _script_dir / "benchmark" / "benchmark.jar"
+jar_file = _script_dir / "benchmark.jar"
 main_class = "fsim.Benchmark"
 hprof = "-agentlib:hprof=cpu=samples,depth=100,interval=20,lineno=y,thread=y,file=out.hprof"
 

@@ -69,7 +69,7 @@ jobs:
       - name: Create JAR
         run: sbt "project benchmark ; assembly"
       - name: Run Benchmark
-        run: ./benchmark.py
+        run: ./benchmark/benchmark.py
 
 
   test-mac:

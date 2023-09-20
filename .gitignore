@@ -25,5 +25,3 @@ ucli.key
 /out.hprof
 /out-folded.txt
 /out.svg
-/FlameGraph/
-/hprof2flamegraph/
