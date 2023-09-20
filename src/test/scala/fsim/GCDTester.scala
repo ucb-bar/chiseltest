@@ -6,8 +6,8 @@ package fsim
 
 import org.scalatest.freespec.AnyFreeSpec
 
-/** Test correctness by executing a known-to-be-correct GCD circuit.
-  * For a benchmarking version, have a look at the `benchmark` project.
+/** Test correctness by executing a known-to-be-correct GCD circuit. For a benchmarking version, have a look at the
+  * `benchmark` project.
   */
 class GCDTester extends AnyFreeSpec {
   def circuitSrc(width: Int): String =
