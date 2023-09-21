@@ -114,22 +114,22 @@ private case class SubBig(a: BigExpr, b: BigExpr) extends BigExpr {
   override def eval(data: ExecutableData): BigInt = a.eval(data) - b.eval(data)
 }
 private case class OrBool(a: BoolExpr, b: BoolExpr) extends BoolExpr {
-  override def eval(): Boolean = a.eval() || b.eval()
+  override def eval(data: ExecutableData): Boolean = a.eval(data) || b.eval(data)
 }
 private case class OrLong(a: LongExpr, b: LongExpr) extends LongExpr {
-  override def eval(): Long = a.eval() | b.eval()
+  override def eval(data: ExecutableData): Long = a.eval(data) | b.eval(data)
 }
 private case class OrBig(a: BigExpr, b: BigExpr) extends BigExpr {
-  override def eval(): BigInt = a.eval() | b.eval()
+  override def eval(data: ExecutableData): BigInt = a.eval(data) | b.eval(data)
 }
 private case class AndBool(a: BoolExpr, b: BoolExpr) extends BoolExpr {
-  override def eval(): Boolean = a.eval() && b.eval()
+  override def eval(data: ExecutableData): Boolean = a.eval(data) && b.eval(data)
 }
 private case class AndLong(a: LongExpr, b: LongExpr) extends LongExpr {
-  override def eval(): Long = a.eval() & b.eval()
+  override def eval(data: ExecutableData): Long = a.eval(data) & b.eval(data)
 }
 private case class AndBig(a: BigExpr, b: BigExpr) extends BigExpr {
-  override def eval(): BigInt = a.eval() & b.eval()
+  override def eval(data: ExecutableData): BigInt = a.eval(data) & b.eval(data)
 }
 private case class BitsBoolFromLong(e: LongExpr, bit: Int) extends BoolExpr {
   override def eval(data: ExecutableData): Boolean = (e.eval(data) >> bit) == 1
@@ -210,17 +210,17 @@ private case class GtBig(a: BigExpr, b: BigExpr) extends BoolExpr {
   override def eval(data: ExecutableData): Boolean = a.eval(data) > b.eval(data)
 }
 private case class GtEqualUnsignedBool(a: BoolExpr, b: BoolExpr) extends BoolExpr {
-  override def eval(): Boolean = a.eval() || !b.eval()
+  override def eval(data: ExecutableData): Boolean = a.eval(data) || !b.eval(data)
 }
 private case class GtEqualSignedBool(a: BoolExpr, b: BoolExpr) extends BoolExpr {
-  override def eval(): Boolean = !a.eval() || b.eval()
+  override def eval(data: ExecutableData): Boolean = !a.eval(data) || b.eval(data)
 }
 private case class GtEqualLong(a: LongExpr, b: LongExpr) extends BoolExpr {
-  override def eval(): Boolean = !(a.eval() < b.eval())
+  override def eval(data: ExecutableData): Boolean = !(a.eval(data) < b.eval(data))
 }
 private case class GtEqualUnsigned64Long(a: LongExpr, b: LongExpr) extends BoolExpr {
-  override def eval(): Boolean = {
-    val (aVal, bVal) = (a.eval(), b.eval())
+  override def eval(data: ExecutableData): Boolean = {
+    val (aVal, bVal) = (a.eval(data), b.eval(data))
     val (aMsbSet, bMsbSet) = (aVal < 0, bVal < 0)
     (aMsbSet, bMsbSet) match {
       case (false, false) => !(aVal < bVal)
@@ -232,5 +232,5 @@ private case class GtEqualUnsigned64Long(a: LongExpr, b: LongExpr) extends BoolE
   }
 }
 private case class GtEqualBig(a: BigExpr, b: BigExpr) extends BoolExpr {
-  override def eval(): Boolean = !(a.eval() < b.eval())
+  override def eval(data: ExecutableData): Boolean = !(a.eval(data) < b.eval(data))
 }
