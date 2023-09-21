@@ -129,6 +129,24 @@ private case class SubLong(a: LongExpr, b: LongExpr) extends LongExpr {
 private case class SubBig(a: BigExpr, b: BigExpr) extends BigExpr {
   override def eval(): BigInt = a.eval() - b.eval()
 }
+private case class OrBool(a: BoolExpr, b: BoolExpr) extends BoolExpr {
+  override def eval(): Boolean = a.eval() || b.eval()
+}
+private case class OrLong(a: LongExpr, b: LongExpr) extends LongExpr {
+  override def eval(): Long = a.eval() | b.eval()
+}
+private case class OrBig(a: BigExpr, b: BigExpr) extends BigExpr {
+  override def eval(): BigInt = a.eval() | b.eval()
+}
+private case class AndBool(a: BoolExpr, b: BoolExpr) extends BoolExpr {
+  override def eval(): Boolean = a.eval() && b.eval()
+}
+private case class AndLong(a: LongExpr, b: LongExpr) extends LongExpr {
+  override def eval(): Long = a.eval() & b.eval()
+}
+private case class AndBig(a: BigExpr, b: BigExpr) extends BigExpr {
+  override def eval(): BigInt = a.eval() & b.eval()
+}
 private case class BitsBoolFromLong(e: LongExpr, bit: Int) extends BoolExpr {
   override def eval(): Boolean = (e.eval() >> bit) == 1
 }
@@ -206,4 +224,29 @@ private case class GtUnsigned64Long(a: LongExpr, b: LongExpr) extends BoolExpr {
 }
 private case class GtBig(a: BigExpr, b: BigExpr) extends BoolExpr {
   override def eval(): Boolean = a.eval() > b.eval()
+}
+private case class GtEqualUnsignedBool(a: BoolExpr, b: BoolExpr) extends BoolExpr {
+  override def eval(): Boolean = a.eval() || !b.eval()
+}
+private case class GtEqualSignedBool(a: BoolExpr, b: BoolExpr) extends BoolExpr {
+  override def eval(): Boolean = !a.eval() || b.eval()
+}
+private case class GtEqualLong(a: LongExpr, b: LongExpr) extends BoolExpr {
+  override def eval(): Boolean = !(a.eval() < b.eval())
+}
+private case class GtEqualUnsigned64Long(a: LongExpr, b: LongExpr) extends BoolExpr {
+  override def eval(): Boolean = {
+    val (aVal, bVal) = (a.eval(), b.eval())
+    val (aMsbSet, bMsbSet) = (aVal < 0, bVal < 0)
+    (aMsbSet, bMsbSet) match {
+      case (false, false) => !(aVal < bVal)
+      case (true, false)  => true
+      case (false, true)  => false
+      case (true, true)   => !(aVal < bVal) // 1111 is -1 which is greater than e.g. 1110 which would be -2
+    }
+
+  }
+}
+private case class GtEqualBig(a: BigExpr, b: BigExpr) extends BoolExpr {
+  override def eval(): Boolean = !(a.eval() < b.eval())
 }

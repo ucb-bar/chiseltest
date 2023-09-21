@@ -205,6 +205,20 @@ private object Constructors {
         case (Seq((a, _), (b, _)), Seq(), BigWidth)  => SubBig(asBig(a), asBig(b))
         case other => throw new RuntimeException(s"Unexpected combination for SUB: $other")
       }
+    case firrtl2.PrimOps.Or =>
+      (args, consts, toKind(width)) match {
+        case (Seq((a, _), (b, _)), Seq(), BoolWidth) => OrBool(asBoolean(a), asBoolean(b))
+        case (Seq((a, _), (b, _)), Seq(), LongWidth) => OrLong(asLong(a), asLong(b))
+        case (Seq((a, _), (b, _)), Seq(), BigWidth)  => OrBig(asBig(a), asBig(b))
+        case other => throw new RuntimeException(s"Unexpected combination for OR: $other")
+      }
+    case firrtl2.PrimOps.And =>
+      (args, consts, toKind(width)) match {
+        case (Seq((a, _), (b, _)), Seq(), BoolWidth) => AndBool(asBoolean(a), asBoolean(b))
+        case (Seq((a, _), (b, _)), Seq(), LongWidth) => AndLong(asLong(a), asLong(b))
+        case (Seq((a, _), (b, _)), Seq(), BigWidth)  => AndBig(asBig(a), asBig(b))
+        case other => throw new RuntimeException(s"Unexpected combination for AND: $other")
+      }
     case firrtl2.PrimOps.Bits =>
       (args, consts) match {
         case (Seq((e, eType)), Seq(hi, lo)) => bits(e, eType, hi.toInt, lo.toInt)
@@ -252,6 +266,22 @@ private object Constructors {
             case (BigWidth, _)     => GtBig(asBig(a), asBig(b))
           }
         case other => throw new RuntimeException(s"Unexpected combination for GT: $other")
+      }
+    case firrtl2.PrimOps.Geq =>
+      (args, consts) match {
+        case (Seq((a, a_tpe), (b, b_tpe)), Seq()) =>
+          val width = Seq(a_tpe, b_tpe).map(toWidth).max
+          val signed = isSigned(a_tpe)
+          (toKind(width), signed) match {
+            case (BoolWidth, false) => GtEqualUnsignedBool(asBoolean(a), asBoolean(b))
+            case (BoolWidth, true)  => GtEqualSignedBool(asBoolean(a), asBoolean(b))
+            case (LongWidth, false) =>
+              if (width <= 63) { GtEqualLong(asLong(a), asLong(b)) }
+              else { GtEqualUnsigned64Long(asLong(a), asLong(b)) }
+            case (LongWidth, true) => GtEqualLong(asLong(a), asLong(b))
+            case (BigWidth, _)     => GtEqualBig(asBig(a), asBig(b))
+          }
+        case other => throw new RuntimeException(s"Unexpected combination for GEQ: $other")
       }
     case other => throw new NotImplementedError(s"TODO: deal with ${other.serialize} of type ${other.getClass.getName}")
   }
