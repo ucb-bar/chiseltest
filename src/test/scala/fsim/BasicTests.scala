@@ -28,6 +28,8 @@ class BasicTests extends AnyFreeSpec {
 object FirrtlCompiler {
   private val loFirrtlCompiler =
     new firrtl2.stage.transforms.Compiler(Seq(Dependency[firrtl2.LowFirrtlEmitter]) ++ Forms.LowFormOptimized)
+  private val firrtlDir = os.pwd / "src" / "test" / "resources" / "fsim"
+  def toLowFromFile(filename: String): firrtl2.ir.Circuit = toLow(os.read(firrtlDir / filename))
   def toLow(src: String): firrtl2.ir.Circuit = {
     val hi = firrtl2.Parser.parse(src)
     val lo = loFirrtlCompiler.execute(firrtl2.CircuitState(hi))
