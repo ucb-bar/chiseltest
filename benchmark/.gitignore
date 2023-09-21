@@ -1,0 +1,11 @@
+/project/target
+/project/project
+/target/
+/benchmark.jar
+
+# JVM Profiling
+/out.hprof
+/out-folded.txt
+/out.svg
+/FlameGraph/
+/hprof2flamegraph/

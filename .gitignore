@@ -20,3 +20,8 @@
 # Synopsys Verdi
 novas_dump.log
 ucli.key
+
+# JVM Profiling
+/out.hprof
+/out-folded.txt
+/out.svg

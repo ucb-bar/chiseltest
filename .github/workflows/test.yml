@@ -47,6 +47,35 @@ jobs:
         timeout-minutes: 6
         run: sbt ++${{ matrix.scala }} "testOnly integration.**"
 
+  benchmarks:
+    name: Benchmarks
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        scala: [ 2.13.10 ]
+        jvm: [ 8, 11, 20 ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Scala
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt'
+          java-version: ${{ matrix.jvm }}
+      - name: Check for Warnings
+        run: sbt "project benchmark ; set ThisBuild / scalacOptions ++= Seq(\"-Xfatal-warnings\") ; compile"
+      - name: Check Formatting
+        run: sbt "project benchmark ; scalafmtCheckAll"
+      - name: Create JAR
+        run: sbt "project benchmark ; assembly"
+      - name: Run Benchmark
+        run: ./benchmark/benchmark.py --bench=gcd_64 --sim=fsim
+      - name: Archive Flamegraph
+        uses: actions/upload-artifact@v3
+        if: matrix.jvm == 8
+        with:
+          name: flamegraph
+          path: out.svg
 
   test-mac:
     name: sbt test on mac
@@ -206,7 +235,7 @@ jobs:
   # When adding new jobs, please add them to `needs` below
   all_tests_passed:
     name: "all tests passed"
-    needs: [test, doc, verilator, formal, formal-mac, icarus, test-mac, no-warn, integration-test]
+    needs: [test, doc, verilator, formal, formal-mac, icarus, test-mac, no-warn, integration-test, benchmarks]
     runs-on: ubuntu-latest
     steps:
       - run: echo Success!
@@ -215,7 +244,7 @@ jobs:
   # separate from a Scala versions build matrix to avoid duplicate publishing
   publish:
     # note: we do not require a warning check for publishing!
-    needs: [test, doc, verilator, formal, formal-mac, icarus, test-mac, test-treadle, integration-test]
+    needs: [test, doc, verilator, formal, formal-mac, icarus, test-mac, test-treadle, integration-test, benchmarks]
     runs-on: ubuntu-20.04
     if: github.event_name == 'push'
 
