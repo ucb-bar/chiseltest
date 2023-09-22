@@ -1,6 +1,8 @@
-// SPDX-License-Identifier: Apache-2.0
+// Copyright 2021-2023 The Regents of the University of California
+// released under BSD 3-Clause License
+// author: Kevin Laeufer <laeufer@cs.berkeley.edu>
 
-package chiseltest.coverage
+package chiseltest.coverage.circuits
 
 // NOTE: This module is contained in its own file in order to prevent any line numbers from changing.
 // It is used (among other things) for testing our automatic line coverage pass which
