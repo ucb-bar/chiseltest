@@ -76,7 +76,7 @@ class FsmInfoPassTests extends AnyFlatSpec with CompilerTest {
     )
   }
 
-  val ResourceDir = os.pwd / "test" / "resources"
+  val ResourceDir = os.pwd / "src" / "test" / "resources" / "coverage"
 
   it should "properly analyze the FSMs in RISC-V Mini" in {
     val (_, rAnnos) =

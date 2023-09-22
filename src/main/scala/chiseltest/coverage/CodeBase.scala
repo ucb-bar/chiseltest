@@ -5,10 +5,12 @@
 package chiseltest.coverage
 
 import firrtl2.logger.LazyLogging
+
 import scala.collection.mutable
 
 /** Represents a Scala code base. */
-class CodeBase(root: os.Path) extends LazyLogging {
+class CodeBase(val root: os.Path) extends LazyLogging {
+  def this() = this(CodeBase.chiselRootGuess)
   require(os.exists(root), s"Could not find root directory: $root")
   require(os.isDir(root), s"Is not a directory: $root")
 
@@ -51,6 +53,16 @@ class CodeBase(root: os.Path) extends LazyLogging {
 }
 
 object CodeBase {
+
+  /** Implements the algorithm from Chisel that determines the root for generating source info annotations.
+    * https://github.com/chipsalliance/chisel/blob/a5e29163ce11641056af18656658144465b0dfcf/core/src/main/scala/chisel3/internal/SourceInfo.scala#L57
+    */
+  private def chiselRootGuess: os.Path = {
+    val userDir = sys.props.get("user.dir") // Figure out what to do if not provided
+    val projectRoot = sys.props.get("chisel.project.root")
+    val root = projectRoot.orElse(userDir)
+    os.Path(root.get)
+  }
 
   /** finds all source files in the path and maps them by their filename */
   private def index(root: os.Path, exts: Set[String] = Set("scala")): Map[String, List[os.RelPath]] = {

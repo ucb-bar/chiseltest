@@ -21,4 +21,9 @@ class CodeBaseTest extends AnyFlatSpec {
     // get this line
     assert(c.getLine("CodeBaseTest.scala", 21).get.trim == "// get this line")
   }
+
+  it should "by default use the same root dir as chisel" in {
+    val c = new CodeBase()
+    assert(c.root == os.pwd)
+  }
 }

@@ -21,9 +21,9 @@ class LineCoverageTest extends AnyFlatSpec with ChiselScalatestTester {
     assert(data.files.size == 1)
 
     val file = data.files.head
-    assert(file.name == "Test1Module.scala")
+    assert(file.name == "src/test/scala/chiseltest/coverage/circuits/Test1Module.scala")
 
-    val offset = 10
+    val offset = 12
     val expected = List(
       // Test1Module
       (5, 5),
@@ -49,7 +49,7 @@ class LineCoverageTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "generate a textual report" in {
     val data = LineCoverage.processCoverage(runTest())
-    val code = new CodeBase(os.pwd / "test")
+    val code = new CodeBase()
     val report = LineCoverage.textReport(code, data.files.head).toVector
     val lines = report.map(_.trim)
 
@@ -81,22 +81,22 @@ class LineCoverageInstrumentationTest extends AnyFlatSpec with CompilerTest {
   override protected def annos = Seq(RunFirrtlTransformAnnotation(Dependency(LineCoveragePass)))
 
   it should "add cover statements" in {
-    val (result, rAnnos) = compile(new Test1Module(), "low")
+    val (result, rAnnos) = compile(new Test1Module(), "low-opt")
     val l = result.split('\n').map(_.trim)
 
     // we expect four custom cover points
-    val c = """cover(clock, UInt<1>("h1"), UInt<1>("h1"), "") : """
-    assert(l.contains(c + "l_0"))
-    assert(l.contains(c + "l_1"))
-    assert(l.contains(c + "l_2"))
-    assert(l.contains(c + "l_3"))
+    assert(l.exists(l => l.startsWith("cover(") && l.endsWith("l_0")))
+    assert(l.exists(l => l.startsWith("cover(") && l.endsWith("l_1")))
+    assert(l.exists(l => l.startsWith("cover(") && l.endsWith("l_2")))
+    assert(l.exists(l => l.startsWith("cover(") && l.endsWith("l_3")))
+    assert(!l.exists(l => l.startsWith("cover(") && l.endsWith("l_4")))
 
     // we should have 4 coverage annotations as well
     val a = rAnnos.collect { case a: LineCoverageAnnotation => a }
     assert(a.size == 4)
 
     // lines for each coverage point (relative to the "class Test1Module " line)
-    val offset = 10
+    val offset = 12
     val lines = Map(
       "l_3" -> Seq(5, 7, 11, 17, 21, 26, 27),
       "l_0" -> Seq(8),
@@ -107,7 +107,7 @@ class LineCoverageInstrumentationTest extends AnyFlatSpec with CompilerTest {
     // all annotations should only point to `LineCoverageTest.scala`
     a.foreach { l =>
       assert(l.lines.size == 1)
-      assert(l.lines.head._1 == "Test1Module.scala")
+      assert(l.lines.head._1 == "src/test/scala/chiseltest/coverage/circuits/Test1Module.scala")
       assert(l.lines.head._2 == lines(l.target.ref).map(_ + offset))
     }
   }
@@ -128,8 +128,8 @@ class LineCoverageInstrumentationTest extends AnyFlatSpec with CompilerTest {
     val subAs = a.filterNot(_.target.module == "Test1Module")
     assert(subAs.size == 1)
     assert(subAs.head.lines.size == 1)
-    assert(subAs.head.lines.head._1 == "Test1Module.scala")
-    val offset = 10
+    assert(subAs.head.lines.head._1 == "src/test/scala/chiseltest/coverage/circuits/Test1Module.scala")
+    val offset = 12
     assert(subAs.head.lines.head._2 == Seq(39).map(_ + offset))
   }
 
