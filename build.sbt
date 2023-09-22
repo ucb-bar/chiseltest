@@ -29,15 +29,11 @@ lazy val chiseltestSettings = Seq(
     "org.chipsalliance" %% "chisel" % chiselVersion,
     "edu.berkeley.cs" %% "firrtl2" % firrtlVersion,
     "org.scalatest" %% "scalatest" % "3.2.17",
-    "com.lihaoyi" %% "utest" % "0.8.1",
     "net.java.dev.jna" % "jna" % "5.13.0",
-    "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-    "com.lihaoyi" %% "os-lib" % "0.8.1",
     compilerPlugin(("org.chipsalliance" % "chisel-plugin" % chiselVersion).cross(CrossVersion.full))
   ),
   resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
   resolvers ++= Resolver.sonatypeOssRepos("releases"),
-  testFrameworks += new TestFramework("utest.runner.Framework"),
 )
 
 lazy val publishSettings = Seq(
