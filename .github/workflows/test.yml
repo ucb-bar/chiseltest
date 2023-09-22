@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        scala: [2.13.12]
+        scala: [2.13.10]
         jvm: [8, 11]
     steps:
       - name: Checkout
@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        scala: [ 2.13.12 ]
+        scala: [ 2.13.10 ]
         jvm: [ 8, 11, 20 ]
     steps:
       - name: Checkout
@@ -187,7 +187,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        scala: [2.13.12]
+        scala: [2.13.10]
         jvm: [8, 11]
     steps:
       - name: Checkout
