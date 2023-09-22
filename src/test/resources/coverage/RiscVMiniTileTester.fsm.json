@@ -1,0 +1,36 @@
+[
+  {
+    "class":"firrtl2.annotations.EnumDefAnnotation",
+    "typeName":"CacheState",
+    "definition":{
+      "sIdle":0,
+      "sReadCache":1,
+      "sWriteCache":2,
+      "sWriteBack":3,
+      "sWriteAck":4,
+      "sRefillReady":5,
+      "sRefill":6
+    }
+  },
+  {
+    "class":"firrtl2.annotations.EnumComponentAnnotation",
+    "target":"TileTester.Cache.state",
+    "enumTypeName":"CacheState"
+  },
+  {
+    "class":"firrtl2.annotations.EnumDefAnnotation",
+    "typeName":"MemArbiterState",
+    "definition":{
+      "sIdle":0,
+      "sICacheRead":1,
+      "sDCacheRead":2,
+      "sDCacheWrite":3,
+      "sDCacheAck":4
+    }
+  },
+  {
+    "class":"firrtl2.annotations.EnumComponentAnnotation",
+    "target":"TileTester.MemArbiter.state",
+    "enumTypeName":"MemArbiterState"
+  }
+]

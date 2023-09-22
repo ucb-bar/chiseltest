@@ -1,4 +1,6 @@
-// SPDX-License-Identifier: Apache-2.0
+// Copyright 2021-2023 The Regents of the University of California
+// released under BSD 3-Clause License
+// author: Kevin Laeufer <laeufer@cs.berkeley.edu>
 
 package chiseltest.coverage
 
@@ -6,6 +8,7 @@ import chiseltest._
 import firrtl2.AnnotationSeq
 import org.scalatest.flatspec.AnyFlatSpec
 import chisel3._
+import chiseltest.coverage.circuits.Test1Module
 import chiseltest.simulator.{DefaultTag, SimulatorAnnotation}
 import org.scalatest.Tag
 
