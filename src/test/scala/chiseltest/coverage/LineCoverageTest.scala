@@ -54,7 +54,7 @@ class LineCoverageTest extends AnyFlatSpec with ChiselScalatestTester {
     val lines = report.map(_.trim)
 
     // check some lines
-    val offset = 10 + 2 // the 2 accounts for the table headers
+    val offset = 12 + 2 // the 2 accounts for the table headers
     assert(lines(0 + offset).startsWith(s"${1 + offset - 2} |     | class Test1Module("))
     assert(lines(4 + offset).startsWith(s"${5 + offset - 2} |   5 |   b := 0.U // line 5"))
     assert(lines(7 + offset).startsWith(s"${8 + offset - 2} |   0 |     b := 1.U"))

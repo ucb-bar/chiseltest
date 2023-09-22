@@ -12,14 +12,13 @@ class CodeBaseTest extends AnyFlatSpec {
   it should "read in a code base" in {
     val c = new CodeBase(os.pwd / "src" / "test" / "scala")
 
-    // TODO: test warn about duplicates
-    // c.warnAboutDuplicates()
-    // assert(c.duplicateKeys == List("package.scala"))
-    // assert(c.isDuplicate("package.scala"))
-    assert(!c.isDuplicate("CodeBaseTest.scala"))
-
-    // get this line
-    assert(c.getLine("CodeBaseTest.scala", 21).get.trim == "// get this line")
+    // get this line with only the filename
+    assert(c.getLine("CodeBaseTest.scala", 15).get.trim == "// get this line with only the filename")
+    // get this line with relative path
+    assert(
+      c.getLine("chiseltest/coverage/CodeBaseTest.scala", 17).get.trim ==
+        "// get this line with relative path"
+    )
   }
 
   it should "by default use the same root dir as chisel" in {

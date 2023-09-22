@@ -15,23 +15,6 @@ class CodeBase(val root: os.Path) extends LazyLogging {
   require(os.isDir(root), s"Is not a directory: $root")
 
   val index = CodeBase.index(root)
-  private val duplicates = index.filter(_._2.size > 1)
-
-  def warnAboutDuplicates(): Unit = {
-    if (duplicates.nonEmpty) {
-      val msgs = duplicates.flatMap { case (key, values) =>
-        Seq(s"Multiple files map to key: $key") ++
-          values.map(v => s"  - $v")
-      }
-
-      val msg = Seq(s"In code base: $root") ++ msgs
-      logger.warn(msg.mkString("\n"))
-    }
-  }
-
-  val duplicateKeys: List[String] = duplicates.keys.toList
-  def isDuplicate(key:  String): Boolean = getDuplicate(key).isDefined
-  def getDuplicate(key: String): Option[List[os.RelPath]] = duplicates.get(key)
 
   /** returns None if the key is not unique */
   def getLine(key: String, line: Int): Option[String] = {
@@ -45,9 +28,16 @@ class CodeBase(val root: os.Path) extends LazyLogging {
   }
 
   /** returns None if the key is not unique */
-  private def getFilePath(key: String): Option[os.RelPath] = index.get(key) match {
-    case Some(List(one)) => Some(one)
-    case _               => None
+  private def getFilePath(key: String): Option[os.RelPath] = {
+    val path = os.RelPath(key)
+    if (os.exists(root / path)) {
+      Some(path)
+    } else {
+      index.get(key) match {
+        case Some(List(one)) => Some(one)
+        case _               => None
+      }
+    }
   }
 
 }
