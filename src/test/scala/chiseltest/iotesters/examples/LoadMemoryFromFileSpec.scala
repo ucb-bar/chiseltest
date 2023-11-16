@@ -29,7 +29,7 @@ class UsesMem(memoryDepth: Int, memoryType: Bits, fileName: String) extends Modu
   io.value2 := low.io.value
 }
 object UsesMem {
-  val MEM1 = "src/test/resources/iotesters/mem1.txt"
+  val Mem1 = "src/test/resources/iotesters/mem1.txt"
 }
 
 class UsesMemLow(memoryDepth: Int, memoryType: Data) extends Module {
@@ -66,14 +66,14 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with ChiselScalatestTester {
 
   "Treadle supports loadFromFileInline using absolute paths" in {
     // An absolute path
-    val path: os.Path = os.pwd / os.RelPath(UsesMem.MEM1)
+    val path: os.Path = os.pwd / os.RelPath(UsesMem.Mem1)
     test(new UsesMem(memoryDepth = 8, memoryType = UInt(16.W), path.toString()))
       .runPeekPoke(new LoadMemoryFromFileTester(_))
   }
 
   "Treadle also supports loadFromFileInline using relative paths" in {
     // An absolute path
-    test(new UsesMem(memoryDepth = 8, memoryType = UInt(16.W), UsesMem.MEM1))
+    test(new UsesMem(memoryDepth = 8, memoryType = UInt(16.W), UsesMem.Mem1))
       .runPeekPoke(new LoadMemoryFromFileTester(_))
   }
 }
