@@ -3,9 +3,9 @@
 package chiseltest.iotesters.examples
 
 import chisel3._
-import chiseltest.iotesters._
 import chisel3.util.experimental.loadMemoryFromFileInline
 import chiseltest._
+import chiseltest.iotesters._
 import chiseltest.simulator.RequiresVerilator
 import firrtl2.options.TargetDirAnnotation
 import org.scalatest.freespec.AnyFreeSpec

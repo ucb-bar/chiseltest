@@ -653,7 +653,7 @@ class MemoryInitializer(engine: ExecutionEngine) extends LazyLogging {
 private object MemoryFileParser {
   def parse(filename: String, base: Int): Seq[BigInt] = {
     require(base == 16 || base == 2)
-    val fullName = os.Path(filename, base=os.pwd)
+    val fullName = os.Path(filename, base = os.pwd)
     os.read.lines(fullName).flatMap(l => parseLine(l.trim, base))
   }
   private def parseLine(line: String, base: Int): Seq[BigInt] = {
