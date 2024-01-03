@@ -151,8 +151,8 @@ private object ChiselBridge {
       Some(firrtl2.annotations.EnumDefAnnotation(typeName, definition))
     case EnumVecAnnotation(target, typeName, fields) =>
       Some(firrtl2.annotations.EnumVecAnnotation(convertNamed(target), typeName, fields))
-    case DecodeTableAnnotation(target, truthTable, minimizedTable) =>
-      Some(firrtl2.annotations.DecodeTableAnnotation(convert(target), truthTable, minimizedTable))
+    // ignoreDecodeTableAnnotation since it is not needed by the firrtl compiler
+    case _: DecodeTableAnnotation => None
     //
     case _ => throw new NotImplementedError(s"TODO: convert ${anno}")
   }
