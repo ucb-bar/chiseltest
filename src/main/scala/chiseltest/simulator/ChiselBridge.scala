@@ -4,6 +4,7 @@ import chisel3.RawModule
 import chisel3.stage._
 import chisel3.stage.phases._
 import chisel3.experimental.EnumAnnotations.{EnumComponentAnnotation, EnumDefAnnotation, EnumVecAnnotation}
+import chisel3.util.experimental.decode.DecodeTableAnnotation
 import firrtl.passes.InlineAnnotation
 import firrtl.transforms.FlattenAnnotation
 // this imports the [[firrtl]] package from Chisel (not to be confused with the firrtl2 compiler!
@@ -150,6 +151,8 @@ private object ChiselBridge {
       Some(firrtl2.annotations.EnumDefAnnotation(typeName, definition))
     case EnumVecAnnotation(target, typeName, fields) =>
       Some(firrtl2.annotations.EnumVecAnnotation(convertNamed(target), typeName, fields))
+    // ignoreDecodeTableAnnotation since it is not needed by the firrtl compiler
+    case _: DecodeTableAnnotation => None
     //
     case _ => throw new NotImplementedError(s"TODO: convert ${anno}")
   }
