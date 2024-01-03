@@ -28,6 +28,7 @@ class Booth(width: Int)(radixLog2: Int, signed: Boolean = true) extends Module {
       Fill(len - x.getWidth, fillBit) ## x.asUInt
     }
   }
+
   /** Because .asUInt() do not set .litOption properly */
   def sIntToBitPat(x: Int, w: Int): BitPat = {
     if (x >= 0)
@@ -51,16 +52,15 @@ class Booth(width: Int)(radixLog2: Int, signed: Boolean = true) extends Module {
         Seq
           .tabulate(radixLog2 + 1)((bit: Int) => if (BigInt(i).testBit(bit)) 1 else 0)
           .zip(boothEncodingCoeff)
-          .map {
-            case (a, b) => a * b
+          .map { case (a, b) =>
+            a * b
           }
           .sum
       }
       .zipWithIndex
-      .map {
-        case (o, i) =>
-          val w = radixLog2 + 1
-          (sIntToBitPat(i, w), sIntToBitPat(o, w))
+      .map { case (o, i) =>
+        val w = radixLog2 + 1
+        (sIntToBitPat(i, w), sIntToBitPat(o, w))
       },
     BitPat.dontCare(radixLog2 + 1)
   )
@@ -76,7 +76,7 @@ class ConvertDecodeTableAnnotation extends AnyFlatSpec with ChiselScalatestTeste
   behavior.of("Convert DecodeTableAnnotation Regression")
 
   it should "work" in {
-    test(new Booth(16)(8)){ dut =>
+    test(new Booth(16)(8)) { dut =>
       dut.input.poke(7.U)
       dut.output(0).expect(7.S)
       dut.output(1).expect(0.S)
