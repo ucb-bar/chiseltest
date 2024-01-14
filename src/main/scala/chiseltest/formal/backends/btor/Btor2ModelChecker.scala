@@ -5,7 +5,25 @@ package chiseltest.formal.backends.btor
 import chiseltest.formal.backends._
 import firrtl2.backends.experimental.smt._
 
-class BtormcModelChecker(targetDir: os.Path) extends IsModelChecker {
+private[chiseltest] trait Solver {
+  def cmd(btorFile: String, kMax: Int): Seq[String]
+}
+
+object BtormcBtor2 extends Solver {
+  override def cmd(btorFile: String, kMax: Int): Seq[String] = {
+    val kmaxOpt = if (kMax > 0) Seq("--kmax", kMax.toString) else Seq()
+    Seq("btormc") ++ kmaxOpt ++ Seq(btorFile)
+  }
+}
+
+object PonoBtor2 extends Solver {
+  override def cmd(btorFile: String, kMax: Int): Seq[String] = {
+    val kmaxOpt = if (kMax > 0) Seq("-k", kMax.toString) else Seq()
+    Seq("pono") ++ Seq("-e", "bmc") ++ kmaxOpt ++ Seq("--vcd", "ignore.vcd") ++ Seq(btorFile)
+  }
+}
+
+class Btor2ModelChecker(solver: Solver, targetDir: os.Path) extends IsModelChecker {
   override val fileExtension = ".btor2"
   override val name:   String = "btormc"
   override val prefix: String = "btormc"
@@ -18,8 +36,7 @@ class BtormcModelChecker(targetDir: os.Path) extends IsModelChecker {
     os.write.over(targetDir / filename, lines.mkString("", "\n", "\n"))
 
     // execute model checker
-    val kmaxOpt = if (kMax > 0) Seq("--kmax", kMax.toString) else Seq()
-    val cmd = Seq("btormc") ++ kmaxOpt ++ Seq(filename)
+    val cmd = solver.cmd(filename, kMax)
     val r = os.proc(cmd).call(cwd = targetDir, check = false)
 
     // write stdout to file for debugging
@@ -32,15 +49,13 @@ class BtormcModelChecker(targetDir: os.Path) extends IsModelChecker {
 
     if (isSat) {
       val witness = Btor2WitnessParser.read(res, 1).head
-      ModelCheckFail(Btor2ModelChecker.convertWitness(sys, witness))
+      ModelCheckFail(convertWitness(sys, witness))
     } else {
       ModelCheckSuccess()
     }
   }
-}
 
-object Btor2ModelChecker {
-  def convertWitness(sys: TransitionSystem, bw: Btor2Witness): Witness = {
+  private def convertWitness(sys: TransitionSystem, bw: Btor2Witness): Witness = {
     val badNames = sys.signals.filter(_.lbl == IsBad).map(_.name).toIndexedSeq
     val failed = bw.failed.map(badNames)
     Witness(failed, bw.regInit, bw.memInit, bw.inputs)

@@ -17,6 +17,7 @@ object FormalBackendOption {
       case Some("z3")        => Z3EngineAnnotation
       case Some("cvc4")      => CVC4EngineAnnotation
       case Some("btormc")    => BtormcEngineAnnotation
+      case Some("pono")      => PonoEngineAnnotation
       case Some("yices2")    => throw new RuntimeException("yices is not supported yet")
       case Some("boolector") => throw new RuntimeException("boolector is not supported yet")
       case Some("bitwuzla")  => BitwuzlaEngineAnnotation

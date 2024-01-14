@@ -2,7 +2,7 @@
 
 package chiseltest.formal.backends
 
-import chiseltest.formal.backends.btor.BtormcModelChecker
+import chiseltest.formal.backends.btor._
 import chiseltest.formal.backends.smt._
 import chiseltest.formal.{DoNotModelUndef, DoNotOptimizeFormal, FailedBoundedCheckException}
 import firrtl2._
@@ -55,6 +55,8 @@ private case object BoolectorEngineAnnotation extends FormalEngineAnnotation
   *   bitwuzla often performs better than Z3 or CVC4.
   */
 case object BitwuzlaEngineAnnotation extends FormalEngineAnnotation
+
+case object PonoEngineAnnotation extends FormalEngineAnnotation
 
 /** Formal Verification based on the firrtl compiler's SMT backend and the maltese SMT libraries solver bindings. */
 private[chiseltest] object Maltese {
@@ -166,10 +168,11 @@ private[chiseltest] object Maltese {
     engines.map {
       case CVC4EngineAnnotation      => new SMTModelChecker(CVC4SMTLib)
       case Z3EngineAnnotation        => new SMTModelChecker(Z3SMTLib)
-      case BtormcEngineAnnotation    => new BtormcModelChecker(targetDir)
+      case BtormcEngineAnnotation    => new Btor2ModelChecker(BtormcBtor2, targetDir)
       case Yices2EngineAnnotation    => new SMTModelChecker(Yices2SMTLib)
       case BoolectorEngineAnnotation => new SMTModelChecker(BoolectorSMTLib)
       case BitwuzlaEngineAnnotation  => new SMTModelChecker(BitwuzlaSMTLib)
+      case PonoEngineAnnotation      => new Btor2ModelChecker(PonoBtor2, targetDir)
     }
   }
 
