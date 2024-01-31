@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          submodules: 'true'
       - name: Setup Scala
         uses: actions/setup-java@v3
         with:
@@ -34,6 +36,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          submodules: 'true'
       - name: Test
         run: sbt "testOnly chiseltest.** -- -l RequiresVcs -l RequiresVerilator -l Formal -l RequiresIcarus"
 
@@ -46,6 +50,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          submodules: 'true'
       - name: Install Icarus Verilog for Ubuntu
         if: runner.os == 'Linux'
         run: |
@@ -76,6 +82,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          submodules: 'true'
       - name: Install Verilator Build Dependencies
         run: sudo apt-get install -y git make autoconf g++ flex bison libfl2 libfl-dev
       - name: Cache Verilator ${{ matrix.version }}
@@ -110,6 +118,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          submodules: 'true'
       - name: Install Z3 and CVC4
         if: runner.os == 'Linux'
         run: |
@@ -129,6 +139,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          submodules: 'true'
       - name: Install Z3 for MacOS
         run: |
           brew install z3
@@ -142,6 +154,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          submodules: 'true'
       - name: Documentation
         id: doc
         run: sbt doc
@@ -155,6 +169,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          submodules: 'true'
       - name: Check for Warnings
         run: sbt "set ThisBuild / scalacOptions ++= Seq(\"-Xfatal-warnings\") ; compile"
       - name: Check for Warnings in Tests
@@ -170,6 +186,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          submodules: 'true'
       - name: Setup Scala
         uses: actions/setup-java@v3
         with:

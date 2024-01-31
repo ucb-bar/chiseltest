@@ -1,0 +1,3 @@
+[submodule "fixedpoint"]
+	path = fixedpoint
+	url = git@github.com:ucb-bar/fixedpoint.git
