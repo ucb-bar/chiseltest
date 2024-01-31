@@ -38,7 +38,7 @@ object GetFirrtlAst extends Phase {
     def handleFirrtlFile(): Option[AnnotationSeq] = {
       annotationSeq.collectFirst { case FirrtlFileAnnotation(fileName) => fileName } match {
         case Some(fileName) =>
-          val file = io.Source.fromFile(fileName)
+          val file = scala.io.Source.fromFile(fileName)
           val text = file.mkString
           file.close()
 

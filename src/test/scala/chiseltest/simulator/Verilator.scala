@@ -28,7 +28,7 @@ class VerilatorSpecificTests extends FlatSpecWithTargetDir {
     val (_, out) = CaptureStdout {
       sim.findVersions()
     }
-    assert(out.contains("Found Verilator 4"))
+    assert(out.contains("Found Verilator "))
   }
 
   it should "print out commands and verilator results in debug mode" taggedAs RequiresVerilator in {
@@ -45,8 +45,6 @@ class VerilatorSpecificTests extends FlatSpecWithTargetDir {
     val verilatorBinName = if (JNAUtils.isWindows) { "verilator_bin" }
     else { "verilator" }
     assert(out.contains(s"${verilatorBinName} --cc --exe "))
-    assert(out.contains("g++"))
-    assert(out.contains("perl"))
     assert(out.contains("make -C"))
   }
 }

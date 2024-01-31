@@ -105,7 +105,7 @@ private object VerilatorSimulator extends Simulator {
     val coverageFile = targetDir / "coverage.dat"
     def readCoverage(): List[(String, Long)] = {
       assert(os.exists(coverageFile), s"Could not find `$coverageFile` file!")
-      VerilatorCoverage.loadCoverage(coverageAnnos, coverageFile)
+      VerilatorCoverage.loadCoverage(coverageAnnos, coverageFile, (majorVersion, minorVersion))
     }
 
     val args = getSimulatorArgs(state)
@@ -152,7 +152,7 @@ private object VerilatorSimulator extends Simulator {
     val coverageFile = targetDir / "coverage.dat"
     def readCoverage(): List[(String, Long)] = {
       assert(os.exists(coverageFile), s"Could not find `$coverageFile` file!")
-      VerilatorCoverage.loadCoverage(coverageAnnos, coverageFile)
+      VerilatorCoverage.loadCoverage(coverageAnnos, coverageFile, (majorVersion, minorVersion))
     }
 
     val args = getSimulatorArgs(state)
