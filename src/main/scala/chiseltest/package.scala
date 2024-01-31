@@ -24,6 +24,7 @@ import chisel3.{
 import chisel3.util.{ReadyValidIO, ValidIO}
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._
+import fixedpoint._
 
 /** Basic interfaces and implicit conversions for testers2
   */
@@ -121,6 +122,59 @@ package object chiseltest {
     }
   }
 
+  /** allows access to chisel FixedPoint type signals with Scala native values */
+  implicit class testableFixedPoint(x: FixedPoint) {
+    private def asFixedPoint(value: Double):     FixedPoint = value.F(Utils.getFirrtlWidth(x), x.binaryPoint)
+    private def asFixedPoint(value: BigDecimal): FixedPoint = value.F(Utils.getFirrtlWidth(x), x.binaryPoint)
+    def poke(value: FixedPoint): Unit = {
+      require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
+      Utils.pokeBits(x, value.litValue)
+    }
+    def poke(value: Double):     Unit = poke(asFixedPoint(value))
+    def poke(value: BigDecimal): Unit = poke(asFixedPoint(value))
+    private[chiseltest] def expectInternal(value: FixedPoint, message: Option[() => String]): Unit = {
+      require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
+      // for backwards compatibility reasons, we do not support epsilon when expect is called with the FixedPoint type.
+      Utils.expectBits(x, value.litValue, message, Some(Utils.fixedToString(x.binaryPoint)))
+    }
+    def expect(value: FixedPoint): Unit = expectInternal(value, None)
+    def expect(value: FixedPoint, message: => String): Unit = expectInternal(value, Some(() => message))
+    private[chiseltest] def expectInternal(expected: Double, epsilon: Double, userMsg: Option[() => String]): Unit = {
+      Utils.expectEpsilon(x, peekDouble(), expected, epsilon, userMsg)
+    }
+    def expect(value: Double): Unit = expectInternal(value, epsilon = 0.01, None)
+    def expect(value: Double, epsilon: Double): Unit = expectInternal(value, epsilon = epsilon, None)
+    def expect(value: Double, message: => String): Unit =
+      expectInternal(value, epsilon = 0.01, Some(() => message))
+    def expect(value: Double, message: => String, epsilon: Double): Unit =
+      expectInternal(value, epsilon = epsilon, Some(() => message))
+    private[chiseltest] def expectInternal(
+      expected: BigDecimal,
+      epsilon:  BigDecimal,
+      userMsg:  Option[() => String]
+    ): Unit = {
+      Utils.expectEpsilon(x, peekBigDecimal(), expected, epsilon, userMsg)
+    }
+    def expect(value: BigDecimal): Unit = expectInternal(value, epsilon = 0.01, None)
+    def expect(value: BigDecimal, epsilon: BigDecimal): Unit = expectInternal(value, epsilon = epsilon, None)
+    def expect(value: BigDecimal, message: => String): Unit =
+      expectInternal(value, epsilon = 0.01, Some(() => message))
+    def expect(value: BigDecimal, message: => String, epsilon: BigDecimal): Unit =
+      expectInternal(value, epsilon = epsilon, Some(() => message))
+    def peek(): FixedPoint = {
+      val multiplier = BigDecimal(2).pow(x.binaryPoint.get)
+      (BigDecimal(Context().backend.peekBits(x)) / multiplier).F(x.binaryPoint)
+    }
+    def peekDouble(): Double = x.binaryPoint match {
+      case KnownBinaryPoint(bp) => FixedPoint.toDouble(Context().backend.peekBits(x), bp)
+      case _                    => throw new Exception("Cannot peekInterval with unknown binary point location")
+    }
+    def peekBigDecimal(): BigDecimal = x.binaryPoint match {
+      case KnownBinaryPoint(bp) => FixedPoint.toBigDecimal(Context().backend.peekBits(x), bp)
+      case _                    => throw new Exception("Cannot peekInterval with unknown binary point location")
+    }
+  }
+
   implicit class testableRecord[T <: Record](x: T) {
 
     /** Poke the given signal with a [[Record.litValue()]]
@@ -201,6 +255,7 @@ package object chiseltest {
         case (x: Bool, value: Bool) => x.poke(value)
         case (x: UInt, value: UInt) => x.poke(value)
         case (x: SInt, value: SInt) => x.poke(value)
+        case (x: FixedPoint, value: FixedPoint) => x.poke(value)
         case (x: Record, value: Record) =>
           require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
           x.elements.zip(value.elements).foreach { case ((_, x), (_, value)) =>
@@ -223,6 +278,7 @@ package object chiseltest {
       case x: Bool => x.peek().asInstanceOf[T]
       case x: UInt => x.peek().asInstanceOf[T]
       case x: SInt => x.peek().asInstanceOf[T]
+      case x: FixedPoint => x.peek().asInstanceOf[T]
       case x: Record =>
         val elementValueFns = x.elements.map { case (name: String, elt: Data) =>
           (y: Record) => (y.elements(name), elt.peek())
@@ -243,6 +299,7 @@ package object chiseltest {
         case (x: Bool, value: Bool) => x.expectInternal(value.litValue, message)
         case (x: UInt, value: UInt) => x.expectInternal(value.litValue, message)
         case (x: SInt, value: SInt) => x.expectInternal(value.litValue, message)
+        case (x: FixedPoint, value: FixedPoint) => x.expectInternal(value, message)
         case (x: Record, value: Record) =>
           require(DataMirror.checkTypeEquivalence(x, value), s"Record type mismatch")
           x.elements.zip(value.elements).foreach { case ((_, x), (_, value)) =>
@@ -325,12 +382,25 @@ package object chiseltest {
     }
 
     // helps us work around the fact that signal.width is private!
-    def getFirrtlWidth(signal: Bits): chisel3.internal.firrtl.Width = signal.widthOption match {
+    def getFirrtlWidth(signal: Data): chisel3.internal.firrtl.Width = signal.widthOption match {
       case Some(value) => chisel3.internal.firrtl.KnownWidth(value)
       case None        => chisel3.internal.firrtl.UnknownWidth()
     }
 
     def boolBitsToString(bits: BigInt): String = (bits != 0).toString
+
+    def fixedToString(binaryPoint: BinaryPoint): BigInt => String = {
+      def inner(bits: BigInt): String = {
+        binaryPoint match {
+          case KnownBinaryPoint(binaryPoint) =>
+            val bpInteger = 1 << binaryPoint
+            (bits.toFloat / bpInteger).toString
+          case UnknownBinaryPoint => "[unknown binary point]"
+        }
+      }
+
+      inner
+    }
 
     def enumToString(tpe: EnumType): BigInt => String = {
       def inner(bits: BigInt): String = {
