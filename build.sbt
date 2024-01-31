@@ -80,7 +80,11 @@ lazy val publishSettings = Seq(
   }
 )
 
+lazy val fixedpoint = (project in file("fixedpoint"))
+  .settings(commonSettings)
+
 lazy val chiseltest = (project in file("."))
+  .dependsOn(fixedpoint)
   .settings(commonSettings)
   .settings(chiseltestSettings)
   .settings(publishSettings)
