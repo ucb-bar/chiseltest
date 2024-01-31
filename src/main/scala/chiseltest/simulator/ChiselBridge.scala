@@ -154,8 +154,12 @@ private object ChiselBridge {
     // ignoreDecodeTableAnnotation since it is not needed by the firrtl compiler
     case _: DecodeTableAnnotation => None
     //
-    case _ => Some(UnsupportedAnnotation(anno.getClass.getSimpleName, anno.toString))
-    // case _ => throw new NotImplementedError(s"TODO: convert ${anno}")
+    case _ =>
+      println(
+        s"[WARNING] Unsupported annotation: ${anno.getClass.getSimpleName}\n" +
+          s" Please report this issue at https://github.com/ucb-bar/chiseltest/issues"
+      )
+      Some(UnsupportedAnnotation(anno.getClass.getSimpleName, anno.toString))
   }
 
   private def convert(c: Circuit): firrtl2.ir.Circuit =
