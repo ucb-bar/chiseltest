@@ -92,9 +92,9 @@ jobs:
         # 4.038: Ubuntu 20.10
         # 4.108: Fedora 34
         # 4.202: added "forcePerInstance" to support our coverage flow
-        # 5.018: currently the latest version on brew (macOS)
-        # 5.020: latest release
-        version: ["4.028", "4.032", "4.034", "4.038", "4.108", "4.200", "4.202", "5.018", "5.020"]
+        # 5.018: current version on Homebrew (5/2/2024)
+        # 5.020: latest release (5/2/2024)
+        version: ["4.028", "4.032", "4.034", "4.038", "4.108", "4.200", "4.202"]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
