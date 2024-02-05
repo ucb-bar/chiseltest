@@ -205,6 +205,7 @@ private object ChiselBridge {
     case AsyncResetType => firrtl2.ir.AsyncResetType
     case AnalogType(w)  => firrtl2.ir.AnalogType(convert(w))
     case UnknownType    => firrtl2.ir.UnknownType
+    case ConstType(tpe) => convert(tpe)
     case BundleType(fields) =>
       firrtl2.ir.BundleType(fields.map { case Field(name, flip, tpe) =>
         firrtl2.ir.Field(name, convert(flip), convert(tpe))
