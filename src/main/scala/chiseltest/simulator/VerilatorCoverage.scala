@@ -32,12 +32,13 @@ private object VerilatorCoverage {
     Coverage.collectCoverageAnnotations(annos) ++ annos.collect { case a: OrderedCoverPointsAnnotation => a }
   }
 
-  def loadCoverage(annos: AnnotationSeq, coverageData: os.Path): List[(String, Long)] = {
+  def loadCoverage(annos: AnnotationSeq, coverageData: os.Path, version: (Int, Int)): List[(String, Long)] = {
     val entries = parseCoverageData(coverageData)
-    verilatorCoverageToCoverageMap(entries, annos)
+    verilatorCoverageToCoverageMap(entries, annos, version)
   }
 
-  private def verilatorCoverageToCoverageMap(es: List[CoverageEntry], annos: AnnotationSeq): List[(String, Long)] = {
+  private def verilatorCoverageToCoverageMap(es: List[CoverageEntry], annos: AnnotationSeq, version: (Int, Int))
+    : List[(String, Long)] = {
     // map from module name to an ordered list of cover points in said module
     val coverPoints = annos.collect { case a: OrderedCoverPointsAnnotation => a.target.module -> a.covers }.toMap
     // map from instance path name to the name of the module
@@ -49,8 +50,19 @@ private object VerilatorCoverage {
     // process the coverage entries on a per instance basis
     es.groupBy(_.path).toList.flatMap { case (name, entries) =>
       // we look up the cover points by first converting to the module name
-      val covers = coverPoints(instToModule(name))
-      processInstanceCoverage(name, covers, entries)
+      instToModule.get(name) match {
+        case Some(module) =>
+          val covers = coverPoints(module)
+          processInstanceCoverage(name, covers, entries)
+        case None if name.contains("*") =>
+          instToModule.flatMap {
+            case (inst, module) if inst.matches(name.replace("*", ".*")) =>
+              val covers = coverPoints(module)
+              processInstanceCoverage(inst, covers, entries)
+            case _ => Nil
+          }
+        case _ => throw new RuntimeException(s"Could not find module for instance: $name")
+      }
     }
   }
 

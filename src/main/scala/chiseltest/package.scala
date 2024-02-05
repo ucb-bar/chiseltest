@@ -324,9 +324,9 @@ package object chiseltest {
     }
 
     // helps us work around the fact that signal.width is private!
-    def getFirrtlWidth(signal: Bits): chisel3.internal.firrtl.Width = signal.widthOption match {
-      case Some(value) => chisel3.internal.firrtl.KnownWidth(value)
-      case None        => chisel3.internal.firrtl.UnknownWidth()
+    def getFirrtlWidth(signal: Bits): chisel3.Width = signal.widthOption match {
+      case Some(value) => chisel3.KnownWidth(value)
+      case None        => chisel3.UnknownWidth()
     }
 
     def boolBitsToString(bits: BigInt): String = (bits != 0).toString

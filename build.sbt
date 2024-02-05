@@ -2,20 +2,21 @@
 
 lazy val commonSettings = Seq(
   organization := "edu.berkeley.cs",
-  scalaVersion := "2.13.10",
-  crossScalaVersions := Seq("2.13.10")
+  scalaVersion := "2.13.12",
+  crossScalaVersions := Seq("2.13.12")
 )
 
-val chiselVersion = "6.0.0-M3"
+val chiselVersion = "6.0.0"
 val firrtlVersion = "6.0-SNAPSHOT"
 
 lazy val chiseltestSettings = Seq(
   name := "chiseltest",
   // we keep in sync with chisel version names
-  version := "6.0-SNAPSHOT",
+  version := "6.0.0",
   scalacOptions := Seq(
     "-deprecation",
     "-feature",
+    "-Xcheckinit",
     "-language:reflectiveCalls",
     // do not warn about firrtl imports, once the firrtl repo is removed, we will need to import the code
     "-Wconf:cat=deprecation&msg=Importing from firrtl is deprecated:s",
@@ -28,7 +29,7 @@ lazy val chiseltestSettings = Seq(
     "org.chipsalliance" %% "chisel" % chiselVersion,
     "edu.berkeley.cs" %% "firrtl2" % firrtlVersion,
     "org.scalatest" %% "scalatest" % "3.2.17",
-    "net.java.dev.jna" % "jna" % "5.13.0",
+    "net.java.dev.jna" % "jna" % "5.14.0",
     compilerPlugin(("org.chipsalliance" % "chisel-plugin" % chiselVersion).cross(CrossVersion.full))
   ),
   resolvers ++= Resolver.sonatypeOssRepos("snapshots"),

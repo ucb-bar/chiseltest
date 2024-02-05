@@ -8,7 +8,7 @@ import org.scalatest.freespec.AnyFreeSpec
 
 class UsesVec extends Module {
   val in = IO(Input(Vec(4, UInt(5.W))))
-  val addr = IO(Input(UInt(8.W)))
+  val addr = IO(Input(UInt(2.W)))
   val out = IO(Output(UInt(5.W)))
 
   out := in(addr)

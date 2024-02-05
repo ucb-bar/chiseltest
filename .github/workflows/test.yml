@@ -33,8 +33,8 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        scala: [ 2.13.10 ]
-        jvm: [ 8, 11, 20 ]
+        scala: [ 2.13.12 ]
+        jvm: [ 8, 11, 20, 21 ]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -86,20 +86,20 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        # 4.028: Ubuntu 20.04, Fedora 32
+        # 4.028: Ubuntu 22.04, Fedora 32
         # 4.032: Fedora 33
         # 4.034: Chipyard
         # 4.038: Ubuntu 20.10
         # 4.108: Fedora 34
-        # 4.200: currently the latest version on brew (MacOS)
         # 4.202: added "forcePerInstance" to support our coverage flow
+        # 5.018: current version on Homebrew (5/2/2024)
+        # 5.020: latest release (5/2/2024)
         version: ["4.028", "4.032", "4.034", "4.038", "4.108", "4.200", "4.202"]
-
     steps:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Verilator Build Dependencies
-        run: sudo apt-get install -y git make autoconf g++ flex bison libfl2 libfl-dev
+        run: sudo apt-get install -y git make autoconf g++ flex bison libfl2 libfl-dev help2man
       - name: Cache Verilator ${{ matrix.version }}
         uses: actions/cache@v3
         id: cache-verilator
