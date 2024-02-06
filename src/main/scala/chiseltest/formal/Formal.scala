@@ -13,6 +13,7 @@ import firrtl2.transforms.formal.DontAssertSubmoduleAssumptionsAnnotation
 
 sealed trait FormalOp extends NoTargetAnnotation
 case class BoundedCheck(kMax: Int = -1) extends FormalOp
+case class InductionCheck(kMax: Int = -1) extends FormalOp
 
 /** Specifies how many cycles the circuit should be reset for. */
 case class ResetOption(cycles: Int = 1) extends NoTargetAnnotation {
@@ -79,5 +80,7 @@ private object Formal {
   def executeOp(state: CircuitState, resetLength: Int, op: FormalOp): Unit = op match {
     case BoundedCheck(kMax) =>
       backends.Maltese.bmc(state.circuit, state.annotations, kMax = kMax, resetLength = resetLength)
+    case InductionCheck(kMax) =>
+      backends.Maltese.induction(state.circuit, state.annotations, kMax = kMax, resetLength = resetLength)
   }
 }

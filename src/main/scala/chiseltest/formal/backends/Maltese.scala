@@ -62,6 +62,24 @@ private[chiseltest] object Maltese {
     require(kMax > 0)
     require(resetLength >= 0)
 
+    val checkFn = (checker: IsModelChecker, sys: TransitionSystem) => checker.check(sys, kMax = kMax + resetLength);
+    check(circuit, annos, checkFn, resetLength);
+  }
+
+  def induction(circuit: ir.Circuit, annos: AnnotationSeq, kMax: Int, resetLength: Int = 0): Unit = {
+    require(kMax > 0)
+    require(resetLength >= 0)
+
+    val checkFn = (checker: IsModelChecker, sys: TransitionSystem) => checker.check(sys, kMax = kMax + resetLength);
+    check(circuit, annos, checkFn, resetLength);
+  }
+
+  def check(
+    circuit:     ir.Circuit,
+    annos:       AnnotationSeq,
+    checkFn:     (IsModelChecker, TransitionSystem) => ModelCheckResult,
+    resetLength: Int
+  ): Unit = {
     // convert to transition system
     val targetDir = Compiler.requireTargetDir(annos)
     val modelUndef = !annos.contains(DoNotModelUndef)
@@ -77,7 +95,7 @@ private[chiseltest] object Maltese {
     // perform check
     val checkers = makeCheckers(annos, targetDir)
     assert(checkers.size == 1, "Parallel checking not supported atm!")
-    checkers.head.check(sysInfo.sys, kMax = kMax + resetLength) match {
+    checkFn(checkers.head, sysInfo.sys) match {
       case ModelCheckFail(witness) =>
         val writeVcd = annos.contains(WriteVcdAnnotation)
         if (writeVcd) {
