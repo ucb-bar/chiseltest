@@ -94,7 +94,7 @@ jobs:
         # 4.202: added "forcePerInstance" to support our coverage flow
         # 5.018: current version on Homebrew (5/2/2024)
         # 5.020: latest release (5/2/2024)
-        version: ["4.028", "4.032", "4.034", "4.038", "4.108", "4.200", "4.202"]
+        version: ["4.028", "4.032", "4.034", "4.038", "4.108", "4.200", "4.202", "5.018", "5.020"]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
