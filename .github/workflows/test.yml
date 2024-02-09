@@ -84,6 +84,7 @@ jobs:
   verilator:
     name: verilator regressions
     runs-on: ubuntu-20.04
+    timeout-minutes: 600
     strategy:
       matrix:
         # 4.028: Ubuntu 22.04, Fedora 32
@@ -121,6 +122,7 @@ jobs:
           sudo make install
           verilator --version
       - name: Test
+        timeout-minutes: 480
         run: sbt "testOnly chiseltest.** -- -n RequiresVerilator"
 
   formal:
