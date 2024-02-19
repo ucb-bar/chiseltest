@@ -4,7 +4,12 @@ package chiseltest.formal.backends
 
 import chiseltest.formal.backends.btor.BtormcModelChecker
 import chiseltest.formal.backends.smt._
-import chiseltest.formal.{DoNotModelUndef, DoNotOptimizeFormal, FailedBoundedCheckException}
+import chiseltest.formal.{
+  DoNotModelUndef,
+  DoNotOptimizeFormal,
+  FailedBoundedCheckException,
+  FailedInductionCheckException
+}
 import firrtl2._
 import firrtl2.annotations._
 import firrtl2.stage._
@@ -12,6 +17,7 @@ import firrtl2.backends.experimental.smt.random._
 import firrtl2.backends.experimental.smt._
 import chiseltest.simulator._
 import firrtl2.options.Dependency
+import os.Path
 
 sealed trait FormalEngineAnnotation extends NoTargetAnnotation
 
@@ -70,7 +76,8 @@ private[chiseltest] object Maltese {
     require(kMax > 0)
     require(resetLength >= 0)
 
-    val checkFn = (checker: IsModelChecker, sys: TransitionSystem) => checker.check(sys, kMax = kMax + resetLength);
+    val checkFn = (checker: IsModelChecker, sys: TransitionSystem) =>
+      checker.checkInduction(sys, resetLength, kMax = kMax);
     check(circuit, annos, checkFn, resetLength);
   }
 
@@ -97,17 +104,13 @@ private[chiseltest] object Maltese {
     assert(checkers.size == 1, "Parallel checking not supported atm!")
     checkFn(checkers.head, sysInfo.sys) match {
       case ModelCheckFail(witness) =>
-        val writeVcd = annos.contains(WriteVcdAnnotation)
-        if (writeVcd) {
-          val sim = new TransitionSystemSimulator(sysInfo.sys)
-          sim.run(witness, vcdFileName = Some((targetDir / s"${circuit.main}.bmc.vcd").toString))
-          val trace = witnessToTrace(sysInfo, witness)
-          val treadleState = prepTreadle(circuit, annos, modelUndef)
-          val treadleDut = TreadleBackendAnnotation.getSimulator.createContext(treadleState)
-          Trace.replayOnSim(trace, treadleDut)
-        }
+        processWitness(circuit, sysInfo, annos, witness, modelUndef, targetDir, "bmc")
         val failSteps = witness.inputs.length - 1 - resetLength
         throw FailedBoundedCheckException(circuit.main, failSteps)
+      case ModelCheckFailInduction(witness) =>
+        processWitness(circuit, sysInfo, annos, witness, modelUndef, targetDir, "induction")
+        val failSteps = witness.inputs.length - 1
+        throw FailedInductionCheckException(circuit.main, failSteps)
       case ModelCheckSuccess() => // good!
     }
   }
@@ -125,6 +128,27 @@ private[chiseltest] object Maltese {
         ) ++: annos ++: DefRandomTreadleAnnos
       )
       Compiler.annosToState(res)
+    }
+  }
+
+  // Produces a vcd file based on the witness is @annos contains WriteVcdAnnotation
+  private def processWitness(
+    circuit:    ir.Circuit,
+    sysInfo:    SysInfo,
+    annos:      AnnotationSeq,
+    witness:    Witness,
+    modelUndef: Boolean,
+    targetDir:  Path,
+    vcdSuffix:  String
+  ) = {
+    val writeVcd = annos.contains(WriteVcdAnnotation)
+    if (writeVcd) {
+      val sim = new TransitionSystemSimulator(sysInfo.sys)
+      sim.run(witness, vcdFileName = Some((targetDir / s"${circuit.main}.${vcdSuffix}.vcd").toString))
+      val trace = witnessToTrace(sysInfo, witness)
+      val treadleState = prepTreadle(circuit, annos, modelUndef)
+      val treadleDut = TreadleBackendAnnotation.getSimulator.createContext(treadleState)
+      Trace.replayOnSim(trace, treadleDut)
     }
   }
 

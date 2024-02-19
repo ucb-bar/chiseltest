@@ -28,6 +28,14 @@ private[chiseltest] object FailedBoundedCheckException {
   }
 }
 
+class FailedInductionCheckException(val message: String, val failAt: Int) extends Exception(message)
+private[chiseltest] object FailedInductionCheckException {
+  def apply(module: String, failAt: Int): FailedInductionCheckException = {
+    val msg = s"[$module] found an assertion violation after $failAt steps!"
+    new FailedInductionCheckException(msg, failAt)
+  }
+}
+
 /** Adds the `verify` command for formal checks to a ChiselScalatestTester */
 trait Formal { this: HasTestName =>
   def verify[T <: Module](dutGen: => T, annos: AnnotationSeq, chiselAnnos: firrtl.AnnotationSeq = Seq()): Unit = {

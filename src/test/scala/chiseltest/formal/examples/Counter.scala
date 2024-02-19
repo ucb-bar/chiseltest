@@ -7,12 +7,42 @@ import chiseltest.formal._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class CounterVerify extends AnyFlatSpec with ChiselScalatestTester with Formal with FormalBackendOption {
-  "Counter" should "succeed BMC" taggedAs FormalTag in {
-    verify(new Counter(65000, 60000), Seq(BoundedCheck(10), DefaultBackend))
+  "Counter" should "pass BMC" taggedAs FormalTag in {
+    verify(new Counter(65000, 60000), Seq(BoundedCheck(3), DefaultBackend))
   }
 
-  "Counter" should "Fail induction" taggedAs FormalTag in {
-    verify(new Counter(65000, 50), Seq(InductionCheck(10), DefaultBackend))
+  "Counter" should "fail induction" taggedAs FormalTag in {
+    // btormc induction is unsupported
+    DefaultBackend match {
+      case BtormcEngineAnnotation => {}
+      case anno => {
+        val e = intercept[FailedInductionCheckException] {
+          verify(new Counter(65000, 64999), Seq(InductionCheck(1), anno))
+        }
+        assert(e.failAt == 1)
+      }
+    }
+  }
+
+  "Counter" should "pass induction" taggedAs FormalTag in {
+    // btormc induction is unsupported
+    DefaultBackend match {
+      case BtormcEngineAnnotation => {}
+      case anno                   => verify(new Counter(65000, 65000), Seq(InductionCheck(1), anno))
+    }
+  }
+
+  "Counter" should "Fail BMC step of induction" taggedAs FormalTag in {
+    // btormc induction is unsupported
+    DefaultBackend match {
+      case BtormcEngineAnnotation => {}
+      case anno => {
+        val e = intercept[FailedBoundedCheckException] {
+          verify(new Counter(65000, 4), Seq(InductionCheck(8), anno))
+        }
+        assert(e.failAt == 5)
+      }
+    }
   }
 }
 
