@@ -28,7 +28,7 @@ lazy val chiseltestSettings = Seq(
   libraryDependencies ++= Seq(
     "org.chipsalliance" %% "chisel" % chiselVersion,
     "edu.berkeley.cs" %% "firrtl2" % firrtlVersion,
-    "org.scalatest" %% "scalatest" % "3.2.17",
+    "org.scalatest" %% "scalatest" % "3.2.18",
     "net.java.dev.jna" % "jna" % "5.14.0",
     compilerPlugin(("org.chipsalliance" % "chisel-plugin" % chiselVersion).cross(CrossVersion.full))
   ),
