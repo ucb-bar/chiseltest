@@ -24,10 +24,12 @@ class CompactSmtEncoding(sys: TransitionSystem) extends TransitionSystemSmtEncod
     s
   }
 
-  def init(ctx: SolverContext): Unit = {
+  def init(ctx: SolverContext, isArbitraryStep: Boolean): Unit = {
     assert(states.isEmpty)
     val s0 = appendState(ctx)
-    ctx.assert(BVFunctionCall(stateInitFun, List(s0), 1))
+    if (!isArbitraryStep) {
+      ctx.assert(BVFunctionCall(stateInitFun, List(s0), 1))
+    }
   }
 
   def unroll(ctx: SolverContext): Unit = {

@@ -68,7 +68,8 @@ private[chiseltest] object Maltese {
     require(kMax > 0)
     require(resetLength >= 0)
 
-    val checkFn = (checker: IsModelChecker, sys: TransitionSystem) => checker.check(sys, kMax = kMax + resetLength);
+    val checkFn = (checker: IsModelChecker, sys: TransitionSystem) =>
+      checker.checkBounded(sys, kMax = kMax + resetLength);
     check(circuit, annos, checkFn, resetLength);
   }
 

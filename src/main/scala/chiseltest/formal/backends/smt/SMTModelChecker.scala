@@ -27,15 +27,16 @@ class SMTModelChecker(
   override def checkInduction(sys: TransitionSystem, resetLength: Int, kMax: Int = -1): ModelCheckResult = {
     require(kMax > 0 && kMax <= 2000, s"unreasonable kMax=$kMax")
     // Check BMC first
-    check(sys, kMax + resetLength) match {
+    checkBounded(sys, kMax + resetLength) match {
       case ModelCheckFail(w) => return ModelCheckFail(w)
       case _                 =>
     }
 
     val (ctx, enc) = checkInit(sys)
+    // Initialise transition system at an arbitrary step
+    enc.init(ctx, true)
 
-    // TODO: remove hardcoding of "_resetActive"
-    val constraints = sys.signals.filter(s => s.lbl == IsConstraint && s.name != "_resetActive").map(_.name)
+    val constraints = sys.signals.filter(s => s.lbl == IsConstraint).map(_.name)
     val assertions = sys.signals.filter(_.lbl == IsBad).map(_.name)
 
     (0 to kMax).foreach { k =>
@@ -55,13 +56,15 @@ class SMTModelChecker(
     modelResult
   }
 
-  override def check(
+  override def checkBounded(
     sys:  TransitionSystem,
     kMax: Int
   ): ModelCheckResult = {
     require(kMax > 0 && kMax <= 2000, s"unreasonable kMax=$kMax")
 
     val (ctx, enc) = checkInit(sys)
+    // Initialise transition system at reset
+    enc.init(ctx, false)
 
     val constraints = sys.signals.filter(_.lbl == IsConstraint).map(_.name)
     val assertions = sys.signals.filter(_.lbl == IsBad).map(_.name)
@@ -112,7 +115,6 @@ class SMTModelChecker(
       new UnrollSmtEncoding(sys)
     }
     enc.defineHeader(ctx)
-    enc.init(ctx)
 
     (ctx, enc)
   }
@@ -123,7 +125,6 @@ class SMTModelChecker(
     ctx.close()
   }
 
-  // Returns Some(witness) if an assertion failed, otherwise returns  None
   private def checkAssertions(
     sys:        TransitionSystem,
     ctx:        SolverContext,
@@ -203,10 +204,10 @@ class SMTModelChecker(
 
 trait TransitionSystemSmtEncoding {
   def defineHeader(ctx:   SolverContext): Unit
-  def init(ctx:           SolverContext): Unit
+  def init(ctx:           SolverContext, isArbitraryStep: Boolean): Unit
   def unroll(ctx:         SolverContext): Unit
   def getConstraint(name: String): BVExpr
   def getAssertion(name:  String): BVExpr
-  def getSignalAt(sym:    BVSymbol, k:    Int): BVExpr
-  def getSignalAt(sym:    ArraySymbol, k: Int): ArrayExpr
+  def getSignalAt(sym:    BVSymbol, k:                    Int):     BVExpr
+  def getSignalAt(sym:    ArraySymbol, k:                 Int):     ArrayExpr
 }
