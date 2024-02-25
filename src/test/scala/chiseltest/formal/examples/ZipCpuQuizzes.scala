@@ -6,6 +6,7 @@ import chisel3._
 import chiseltest._
 import chiseltest.formal._
 import org.scalatest.flatspec.AnyFlatSpec
+import chisel3.util._
 
 /** Chisel versions of the quizzes from ZipCPU: http://zipcpu.com/quiz/quizzes.html
   */
@@ -30,6 +31,18 @@ class ZipCpuQuizzes extends AnyFlatSpec with ChiselScalatestTester with Formal w
     verify(new Quiz2(true), Seq(BoundedCheck(5), DefaultBackend))
   }
 
+  "Quiz3" should "fail induction check" taggedAs FormalTag in {
+    DefaultBackend match {
+      case BtormcEngineAnnotation => {}
+      case anno => {
+        val e = intercept[FailedInductionCheckException] {
+          verify(new Quiz3(), Seq(InductionCheck(1), anno))
+        }
+        assert(e.failAt == 1)
+      }
+    }
+  }
+
   "Quiz4" should "fail when using a RegNext to delay the signal" taggedAs FormalTag in {
     val e = intercept[FailedBoundedCheckException] {
       verify(new Quiz4(0), Seq(BoundedCheck(5), DefaultBackend))
@@ -52,7 +65,25 @@ class ZipCpuQuizzes extends AnyFlatSpec with ChiselScalatestTester with Formal w
   "Quiz7" should "pass when using the Chisel past function" taggedAs FormalTag in {
     verify(new Quiz7(true), Seq(BoundedCheck(5), DefaultBackend))
   }
-
+  "Quiz11" should "fail induction" taggedAs FormalTag in {
+    DefaultBackend match {
+      case BtormcEngineAnnotation => {}
+      case anno => {
+        val e = intercept[FailedInductionCheckException] {
+          verify(new Quiz11(false), Seq(InductionCheck(3), anno))
+        }
+        assert(e.failAt == 3)
+      }
+    }
+  }
+  "Quiz11" should "pass induction" taggedAs FormalTag in {
+    DefaultBackend match {
+      case BtormcEngineAnnotation => {}
+      case anno => {
+        verify(new Quiz11(true), Seq(InductionCheck(4), anno))
+      }
+    }
+  }
   "Quiz13" should "pass when x is 1 wide" taggedAs FormalTag in {
     verify(new Quiz13(1), Seq(BoundedCheck(4), DefaultBackend))
   }
@@ -74,6 +105,24 @@ class ZipCpuQuizzes extends AnyFlatSpec with ChiselScalatestTester with Formal w
   }
   "Quiz15" should "pass when using WriteFirst" taggedAs FormalTag in {
     verify(new Quiz15(WriteFirst), Seq(BoundedCheck(5), DefaultBackend))
+  }
+  "Quiz17" should "fail induction" taggedAs FormalTag in {
+    DefaultBackend match {
+      case BtormcEngineAnnotation => {}
+      case anno => {
+        val e = intercept[FailedInductionCheckException] {
+          verify(new Quiz17(22, false), Seq(InductionCheck(4), anno))
+        }
+      }
+    }
+  }
+  "Quiz17" should "pass induction" taggedAs FormalTag in {
+    DefaultBackend match {
+      case BtormcEngineAnnotation => {}
+      case anno => {
+        verify(new Quiz17(22, true), Seq(InductionCheck(4), anno))
+      }
+    }
   }
 }
 
@@ -105,7 +154,16 @@ class Quiz2(withInit: Boolean) extends Module {
 }
 
 /** http://zipcpu.com/quiz/2019/08/19/quiz03.html */
-// TODO: re-visit once we support k-induction
+class Quiz3() extends Module {
+  val counter = RegInit(0.U(16.W))
+
+  when(counter === 22.U) {
+    counter := 0.U
+  }.otherwise {
+    counter := counter + 1.U
+  }
+  assert(counter =/= 500.U)
+}
 
 /** http://zipcpu.com/quiz/2019/08/24/quiz04.html */
 class Quiz4(style: Int) extends Module {
@@ -163,7 +221,7 @@ class Quiz7(fixed: Boolean) extends Module {
 }
 
 /** http://zipcpu.com/quiz/2019/11/29/quiz08.html */
-// TODO: consider implementing once we support k-induction
+// A very similar example is in formal/examples/Counter.scala
 
 /** http://zipcpu.com/quiz/2019/12/12/quiz09.html */
 // this one is hard to translate to Chisel since we do not have blocking assignment
@@ -183,7 +241,24 @@ class Quiz10 extends Module {
 }
 
 /** http://zipcpu.com/quiz/2020/01/23/quiz11.html */
-// TODO: consider implementing once we support k-induction
+class Quiz11(shouldPass: Boolean) extends Module {
+  val i_ce = IO(Input(Bool()))
+  val i_bit = IO(Input(Bool()))
+
+  val sa = RegInit(0.U(4.W))
+  val sb = RegInit(0.U(4.W))
+
+  when(i_ce) {
+    sa := Cat(sa(2, 0), i_bit)
+    sb := Cat(i_bit, sb(3, 1))
+  }
+
+  if (shouldPass) {
+    assert(sa === Reverse(sb))
+  } else {
+    assert(sa(3) === sb(0))
+  }
+}
 
 /** http://zipcpu.com/quiz/2020/09/14/quiz13.html */
 class Quiz13(xWidth: Int) extends Module {
@@ -227,4 +302,27 @@ class Quiz15(readUnderWrite: ReadUnderWrite) extends Module {
 // TODO: consider implementing once we have good async reset support
 
 /** https://zipcpu.com/quiz/2021/08/05/quiz17.html */
-// TODO: consider implementing once we support k-induction
+class Quiz17(maxVal: Int, makePass: Boolean) extends Module {
+  val i_start = IO(Input(Bool()))
+
+  val counter = RegInit(0.U(16.W))
+  val zero_counter = RegInit(true.B)
+
+  when(counter > 0.U) {
+    counter := counter - 1.U
+    when(counter === 1.U) {
+      zero_counter := true.B
+    }
+  }.elsewhen(i_start) {
+    counter := maxVal.U
+    zero_counter := false.B
+  }
+
+  when(past(counter === 1.U)) {
+    assert(rose(zero_counter))
+  }
+
+  if (makePass) {
+    assert(zero_counter === (counter === 0.U))
+  }
+}
