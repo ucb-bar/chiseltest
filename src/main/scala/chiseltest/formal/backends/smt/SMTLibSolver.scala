@@ -5,6 +5,7 @@ package chiseltest.formal.backends.smt
 
 import firrtl2.backends.experimental.smt._
 import scala.collection.mutable
+import scala.util.matching.Regex
 
 object Yices2SMTLib extends Solver {
   private val cmd = List("yices-smt2", "--incremental", "--smt2-model-format")
@@ -34,7 +35,34 @@ object BoolectorSMTLib extends Solver {
 }
 
 object BitwuzlaSMTLib extends Solver {
-  private val cmd = List("bitwuzla", "--smt2", "--incremental")
+  /* Bitwuzla accepts different command line arguments based on it's version
+   * See: https://github.com/bitwuzla/bitwuzla/blob/main/NEWS.md */
+  private def cmd = {
+    val version_regex: Regex = "([0-9]+).([0-9]+).([0-9]+)".r.unanchored
+    val version_cmd = List("bitwuzla", "--version")
+    val r = os.proc(version_cmd).call()
+    val res = r.out.lines().head.trim
+
+    res match {
+      case version_regex(major, minor, _) => {
+        List("bitwuzla") ++
+          /* --incremental argument removed as of 0.1.0 - See NEWS.md */
+          (if (major.toInt == 0 && minor.toInt == 0) {
+             List("--incremental")
+           } else {
+             List()
+           }) ++
+          /* --lang option is used to specify smt2 as of 0.3.0 - See NEWS.md and
+           * https://github.com/bitwuzla/bitwuzla/issues/75 */
+          (if (major.toInt == 0 && minor.toInt < 3) {
+             List("--smt2")
+           } else {
+             List("--lang", "smt2")
+           })
+      }
+      case _ => List("bitwuzla", "--smt2", "--incremental")
+    }
+  }
   override def name = "bitwuzla-smtlib"
   override def supportsConstArrays = false
   override def supportsUninterpretedFunctions = false
