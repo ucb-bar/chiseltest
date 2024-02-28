@@ -6,7 +6,7 @@ lazy val commonSettings = Seq(
   crossScalaVersions := Seq("2.13.12")
 )
 
-val chiselVersion = "6.0.0"
+val chiselVersion = "6.1.0"
 val firrtlVersion = "6.0-SNAPSHOT"
 
 lazy val chiseltestSettings = Seq(
