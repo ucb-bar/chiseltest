@@ -2,8 +2,8 @@
 
 lazy val commonSettings = Seq(
   organization := "edu.berkeley.cs",
-  scalaVersion := "2.13.12",
-  crossScalaVersions := Seq("2.13.12")
+  scalaVersion := "2.13.13",
+  crossScalaVersions := Seq("2.13.13")
 )
 
 val chiselVersion = "6.0.0"
