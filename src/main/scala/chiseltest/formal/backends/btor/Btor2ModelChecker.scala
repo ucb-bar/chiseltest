@@ -10,7 +10,11 @@ class BtormcModelChecker(targetDir: os.Path) extends IsModelChecker {
   override val name:   String = "btormc"
   override val prefix: String = "btormc"
 
-  override def check(sys: TransitionSystem, kMax: Int): ModelCheckResult = {
+  override def checkInduction(sys: TransitionSystem, resetLenght: Int, kMax: Int = -1): ModelCheckResult = {
+    throw new RuntimeException(s"Induction unsupported for btormc");
+  }
+
+  override def checkBounded(sys: TransitionSystem, kMax: Int): ModelCheckResult = {
     // serialize the system to btor2
     val filename = sys.name + ".btor"
     // btromc isn't happy if we include output nodes, so we skip them during serialization

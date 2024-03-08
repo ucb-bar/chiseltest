@@ -15,14 +15,18 @@ class UnrollSmtEncoding(sys: TransitionSystem) extends TransitionSystemSmtEncodi
     // nothing to do in this encoding
   }
 
-  override def init(ctx: SolverContext): Unit = {
+  override def init(ctx: SolverContext, isArbitraryStep: Boolean): Unit = {
     require(currentStep == -1)
     currentStep = 0
     // declare initial states
     sys.states.foreach { state =>
       state.init match {
         case Some(value) =>
-          ctx.runCommand(DefineFunction(at(state.name, 0), Seq(), signalsAndStatesAt(value, 0)))
+          if (isArbitraryStep) {
+            ctx.runCommand(DeclareFunction(at(state.sym, 0), Seq()))
+          } else {
+            ctx.runCommand(DefineFunction(at(state.name, 0), Seq(), signalsAndStatesAt(value, 0)))
+          }
         case None =>
           ctx.runCommand(DeclareFunction(at(state.sym, 0), Seq()))
       }

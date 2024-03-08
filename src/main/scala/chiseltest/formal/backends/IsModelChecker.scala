@@ -12,12 +12,16 @@ private[chiseltest] case class ModelCheckSuccess() extends ModelCheckResult { ov
 private[chiseltest] case class ModelCheckFail(witness: Witness) extends ModelCheckResult {
   override def isFail: Boolean = true
 }
+private[chiseltest] case class ModelCheckFailInduction(witness: Witness) extends ModelCheckResult {
+  override def isFail: Boolean = true
+}
 
 private[chiseltest] trait IsModelChecker {
   def name: String
   val prefix:        String
   val fileExtension: String
-  def check(sys: TransitionSystem, kMax: Int = -1): ModelCheckResult
+  def checkBounded(sys:   TransitionSystem, kMax:        Int = -1): ModelCheckResult
+  def checkInduction(sys: TransitionSystem, resetLength: Int, kMax: Int = -1): ModelCheckResult
 }
 
 private[chiseltest] case class Witness(
