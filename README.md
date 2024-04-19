@@ -197,3 +197,8 @@ with the new `test` syntax.
 
 Hardware testers are synthesizeable tests, most often extending the `BasicTester` class provided by `chisel3`.
 You can now directly [use these tests with `chiseltest` through the `runUntilStop` function](https://github.com/ucb-bar/chiseltest/blob/main/src/test/scala/chiseltest/tests/HardwareTestsTest.scala).
+
+## License
+
+Contributions submitted on behalf of the Regents of the University of California, are licensed under [the 3-Clause BSD License](LICENSE).
+Contributions submitted by developers on behalf of themselves or any other organization or employer, are licensed under [the Apache License, Version 2.0](LICENSE.contributors).
