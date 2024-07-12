@@ -113,7 +113,7 @@ private object IcarusSimulator extends Simulator with LazyLogging {
     val success = ret.exitCode == 0 && os.exists(lib)
     assert(
       success,
-      s"failed to compiler VPI shared library for circuit ${topName} in work dir $compileDir\n" + cmd.mkString(" ")
+      s"failed to compiler VPI shared library for circuit ${topName} in work dir $compileDir\n" + Util.quoteCmdArgs(cmd)
     )
     lib
   }
@@ -141,7 +141,7 @@ private object IcarusSimulator extends Simulator with LazyLogging {
     val ret = os.proc(cmd).call(cwd = os.pwd, check = false)
 
     val success = ret.exitCode == 0 && os.exists(os.pwd / simBinary)
-    assert(success, s"iverilog command failed on circuit ${topName} in work dir $targetDir\n" + cmd.mkString(" "))
+    assert(success, s"iverilog command failed on circuit ${topName} in work dir $targetDir\n" + Util.quoteCmdArgs(cmd))
     Seq("vvp", simBinary.toString())
   }
 

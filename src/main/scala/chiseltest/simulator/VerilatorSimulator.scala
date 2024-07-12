@@ -219,7 +219,7 @@ private object VerilatorSimulator extends Simulator {
   private def run(cmd: Seq[String], cwd: os.Path, verbose: Boolean): os.CommandResult = {
     if (verbose) {
       // print the command and pipe the output to stdout
-      println(cmd.mkString(" "))
+      println(Util.quoteCmdArgs(cmd))
       os.proc(cmd)
         .call(cwd = cwd, stdout = os.ProcessOutput.Readlines(println), stderr = os.ProcessOutput.Readlines(println))
     } else {
