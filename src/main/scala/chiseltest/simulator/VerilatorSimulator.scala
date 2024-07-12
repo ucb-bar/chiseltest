@@ -233,7 +233,6 @@ private object VerilatorSimulator extends Simulator {
     "-DVL_USER_FATAL",
     "-DVL_USER_FINISH", // this is required because we ant to overwrite the vl_finish function!
     s"-DTOP_TYPE=V$topName",
-    s"-include V$topName.h"
   )
 
   private def DefaultFlags(topName: String, verilatedDir: os.Path, cFlags: Seq[String], ldFlags: Seq[String]) = List(
