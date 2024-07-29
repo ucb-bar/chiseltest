@@ -5,6 +5,7 @@ package chiseltest.simulator
 import firrtl2._
 import firrtl2.annotations._
 import chiseltest.simulator.jna._
+import chiseltest.simulator.Utils.quoteCmdArgs
 
 case object VerilatorBackendAnnotation extends SimulatorAnnotation {
   override def getSimulator: Simulator = VerilatorSimulator
@@ -219,7 +220,7 @@ private object VerilatorSimulator extends Simulator {
   private def run(cmd: Seq[String], cwd: os.Path, verbose: Boolean): os.CommandResult = {
     if (verbose) {
       // print the command and pipe the output to stdout
-      println(cmd.mkString(" "))
+      println(quoteCmdArgs(cmd))
       os.proc(cmd)
         .call(cwd = cwd, stdout = os.ProcessOutput.Readlines(println), stderr = os.ProcessOutput.Readlines(println))
     } else {
