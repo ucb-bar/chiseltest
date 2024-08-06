@@ -321,7 +321,7 @@ private[chiseltest] class IPCSimulatorContext(
 
   private def start(): Unit = {
     if (verbose)
-      println(s"""STARTING ${cmd.mkString(" ")}""")
+      println(s"""STARTING ${Utils.quoteCmdArgs(cmd)}""")
     mwhile(!recvOutputs) {}
     isRunning = true
   }
@@ -417,7 +417,7 @@ private[chiseltest] class IPCSimulatorContext(
 private object TesterProcess {
   def apply(cmd: Seq[String], logs: ArrayBuffer[String], verbose: Boolean): Process = {
     require(new java.io.File(cmd.head).exists, s"${cmd.head} doesn't exist")
-    val processBuilder = Process(cmd.mkString(" "))
+    val processBuilder = Process(Utils.quoteCmdArgs(cmd))
     // This makes everything written to stderr get added as lines to logs
     val processLogger = ProcessLogger(
       { str => if (verbose) println(str) },

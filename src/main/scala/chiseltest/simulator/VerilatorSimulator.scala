@@ -5,6 +5,7 @@ package chiseltest.simulator
 import firrtl2._
 import firrtl2.annotations._
 import chiseltest.simulator.jna._
+import chiseltest.simulator.Utils.quoteCmdArgs
 
 case object VerilatorBackendAnnotation extends SimulatorAnnotation {
   override def getSimulator: Simulator = VerilatorSimulator
@@ -219,7 +220,7 @@ private object VerilatorSimulator extends Simulator {
   private def run(cmd: Seq[String], cwd: os.Path, verbose: Boolean): os.CommandResult = {
     if (verbose) {
       // print the command and pipe the output to stdout
-      println(cmd.mkString(" "))
+      println(quoteCmdArgs(cmd))
       os.proc(cmd)
         .call(cwd = cwd, stdout = os.ProcessOutput.Readlines(println), stderr = os.ProcessOutput.Readlines(println))
     } else {
@@ -228,12 +229,11 @@ private object VerilatorSimulator extends Simulator {
   }
 
   private def DefaultCFlags(topName: String) = List(
-    "-O1",
+    "-Os",
     "-DVL_USER_STOP",
     "-DVL_USER_FATAL",
     "-DVL_USER_FINISH", // this is required because we ant to overwrite the vl_finish function!
-    s"-DTOP_TYPE=V$topName",
-    s"-include V$topName.h"
+    s"-DTOP_TYPE=V$topName"
   )
 
   private def DefaultFlags(topName: String, verilatedDir: os.Path, cFlags: Seq[String], ldFlags: Seq[String]) = List(
