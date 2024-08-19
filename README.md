@@ -1,5 +1,16 @@
 # chiseltest
 
+## Archived Project Status
+
+After six long and exciting years, we unfortunately had to stop development of
+chiseltest since we no longer have a maintainer. Please feel free to take
+advantage of the existing code, either by creating a community fork or by
+using it to [improve other Chisel testing solutions](https://github.com/chipsalliance/chisel/pull/4209).
+
+Thanks!
+
+
+## What is `chiseltest`?
 Chiseltest is the _batteries-included_ testing and formal verification library for
 [Chisel](https://github.com/chipsalliance/chisel3)-based RTL designs.
 Chiseltest emphasizes tests that are lightweight (minimizes boilerplate code),
